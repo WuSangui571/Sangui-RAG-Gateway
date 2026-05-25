@@ -1,0 +1,16 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, MVP scope, stack, deployment and API compatibility rules for baseline scaffolding."}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend package/resource layout for Spring Boot baseline."}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "PostgreSQL, pgvector, Redis and Flyway migration baseline rules."}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Global exception and safe error response baseline."}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe logging requirements for startup, health and infrastructure config."}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend completion and test expectations."}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend placeholder directory boundary without UI implementation."}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Future frontend API/type contract alignment; no frontend DTO work in this task."}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Secret/state boundary for future admin UI; keep this task placeholder-only."}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend boundary and safety expectations; no admin pages in this task."}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Required for infra, env, DB migration and API contract planning."}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Search-first and no unnecessary abstraction baseline."}
+{"file": ".trellis\\tasks\\05-25-init-project-baseline\\prd.md", "reason": "Task requirements, contracts, boundaries, and test plan."}

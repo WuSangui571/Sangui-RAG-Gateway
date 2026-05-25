@@ -514,6 +514,91 @@ REDIS_HOST=
 REDIS_PORT=
 ```
 
+## Baseline Engineering Contracts
+
+The initial project baseline uses these concrete files and commands:
+
+```text
+backend/pom.xml
+backend/src/main/resources/application.yml
+backend/src/main/resources/application-dev.yml
+backend/src/main/resources/db/migration/V1__init_pgvector.sql
+deploy/docker-compose.yml
+.env.example
+README.md
+```
+
+Local infrastructure is started with:
+
+```bash
+docker compose --env-file .env -f deploy/docker-compose.yml up -d
+```
+
+Backend development commands are:
+
+```bash
+cd backend
+mvn spring-boot:run
+mvn test
+mvn -q -DskipTests compile
+```
+
+If a Maven wrapper is generated in the future, document the matching `./mvnw` and `mvnw.cmd` commands, but do not make wrapper commands the primary README path unless `mvnw` and `mvnw.cmd` exist in the repository.
+
+Required local environment keys for the baseline are:
+
+```text
+POSTGRES_DB=sangui_rag_gateway
+POSTGRES_USER=sangui
+POSTGRES_PASSWORD=sangui_password
+POSTGRES_PORT=5432
+REDIS_PORT=6379
+SPRING_PROFILES_ACTIVE=dev
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/sangui_rag_gateway
+SPRING_DATASOURCE_USERNAME=sangui
+SPRING_DATASOURCE_PASSWORD=sangui_password
+SPRING_DATA_REDIS_HOST=localhost
+SPRING_DATA_REDIS_PORT=6379
+RAG_GATEWAY_SECRET_KEY=local-dev-change-me
+```
+
+`.env.example` may use safe local placeholders. `.env` must remain ignored.
+
+The first database migration must stay limited to PostgreSQL/pgvector baseline setup until a later task defines business tables:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+The custom application health endpoint is:
+
+```http
+GET /api/health
+```
+
+Expected response:
+
+```json
+{
+  "code": "OK",
+  "message": "success",
+  "data": {
+    "status": "UP",
+    "service": "sangui-rag-gateway"
+  }
+}
+```
+
+Validation matrix for this baseline:
+
+| Area | Good/Base Case | Bad Case | Required Check |
+|---|---|---|---|
+| README commands | Documented commands match files in repo | Wrapper commands are primary when wrapper files do not exist | Review README against file tree |
+| Docker Compose | `postgres` and `redis` services define ports, volumes, and health checks | Real secrets are committed or `.env` is tracked | Review `.env.example`, `.gitignore`, `deploy/docker-compose.yml` |
+| Migration | `V1__init_pgvector.sql` creates only pgvector extension | Business tables are created before domain schema is specified | Review migration file |
+| Health API | `GET /api/health` returns the admin envelope with `data.status=UP` | Endpoint returns stack traces or exposes unsupported `/v1/*` behavior | MockMvc test and route search |
+| Tests | Context, health endpoint, and exception envelope tests pass | Tests require local PostgreSQL or Redis for unit-level checks | `mvn test` under `backend/` |
+
 ## Trellis Workflow Rules
 
 At the start of each task, classify it:

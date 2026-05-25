@@ -1,0 +1,15 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify implementation stays inside product and MVP boundary."}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Check backend package/resource layout."}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Check PostgreSQL, pgvector, Redis and migration choices."}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check exception and response behavior."}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Check safe logging and secret handling."}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Check tests and backend quality criteria."}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Check frontend remains placeholder-only and consistent."}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Check no premature frontend API contract drift."}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Check no frontend secret/state implementation added out of scope."}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Check no admin UI pages or unsafe frontend behavior added."}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Check env/API/DB/infra contracts and Good/Base/Bad cases."}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Check search-first and no duplicated baseline patterns."}
+{"file": ".trellis\\tasks\\05-25-init-project-baseline\\prd.md", "reason": "Check final work against PRD acceptance criteria and non-goals."}
