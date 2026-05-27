@@ -589,6 +589,77 @@ Expected response:
 }
 ```
 
+### Implemented Gateway Endpoint
+
+`GET /v1/models` returns an OpenAI-compatible model list for authenticated apps:
+
+```http
+GET /v1/models
+Authorization: Bearer sk-sangui-...
+```
+
+Success (200):
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "gpt-4o-mini",
+      "object": "model",
+      "created": 0,
+      "owned_by": "openai"
+    }
+  ]
+}
+```
+
+Missing or disabled model config (409):
+
+```json
+{
+  "error": {
+    "message": "Default model config is not configured for this app.",
+    "type": "invalid_request_error",
+    "code": "model_config_not_ready"
+  }
+}
+```
+
+Invalid API key (401, from GatewayAuthFilter):
+
+```json
+{
+  "error": {
+    "message": "Invalid API key.",
+    "type": "invalid_request_error",
+    "code": "invalid_api_key"
+  }
+}
+```
+
+Implemented files:
+
+```text
+backend/src/main/resources/db/migration/V3__create_model_config_and_app_default.sql
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigEntity.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigStatus.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigMapper.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiModelsController.java
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiModel.java
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiModelsResponse.java
+```
+
+Updated test files:
+
+```text
+backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java
+backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiModelsControllerTest.java
+backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java
+backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerIntegrationTest.java
+```
+
 Validation matrix for this baseline:
 
 | Area | Good/Base Case | Bad Case | Required Check |
@@ -596,9 +667,13 @@ Validation matrix for this baseline:
 | README commands | Documented commands match files in repo | Wrapper commands are primary when wrapper files do not exist | Review README against file tree |
 | Docker Compose | `postgres` and `redis` services define ports, volumes, and health checks | Real secrets are committed or `.env` is tracked | Review `.env.example`, `.gitignore`, `deploy/docker-compose.yml` |
 | Migration | `V1__init_pgvector.sql` creates only pgvector extension | Business tables are created before domain schema is specified | Review migration file |
+| Migration | `V2__create_app_api_key_tables.sql` creates app and API key tables | Plaintext keys stored or queried without hashing | Review migration + entity test |
+| Migration | `V3__create_model_config_and_app_default.sql` creates model config and app FK | Plaintext upstream keys stored or cross-user config exposed | Review migration + service test |
 | Health API | `GET /api/health` returns the admin envelope with `data.status=UP` | Endpoint returns stack traces or exposes unsupported `/v1/*` behavior | MockMvc test and route search |
-| Unmatched routes | Unknown paths, `/favicon.ico`, unimplemented `/v1/*` return 404 `NOT_FOUND` envelope with no stack traces | Routes return 500 with stack traces or fake OpenAI responses | MockMvc test |
-| Tests | Context, health endpoint, and exception envelope tests pass | Tests require local PostgreSQL or Redis for unit-level checks | `mvn test` under `backend/` |
+| `/v1/models` | Authenticated app with enabled config returns 200 model list | Missing/disabled config returns 409 `model_config_not_ready`; unauthenticated returns 401 | `OpenAiModelsControllerTest` |
+| `/v1/chat/completions` | Returns 404 `NOT_FOUND` | Must not be accidentally implemented or return fake OpenAI responses | `GlobalExceptionHandlerIntegrationTest` |
+| Unmatched routes | Unknown paths, `/favicon.ico` return 404 `NOT_FOUND` envelope with no stack traces | Routes return 500 with stack traces or fake OpenAI responses | MockMvc test |
+| Tests | All 65 tests pass | Tests require local PostgreSQL or Redis for unit-level checks | `mvn test` under `backend/` |
 
 ## Trellis Workflow Rules
 

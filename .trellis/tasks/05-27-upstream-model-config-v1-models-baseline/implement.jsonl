@@ -1,0 +1,19 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/tasks/05-27-upstream-model-config-v1-models-baseline/prd.md", "reason": "Confirmed requirements, acceptance criteria, API/DB contracts, error matrix, and forbidden scope for implementation"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, MVP API scope, core ModelConfig/App contract, upstream key security rules"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Package placement for model and gateway/openai modules and layer responsibilities"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Schema, migration, tenant isolation, indexes, status enum, upstream key storage rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "OpenAI-compatible gateway error shape, GatewayException behavior, auth boundary"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe logging requirements for provider/model/key fields"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required backend testing and API compatibility/security checklist"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer DB/API/security contract checklist for public gateway endpoint"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppEntity.java", "reason": "Existing App entity pattern and field style to extend with default model config id"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Existing App service pattern and enabled lookup behavior"}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyService.java", "reason": "Existing simple service style and timestamp/update patterns"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java", "reason": "Existing /v1/* auth and GatewayRequestContextHolder setup"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GatewayException.java", "reason": "Existing OpenAI-compatible exception model for model_config_not_ready"}
+{"file": "backend/src/main/resources/db/migration/V2__create_app_api_key_tables.sql", "reason": "Existing migration naming, SQL formatting, indexes, and FK style"}
+{"file": "backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyServiceTest.java", "reason": "Mockito service-test pattern for mapper insert/update assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java", "reason": "Existing auth regression tests around /v1/models path"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerIntegrationTest.java", "reason": "Existing /v1/models 404 regression that must be updated after endpoint implementation"}

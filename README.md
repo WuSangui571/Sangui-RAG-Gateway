@@ -17,13 +17,15 @@ Let existing business systems gain private-document RAG capability with low modi
 - Redis Docker Compose service
 - Flyway database migration for the pgvector extension
 - Admin response envelope and global exception handling
+- App API key authentication for `/v1/*`
+- `GET /v1/models` for authenticated apps with an enabled default model config
 
 ### Not Yet Implemented
 
 - Login / registration
 - Knowledge base management and document upload
 - RAG retrieval, embedding, or document pipeline
-- `GET /v1/models` and `POST /v1/chat/completions` (currently unimplemented gateway endpoints return a safe 404 response instead of 500)
+- `POST /v1/chat/completions` (currently unimplemented gateway endpoints return a safe 404 response instead of 500)
 - Frontend admin pages (placeholder only)
 
 ## Local Dependencies

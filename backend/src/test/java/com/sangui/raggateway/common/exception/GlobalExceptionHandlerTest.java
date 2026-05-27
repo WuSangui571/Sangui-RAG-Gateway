@@ -42,9 +42,9 @@ class GlobalExceptionHandlerTest {
             throw new RuntimeException("Unexpected failure");
         }
 
-        @GetMapping("/v1/models")
-        void throwNoResourceForV1Models() throws NoResourceFoundException {
-            throw new NoResourceFoundException(HttpMethod.GET, "/v1/models");
+        @GetMapping("/v1/unimplemented")
+        void throwNoResourceForUnimplementedRoute() throws NoResourceFoundException {
+            throw new NoResourceFoundException(HttpMethod.GET, "/v1/unimplemented");
         }
 
         @PostMapping("/v1/chat/completions")
@@ -127,8 +127,8 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void shouldReturn404ForV1Models() throws Exception {
-        mockMvc.perform(get("/v1/models"))
+    void shouldReturn404ForUnimplementedRoute() throws Exception {
+        mockMvc.perform(get("/v1/unimplemented"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Resource not found"))

@@ -14,6 +14,7 @@ public class AppEntity {
     private Long userId;
     private String name;
     private String status;
+    private Long defaultModelConfigId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -47,6 +48,14 @@ public class AppEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Long getDefaultModelConfigId() {
+        return defaultModelConfigId;
+    }
+
+    public void setDefaultModelConfigId(Long defaultModelConfigId) {
+        this.defaultModelConfigId = defaultModelConfigId;
     }
 
     public LocalDateTime getCreatedAt() {

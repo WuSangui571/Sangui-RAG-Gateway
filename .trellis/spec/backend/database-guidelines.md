@@ -245,6 +245,79 @@ mvn -q "-Dtest=ApiKeyGeneratorTest,ApiKeyHasherTest,ApiKeyServiceTest,GatewayAut
 mvn test
 ```
 
+### Implemented Model Config Baseline
+
+The model config schema and app association is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V3__create_model_config_and_app_default.sql
+```
+
+`rag_model_config` columns:
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `user_id` | `BIGINT` | yes | Owner boundary. |
+| `name` | `VARCHAR(255)` | yes | Admin-facing model config name. |
+| `provider_name` | `VARCHAR(128)` | yes | Provider label, e.g. `openai-compatible`, `openai`, `deepseek`. |
+| `base_url` | `VARCHAR(1024)` | yes | Upstream OpenAI-compatible base URL. |
+| `api_key_encrypted` | `TEXT` | no | Encrypted upstream key placeholder. Never plaintext. |
+| `api_key_masked` | `VARCHAR(128)` | no | Safe display value. |
+| `chat_model` | `VARCHAR(255)` | yes | Model id returned by `/v1/models`. |
+| `embedding_model` | `VARCHAR(255)` | no | Embedding model id for later RAG tasks. |
+| `embedding_dimension` | `INTEGER` | no | Required only with embedding model. |
+| `status` | `VARCHAR(32)` | yes | `ENABLED` or `DISABLED`. |
+| `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+| `updated_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+
+App association (`rag_app`):
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `default_model_config_id` | `BIGINT` | no | FK to `rag_model_config(id)`. |
+
+Tenant rule: when resolving or assigning `default_model_config_id`, `app.user_id` must equal `model_config.user_id`. Enforced in service logic.
+
+Required indexes:
+
+```text
+idx_rag_model_config_user_status on rag_model_config(user_id, status)
+idx_rag_model_config_provider_model on rag_model_config(provider_name, chat_model)
+idx_rag_app_default_model_config on rag_app(default_model_config_id)
+```
+
+Matching Java contracts:
+
+```text
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigEntity.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigStatus.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigMapper.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java
+```
+
+Validation cases:
+
+| Case | Expected result | Required assertion |
+|---|---|---|
+| Create enabled model config | `status=ENABLED`, owner `user_id` persisted | `ModelConfigServiceTest` |
+| Plaintext upstream key never persisted | `api_key_encrypted` and `api_key_masked` are null | `ModelConfigServiceTest.shouldNeverPersistPlaintextUpstreamKey` |
+| Embedding model with valid dimension | `embedding_model` and positive `embedding_dimension` persisted | `ModelConfigServiceTest.shouldPersistEmbeddingFieldsWhenProvided` |
+| Embedding model without dimension or non-positive dimension | Service rejects with `IllegalArgumentException` before insert | `ModelConfigServiceTest` validation tests |
+| `findEnabledByIdAndUserId` returns same-user enabled config | Returns entity for matching id+user+ENABLED | Mapper/service integration test. |
+| Disabled config not returned by enabled lookup | Returns null | Service or mapper test. |
+| Different-user config not returned by enabled lookup | Returns null | Service or mapper test. |
+| App resolves default model config | Uses `app.default_model_config_id` plus `app.user_id` | `AppServiceTest` |
+
+Run these checks after changing this schema or the matching services:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=ModelConfigServiceTest,AppServiceTest,OpenAiModelsControllerTest" test
+mvn test
+```
+
 ## Upstream API Key Storage
 
 Never store plaintext upstream API keys.
@@ -272,6 +345,8 @@ Recommended indexes:
 ```text
 rag_api_key(key_hash)
 rag_app(user_id, status)
+rag_model_config(user_id, status)
+rag_model_config(provider_name, chat_model)
 rag_knowledge_base(user_id, status)
 rag_document(knowledge_base_id, status)
 rag_document_chunk(knowledge_base_id)

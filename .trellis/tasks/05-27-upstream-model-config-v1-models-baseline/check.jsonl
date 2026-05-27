@@ -1,0 +1,17 @@
+{"file": ".trellis/tasks/05-27-upstream-model-config-v1-models-baseline/prd.md", "reason": "Check implementation against explicit acceptance criteria, forbidden scope, and required tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify behavior remains within lightweight OpenAI-compatible RAG gateway scope"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Validate package/layer boundaries and avoid unrelated module drift"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Check migration/entity/service alignment, indexes, and no plaintext upstream keys"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify /v1/models errors remain OpenAI-compatible and auth failures remain filter-owned"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Check no plaintext app/upstream keys or sensitive values are logged"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Check tests cover success/failure, tenant isolation, and secret handling"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Review API, DB, tenant, secret, and response contract alignment"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppEntity.java", "reason": "Verify app schema/entity alignment and owner boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Verify default model config resolution enforces same user boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyService.java", "reason": "Confirm app API key behavior remains unchanged"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java", "reason": "Ensure controller reuses context and invalid key behavior stays filter-owned"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java", "reason": "Verify GatewayException returns OpenAI-compatible errors without admin envelope"}
+{"file": "backend/src/main/resources/db/migration/V2__create_app_api_key_tables.sql", "reason": "Compare V3 migration style against existing baseline"}
+{"file": "backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyServiceTest.java", "reason": "Ensure model config service tests follow local style and secret assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java", "reason": "Ensure invalid-key 401 regression remains covered"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerIntegrationTest.java", "reason": "Confirm /v1/chat/completions stays unimplemented while /v1/models changes intentionally"}

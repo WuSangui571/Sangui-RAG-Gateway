@@ -11,6 +11,7 @@ invalid_api_key
 rate_limit_exceeded
 app_not_found
 knowledge_base_not_ready
+model_config_not_ready
 embedding_failed
 upstream_timeout
 upstream_error
@@ -41,6 +42,16 @@ Rate-limit example:
 }
 ```
 
+## `/v1/models` Endpoint
+
+`GET /v1/models` is implemented and returns:
+
+- **200** with OpenAI-compatible model list on success: `{"object":"list","data":[{"id":"<chat_model>","object":"model","created":0,"owned_by":"<provider_name>"}]}`
+- **409** `model_config_not_ready` when an authenticated app has no enabled default model config.
+- **401** `invalid_api_key` (from GatewayAuthFilter) for missing/invalid/disabled keys.
+
+The controller reuses `GatewayRequestContextHolder`; it does not re-authenticate.
+
 ## Gateway HTTP Status Mapping
 
 Use conventional statuses where possible:
@@ -50,6 +61,7 @@ Use conventional statuses where possible:
 403 app disabled, key revoked, forbidden tenant access
 404 app_not_found when it is safe to reveal
 409 knowledge_base_not_ready
+409 model_config_not_ready
 429 rate_limit_exceeded
 502 upstream_error
 504 upstream_timeout
@@ -129,7 +141,8 @@ Failure matrix:
 | Unknown hash | 401 | OpenAI-compatible `invalid_api_key` | Do not reveal lookup reason to client. |
 | Disabled/revoked/expired key | 401 | OpenAI-compatible `invalid_api_key` | Do not expose status or expiry to client. |
 | Missing/disabled app | 401 | OpenAI-compatible `invalid_api_key` | Avoid app enumeration. |
-| Valid key, unimplemented `/v1/*` route | 404 | Existing safe admin 404 is acceptable until gateway controllers exist | Do not fake `/v1/models` or chat responses. |
+| Valid key, implemented `/v1/models` route | 200 or 409 | OpenAI-compatible success/error shape | Return configured model list or `model_config_not_ready`; do not use admin envelope. |
+| Valid key, unimplemented `/v1/*` route such as `/v1/chat/completions` | 404 | Existing safe admin 404 is acceptable until the route is implemented | Do not fake chat responses. |
 
 Good/base/bad cases:
 
@@ -218,14 +231,14 @@ All handlers log safe context only (request IDs when available, error codes, non
 - `shouldReturn401ForGatewayInvalidApiKey` — 401 with code `invalid_api_key`, type `invalid_request_error`; no admin envelope fields.
 - `shouldHandleBusinessExceptionWithApiResponse` — BAD_REQUEST with admin envelope; `$.error` doesNotExist.
 - `shouldHideStackTraceForUnexpectedErrors` — 500 with `INTERNAL_ERROR`/`Internal server error`; no stack trace.
-- `shouldReturn404ForV1Models`, `shouldReturn404ForV1ChatCompletions` — 404 admin envelope; no `$.error`; no fake model/chat data.
+- `shouldReturn404ForUnimplementedRoute`, `shouldReturn404ForV1ChatCompletions` — 404 admin envelope; no `$.error`; no fake chat data.
 - `shouldReturn404ForFavicon`, `shouldReturn404ForUnmappedUnknownRoute` — 404 admin envelope.
 
 `GlobalExceptionHandlerIntegrationTest` (integration, 4 tests):
 
 - `shouldReturnSafe404ForUnknownRoute` — Real Spring context 404.
 - `shouldReturnSafe404ForFavicon` — Real 404 for `/favicon.ico`.
-- `shouldReturnSafe404ForUnimplementedModelsRoute` — `/v1/models` returns safe 404, no fake model list.
+- `shouldReturnSafe404ForModelsRouteInTestProfile` — under the `test` profile, `/v1/models` is not registered and still returns the safe 404 envelope.
 - `shouldReturnSafe404ForUnimplementedChatCompletionsRoute` — `/v1/chat/completions` returns safe 404, no `chat.completion` content.
 
 Run targeted tests with `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test` from `backend/`.

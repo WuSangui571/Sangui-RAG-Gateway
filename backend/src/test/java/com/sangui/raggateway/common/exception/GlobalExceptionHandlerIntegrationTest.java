@@ -36,7 +36,7 @@ class GlobalExceptionHandlerIntegrationTest {
     }
 
     @Test
-    void shouldReturnSafe404ForUnimplementedModelsRoute() throws Exception {
+    void shouldReturnSafe404ForModelsRouteInTestProfile() throws Exception {
         assertSafe404(get("/v1/models"))
                 .andExpect(content().string(not(containsString("\"data\":["))));
     }
