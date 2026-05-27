@@ -783,6 +783,168 @@ mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest"
 mvn test
 ```
 
+### Implemented App API Key Admin API Baseline
+
+The backend app and app API key management baseline is implemented. It reuses the existing `rag_app` and `rag_api_key` schema from `V2__create_app_api_key_tables.sql`; no new migration is required for this baseline.
+
+#### Temporary Admin Identity
+
+All endpoints below require:
+
+```http
+X-Admin-User-Id: <positive long>
+```
+
+Missing, non-numeric, or non-positive values return the admin `ApiResponse` envelope with `400 INVALID_REQUEST`.
+
+#### Admin API Endpoints
+
+All app/key admin APIs use `ApiResponse<T>` and never return OpenAI-compatible `error` objects:
+
+```http
+POST /api/admin/apps
+GET  /api/admin/apps
+GET  /api/admin/apps/{id}
+POST /api/admin/apps/{appId}/api-keys
+GET  /api/admin/apps/{appId}/api-keys
+POST /api/admin/api-keys/{id}/disable
+POST /api/admin/api-keys/{id}/revoke
+```
+
+Request contracts:
+
+```json
+POST /api/admin/apps
+{
+  "name": "Demo App"
+}
+```
+
+```json
+POST /api/admin/apps/{appId}/api-keys
+{
+  "name": "Production Key",
+  "expires_at": "2026-12-31T23:59:59"
+}
+```
+
+Response contracts use snake_case fields to match the existing admin model-config API:
+
+```json
+AppVO {
+  "id": 1,
+  "user_id": 100,
+  "name": "Demo App",
+  "status": "ENABLED",
+  "default_model_config_id": 10,
+  "created_at": "2026-05-27T10:00:00",
+  "updated_at": "2026-05-27T10:00:00"
+}
+```
+
+```json
+ApiKeyCreateVO {
+  "id": 1,
+  "app_id": 10,
+  "user_id": 100,
+  "name": "Production Key",
+  "key": "sk-sangui-returned-once",
+  "key_prefix": "sk-sangui-abc123",
+  "status": "ACTIVE",
+  "expires_at": "2026-12-31T23:59:59",
+  "last_used_at": null,
+  "revoked_at": null,
+  "created_at": "2026-05-27T10:00:00",
+  "updated_at": "2026-05-27T10:00:00"
+}
+```
+
+```json
+ApiKeyVO {
+  "id": 1,
+  "app_id": 10,
+  "user_id": 100,
+  "name": "Production Key",
+  "key_prefix": "sk-sangui-abc123",
+  "status": "ACTIVE",
+  "expires_at": "2026-12-31T23:59:59",
+  "last_used_at": null,
+  "revoked_at": null,
+  "created_at": "2026-05-27T10:00:00",
+  "updated_at": "2026-05-27T10:00:00"
+}
+```
+
+Secret handling:
+
+- `ApiKeyCreateVO.key` is returned only by `POST /api/admin/apps/{appId}/api-keys`.
+- `ApiKeyVO` and list/disable/revoke responses never include `key` or `key_hash`.
+- `ApiKeyService` persists `key_hash` and `key_prefix`; it never persists the plaintext key.
+- Gateway auth continues to hash the presented plaintext key and rejects disabled, revoked, or expired keys with `401 invalid_api_key`.
+
+Tenant behavior:
+
+- App list/detail returns only resources owned by `X-Admin-User-Id`.
+- Key creation/listing first verifies `{appId}` belongs to the current user.
+- Disable/revoke verifies the key exists and belongs to the current user.
+- Existing but cross-user app/key access returns `403 FORBIDDEN` with a generic `Access denied` message.
+- Missing app/key access returns `404 NOT_FOUND`.
+
+Status behavior:
+
+- New apps are created as `ENABLED`.
+- New keys are created as `ACTIVE`.
+- `GET /api/admin/apps?status=ENABLED|DISABLED` filters same-user apps.
+- `ACTIVE -> DISABLED` is allowed.
+- `DISABLED -> DISABLED` is idempotent.
+- `REVOKED -> DISABLED` returns `400 INVALID_REQUEST`.
+- `ACTIVE|DISABLED -> REVOKED` is allowed and sets `revoked_at`.
+- `REVOKED -> REVOKED` is idempotent.
+
+Implemented files:
+
+```text
+backend/src/main/java/com/sangui/raggateway/app/dto/CreateAppDTO.java
+backend/src/main/java/com/sangui/raggateway/app/vo/AppVO.java
+backend/src/main/java/com/sangui/raggateway/apikey/dto/CreateApiKeyDTO.java
+backend/src/main/java/com/sangui/raggateway/apikey/vo/ApiKeyVO.java
+backend/src/main/java/com/sangui/raggateway/apikey/vo/ApiKeyCreateVO.java
+backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyAdminController.java
+```
+
+Updated files:
+
+```text
+backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java
+backend/src/main/java/com/sangui/raggateway/app/AppService.java
+backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyService.java
+backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java
+```
+
+Validation matrix for this baseline:
+
+| Area | Good Case | Bad Case | Required Check |
+|---|---|---|---|
+| Admin identity | Positive `X-Admin-User-Id` scopes all operations | Missing, non-numeric, or <= 0 returns `400 INVALID_REQUEST` | `AppAdminControllerTest`, `ApiKeyAdminControllerTest` |
+| Create app | Persists same-user app with `status=ENABLED` | Blank/null body returns `400 INVALID_REQUEST` and inserts nothing | `AppAdminControllerTest`, `AppServiceTest` |
+| List/detail app | Same-user rows only, optional `status` filter | Cross-user detail returns 403; missing app returns 404 | `AppAdminControllerTest`, `AppServiceTest` |
+| Create key | Returns plaintext once and stores hash/prefix | Blank name, null body, past expiry, missing/cross-user app fail without persisting plaintext | `AppAdminControllerTest`, `ApiKeyServiceTest` |
+| List keys | Same-user app keys return prefix/status metadata only | Cross-user app returns 403 and does not enumerate keys | `AppAdminControllerTest`, `ApiKeyServiceTest` |
+| Disable key | Same-user active/disabled key returns safe `ApiKeyVO` with status `DISABLED` | Missing returns 404; cross-user returns 403; revoked returns 400 | `ApiKeyAdminControllerTest`, `ApiKeyServiceTest` |
+| Revoke key | Same-user active/disabled key returns safe `ApiKeyVO` with `revoked_at` | Missing returns 404; cross-user returns 403 | `ApiKeyAdminControllerTest`, `ApiKeyServiceTest` |
+| Gateway auth | Active key for enabled app remains valid | Disabled, revoked, or expired keys return OpenAI-compatible `401 invalid_api_key` | `GatewayAuthFilterTest` |
+
+Run after changes:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=AppAdminControllerTest,ApiKeyAdminControllerTest,AppServiceTest,ApiKeyServiceTest" test
+mvn -q "-Dtest=ApiKeyGeneratorTest,ApiKeyHasherTest,GatewayAuthFilterTest,OpenAiModelsControllerTest" test
+mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test
+mvn test
+```
+
 ## Trellis Workflow Rules
 
 At the start of each task, classify it:

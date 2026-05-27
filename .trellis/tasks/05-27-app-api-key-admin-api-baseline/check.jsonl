@@ -1,0 +1,11 @@
+{"file": ".trellis\\tasks\\05-27-app-api-key-admin-api-baseline\\prd.md", "reason": "Check implementation against PRD acceptance criteria and forbidden scope"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify project boundary and app API key management contracts"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Verify schema, tenant isolation, and API key storage rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Verify Admin/gateway response-shape separation and error matrix"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Verify no plaintext keys or hashes are logged or returned"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Verify backend security and test requirements"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Verify API/DB/secret/tenant boundaries after implementation"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppAdminControllerTest.java", "reason": "Existing Admin controller MockMvc test style to extend"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyServiceTest.java", "reason": "Existing API key service assertions to extend for expiry/status/list behavior"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilterTest.java", "reason": "Gateway auth regression coverage for disabled/revoked keys"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminControllerTest.java", "reason": "Reference for secret-safe Admin response assertions and error handling tests"}

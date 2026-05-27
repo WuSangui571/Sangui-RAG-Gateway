@@ -1,5 +1,9 @@
 package com.sangui.raggateway.app;
 
+import com.sangui.raggateway.apikey.ApiKeyEntity;
+import com.sangui.raggateway.apikey.ApiKeyService;
+import com.sangui.raggateway.apikey.dto.CreateApiKeyDTO;
+import com.sangui.raggateway.apikey.dto.CreateApiKeyResult;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import com.sangui.raggateway.model.ModelConfigService;
@@ -12,12 +16,24 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class AppAdminControllerTest {
@@ -28,16 +44,326 @@ class AppAdminControllerTest {
     @Mock
     private ModelConfigService modelConfigService;
 
+    @Mock
+    private ApiKeyService apiKeyService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        AppAdminController controller = new AppAdminController(appService, modelConfigService);
+        AppAdminController controller = new AppAdminController(appService, modelConfigService, apiKeyService);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
+
+    // ---- Create App ----
+
+    @Test
+    void shouldCreateApp() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.create(eq("Demo App"), eq(100L))).thenReturn(app);
+
+        mockMvc.perform(post("/api/admin/apps")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Demo App"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.user_id").value(100))
+                .andExpect(jsonPath("$.data.name").value("Demo App"))
+                .andExpect(jsonPath("$.data.status").value("ENABLED"));
+
+        verify(appService).create("Demo App", 100L);
+    }
+
+    @Test
+    void shouldRejectCreateAppWithBlankName() throws Exception {
+        mockMvc.perform(post("/api/admin/apps")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "  "
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        verifyNoInteractions(appService);
+    }
+
+    @Test
+    void shouldRejectCreateAppWithNullBody() throws Exception {
+        mockMvc.perform(post("/api/admin/apps")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("null"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        verifyNoInteractions(appService);
+    }
+
+    // ---- List Apps ----
+
+    @Test
+    void shouldListSameUserApps() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.listByUserId(eq(100L), isNull())).thenReturn(List.of(app));
+
+        mockMvc.perform(get("/api/admin/apps")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].user_id").value(100));
+    }
+
+    @Test
+    void shouldListAppsWithStatusFilter() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.listByUserId(eq(100L), eq("ENABLED"))).thenReturn(List.of(app));
+
+        mockMvc.perform(get("/api/admin/apps?status=ENABLED")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").value("ENABLED"));
+    }
+
+    @Test
+    void shouldRejectInvalidAppStatusFilter() throws Exception {
+        mockMvc.perform(get("/api/admin/apps?status=INVALID")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    // ---- Get App Detail ----
+
+    @Test
+    void shouldGetAppDetailForSameUser() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        mockMvc.perform(get("/api/admin/apps/1")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.user_id").value(100));
+    }
+
+    @Test
+    void shouldReturn404ForNonExistentApp() throws Exception {
+        when(appService.findByIdAndUserId(999L, 100L)).thenReturn(null);
+        when(appService.findById(999L)).thenReturn(null);
+
+        mockMvc.perform(get("/api/admin/apps/999")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldReturn403ForCrossUserApp() throws Exception {
+        AppEntity otherUserApp = createApp(1L, 200L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(null);
+        when(appService.findById(1L)).thenReturn(otherUserApp);
+
+        mockMvc.perform(get("/api/admin/apps/1")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    // ---- Create API Key ----
+
+    @Test
+    void shouldCreateApiKeyAndReturnPlaintextOnce() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        ApiKeyEntity keyEntity = createKeyEntity(10L, 1L, 100L);
+        CreateApiKeyResult result = new CreateApiKeyResult("sk-sangui-plaintext-once", keyEntity);
+        when(apiKeyService.create(eq(1L), eq(100L), eq("Production Key"), isNull()))
+                .thenReturn(result);
+
+        mockMvc.perform(post("/api/admin/apps/1/api-keys")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Production Key"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.key").value("sk-sangui-plaintext-once"))
+                .andExpect(jsonPath("$.data.key_prefix").value("sk-sang-abc12345"))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.key_hash").doesNotExist());
+    }
+
+    @Test
+    void shouldRejectCreateKeyForCrossUserApp() throws Exception {
+        AppEntity otherUserApp = createApp(1L, 200L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(null);
+        when(appService.findById(1L)).thenReturn(otherUserApp);
+
+        mockMvc.perform(post("/api/admin/apps/1/api-keys")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Production Key"
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        verifyNoInteractions(apiKeyService);
+    }
+
+    @Test
+    void shouldRejectCreateKeyForNonExistentApp() throws Exception {
+        when(appService.findByIdAndUserId(999L, 100L)).thenReturn(null);
+        when(appService.findById(999L)).thenReturn(null);
+
+        mockMvc.perform(post("/api/admin/apps/999/api-keys")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Production Key"
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldRejectCreateKeyWithBlankName() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        mockMvc.perform(post("/api/admin/apps/1/api-keys")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": ""
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldRejectCreateKeyWithNullBody() throws Exception {
+        mockMvc.perform(post("/api/admin/apps/1/api-keys")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("null"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        verifyNoInteractions(appService);
+        verifyNoInteractions(apiKeyService);
+    }
+
+    @Test
+    void shouldRejectCreateKeyWithPastExpiry() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+        when(apiKeyService.create(eq(1L), eq(100L), eq("Production Key"), any(LocalDateTime.class)))
+                .thenThrow(new IllegalArgumentException("expiresAt must be in the future"));
+
+        mockMvc.perform(post("/api/admin/apps/1/api-keys")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Production Key",
+                                    "expires_at": "2026-01-01T00:00:00"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    // ---- List API Keys ----
+
+    @Test
+    void shouldListApiKeysWithoutPlaintextOrHash() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        ApiKeyEntity keyEntity = createKeyEntity(10L, 1L, 100L);
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(keyEntity));
+
+        mockMvc.perform(get("/api/admin/apps/1/api-keys")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data[0].key_prefix").value("sk-sang-abc12345"))
+                .andExpect(jsonPath("$.data[0].key").doesNotExist())
+                .andExpect(jsonPath("$.data[0].key_hash").doesNotExist());
+    }
+
+    @Test
+    void shouldReturn403ForListKeysOfCrossUserApp() throws Exception {
+        AppEntity otherUserApp = createApp(1L, 200L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(null);
+        when(appService.findById(1L)).thenReturn(otherUserApp);
+
+        mockMvc.perform(get("/api/admin/apps/1/api-keys")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        verifyNoInteractions(apiKeyService);
+    }
+
+    // ---- Admin identity validation ----
+
+    @Test
+    void shouldRejectMissingAdminUserIdHeader() throws Exception {
+        mockMvc.perform(post("/api/admin/apps")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Demo App"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldRejectNonPositiveAdminUserId() throws Exception {
+        mockMvc.perform(post("/api/admin/apps")
+                        .header("X-Admin-User-Id", "0")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Demo App"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        verifyNoInteractions(appService);
+    }
+
+    // ---- Existing bind model config tests (preserved) ----
 
     @Test
     void shouldBindDefaultModelConfigWithSnakeCaseRequest() throws Exception {
@@ -83,6 +409,19 @@ class AppAdminControllerTest {
     }
 
     @Test
+    void shouldRejectNullBindModelConfigBody() throws Exception {
+        mockMvc.perform(put("/api/admin/apps/1/default-model-config")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("null"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        verifyNoInteractions(appService);
+        verifyNoInteractions(modelConfigService);
+    }
+
+    @Test
     void shouldRejectCrossUserModelConfig() throws Exception {
         AppEntity app = createApp(1L, 100L);
         ModelConfigEntity otherUserConfig = createModelConfig(10L, 200L);
@@ -123,11 +462,28 @@ class AppAdminControllerTest {
                 .andExpect(jsonPath("$.code").value("MODEL_CONFIG_NOT_READY"));
     }
 
+    // ---- Secret safety ----
+
+    @Test
+    void shouldNotContainKeyOrHashInListAppsResponse() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.listByUserId(eq(100L), isNull())).thenReturn(List.of(app));
+
+        mockMvc.perform(get("/api/admin/apps")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("\"key\""))))
+                .andExpect(content().string(not(containsString("\"key_hash\""))));
+    }
+
     private AppEntity createApp(Long id, Long userId) {
         AppEntity app = new AppEntity();
         app.setId(id);
         app.setUserId(userId);
+        app.setName("Demo App");
         app.setStatus("ENABLED");
+        app.setCreatedAt(LocalDateTime.now());
+        app.setUpdatedAt(LocalDateTime.now());
         return app;
     }
 
@@ -137,5 +493,18 @@ class AppAdminControllerTest {
         modelConfig.setUserId(userId);
         modelConfig.setStatus("ENABLED");
         return modelConfig;
+    }
+
+    private ApiKeyEntity createKeyEntity(Long id, Long appId, Long userId) {
+        ApiKeyEntity key = new ApiKeyEntity();
+        key.setId(id);
+        key.setAppId(appId);
+        key.setUserId(userId);
+        key.setName("Production Key");
+        key.setKeyPrefix("sk-sang-abc12345");
+        key.setStatus("ACTIVE");
+        key.setCreatedAt(LocalDateTime.now());
+        key.setUpdatedAt(LocalDateTime.now());
+        return key;
     }
 }

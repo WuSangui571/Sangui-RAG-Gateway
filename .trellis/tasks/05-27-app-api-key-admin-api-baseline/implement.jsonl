@@ -1,0 +1,17 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\tasks\\05-27-app-api-key-admin-api-baseline\\prd.md", "reason": "Task PRD with API contract, validation matrix, acceptance criteria, and test plan"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, App/API key security rules, Admin and gateway API scope"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend package/module placement and controller/service layering"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "rag_app/rag_api_key schema, tenant isolation, API key storage rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin ApiResponse errors, gateway invalid_api_key shape, 403/404 mapping"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe logging requirements for app keys and admin operations"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend security, tenant isolation, and test expectations"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "API/DB/secret/tenant boundary checklist for cross-layer admin feature"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Reuse existing App/API key services and controller patterns before adding code"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "Existing /api/admin/apps pattern and default model binding endpoint"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppService.java", "reason": "Existing app create/find/bind behavior and tenant-related service methods"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyService.java", "reason": "Existing app API key generation, hashing, persistence, validity, last-used logic"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyEntity.java", "reason": "API key fields available for safe Admin VO and status transitions"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Gateway auth behavior that must keep disabled/revoked keys invalid"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V2__create_app_api_key_tables.sql", "reason": "Existing app/API key schema to reuse before adding migrations"}

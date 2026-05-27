@@ -44,6 +44,11 @@ class GlobalExceptionHandlerTest {
             throw new RuntimeException("Unexpected failure");
         }
 
+        @GetMapping("/test/validation-error")
+        void throwIllegalArgumentException() {
+            throw new IllegalArgumentException("expiresAt must be in the future");
+        }
+
         @GetMapping("/v1/unimplemented")
         void throwNoResourceForUnimplementedRoute() throws NoResourceFoundException {
             throw new NoResourceFoundException(HttpMethod.GET, "/v1/unimplemented");
@@ -131,6 +136,16 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("TEST_ERROR"))
                 .andExpect(jsonPath("$.message").value("Test business error message"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist());
+    }
+
+    @Test
+    void shouldHandleIllegalArgumentExceptionWithApiResponse() throws Exception {
+        mockMvc.perform(get("/test/validation-error"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("expiresAt must be in the future"))
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.error").doesNotExist());
     }

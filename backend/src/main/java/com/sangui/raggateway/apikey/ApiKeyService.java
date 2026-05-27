@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Profile("!test")
@@ -28,22 +29,7 @@ public class ApiKeyService {
 
     @Transactional
     public CreateApiKeyResult create(Long appId, Long userId, String name) {
-        String plaintextKey = apiKeyGenerator.generate();
-        String keyHash = apiKeyHasher.hash(plaintextKey);
-        String keyPrefix = apiKeyGenerator.extractPrefix(plaintextKey);
-
-        ApiKeyEntity entity = new ApiKeyEntity();
-        entity.setAppId(appId);
-        entity.setUserId(userId);
-        entity.setName(name);
-        entity.setKeyHash(keyHash);
-        entity.setKeyPrefix(keyPrefix);
-        entity.setStatus(ApiKeyStatus.ACTIVE.name());
-        entity.setCreatedAt(LocalDateTime.now());
-        entity.setUpdatedAt(LocalDateTime.now());
-
-        apiKeyMapper.insert(entity);
-        return new CreateApiKeyResult(plaintextKey, entity);
+        return create(appId, userId, name, null);
     }
 
     public ApiKeyEntity findByHash(String keyHash) {
@@ -74,5 +60,89 @@ public class ApiKeyService {
             return true;
         }
         return false;
+    }
+
+    @Transactional
+    public CreateApiKeyResult create(Long appId, Long userId, String name, LocalDateTime expiresAt) {
+        if (appId == null || appId <= 0) {
+            throw new IllegalArgumentException("appId must be a positive long");
+        }
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("userId must be a positive long");
+        }
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("name is required");
+        }
+        if (expiresAt != null && !expiresAt.isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException("expiresAt must be in the future");
+        }
+
+        String plaintextKey = apiKeyGenerator.generate();
+        String keyHash = apiKeyHasher.hash(plaintextKey);
+        String keyPrefix = apiKeyGenerator.extractPrefix(plaintextKey);
+
+        ApiKeyEntity entity = new ApiKeyEntity();
+        entity.setAppId(appId);
+        entity.setUserId(userId);
+        entity.setName(name.trim());
+        entity.setKeyHash(keyHash);
+        entity.setKeyPrefix(keyPrefix);
+        entity.setStatus(ApiKeyStatus.ACTIVE.name());
+        entity.setExpiresAt(expiresAt);
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        apiKeyMapper.insert(entity);
+        return new CreateApiKeyResult(plaintextKey, entity);
+    }
+
+    public ApiKeyEntity findById(Long id) {
+        return apiKeyMapper.selectById(id);
+    }
+
+    public ApiKeyEntity findByIdAndUserId(Long id, Long userId) {
+        LambdaQueryWrapper<ApiKeyEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApiKeyEntity::getId, id);
+        wrapper.eq(ApiKeyEntity::getUserId, userId);
+        return apiKeyMapper.selectOne(wrapper);
+    }
+
+    public List<ApiKeyEntity> listByAppIdAndUserId(Long appId, Long userId) {
+        LambdaQueryWrapper<ApiKeyEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApiKeyEntity::getAppId, appId);
+        wrapper.eq(ApiKeyEntity::getUserId, userId);
+        wrapper.orderByDesc(ApiKeyEntity::getCreatedAt);
+        return apiKeyMapper.selectList(wrapper);
+    }
+
+    @Transactional
+    public ApiKeyEntity disable(Long id, Long userId) {
+        ApiKeyEntity key = findByIdAndUserId(id, userId);
+        if (key == null) {
+            return null;
+        }
+        if (ApiKeyStatus.REVOKED.name().equals(key.getStatus())) {
+            throw new IllegalArgumentException("Revoked key cannot be disabled");
+        }
+        key.setStatus(ApiKeyStatus.DISABLED.name());
+        key.setUpdatedAt(LocalDateTime.now());
+        apiKeyMapper.updateById(key);
+        return key;
+    }
+
+    @Transactional
+    public ApiKeyEntity revoke(Long id, Long userId) {
+        ApiKeyEntity key = findByIdAndUserId(id, userId);
+        if (key == null) {
+            return null;
+        }
+        if (ApiKeyStatus.REVOKED.name().equals(key.getStatus())) {
+            return key;
+        }
+        key.setStatus(ApiKeyStatus.REVOKED.name());
+        key.setRevokedAt(LocalDateTime.now());
+        key.setUpdatedAt(LocalDateTime.now());
+        apiKeyMapper.updateById(key);
+        return key;
     }
 }

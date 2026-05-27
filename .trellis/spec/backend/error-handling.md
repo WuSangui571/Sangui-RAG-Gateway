@@ -98,6 +98,46 @@ Secret-safe error responses:
 - Exception messages for validation failures (e.g., "name is required") are safe to return.
 - Cross-user access failures use the generic "Access denied" message to avoid information leakage.
 
+## Admin App API Key API Error Codes
+
+The app and app API key admin endpoints use the same `ApiResponse` envelope and temporary `X-Admin-User-Id` identity contract:
+
+```http
+POST /api/admin/apps
+GET  /api/admin/apps
+GET  /api/admin/apps/{id}
+POST /api/admin/apps/{appId}/api-keys
+GET  /api/admin/apps/{appId}/api-keys
+POST /api/admin/api-keys/{id}/disable
+POST /api/admin/api-keys/{id}/revoke
+```
+
+Validation and error matrix:
+
+| Scenario | HTTP | Code | Notes |
+|---|---:|---|---|
+| Missing `X-Admin-User-Id` header | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException`. |
+| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException`. |
+| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated before business mutation. |
+| Malformed JSON or null request body | 400 | `INVALID_REQUEST` | Body content must not be echoed. |
+| Create app blank `name` | 400 | `INVALID_REQUEST` | No app row inserted. |
+| App status filter outside `ENABLED|DISABLED` | 400 | `INVALID_REQUEST` | Do not echo arbitrary filter values. |
+| App id does not exist | 404 | `NOT_FOUND` | Applies to detail and key creation/listing. |
+| App id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`. |
+| Create key blank `name` | 400 | `INVALID_REQUEST` | No plaintext key or hash returned. |
+| Create key `expires_at` is not in the future | 400 | `INVALID_REQUEST` | No key inserted. |
+| Key id does not exist | 404 | `NOT_FOUND` | Applies to disable/revoke. |
+| Key id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`. |
+| Disable revoked key | 400 | `INVALID_REQUEST` | Revoked is terminal for disable. |
+| Disable active/disabled key | 200 | `OK` | Response omits `key` and `key_hash`. |
+| Revoke active/disabled/revoked key | 200 | `OK` | Response omits `key` and `key_hash`; revoked rows keep or set `revoked_at`. |
+
+Secret-safe app API key responses:
+
+- `key` appears only in `ApiKeyCreateVO` from `POST /api/admin/apps/{appId}/api-keys`.
+- `key_hash` is never returned by Admin APIs.
+- Gateway failures for disabled, revoked, expired, unknown, or malformed app keys still use OpenAI-compatible `401 invalid_api_key`; they must not use the admin envelope.
+
 ## Gateway API Key Auth Baseline
 
 The `/v1/*` authentication boundary is implemented as a servlet filter, not Spring Security:

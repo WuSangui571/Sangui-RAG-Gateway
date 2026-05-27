@@ -1,14 +1,19 @@
 package com.sangui.raggateway.app;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import com.sangui.raggateway.model.ModelConfigService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -140,6 +145,78 @@ class AppServiceTest {
         when(appMapper.selectById(1L)).thenReturn(null);
 
         AppEntity result = appService.bindDefaultModelConfig(1L, 10L, 100L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldCreateAppWithEnabledStatus() {
+        ArgumentCaptor<AppEntity> captor = ArgumentCaptor.forClass(AppEntity.class);
+        appService.create("Test App", 100L);
+
+        verify(appMapper).insert(captor.capture());
+        AppEntity created = captor.getValue();
+        assertThat(created.getName()).isEqualTo("Test App");
+        assertThat(created.getUserId()).isEqualTo(100L);
+        assertThat(created.getStatus()).isEqualTo("ENABLED");
+        assertThat(created.getCreatedAt()).isNotNull();
+        assertThat(created.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void shouldRejectCreateAppWithBlankName() {
+        assertThatThrownBy(() -> appService.create(" ", 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("name is required");
+    }
+
+    @Test
+    void shouldRejectCreateAppWithInvalidUserId() {
+        assertThatThrownBy(() -> appService.create("Test App", 0L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("userId must be a positive long");
+    }
+
+    @Test
+    void shouldListAppsByUserId() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        when(appMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(app));
+
+        List<AppEntity> result = appService.listByUserId(100L, null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getUserId()).isEqualTo(100L);
+    }
+
+    @Test
+    void shouldListAppsWithStatusFilter() {
+        when(appMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        List<AppEntity> result = appService.listByUserId(100L, "ENABLED");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldFindByIdAndUserIdReturnApp() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        AppEntity result = appService.findByIdAndUserId(1L, 100L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getUserId()).isEqualTo(100L);
+    }
+
+    @Test
+    void shouldFindByIdAndUserIdReturnNullForCrossUser() {
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        AppEntity result = appService.findByIdAndUserId(1L, 999L);
 
         assertThat(result).isNull();
     }
