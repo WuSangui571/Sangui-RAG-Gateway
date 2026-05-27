@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 7
+- **Total Sessions**: 8
 - **Last Active**: 2026-05-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~383 | Active |
+| `journal-1.md` | ~442 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 8 | 2026-05-27 | OpenAI Chat Completions 非流式转发基线 | `57431e9` | `main` |
 | 7 | 2026-05-27 | 应用 API Key 管理 Admin API 基线收尾 | `8f54b15` | `main` |
 | 6 | 2026-05-27 | 上游模型配置密钥加密管理收尾 | `3c25c31`, `962df9f` | `main` |
 | 5 | 2026-05-27 | 记录模型配置与 /v1/models 基线 | `ae600d3` | `main` |

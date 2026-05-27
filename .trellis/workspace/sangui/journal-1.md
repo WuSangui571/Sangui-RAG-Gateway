@@ -381,3 +381,62 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: OpenAI Chat Completions 非流式转发基线
+
+**Date**: 2026-05-27
+**Task**: OpenAI Chat Completions 非流式转发基线
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| ?? | ?? |
+|---|---|
+| ?? | OpenAI Chat Completions ??????? |
+| ?? | 57431e9 feat:?? OpenAI Chat Completions ????? |
+| ???? | public gateway `/v1/chat/completions`?OpenAI DTO?chat completion service?OpenAI-compatible upstream client?gateway malformed JSON ???? |
+| ???? | ????? pass-through??? GatewayAuthFilter ?????? app ????????? upstream API key?????? OpenAI-compatible chat completions??? OpenAI-compatible response/error shape? |
+| Codex ?? | ???? gateway context ?? NPE ???? null body ? unsupported role ????? DTO ??????????? upstream client ????????? Spring ????????????????????? `.trellis/spec/sangui-rag-gateway.md` ? `.trellis/spec/backend/error-handling.md`? |
+| ???? | `mvn -q -DskipTests compile`; `mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest,OpenAiCompatibleUpstreamClientTest" test`; `mvn -q "-Dtest=OpenAiModelsControllerTest,GatewayAuthFilterTest" test`; `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test`; `mvn test` |
+| ???? | ?? Maven ?????218 tests, 0 failures, 0 errors, 0 skipped? |
+| ???? | ???? admin app/model-config/api-key ??????????`/v1/models` ???Codex ?????? JSON ? `stream=true` ?? `400 invalid_request` ? message ? streaming unsupported?`role=tool` ?? `400 invalid_request` ? message ? unsupported role? |
+| ?? | ??? streaming?RAG retrieval?prompt augmentation?request log?frontend?DB migration?admin API ????rate limit/quota??? chat ?????? `502 upstream_error`??? provider/upstream ??????????????? base_url ? `/v1` ???????????????? |
+
+**??????**
+
+- `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionRequest.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionResponse.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatMessage.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/upstream/UpstreamChatCompletionRequest.java`
+- `backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java`
+- `backend/src/main/resources/application.yml`
+- `backend/src/test/java/com/sangui/raggateway/gateway/**`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/spec/backend/error-handling.md`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `57431e9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
