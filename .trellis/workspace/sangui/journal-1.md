@@ -290,3 +290,50 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: 上游模型配置密钥加密管理收尾
+
+**Date**: 2026-05-27
+**Task**: 上游模型配置密钥加密管理收尾
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Task | ?????? Admin API ????????? |
+| Commits | 3c25c31 feat:??????????????; 962df9f fix:????JSON?????? |
+| Main modules | `model` upstream model config admin CRUD, `app` default model config binding, `common.security` upstream key encryption/masking, `common.exception` admin error handling |
+| API contracts | Added `/api/admin/model-configs` create/update/detail/list/disable and `/api/admin/apps/{appId}/default-model-config`; admin endpoints use temporary `X-Admin-User-Id`; responses use `ApiResponse` and only expose `api_key_masked` |
+| Security | Upstream API keys are encrypted with AES-GCM using `RAG_GATEWAY_SECRET_KEY`; plaintext and `api_key_encrypted` are not returned; malformed JSON is mapped to 400 `INVALID_REQUEST` without echoing request body |
+| Specs | Updated backend database, error-handling, logging, quality guidelines and project spec with executable contracts, error matrix, and test expectations |
+| Automated verification | `mvn -q -DskipTests compile`; `mvn -q "-Dtest=ModelConfigServiceTest,ModelConfigAdminControllerTest,AppServiceTest,AppAdminControllerTest,OpenAiModelsControllerTest" test`; `mvn -q "-Dtest=UpstreamApiKeyEncryptorTest,UpstreamApiKeyMaskerTest" test`; `mvn -q "-Dtest=ApiKeyGeneratorTest,ApiKeyHasherTest,ApiKeyServiceTest,GatewayAuthFilterTest" test`; `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test`; `mvn test` |
+| Manual verification | Human verified successful Admin create via `Invoke-RestMethod`, malformed JSON returns HTTP 400 `INVALID_REQUEST`, and startup requires `RAG_GATEWAY_SECRET_KEY` |
+| Boundaries | Did not implement `/v1/chat/completions`, upstream forwarding, RAG retrieval, frontend UI, or real admin auth; existing manual model config rows can still have null encrypted/masked keys |
+
+Result: task acceptance criteria are met and the task was archived after code commits and manual verification.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3c25c31` | (see git log) |
+| `962df9f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
