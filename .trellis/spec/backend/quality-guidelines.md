@@ -40,6 +40,12 @@ Before completing backend work, verify:
 
 - [ ] Public gateway responses remain OpenAI-compatible for the supported subset.
 - [ ] API keys and upstream keys are never stored or logged in plaintext.
+- [ ] Upstream API keys are encrypted at rest with AES-256-GCM using `RAG_GATEWAY_SECRET_KEY`.
+- [ ] Admin API responses only return `api_key_masked`, never `api_key_encrypted` or plaintext upstream keys.
+- [ ] Admin endpoints use `X-Admin-User-Id` header for tenant isolation (temporary, until real admin auth exists).
+- [ ] Admin model config CRUD endpoints enforce same-user ownership with 404/403 distinction.
+- [ ] App-model config binding validates same-user ownership of both app and model config.
+- [ ] Disabled model configs are excluded from `/v1/models` resolution.
 - [ ] Queries touching tenant data include user/app/knowledge-base boundaries.
 - [ ] Vector retrieval is scoped in SQL, not filtered after retrieval in Java.
 - [ ] Document status transitions are explicit and failure states are persisted.

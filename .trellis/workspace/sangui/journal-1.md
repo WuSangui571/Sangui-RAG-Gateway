@@ -245,3 +245,48 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: 记录模型配置与 /v1/models 基线
+
+**Date**: 2026-05-27
+**Task**: 记录模型配置与 /v1/models 基线
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|---|---|
+| Commit | `ae600d3 feat:?????????????` |
+| Task | `05-27-upstream-model-config-v1-models-baseline` archived after human manual testing and commit |
+| Result | Implemented the upstream model config baseline and authenticated `GET /v1/models` OpenAI-compatible endpoint. |
+| Main modules | Database migration, `model` domain/service, `app` default model association, `gateway/openai` model list controller/DTOs, gateway error/spec documentation. |
+| Codex check fixes | Added embedding config validation and tests; added `AppServiceTest` for same-user default model resolution; updated stale `/v1/models` spec/README wording; fixed spec validation matrix formatting. |
+| Verification | `mvn -q -DskipTests compile` passed; `mvn -q "-Dtest=ModelConfigServiceTest,AppServiceTest,OpenAiModelsControllerTest" test` passed; `mvn -q "-Dtest=ApiKeyGeneratorTest,ApiKeyHasherTest,ApiKeyServiceTest,GatewayAuthFilterTest" test` passed; `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test` passed; `mvn test` passed with 73 tests, 0 failures, 0 errors. |
+| Manual testing | Human verified `GET /v1/models` success with seeded PostgreSQL rows, missing key `401 invalid_api_key`, missing default model config `409 model_config_not_ready`, and `POST /v1/chat/completions` remains safe 404. |
+| Updated files | `backend/src/main/resources/db/migration/V3__create_model_config_and_app_default.sql`; `backend/src/main/java/com/sangui/raggateway/model/*`; `backend/src/main/java/com/sangui/raggateway/gateway/openai/*`; `backend/src/main/java/com/sangui/raggateway/app/AppEntity.java`; `backend/src/main/java/com/sangui/raggateway/app/AppService.java`; `backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java`; `backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java`; `backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiModelsControllerTest.java`; global exception tests; `.trellis/spec/backend/database-guidelines.md`; `.trellis/spec/backend/error-handling.md`; `.trellis/spec/sangui-rag-gateway.md`; `README.md`. |
+| Boundaries | No chat completions, RAG retrieval, upstream forwarding, admin model CRUD, frontend UI, Redis/MQ/infra expansion, or plaintext upstream API key storage was added. Current service stores upstream key fields as null placeholders. |
+| Follow-up risk | `findEnabledByIdAndUserId` is covered by unit tests but not a real MyBatis/PostgreSQL integration test; future model admin/upstream-forwarding work should add persistence integration coverage and encrypted upstream key storage. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ae600d3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

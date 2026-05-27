@@ -325,12 +325,61 @@ Never store plaintext upstream API keys.
 Store encrypted values:
 
 ```text
-api_key_encrypted
+api_key_encrypted: "v1:<base64url-iv>:<base64url-ciphertext>"
 api_key_masked or prefix for display
 encryption_version if key rotation is introduced
 ```
 
-The encryption master key must come from environment variables, not source code.
+The encryption master key must come from environment variables (`RAG_GATEWAY_SECRET_KEY`), not source code.
+
+### Implemented Encryption Baseline
+
+The encryption infrastructure is implemented via:
+
+```text
+backend/src/main/java/com/sangui/raggateway/common/config/EncryptionProperties.java
+backend/src/main/java/com/sangui/raggateway/common/config/EncryptionConfig.java
+backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java
+backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyMasker.java
+```
+
+Encryption contract:
+
+- Algorithm: AES-256-GCM with random 12-byte IV per encryption.
+- Key derivation: SHA-256 of `RAG_GATEWAY_SECRET_KEY` produces a 256-bit AES key.
+- Stored format: `v1:<base64url-iv>:<base64url-ciphertext>`.
+- The encryptor fails fast if `rag.gateway.secret-key` is blank at startup.
+- Decrypt is available for future upstream forwarding, but decrypted values are never returned from admin APIs.
+
+Masking contract:
+
+- Keys >= 8 characters: keep first 3 and last 4 characters, mask middle with `*`.
+- Keys < 8 characters: fully masked.
+- Mask is never equal to plaintext.
+- Null input returns null.
+
+Validation cases (admin create/update/rotation):
+
+| Case | Expected result | Required assertion |
+|---|---|---|
+| Create enabled model config | `api_key_encrypted` and `api_key_masked` persisted with non-null values | `ModelConfigServiceTest` |
+| Plaintext upstream key never persisted | Only `api_key_encrypted` and `api_key_masked` are stored; plaintext field is input-only | `ModelConfigServiceTest` |
+| Update without `api_key` | Existing encrypted/masked fields are preserved unchanged | `ModelConfigServiceTest` |
+| Update with non-blank `api_key` | Encrypted value changes (new ciphertext), mask updates to new value | `ModelConfigServiceTest` |
+| Update with blank `api_key` | Rejected with `IllegalArgumentException("apiKey must not be blank")` | `ModelConfigServiceTest` |
+| Encrypt/decrypt round-trip | `decrypt(encrypt(plaintext)) == plaintext` | `UpstreamApiKeyEncryptorTest` |
+| Repeated encryption produces different ciphertext | Random IV ensures uniqueness | `UpstreamApiKeyEncryptorTest` |
+| Blank/null secret rejected | `IllegalStateException` at construction | `UpstreamApiKeyEncryptorTest` |
+| Malformed payload decrypt fails safely | `IllegalArgumentException` without leaking secrets | `UpstreamApiKeyEncryptorTest` |
+| Normal key masking | Masked value != plaintext, preserved prefix | `UpstreamApiKeyMaskerTest` |
+| Short key (< 8 chars) fully masked | All characters replaced with `*` | `UpstreamApiKeyMaskerTest` |
+
+Run after changes:
+
+```bash
+cd backend
+mvn -q "-Dtest=UpstreamApiKeyEncryptorTest,UpstreamApiKeyMaskerTest,ModelConfigServiceTest" test
+```
 
 ## Migrations
 

@@ -46,4 +46,22 @@ public class AppService {
         }
         return modelConfigService.findEnabledByIdAndUserId(app.getDefaultModelConfigId(), app.getUserId());
     }
+
+    @Transactional
+    public AppEntity bindDefaultModelConfig(Long appId, Long modelConfigId, Long userId) {
+        AppEntity app = findById(appId);
+        if (app == null || !app.getUserId().equals(userId)) {
+            return null;
+        }
+
+        ModelConfigEntity modelConfig = modelConfigService.findEnabledByIdAndUserId(modelConfigId, userId);
+        if (modelConfig == null) {
+            return null;
+        }
+
+        app.setDefaultModelConfigId(modelConfigId);
+        app.setUpdatedAt(LocalDateTime.now());
+        appMapper.updateById(app);
+        return app;
+    }
 }

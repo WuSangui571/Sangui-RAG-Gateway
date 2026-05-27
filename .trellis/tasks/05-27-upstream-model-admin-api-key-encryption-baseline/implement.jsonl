@@ -1,0 +1,21 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\tasks\\05-27-upstream-model-admin-api-key-encryption-baseline\\prd.md", "reason": "Task PRD with API contract, validation matrix, scope limits, and required tests"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, upstream key rules, /v1/models baseline, and MVP scope"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend package boundaries for common security/config, model, app, and gateway modules"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Model config schema, tenant isolation, upstream key encrypted storage, and migration rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin versus gateway error shape and existing /v1/models error behavior"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe logging rules for API keys, upstream keys, provider/model data"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Security, tenant isolation, admin API, and regression test expectations"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer checklist for admin config flow, tenant boundaries, secrets, and tests"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigService.java", "reason": "Existing model config service create/find/enabled lookup and validation patterns"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigEntity.java", "reason": "Current rag_model_config entity fields including api_key_encrypted and api_key_masked"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppService.java", "reason": "Existing app creation and same-user default model config resolution pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiModelsController.java", "reason": "Existing authenticated /v1/models behavior and OpenAI-compatible model_config_not_ready response"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyService.java", "reason": "Existing one-time app API key secret handling and timestamp update pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\ApiKeyHasher.java", "reason": "Existing common security utility style for key-related helpers"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\exception\\GlobalExceptionHandler.java", "reason": "Current admin ApiResponse and gateway OpenAI error mapping"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V3__create_model_config_and_app_default.sql", "reason": "Existing model config columns and app default model FK"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigServiceTest.java", "reason": "Existing model config unit test style and baseline assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppServiceTest.java", "reason": "Existing app-model association tenant tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiModelsControllerTest.java", "reason": "Existing /v1/models controller regression tests"}

@@ -673,7 +673,115 @@ Validation matrix for this baseline:
 | `/v1/models` | Authenticated app with enabled config returns 200 model list | Missing/disabled config returns 409 `model_config_not_ready`; unauthenticated returns 401 | `OpenAiModelsControllerTest` |
 | `/v1/chat/completions` | Returns 404 `NOT_FOUND` | Must not be accidentally implemented or return fake OpenAI responses | `GlobalExceptionHandlerIntegrationTest` |
 | Unmatched routes | Unknown paths, `/favicon.ico` return 404 `NOT_FOUND` envelope with no stack traces | Routes return 500 with stack traces or fake OpenAI responses | MockMvc test |
-| Tests | All 65 tests pass | Tests require local PostgreSQL or Redis for unit-level checks | `mvn test` under `backend/` |
+| Tests | All 126 tests pass | Tests require local PostgreSQL or Redis for unit-level checks | `mvn test` under `backend/` |
+
+### Implemented Admin Model Config API Baseline
+
+The admin model config CRUD + encryption + app binding baseline is implemented.
+
+#### Temporary Admin Identity
+
+Admin authentication is not yet implemented. The admin endpoints use a header for temporary user context:
+
+```http
+X-Admin-User-Id: <long>
+```
+
+Rules:
+
+- Required on all `/api/admin/**` endpoints.
+- Must parse to a positive long.
+- This is temporary until admin login exists.
+
+#### Admin API Endpoints
+
+All admin APIs use `ApiResponse` envelope (not OpenAI-compatible errors):
+
+```http
+POST   /api/admin/model-configs              Create model config with encrypted upstream key
+PUT    /api/admin/model-configs/{id}         Update model config (optional apiKey rotation)
+GET    /api/admin/model-configs/{id}         Detail model config (masked key only)
+GET    /api/admin/model-configs?status=...   List user's model configs
+POST   /api/admin/model-configs/{id}/disable Disable model config
+PUT    /api/admin/apps/{appId}/default-model-config  Bind app to same-user enabled model config
+```
+
+#### Upstream Key Encryption
+
+- Algorithm: AES-256-GCM with random 12-byte IV.
+- Stored format: `v1:<base64url-iv>:<base64url-ciphertext>`.
+- Key derivation: SHA-256 of `RAG_GATEWAY_SECRET_KEY`.
+- Masked display: first 3 + asterisks + last 4 characters (very short keys fully masked).
+- `api_key_encrypted` is ciphertext, never plaintext, never returned in responses.
+- `api_key_masked` is returned in responses, never equal to plaintext.
+
+#### Tenant Isolation
+
+- Admin model config CRUD endpoints enforce `user_id` ownership via `findById` + `findByIdAndUserId`.
+- Cross-user access returns 403 `FORBIDDEN`; missing config returns 404 `NOT_FOUND`.
+- App-model config binding validates both app and model config belong to the same user.
+- Disabled configs are not bindable and not returned by `/v1/models`.
+
+#### Implemented files (new):
+
+```text
+backend/src/main/java/com/sangui/raggateway/common/config/EncryptionProperties.java
+backend/src/main/java/com/sangui/raggateway/common/config/EncryptionConfig.java
+backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java
+backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyMasker.java
+backend/src/main/java/com/sangui/raggateway/model/dto/CreateModelConfigDTO.java
+backend/src/main/java/com/sangui/raggateway/model/dto/UpdateModelConfigDTO.java
+backend/src/main/java/com/sangui/raggateway/model/vo/ModelConfigVO.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigAdminController.java
+backend/src/main/java/com/sangui/raggateway/app/dto/BindAppDefaultModelConfigDTO.java
+backend/src/main/java/com/sangui/raggateway/app/vo/BindAppDefaultModelConfigVO.java
+backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java
+```
+
+#### Updated files:
+
+```text
+backend/src/main/java/com/sangui/raggateway/common/exception/BusinessException.java
+backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java
+backend/src/main/java/com/sangui/raggateway/app/AppService.java
+backend/src/main/resources/application.yml
+```
+
+#### New test files:
+
+```text
+backend/src/test/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptorTest.java
+backend/src/test/java/com/sangui/raggateway/common/security/UpstreamApiKeyMaskerTest.java
+backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java
+backend/src/test/java/com/sangui/raggateway/model/ModelConfigAdminControllerTest.java
+```
+
+#### Validation matrix for this baseline:
+
+| Area | Good Case | Bad Case | Required Check |
+|---|---|---|---|
+| Admin identity | `X-Admin-User-Id: 100` allows admin operations | Missing header returns 400 `INVALID_REQUEST`; non-numeric or <= 0 returns 400 | `ModelConfigAdminControllerTest` |
+| Create config | Stores `api_key_encrypted` and `api_key_masked`, returns masked VO | Blank required fields return 400; no plaintext or encrypted key in response | `ModelConfigServiceTest`, `ModelConfigAdminControllerTest` |
+| Update config | Omitted `api_key` preserves existing encrypted/masked values; non-blank `api_key` rotates | Blank `api_key` rejected; `status` not updatable via PUT | `ModelConfigServiceTest`, `ModelConfigAdminControllerTest` |
+| Detail config | Same-user returns masked VO only | Missing config returns 404; different-user returns 403 | `ModelConfigAdminControllerTest` |
+| List configs | Same-user rows only, masked keys | Invalid status filter returns 400 | `ModelConfigAdminControllerTest` |
+| Disable config | Same-user enabled config becomes DISABLED; `/v1/models` returns 409 | Different-user returns 403 | `ModelConfigAdminControllerTest`, `OpenAiModelsControllerTest` |
+| Bind app | Same-user enabled config binds successfully | Cross-user app/config returns 403; disabled config returns 400 `MODEL_CONFIG_NOT_READY` | `AppServiceTest`, `AppAdminControllerTest` |
+| `/v1/models` | Bound enabled config returns 200 model list | Disabled/missing config returns 409 `model_config_not_ready` | `OpenAiModelsControllerTest` |
+| Encryption | Encrypt/decrypt round-trip; different IV per encryption; blank secret rejected | Malformed payload decrypt fails safely without leaking secrets | `UpstreamApiKeyEncryptorTest` |
+| Masking | Normal keys partially masked; short keys fully masked; mask != plaintext | Null input returns null | `UpstreamApiKeyMaskerTest` |
+
+Run after changes:
+
+```bash
+cd backend
+mvn -q "-Dtest=ModelConfigServiceTest,ModelConfigAdminControllerTest,AppServiceTest,AppAdminControllerTest,OpenAiModelsControllerTest" test
+mvn -q "-Dtest=UpstreamApiKeyEncryptorTest,UpstreamApiKeyMaskerTest" test
+mvn -q "-Dtest=ApiKeyGeneratorTest,ApiKeyHasherTest,ApiKeyServiceTest,GatewayAuthFilterTest" test
+mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test
+mvn test
+```
 
 ## Trellis Workflow Rules
 

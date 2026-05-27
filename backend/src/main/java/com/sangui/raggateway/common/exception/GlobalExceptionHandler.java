@@ -6,8 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -18,8 +20,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
-        log.warn("Business exception: code={}, message={}", ex.getCode(), ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        log.warn("Business exception: code={}, message={}, httpStatus={}", ex.getCode(), ex.getMessage(), ex.getHttpStatus());
+        return ResponseEntity.status(ex.getHttpStatus())
                 .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 
@@ -42,6 +44,20 @@ public class GlobalExceptionHandler {
         log.warn("Gateway exception: code={}, type={}, message={}", ex.getCode(), ex.getType(), ex.getMessage());
         return ResponseEntity.status(ex.getHttpStatus())
                 .body(OpenAiErrorResponse.of(ex.getMessage(), ex.getType(), ex.getCode()));
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestHeader(MissingRequestHeaderException ex) {
+        log.warn("Missing required header: {}", ex.getHeaderName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("INVALID_REQUEST", "Required header is missing: " + ex.getHeaderName()));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        log.warn("Argument type mismatch: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("INVALID_REQUEST", "Invalid request parameter"));
     }
 
     @ExceptionHandler(Exception.class)

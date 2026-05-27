@@ -48,12 +48,14 @@ Never log:
 ```text
 complete app API key
 complete upstream API key
+encrypted upstream API key (api_key_encrypted)
 complete private document content
 complete augmented prompt
 large user messages
 embedding vectors
-authorization headers
+authorization headers (including X-Admin-User-Id in production when it becomes real auth)
 raw uploaded file contents
+upstream admin API key plaintext from create/update DTOs
 ```
 
 Allowed with limits:

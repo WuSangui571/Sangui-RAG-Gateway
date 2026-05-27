@@ -57,9 +57,10 @@ The controller reuses `GatewayRequestContextHolder`; it does not re-authenticate
 Use conventional statuses where possible:
 
 ```text
+400 invalid_request (admin validation failures)
 401 invalid_api_key
 403 app disabled, key revoked, forbidden tenant access
-404 app_not_found when it is safe to reveal
+404 app_not_found / model_config_not_found when it is safe to reveal
 409 knowledge_base_not_ready
 409 model_config_not_ready
 429 rate_limit_exceeded
@@ -69,6 +70,32 @@ Use conventional statuses where possible:
 ```
 
 Do not expose internal implementation details in `message`.
+
+## Admin Model Config API Error Codes
+
+The admin model config endpoints (`/api/admin/model-configs/**`) and app binding endpoint (`/api/admin/apps/**`) use the `ApiResponse` envelope with these error codes:
+
+| Scenario | HTTP | Code | Notes |
+|---|---|---|---|
+| Missing `X-Admin-User-Id` header | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException` handler. |
+| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException` handler. |
+| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated in controller. |
+| Blank required field (name, provider_name, base_url, chat_model, api_key) | 400 | `INVALID_REQUEST` | Service-level validation. |
+| Invalid embedding dimension | 400 | `INVALID_REQUEST` | Reuses existing embedding validation. |
+| Config not found by id | 404 | `NOT_FOUND` | Config does not exist at all. |
+| Config belongs to different user | 403 | `FORBIDDEN` | Config exists but owned by another user. |
+| App not found for binding | 404 | `NOT_FOUND` | App does not exist. |
+| App belongs to different user | 403 | `FORBIDDEN` | App exists but owned by another user. |
+| Model config disabled for binding | 400 | `MODEL_CONFIG_NOT_READY` | Config exists but is not enabled. |
+| Invalid status filter | 400 | `INVALID_REQUEST` | Only `ENABLED` or `DISABLED` accepted. |
+
+`BusinessException` now supports an optional `HttpStatus` parameter. The default constructor (code + message) returns 400 BAD_REQUEST. The extended constructor (code + message + httpStatus) returns the specified status. This allows 403 FORBIDDEN and 404 NOT_FOUND responses while maintaining backward compatibility with all existing callers.
+
+Secret-safe error responses:
+
+- Error response bodies must not include `api_key`, `api_key_encrypted`, raw upstream secrets, or stack traces.
+- Exception messages for validation failures (e.g., "name is required") are safe to return.
+- Cross-user access failures use the generic "Access denied" message to avoid information leakage.
 
 ## Gateway API Key Auth Baseline
 
