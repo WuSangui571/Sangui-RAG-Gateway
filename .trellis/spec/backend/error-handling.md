@@ -80,6 +80,7 @@ The admin model config endpoints (`/api/admin/model-configs/**`) and app binding
 | Missing `X-Admin-User-Id` header | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException` handler. |
 | Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException` handler. |
 | Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated in controller. |
+| Malformed JSON request body | 400 | `INVALID_REQUEST` | Caught by `HttpMessageNotReadableException`; response message is `Malformed request body` and does not echo body content. |
 | Blank required field (name, provider_name, base_url, chat_model, api_key) | 400 | `INVALID_REQUEST` | Service-level validation. |
 | Invalid embedding dimension | 400 | `INVALID_REQUEST` | Reuses existing embedding validation. |
 | Config not found by id | 404 | `NOT_FOUND` | Config does not exist at all. |

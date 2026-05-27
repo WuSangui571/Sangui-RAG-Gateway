@@ -4,10 +4,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -76,6 +78,23 @@ class GlobalExceptionHandlerTest {
                     HttpStatus.UNAUTHORIZED
             );
         }
+
+        @PostMapping("/test/admin-json")
+        void readAdminJson(@RequestBody TestRequest request) {
+        }
+    }
+
+    static class TestRequest {
+
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 
     @Test
@@ -124,6 +143,25 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.message").value("Internal server error"))
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.error").doesNotExist());
+    }
+
+    @Test
+    void shouldReturn400ForMalformedJsonRequestBody() throws Exception {
+        mockMvc.perform(post("/test/admin-json")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  name: "Missing quotes"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Malformed request body"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist())
+                .andExpect(content().string(not(containsString("Missing quotes"))))
+                .andExpect(content().string(not(containsString("JsonParseException"))))
+                .andExpect(content().string(not(containsString("java."))));
     }
 
     @Test
