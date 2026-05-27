@@ -58,26 +58,77 @@ Use conventional statuses where possible:
 
 Do not expose internal implementation details in `message`.
 
-## Exception Boundaries
+## Implemented Baseline
 
-Use explicit domain exceptions for expected business failures:
+The current error handling baseline enforces a strict boundary between gateway and admin response shapes through concrete classes in `common`.
 
-```text
-InvalidApiKeyException
-RateLimitExceededException
-AppNotAvailableException
-KnowledgeBaseNotReadyException
-EmbeddingException
-UpstreamModelException
-```
+### Response Models
 
-The global exception handler should:
+`OpenAiError` (`common/response/OpenAiError.java`):
 
-- Convert gateway exceptions to OpenAI-compatible errors.
-- Convert admin API exceptions to the admin response envelope.
-- Log request IDs and safe context.
-- Hide stack traces from clients.
-- Preserve upstream status/code only when safe and useful.
+| Field | Type | Description |
+|-------|------|-------------|
+| `message` | `String` | Safe client-facing message. |
+| `type` | `String` | OpenAI-compatible family (e.g. `invalid_request_error`, `server_error`). |
+| `code` | `String` | Stable machine-readable code (e.g. `invalid_api_key`, `invalid_request`). |
+
+`OpenAiErrorResponse` (`common/response/OpenAiErrorResponse.java`):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `error` | `OpenAiError` | Top-level OpenAI-compatible error container. |
+
+Use `OpenAiErrorResponse.of(message, type, code)` for construction.
+
+`ApiResponse<T>` (`common/response/ApiResponse.java`) remains the admin/common envelope with fields `code`, `message`, `data`.
+
+### Exception Types
+
+`GatewayException` (`common/exception/GatewayException.java`):
+
+| Constructor param | Type | Description |
+|-------------------|------|-------------|
+| `message` | `String` | Safe message for the client. |
+| `type` | `String` | OpenAI-compatible error type. |
+| `code` | `String` | Stable machine-readable error code. |
+| `httpStatus` | `HttpStatus` | HTTP status to return to the client. |
+| `cause` (optional) | `Throwable` | Root cause for logging, never exposed to clients. |
+
+The `message`, `type`, `code`, and `httpStatus` constructor arguments are required and must be non-null.
+
+`BusinessException` (`common/exception/BusinessException.java`) remains the admin exception type with `code` and `message` fields.
+
+### GlobalExceptionHandler Response Mapping
+
+| Exception caught | HTTP status | Response shape | Key fields |
+|---|---|---|---|
+| `BusinessException` | 400 | `ApiResponse<Void>` | `code`, `message`, `data` (null); no `error` field |
+| `GatewayException` | carried by exception | `OpenAiErrorResponse` | `error.message`, `error.type`, `error.code`; no `code`/`message`/`data` |
+| `NoResourceFoundException` | 404 | `ApiResponse<Void>` | `code=NOT_FOUND`, `message=Resource not found`, no `error` field |
+| `NoHandlerFoundException` | 404 | `ApiResponse<Void>` | `code=NOT_FOUND`, `message=Resource not found`, no `error` field |
+| `Exception` (generic) | 500 | `ApiResponse<Void>` | `code=INTERNAL_ERROR`, `message=Internal server error`, no stack trace |
+
+All handlers log safe context only (request IDs when available, error codes, non-sensitive messages). Stack traces are logged at ERROR level for unexpected exceptions but never returned to clients.
+
+### Test Coverage
+
+`GlobalExceptionHandlerTest` (unit, 8 tests):
+
+- `shouldReturnOpenAiCompatibleShapeForGatewayException` — BAD_REQUEST with `$.error.message`, `$.error.type`, `$.error.code`; absence of `$.code`, `$.message`, `$.data`; no `Exception`/`java.` in body.
+- `shouldReturn401ForGatewayInvalidApiKey` — 401 with code `invalid_api_key`, type `invalid_request_error`; no admin envelope fields.
+- `shouldHandleBusinessExceptionWithApiResponse` — BAD_REQUEST with admin envelope; `$.error` doesNotExist.
+- `shouldHideStackTraceForUnexpectedErrors` — 500 with `INTERNAL_ERROR`/`Internal server error`; no stack trace.
+- `shouldReturn404ForV1Models`, `shouldReturn404ForV1ChatCompletions` — 404 admin envelope; no `$.error`; no fake model/chat data.
+- `shouldReturn404ForFavicon`, `shouldReturn404ForUnmappedUnknownRoute` — 404 admin envelope.
+
+`GlobalExceptionHandlerIntegrationTest` (integration, 4 tests):
+
+- `shouldReturnSafe404ForUnknownRoute` — Real Spring context 404.
+- `shouldReturnSafe404ForFavicon` — Real 404 for `/favicon.ico`.
+- `shouldReturnSafe404ForUnimplementedModelsRoute` — `/v1/models` returns safe 404, no fake model list.
+- `shouldReturnSafe404ForUnimplementedChatCompletionsRoute` — `/v1/chat/completions` returns safe 404, no `chat.completion` content.
+
+Run targeted tests with `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test` from `backend/`.
 
 ## Streaming Errors
 

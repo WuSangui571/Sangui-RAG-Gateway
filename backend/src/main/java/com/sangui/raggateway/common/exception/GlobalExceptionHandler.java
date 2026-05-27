@@ -1,6 +1,7 @@
 package com.sangui.raggateway.common.exception;
 
 import com.sangui.raggateway.common.response.ApiResponse;
+import com.sangui.raggateway.common.response.OpenAiErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,13 @@ public class GlobalExceptionHandler {
         log.warn("No handler found: {} {}", ex.getHttpMethod(), ex.getRequestURL());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error("NOT_FOUND", "Resource not found"));
+    }
+
+    @ExceptionHandler(GatewayException.class)
+    public ResponseEntity<OpenAiErrorResponse> handleGatewayException(GatewayException ex) {
+        log.warn("Gateway exception: code={}, type={}, message={}", ex.getCode(), ex.getType(), ex.getMessage());
+        return ResponseEntity.status(ex.getHttpStatus())
+                .body(OpenAiErrorResponse.of(ex.getMessage(), ex.getType(), ex.getCode()));
     }
 
     @ExceptionHandler(Exception.class)

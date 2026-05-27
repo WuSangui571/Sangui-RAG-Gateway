@@ -71,3 +71,49 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: Safe 404 unmatched routes
+
+**Date**: 2026-05-27
+**Task**: Safe 404 unmatched routes
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Commit | `3e85e6e fix:??404?????` |
+| Main modules | Backend global exception handling, backend MockMvc tests, README baseline notes, Trellis project spec baseline matrix |
+| Updated files | `backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java`; `backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java`; `backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerIntegrationTest.java`; `README.md`; `.trellis/spec/sangui-rag-gateway.md` |
+| Verification | `mvn -q "-Dtest=GlobalExceptionHandlerIntegrationTest" test` passed; `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest,HealthControllerTest" test` passed; `mvn test` passed with 12 tests, 0 failures, 0 errors; human curl/manual verification passed after commit |
+| Result | Unknown routes, `/favicon.ico`, and currently unimplemented `/v1/models` and `/v1/chat/completions` now return safe 404 admin envelope responses instead of falling through to generic 500. Expected route misses are logged as WARN without passing exception objects to the logger. |
+| Boundary | Did not implement OpenAI-compatible `/v1/*` gateway APIs; did not add authentication, RAG retrieval, provider forwarding, streaming, DB schema, Redis, Docker, or frontend behavior. Future real `/v1/*` endpoints should replace this baseline 404 behavior with gateway controllers and OpenAI-compatible error shapes. |
+
+**Manual verification by sangui**:
+- `http://localhost:8080/v1/models` returned `{"code":"NOT_FOUND","message":"Resource not found","data":null}`.
+- `http://localhost:8080/v1/chat/completions` returned `{"code":"NOT_FOUND","message":"Resource not found","data":null}`.
+- User confirmed all manual tests passed and committed the code.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3e85e6e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

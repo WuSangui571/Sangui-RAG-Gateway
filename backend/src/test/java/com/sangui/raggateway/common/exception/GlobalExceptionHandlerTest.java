@@ -3,6 +3,7 @@ package com.sangui.raggateway.common.exception;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,6 +56,54 @@ class GlobalExceptionHandlerTest {
         void throwNoResourceForFavicon() throws NoResourceFoundException {
             throw new NoResourceFoundException(HttpMethod.GET, "/favicon.ico");
         }
+
+        @GetMapping("/test/gateway-error")
+        void throwGatewayException() {
+            throw new GatewayException(
+                    "Invalid request for gateway test",
+                    "invalid_request_error",
+                    "invalid_request",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        @GetMapping("/test/gateway-invalid-api-key")
+        void throwGatewayInvalidApiKey() {
+            throw new GatewayException(
+                    "Invalid API key",
+                    "invalid_request_error",
+                    "invalid_api_key",
+                    HttpStatus.UNAUTHORIZED
+            );
+        }
+    }
+
+    @Test
+    void shouldReturnOpenAiCompatibleShapeForGatewayException() throws Exception {
+        mockMvc.perform(get("/test/gateway-error"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.message").value("Invalid request for gateway test"))
+                .andExpect(jsonPath("$.error.type").value("invalid_request_error"))
+                .andExpect(jsonPath("$.error.code").value("invalid_request"))
+                .andExpect(jsonPath("$.code").doesNotExist())
+                .andExpect(jsonPath("$.message").doesNotExist())
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(content().string(not(containsString("Exception"))))
+                .andExpect(content().string(not(containsString("java."))));
+    }
+
+    @Test
+    void shouldReturn401ForGatewayInvalidApiKey() throws Exception {
+        mockMvc.perform(get("/test/gateway-invalid-api-key"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.message").value("Invalid API key"))
+                .andExpect(jsonPath("$.error.type").value("invalid_request_error"))
+                .andExpect(jsonPath("$.error.code").value("invalid_api_key"))
+                .andExpect(jsonPath("$.code").doesNotExist())
+                .andExpect(jsonPath("$.message").doesNotExist())
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(content().string(not(containsString("Exception"))))
+                .andExpect(content().string(not(containsString("java."))));
     }
 
     @Test
@@ -63,7 +112,8 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("TEST_ERROR"))
                 .andExpect(jsonPath("$.message").value("Test business error message"))
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist());
     }
 
     @Test
@@ -72,7 +122,8 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
                 .andExpect(jsonPath("$.message").value("Internal server error"))
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist());
     }
 
     @Test
@@ -82,6 +133,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Resource not found"))
                 .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(content().string(not(containsString("Exception"))))
                 .andExpect(content().string(not(containsString("java."))))
                 .andExpect(content().string(not(containsString("\"data\":["))));
@@ -94,6 +146,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Resource not found"))
                 .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(content().string(not(containsString("Exception"))))
                 .andExpect(content().string(not(containsString("java."))));
     }
@@ -105,6 +158,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Resource not found"))
                 .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(content().string(not(containsString("Exception"))))
                 .andExpect(content().string(not(containsString("java."))));
     }
@@ -116,6 +170,7 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Resource not found"))
                 .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(content().string(not(containsString("Exception"))))
                 .andExpect(content().string(not(containsString("java."))));
     }

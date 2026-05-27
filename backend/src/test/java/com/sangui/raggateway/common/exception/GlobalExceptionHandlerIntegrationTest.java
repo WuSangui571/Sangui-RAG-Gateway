@@ -53,6 +53,7 @@ class GlobalExceptionHandlerIntegrationTest {
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Resource not found"))
                 .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.error").doesNotExist())
                 .andExpect(content().string(not(containsString("Exception"))))
                 .andExpect(content().string(not(containsString("java."))));
     }

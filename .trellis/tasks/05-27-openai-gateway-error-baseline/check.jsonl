@@ -1,0 +1,13 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify implementation preserves project API scope and baseline contracts"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Check new classes stay in appropriate common packages without business-module coupling"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Check concrete implementation and spec update match gateway/admin error contract"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Review logging level and absence of sensitive data in exception handling"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify focused tests and API compatibility boundaries"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Check contract, validation matrix, and unsupported endpoint behavior"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/response/ApiResponse.java", "reason": "Confirm admin envelope remains unchanged"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/BusinessException.java", "reason": "Confirm BusinessException still maps to admin envelope"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java", "reason": "Verify handler ordering and response shapes"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java", "reason": "Verify gateway/admin/unmatched route assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerIntegrationTest.java", "reason": "Verify unimplemented /v1/* safe 404 behavior remains unchanged"}

@@ -1,0 +1,13 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product boundary, OpenAI-compatible API scope, and gateway error shape source of truth"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Package placement for common response/exception and gateway-owned public API boundaries"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Primary guidance for OpenAI-compatible gateway errors and admin envelope separation"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe logging rules for expected gateway/admin errors and secret avoidance"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend testing and API compatibility expectations"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Public /v1 error contract requires explicit fields, statuses, and boundary checks"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/response/ApiResponse.java", "reason": "Existing admin/common response envelope pattern to preserve"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/BusinessException.java", "reason": "Existing admin/common exception pattern to preserve"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java", "reason": "Global handler extension point for gateway/admin/unmatched route separation"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java", "reason": "Focused MockMvc pattern for exception response assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerIntegrationTest.java", "reason": "Integration safe 404 baseline to keep unchanged"}
