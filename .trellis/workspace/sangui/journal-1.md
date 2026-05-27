@@ -117,3 +117,53 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: OpenAI Gateway Error Baseline
+
+**Date**: 2026-05-27
+**Task**: OpenAI Gateway Error Baseline
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Commit | `f0ab2fe feat:??OpenAI????????` |
+| Main modules | Backend common exception handling; OpenAI-compatible error response models; backend MockMvc and SpringBootTest exception tests; backend error-handling spec |
+| Updated files | `backend/src/main/java/com/sangui/raggateway/common/exception/GatewayException.java`; `backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java`; `backend/src/main/java/com/sangui/raggateway/common/response/OpenAiError.java`; `backend/src/main/java/com/sangui/raggateway/common/response/OpenAiErrorResponse.java`; `backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java`; `backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerIntegrationTest.java`; `.trellis/spec/backend/error-handling.md` |
+| Verification | `mvn -q -DskipTests compile` passed; `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test` passed; `mvn test` passed with 14 tests, 0 failures, 0 errors; `git diff --check` passed; human curl/manual verification passed after commit |
+| Result | Established the baseline OpenAI-compatible gateway error contract through `GatewayException` and `OpenAiErrorResponse`, while preserving admin/common `ApiResponse` behavior for `BusinessException`, generic 500 responses, and unmatched routes. Current unimplemented `/v1/models` and `/v1/chat/completions` still return safe 404 admin envelopes. |
+| Codex check fixes | Made `OpenAiError` and `OpenAiErrorResponse` fields final; added non-null constructor validation for `GatewayException` required fields; documented the non-null contract in backend error-handling spec. |
+| Boundary | Did not implement `GET /v1/models` or `POST /v1/chat/completions`; did not add API key authentication, app/model lookup, RAG retrieval, upstream forwarding, streaming, DB schema, Redis, Docker, or frontend behavior. Future real gateway controllers should throw/translate domain failures through this gateway error baseline. |
+
+**Manual verification by sangui**:
+- `GET /api/health` returned `{"code":"OK","message":"success","data":{"status":"UP","service":"sangui-rag-gateway"}}`.
+- `GET /v1/models` returned `{"code":"NOT_FOUND","message":"Resource not found","data":null}`.
+- `POST /v1/chat/completions` returned HTTP 404 with `{"code":"NOT_FOUND","message":"Resource not found","data":null}`.
+- `GET /this-route-does-not-exist-anywhere` returned HTTP 404 with `{"code":"NOT_FOUND","message":"Resource not found","data":null}`.
+
+**Status**: Completed and committed by sangui.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f0ab2fe` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

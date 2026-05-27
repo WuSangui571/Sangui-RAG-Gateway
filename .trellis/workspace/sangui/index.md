@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 2
+- **Total Sessions**: 3
 - **Last Active**: 2026-05-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~119 | Active |
+| `journal-1.md` | ~169 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 3 | 2026-05-27 | OpenAI Gateway Error Baseline | `f0ab2fe` | `main` |
 | 2 | 2026-05-27 | Safe 404 unmatched routes | `3e85e6e` | `main` |
 | 1 | 2026-05-27 | 初始化项目工程基线 | `dfc043b` | `main` |
 <!-- @@@/auto:session-history -->
