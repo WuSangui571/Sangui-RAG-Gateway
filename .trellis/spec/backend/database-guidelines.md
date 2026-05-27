@@ -165,6 +165,86 @@ quota_config
 
 The full key value is only returned once on creation.
 
+### Implemented App/API Key Baseline
+
+The baseline App/API key schema is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V2__create_app_api_key_tables.sql
+```
+
+`rag_app` columns:
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `user_id` | `BIGINT` | yes | Owner boundary for future tenant-scoped admin queries. |
+| `name` | `VARCHAR(255)` | yes | App display name. |
+| `status` | `VARCHAR(32)` | yes | Application enum values: `ENABLED`, `DISABLED`. |
+| `created_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`. |
+| `updated_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`; services must update it when mutating the row. |
+
+`rag_api_key` columns:
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `app_id` | `BIGINT` | yes | Foreign key to `rag_app(id)`. |
+| `user_id` | `BIGINT` | yes | Denormalized owner boundary for future tenant-scoped admin queries. |
+| `name` | `VARCHAR(255)` | yes | Human-readable key label. |
+| `key_hash` | `VARCHAR(128)` | yes | Unique deterministic hash of the full plaintext key. Never store plaintext. |
+| `key_prefix` | `VARCHAR(32)` | yes | Safe display prefix only; not sufficient to authenticate. |
+| `status` | `VARCHAR(32)` | yes | Application enum values: `ACTIVE`, `DISABLED`, `EXPIRED`, `REVOKED`. |
+| `expires_at` | `TIMESTAMP` | no | `NULL` means no expiry. |
+| `last_used_at` | `TIMESTAMP` | no | Updated after successful `/v1/*` authentication. |
+| `revoked_at` | `TIMESTAMP` | no | Set when revoke behavior is implemented. |
+| `created_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`. |
+| `updated_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`; services must update it when mutating the row. |
+
+Required indexes and constraints:
+
+```text
+PRIMARY KEY rag_app(id)
+idx_rag_app_user_status on rag_app(user_id, status)
+PRIMARY KEY rag_api_key(id)
+fk_rag_api_key_app rag_api_key(app_id) -> rag_app(id)
+unique idx_rag_api_key_hash on rag_api_key(key_hash)
+idx_rag_api_key_app on rag_api_key(app_id)
+idx_rag_api_key_app_status on rag_api_key(app_id, status)
+```
+
+Matching Java contracts:
+
+```text
+backend/src/main/java/com/sangui/raggateway/app/AppEntity.java
+backend/src/main/java/com/sangui/raggateway/app/AppStatus.java
+backend/src/main/java/com/sangui/raggateway/app/AppMapper.java
+backend/src/main/java/com/sangui/raggateway/app/AppService.java
+backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyEntity.java
+backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyStatus.java
+backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyMapper.java
+backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyService.java
+```
+
+Validation cases:
+
+| Case | Expected result | Required assertion |
+|---|---|---|
+| Create enabled app | `status=ENABLED`, owner `user_id` persisted | Service/entity test or mapper integration test. |
+| Create API key | plaintext returned only by create result; row stores `key_hash` and `key_prefix` | `ApiKeyServiceTest` must assert no plaintext is persisted. |
+| Lookup by key hash | Unique lookup returns at most one row | Unique index exists or mapper/service behavior is covered. |
+| Successful auth metadata update | `last_used_at` and `updated_at` move together | `ApiKeyServiceTest` or persistence test. |
+| Invalid status literal | Must fail service validation unless application enum explicitly accepts it | `isValid` test for non-`ACTIVE` status. |
+
+Run these checks after changing this schema or the matching services:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=ApiKeyGeneratorTest,ApiKeyHasherTest,ApiKeyServiceTest,GatewayAuthFilterTest" test
+mvn test
+```
+
 ## Upstream API Key Storage
 
 Never store plaintext upstream API keys.

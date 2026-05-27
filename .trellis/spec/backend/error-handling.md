@@ -58,6 +58,106 @@ Use conventional statuses where possible:
 
 Do not expose internal implementation details in `message`.
 
+## Gateway API Key Auth Baseline
+
+The `/v1/*` authentication boundary is implemented as a servlet filter, not Spring Security:
+
+```text
+backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java
+backend/src/main/java/com/sangui/raggateway/common/config/GatewayAuthConfig.java
+```
+
+Filter registration:
+
+```text
+url pattern: /v1/*
+request header: Authorization: Bearer <plaintext-api-key>
+```
+
+The plaintext key format is produced by `ApiKeyGenerator`:
+
+```text
+sk-sangui-<base64url-token>
+```
+
+Successful authentication must:
+
+```text
+1. Extract the Bearer token.
+2. Reject missing, blank, non-Bearer, empty, or non-sk-sangui tokens.
+3. Hash the full plaintext key with ApiKeyHasher.
+4. Lookup ApiKeyService.findByHash(keyHash).
+5. Require ApiKeyService.isValid(apiKey).
+6. Lookup AppService.findById(apiKey.appId).
+7. Require AppService.isEnabled(app).
+8. Update ApiKeyService.updateLastUsed(apiKey.id).
+9. Set GatewayRequestContextHolder with appId, userId, apiKeyId, apiKeyPrefix.
+10. Clear GatewayRequestContextHolder in a finally block.
+```
+
+Request context fields:
+
+| Field | Type | Source |
+|---|---|---|
+| `appId` | `Long` | `rag_app.id` |
+| `userId` | `Long` | `rag_app.user_id` |
+| `apiKeyId` | `Long` | `rag_api_key.id` |
+| `apiKeyPrefix` | `String` | `rag_api_key.key_prefix` |
+
+Authentication failures are written directly by the filter because filter exceptions do not reliably pass through MVC `@RestControllerAdvice`.
+
+Required failure response:
+
+```json
+{
+  "error": {
+    "message": "Invalid API key.",
+    "type": "invalid_request_error",
+    "code": "invalid_api_key"
+  }
+}
+```
+
+Failure matrix:
+
+| Case | HTTP | Response shape | Secret handling |
+|---|---:|---|---|
+| Missing `Authorization` | 401 | OpenAI-compatible `invalid_api_key` | Do not include header name/value in response body. |
+| Non-Bearer scheme | 401 | OpenAI-compatible `invalid_api_key` | Do not echo scheme payload. |
+| Empty Bearer token | 401 | OpenAI-compatible `invalid_api_key` | Do not echo token. |
+| Malformed prefix | 401 | OpenAI-compatible `invalid_api_key` | Do not echo token. |
+| Unknown hash | 401 | OpenAI-compatible `invalid_api_key` | Do not reveal lookup reason to client. |
+| Disabled/revoked/expired key | 401 | OpenAI-compatible `invalid_api_key` | Do not expose status or expiry to client. |
+| Missing/disabled app | 401 | OpenAI-compatible `invalid_api_key` | Avoid app enumeration. |
+| Valid key, unimplemented `/v1/*` route | 404 | Existing safe admin 404 is acceptable until gateway controllers exist | Do not fake `/v1/models` or chat responses. |
+
+Good/base/bad cases:
+
+| Category | Case | Expected result |
+|---|---|---|
+| Good | Active key for enabled app | Filter chain continues and context is available during the request. |
+| Base | `/api/health`, `/actuator/**`, admin/common paths | Gateway API key auth is not applied. |
+| Base | Valid key for route without a controller | Existing safe 404 behavior remains acceptable. |
+| Bad | Missing, malformed, unknown, disabled, revoked, expired key, disabled app | 401 OpenAI-compatible `invalid_api_key`; no admin envelope fields. |
+
+Required tests:
+
+```text
+backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java
+backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyGeneratorTest.java
+backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyHasherTest.java
+backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyServiceTest.java
+```
+
+Run these checks after changing gateway auth:
+
+```bash
+cd backend
+mvn -q "-Dtest=ApiKeyGeneratorTest,ApiKeyHasherTest,ApiKeyServiceTest,GatewayAuthFilterTest" test
+mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test
+mvn test
+```
+
 ## Implemented Baseline
 
 The current error handling baseline enforces a strict boundary between gateway and admin response shapes through concrete classes in `common`.

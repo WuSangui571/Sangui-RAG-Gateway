@@ -1,0 +1,15 @@
+{"file": ".trellis\\tasks\\05-27-app-api-key-auth-baseline\\prd.md", "reason": "Task PRD, scope, contracts, error matrix, tests, and handoff constraints"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product boundary, App/API key domain, gateway auth flow, and security rules"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Package structure and layer responsibilities for app, apikey, common.security, and gateway modules"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Database table, status enum, index, migration, tenant, and API key storage rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "OpenAI-compatible GatewayException and invalid_api_key response contract"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe logging rules for API keys, authorization headers, request context, and secrets"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend tests and review checklist for API key auth and security"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API, DB, auth, tenant, and secret boundary checklist"}
+{"file": "backend\\pom.xml", "reason": "Existing backend dependencies: MyBatis-Plus present, Spring Security absent"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\exception\\GatewayException.java", "reason": "Current gateway exception contract to reuse for auth errors"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\exception\\GlobalExceptionHandler.java", "reason": "Current exception-to-response mapping and safe logging pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\response\\OpenAiErrorResponse.java", "reason": "OpenAI-compatible error response model"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\exception\\GlobalExceptionHandlerTest.java", "reason": "Standalone MockMvc assertions for OpenAI errors and non-leakage"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\exception\\GlobalExceptionHandlerIntegrationTest.java", "reason": "Existing integration route expectations that auth baseline may need to update"}
+{"file": "backend\\src\\test\\resources\\application-test.yml", "reason": "Test profile excludes datasource, Flyway, Redis, and MyBatis-Plus auto-config"}

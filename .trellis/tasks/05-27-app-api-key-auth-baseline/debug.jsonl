@@ -1,0 +1,3 @@
+{"file": ".trellis\\tasks\\05-27-app-api-key-auth-baseline\\prd.md", "reason": "Task PRD, scope, contracts, error matrix, tests, and handoff constraints"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Gateway error contract for debugging auth failures"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe logging rules for debugging"}
