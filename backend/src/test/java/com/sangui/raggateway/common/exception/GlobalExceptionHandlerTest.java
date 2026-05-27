@@ -54,9 +54,9 @@ class GlobalExceptionHandlerTest {
             throw new NoResourceFoundException(HttpMethod.GET, "/v1/unimplemented");
         }
 
-        @PostMapping("/v1/chat/completions")
-        void throwNoResourceForV1ChatCompletions() throws NoResourceFoundException {
-            throw new NoResourceFoundException(HttpMethod.POST, "/v1/chat/completions");
+        @PostMapping("/v1/unimplemented-chat")
+        void throwNoResourceForUnimplementedV1Route() throws NoResourceFoundException {
+            throw new NoResourceFoundException(HttpMethod.POST, "/v1/unimplemented-chat");
         }
 
         @GetMapping("/favicon.ico")
@@ -193,8 +193,8 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void shouldReturn404ForV1ChatCompletions() throws Exception {
-        mockMvc.perform(post("/v1/chat/completions"))
+    void shouldReturn404ForUnimplementedV1Route() throws Exception {
+        mockMvc.perform(post("/v1/unimplemented-chat"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("Resource not found"))

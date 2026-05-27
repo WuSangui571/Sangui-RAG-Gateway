@@ -2,6 +2,7 @@ package com.sangui.raggateway.common.exception;
 
 import com.sangui.raggateway.common.response.ApiResponse;
 import com.sangui.raggateway.common.response.OpenAiErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -62,8 +63,12 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+    public ResponseEntity<?> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
         log.warn("Request body is not readable: {}", ex.getMessage());
+        if (request.getRequestURI().startsWith("/v1/")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(OpenAiErrorResponse.of("The request body could not be parsed.", "invalid_request_error", "invalid_request"));
+        }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error("INVALID_REQUEST", "Malformed request body"));
     }

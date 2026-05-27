@@ -638,6 +638,72 @@ Invalid API key (401, from GatewayAuthFilter):
 }
 ```
 
+`POST /v1/chat/completions` has a non-streaming OpenAI-compatible pass-through baseline for authenticated apps:
+
+```http
+POST /v1/chat/completions
+Authorization: Bearer sk-sangui-...
+Content-Type: application/json
+```
+
+Supported request fields:
+
+| Field | Required | Behavior |
+|---|---:|---|
+| `model` | no | Accepted for client compatibility but not trusted for upstream selection. |
+| `messages` | yes | Non-empty array. Baseline roles are `system`, `user`, and `assistant`; each message requires string `content`. |
+| `temperature` | no | Forwarded to upstream when present. |
+| `max_tokens` | no | Forwarded to upstream when present. |
+| `top_p` | no | Forwarded to upstream when present. |
+| `stream` | no | `true` is rejected until the streaming task; absent or `false` uses non-streaming forwarding. |
+
+Upstream forwarding contract:
+
+- Target URL is `{normalized_base_url}/v1/chat/completions`.
+- `model` is always `ModelConfigEntity.chatModel` from the app default model config.
+- `Authorization: Bearer <decrypted-upstream-api-key>` is used only for the outbound call and is never logged or returned.
+- `stream` is forced to `false` for this baseline.
+- Upstream non-2xx and network failures map to `502 upstream_error`; timeout maps to `504 upstream_timeout`.
+- Upstream error bodies are not passed through to public callers.
+
+Success (200) returns a chat completion shape without the admin envelope:
+
+```json
+{
+  "id": "chatcmpl-test",
+  "object": "chat.completion",
+  "created": 1710000000,
+  "model": "gpt-4o-mini",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1,
+    "completion_tokens": 1,
+    "total_tokens": 2
+  }
+}
+```
+
+Validation and error matrix:
+
+| Scenario | HTTP | Error code | Required behavior |
+|---|---:|---|---|
+| Missing/invalid/disabled app API key | 401 | `invalid_api_key` | Owned by `GatewayAuthFilter`; no controller re-authentication. |
+| Missing/disabled default model config | 409 | `model_config_not_ready` | Same semantics as `/v1/models`. |
+| Missing encrypted upstream key or decrypt failure | 409 | `model_config_not_ready` | Do not call upstream; do not expose config internals. |
+| Malformed JSON, null body, empty `messages`, missing role/content, unsupported role | 400 | `invalid_request` | OpenAI-compatible error shape; no upstream call. |
+| `stream=true` | 400 | `invalid_request` | Explicitly rejected until streaming support exists. |
+| Upstream non-2xx or network failure | 502 | `upstream_error` | Do not pass through provider body. |
+| Upstream timeout | 504 | `upstream_timeout` | Generic client-facing message. |
+
 Implemented files:
 
 ```text
@@ -649,6 +715,13 @@ backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java
 backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiModelsController.java
 backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiModel.java
 backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiModelsResponse.java
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionRequest.java
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionResponse.java
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatMessage.java
+backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java
+backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java
+backend/src/main/java/com/sangui/raggateway/gateway/upstream/UpstreamChatCompletionRequest.java
 ```
 
 Updated test files:
@@ -656,6 +729,9 @@ Updated test files:
 ```text
 backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java
 backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiModelsControllerTest.java
+backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java
+backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java
+backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java
 backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java
 backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerIntegrationTest.java
 ```
@@ -671,9 +747,9 @@ Validation matrix for this baseline:
 | Migration | `V3__create_model_config_and_app_default.sql` creates model config and app FK | Plaintext upstream keys stored or cross-user config exposed | Review migration + service test |
 | Health API | `GET /api/health` returns the admin envelope with `data.status=UP` | Endpoint returns stack traces or exposes unsupported `/v1/*` behavior | MockMvc test and route search |
 | `/v1/models` | Authenticated app with enabled config returns 200 model list | Missing/disabled config returns 409 `model_config_not_ready`; unauthenticated returns 401 | `OpenAiModelsControllerTest` |
-| `/v1/chat/completions` | Returns 404 `NOT_FOUND` | Must not be accidentally implemented or return fake OpenAI responses | `GlobalExceptionHandlerIntegrationTest` |
+| `/v1/chat/completions` | Authenticated non-streaming request forwards to app default upstream model and returns chat completion JSON | Invalid body/messages/role or `stream=true` returns 400; missing config returns 409; upstream failure returns 502/504 | `OpenAiChatCompletionsControllerTest`, `ChatCompletionGatewayServiceTest`, `OpenAiCompatibleUpstreamClientTest` |
 | Unmatched routes | Unknown paths, `/favicon.ico` return 404 `NOT_FOUND` envelope with no stack traces | Routes return 500 with stack traces or fake OpenAI responses | MockMvc test |
-| Tests | All 126 tests pass | Tests require local PostgreSQL or Redis for unit-level checks | `mvn test` under `backend/` |
+| Tests | Unit and focused MVC tests pass without local PostgreSQL or Redis | Tests require local infrastructure for unit-level checks | `mvn test` under `backend/` |
 
 ### Implemented Admin Model Config API Baseline
 

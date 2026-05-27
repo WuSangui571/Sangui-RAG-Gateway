@@ -42,7 +42,7 @@ class GlobalExceptionHandlerIntegrationTest {
     }
 
     @Test
-    void shouldReturnSafe404ForUnimplementedChatCompletionsRoute() throws Exception {
+    void shouldReturnSafe404ForChatCompletionsRouteInTestProfile() throws Exception {
         assertSafe404(post("/v1/chat/completions"))
                 .andExpect(content().string(not(containsString("chat.completion"))));
     }

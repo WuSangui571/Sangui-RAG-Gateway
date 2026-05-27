@@ -10,3 +10,5 @@ server:
 rag:
   gateway:
     secret-key: ${RAG_GATEWAY_SECRET_KEY:}
+    upstream:
+      timeout-seconds: 30

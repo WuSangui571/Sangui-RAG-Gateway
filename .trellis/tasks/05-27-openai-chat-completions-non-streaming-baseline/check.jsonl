@@ -1,0 +1,19 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify implementation stays within lightweight OpenAI-compatible RAG gateway scope."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Check controller/service/client layering and package boundaries."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify no admin envelope or secret leakage in gateway errors."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Review logs for safe fields only."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality checklist for public gateway, upstream timeouts, security, and tests."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Verify no plaintext key persistence and no unnecessary schema changes."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Validate API, tenant, secret, and error contracts across layers."}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiModelsController.java", "reason": "Compare chat controller behavior against existing /v1/models gateway pattern."}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java", "reason": "Verify auth failure behavior remains filter-owned and unchanged."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Verify model config resolution remains tenant-safe."}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java", "reason": "Verify no plaintext upstream key behavior regresses."}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java", "reason": "Verify decrypted key is not returned/logged and decrypt failures are normalized."}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java", "reason": "Check OpenAI-compatible gateway errors vs admin ApiResponse boundary."}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiModelsControllerTest.java", "reason": "Expected assertions for no admin envelope and no secret leakage."}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java", "reason": "Verify existing auth tests still pass after chat route is added."}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerIntegrationTest.java", "reason": "Integration 404 tests that must be adjusted for implemented chat route."}
+{"file": ".trellis/tasks/05-27-openai-chat-completions-non-streaming-baseline/prd.md", "reason": "Acceptance criteria and forbidden scope for final review."}

@@ -1,0 +1,19 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product boundary, MVP API scope, chat completions flow, OpenAI-compatible error shape."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Package layout for gateway/openai, gateway/completion, gateway/upstream responsibilities."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "GatewayException, OpenAI-compatible public error shape, upstream timeout/error mapping."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-safe logging for API keys, upstream keys, headers, prompts, and messages."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required tests for non-streaming upstream forwarding and gateway API compatibility."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "ModelConfig encryption/storage contract and no-DB-migration boundary."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer flow for public /v1 API, app/model config, upstream, secret boundaries."}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiModelsController.java", "reason": "Existing public gateway controller pattern using GatewayRequestContextHolder and model_config_not_ready."}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java", "reason": "Existing /v1/* auth boundary and context setup; chat must not re-authenticate."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Default model config resolution and app enablement helpers."}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java", "reason": "Enabled model config lookup and encrypted upstream key storage contract."}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java", "reason": "Decrypt upstream key only for outbound forwarding."}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GatewayException.java", "reason": "Gateway error carrier for OpenAI-compatible public responses."}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiModelsControllerTest.java", "reason": "MockMvc standalone gateway controller test pattern."}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java", "reason": "Auth boundary tests that should remain source of auth failure coverage."}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java", "reason": "Existing error shape tests that need updating once chat route exists."}
+{"file": ".trellis/tasks/05-27-openai-chat-completions-non-streaming-baseline/prd.md", "reason": "Task PRD with API contract, validation matrix, and scope boundaries."}

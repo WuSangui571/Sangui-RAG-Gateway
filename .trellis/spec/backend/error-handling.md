@@ -52,6 +52,19 @@ Rate-limit example:
 
 The controller reuses `GatewayRequestContextHolder`; it does not re-authenticate.
 
+## `/v1/chat/completions` Endpoint
+
+`POST /v1/chat/completions` is implemented for non-streaming pass-through and returns OpenAI-compatible responses:
+
+- **200** with chat completion JSON on upstream success. Do not wrap with `ApiResponse`.
+- **400** `invalid_request` for malformed JSON, null body, missing/empty `messages`, missing `role`, unsupported role, missing `content`, or `stream=true`.
+- **401** `invalid_api_key` for authentication failures from `GatewayAuthFilter`; a defensive missing-context guard may return the same shape but must not parse or validate tokens in the controller.
+- **409** `model_config_not_ready` when the authenticated app has no enabled default model config, no encrypted upstream key, or an undecryptable upstream key.
+- **502** `upstream_error` for upstream non-2xx, network errors, or invalid upstream success bodies.
+- **504** `upstream_timeout` for upstream timeout.
+
+Gateway chat errors must not expose raw request messages, authorization headers, plaintext upstream keys, encrypted upstream keys, provider error bodies, or stack traces.
+
 ## Gateway HTTP Status Mapping
 
 Use conventional statuses where possible:
@@ -210,7 +223,8 @@ Failure matrix:
 | Disabled/revoked/expired key | 401 | OpenAI-compatible `invalid_api_key` | Do not expose status or expiry to client. |
 | Missing/disabled app | 401 | OpenAI-compatible `invalid_api_key` | Avoid app enumeration. |
 | Valid key, implemented `/v1/models` route | 200 or 409 | OpenAI-compatible success/error shape | Return configured model list or `model_config_not_ready`; do not use admin envelope. |
-| Valid key, unimplemented `/v1/*` route such as `/v1/chat/completions` | 404 | Existing safe admin 404 is acceptable until the route is implemented | Do not fake chat responses. |
+| Valid key, implemented `/v1/chat/completions` route | 200, 400, 409, 502, or 504 | OpenAI-compatible success/error shape | Do not use admin envelope; do not fake RAG behavior in the pass-through baseline. |
+| Valid key, other unimplemented `/v1/*` route | 404 | Existing safe admin 404 is acceptable until a route is implemented | Do not fake unsupported OpenAI APIs. |
 
 Good/base/bad cases:
 
@@ -287,6 +301,8 @@ The `message`, `type`, `code`, and `httpStatus` constructor arguments are requir
 | `GatewayException` | carried by exception | `OpenAiErrorResponse` | `error.message`, `error.type`, `error.code`; no `code`/`message`/`data` |
 | `NoResourceFoundException` | 404 | `ApiResponse<Void>` | `code=NOT_FOUND`, `message=Resource not found`, no `error` field |
 | `NoHandlerFoundException` | 404 | `ApiResponse<Void>` | `code=NOT_FOUND`, `message=Resource not found`, no `error` field |
+| `HttpMessageNotReadableException` on `/v1/*` | 400 | `OpenAiErrorResponse` | `error.code=invalid_request`; no body echo, no admin envelope |
+| `HttpMessageNotReadableException` outside `/v1/*` | 400 | `ApiResponse<Void>` | `code=INVALID_REQUEST`, `message=Malformed request body` |
 | `Exception` (generic) | 500 | `ApiResponse<Void>` | `code=INTERNAL_ERROR`, `message=Internal server error`, no stack trace |
 
 All handlers log safe context only (request IDs when available, error codes, non-sensitive messages). Stack traces are logged at ERROR level for unexpected exceptions but never returned to clients.
@@ -299,7 +315,7 @@ All handlers log safe context only (request IDs when available, error codes, non
 - `shouldReturn401ForGatewayInvalidApiKey` — 401 with code `invalid_api_key`, type `invalid_request_error`; no admin envelope fields.
 - `shouldHandleBusinessExceptionWithApiResponse` — BAD_REQUEST with admin envelope; `$.error` doesNotExist.
 - `shouldHideStackTraceForUnexpectedErrors` — 500 with `INTERNAL_ERROR`/`Internal server error`; no stack trace.
-- `shouldReturn404ForUnimplementedRoute`, `shouldReturn404ForV1ChatCompletions` — 404 admin envelope; no `$.error`; no fake chat data.
+- `shouldReturn404ForUnimplementedRoute`, `shouldReturn404ForUnimplementedV1Route` — 404 admin envelope; no `$.error`; no fake chat data.
 - `shouldReturn404ForFavicon`, `shouldReturn404ForUnmappedUnknownRoute` — 404 admin envelope.
 
 `GlobalExceptionHandlerIntegrationTest` (integration, 4 tests):
@@ -307,7 +323,7 @@ All handlers log safe context only (request IDs when available, error codes, non
 - `shouldReturnSafe404ForUnknownRoute` — Real Spring context 404.
 - `shouldReturnSafe404ForFavicon` — Real 404 for `/favicon.ico`.
 - `shouldReturnSafe404ForModelsRouteInTestProfile` — under the `test` profile, `/v1/models` is not registered and still returns the safe 404 envelope.
-- `shouldReturnSafe404ForUnimplementedChatCompletionsRoute` — `/v1/chat/completions` returns safe 404, no `chat.completion` content.
+- `shouldReturnSafe404ForChatCompletionsRouteInTestProfile` — under the `test` profile, `/v1/chat/completions` is not registered and still returns the safe 404 envelope.
 
 Run targeted tests with `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test` from `backend/`.
 
