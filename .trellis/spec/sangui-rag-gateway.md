@@ -597,6 +597,7 @@ Validation matrix for this baseline:
 | Docker Compose | `postgres` and `redis` services define ports, volumes, and health checks | Real secrets are committed or `.env` is tracked | Review `.env.example`, `.gitignore`, `deploy/docker-compose.yml` |
 | Migration | `V1__init_pgvector.sql` creates only pgvector extension | Business tables are created before domain schema is specified | Review migration file |
 | Health API | `GET /api/health` returns the admin envelope with `data.status=UP` | Endpoint returns stack traces or exposes unsupported `/v1/*` behavior | MockMvc test and route search |
+| Unmatched routes | Unknown paths, `/favicon.ico`, unimplemented `/v1/*` return 404 `NOT_FOUND` envelope with no stack traces | Routes return 500 with stack traces or fake OpenAI responses | MockMvc test |
 | Tests | Context, health endpoint, and exception envelope tests pass | Tests require local PostgreSQL or Redis for unit-level checks | `mvn test` under `backend/` |
 
 ## Trellis Workflow Rules

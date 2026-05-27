@@ -1,0 +1,4 @@
+{"file": ".trellis/tasks/05-27-safe-404-unmatched-routes/prd.md", "reason": "Debug against the required 404 route contract and acceptance criteria"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Debug safe error status mapping and response shapes"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java", "reason": "Debug global exception handling behavior"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java", "reason": "Debug focused MockMvc route/error tests"}

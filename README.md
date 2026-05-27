@@ -23,7 +23,7 @@ Let existing business systems gain private-document RAG capability with low modi
 - Login / registration
 - Knowledge base management and document upload
 - RAG retrieval, embedding, or document pipeline
-- `GET /v1/models` and `POST /v1/chat/completions`
+- `GET /v1/models` and `POST /v1/chat/completions` (currently unimplemented gateway endpoints return a safe 404 response instead of 500)
 - Frontend admin pages (placeholder only)
 
 ## Local Dependencies

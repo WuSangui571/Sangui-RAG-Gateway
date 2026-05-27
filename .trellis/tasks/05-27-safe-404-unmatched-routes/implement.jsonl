@@ -1,0 +1,14 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/tasks/05-27-safe-404-unmatched-routes/prd.md", "reason": "Task PRD with route contract, boundaries, error matrix, and tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project API scope, baseline contracts, and OpenAI-compatible boundary"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Global exception and gateway/admin error shape rules"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Expected 404 should not be logged as ERROR stack trace"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend tests and API compatibility expectations"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Keep common exception changes in the established package"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Route behavior touches public /v1 boundary and docs"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java", "reason": "Existing global exception handler pattern to update"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/response/ApiResponse.java", "reason": "Existing admin envelope used by baseline errors"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java", "reason": "Existing MockMvc exception handler tests to extend"}
+{"file": "backend/src/test/java/com/sangui/raggateway/health/HealthControllerTest.java", "reason": "Existing MockMvc pattern and health regression context"}
+{"file": "README.md", "reason": "Baseline documentation may need safe 404 note"}

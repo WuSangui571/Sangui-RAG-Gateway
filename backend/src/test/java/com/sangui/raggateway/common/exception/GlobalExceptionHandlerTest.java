@@ -2,12 +2,18 @@ package com.sangui.raggateway.common.exception;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class GlobalExceptionHandlerTest {
@@ -34,6 +40,21 @@ class GlobalExceptionHandlerTest {
         void throwRuntimeException() {
             throw new RuntimeException("Unexpected failure");
         }
+
+        @GetMapping("/v1/models")
+        void throwNoResourceForV1Models() throws NoResourceFoundException {
+            throw new NoResourceFoundException(HttpMethod.GET, "/v1/models");
+        }
+
+        @PostMapping("/v1/chat/completions")
+        void throwNoResourceForV1ChatCompletions() throws NoResourceFoundException {
+            throw new NoResourceFoundException(HttpMethod.POST, "/v1/chat/completions");
+        }
+
+        @GetMapping("/favicon.ico")
+        void throwNoResourceForFavicon() throws NoResourceFoundException {
+            throw new NoResourceFoundException(HttpMethod.GET, "/favicon.ico");
+        }
     }
 
     @Test
@@ -52,5 +73,50 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
                 .andExpect(jsonPath("$.message").value("Internal server error"))
                 .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    void shouldReturn404ForV1Models() throws Exception {
+        mockMvc.perform(get("/v1/models"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Resource not found"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(content().string(not(containsString("Exception"))))
+                .andExpect(content().string(not(containsString("java."))))
+                .andExpect(content().string(not(containsString("\"data\":["))));
+    }
+
+    @Test
+    void shouldReturn404ForV1ChatCompletions() throws Exception {
+        mockMvc.perform(post("/v1/chat/completions"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Resource not found"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(content().string(not(containsString("Exception"))))
+                .andExpect(content().string(not(containsString("java."))));
+    }
+
+    @Test
+    void shouldReturn404ForFavicon() throws Exception {
+        mockMvc.perform(get("/favicon.ico"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Resource not found"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(content().string(not(containsString("Exception"))))
+                .andExpect(content().string(not(containsString("java."))));
+    }
+
+    @Test
+    void shouldReturn404ForUnmappedUnknownRoute() throws Exception {
+        mockMvc.perform(get("/this-route-does-not-exist-anywhere"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Resource not found"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(content().string(not(containsString("Exception"))))
+                .andExpect(content().string(not(containsString("java."))));
     }
 }
