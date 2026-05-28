@@ -5,10 +5,13 @@ import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
 import com.sangui.raggateway.common.security.GatewayRequestContextHolder;
 import com.sangui.raggateway.gateway.completion.ChatCompletionGatewayService;
+import com.sangui.raggateway.gateway.completion.ChatCompletionResult;
+import com.sangui.raggateway.log.ApiRequestLogService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -18,8 +21,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,6 +35,9 @@ class OpenAiChatCompletionsControllerTest {
     @Mock
     private ChatCompletionGatewayService chatCompletionGatewayService;
 
+    @Mock
+    private ApiRequestLogService apiRequestLogService;
+
     private MockMvc mockMvc;
 
     private static final Long APP_ID = 1L;
@@ -38,7 +46,7 @@ class OpenAiChatCompletionsControllerTest {
 
     @BeforeEach
     void setUp() {
-        OpenAiChatCompletionsController controller = new OpenAiChatCompletionsController(chatCompletionGatewayService);
+        OpenAiChatCompletionsController controller = new OpenAiChatCompletionsController(chatCompletionGatewayService, apiRequestLogService);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -54,7 +62,7 @@ class OpenAiChatCompletionsControllerTest {
         GatewayRequestContextHolder.set(new GatewayRequestContext(APP_ID, USER_ID, API_KEY_ID, "sk-sangui-abcdef"));
     }
 
-    private OpenAiChatCompletionResponse createSuccessResponse() {
+    private ChatCompletionResult createSuccessResult() {
         OpenAiChatCompletionResponse mockResponse = new OpenAiChatCompletionResponse();
         mockResponse.setId("chatcmpl-test");
         mockResponse.setObject("chat.completion");
@@ -75,13 +83,13 @@ class OpenAiChatCompletionsControllerTest {
         usage.setCompletionTokens(1);
         usage.setTotalTokens(2);
         mockResponse.setUsage(usage);
-        return mockResponse;
+        return new ChatCompletionResult(mockResponse, "gpt-4o-mini", "openai", 500L, 1, 1, 2);
     }
 
     @Test
     void shouldReturn200WithOpenAiCompatibleResponseOnSuccess() throws Exception {
         setContext();
-        when(chatCompletionGatewayService.processChatCompletion(any())).thenReturn(createSuccessResponse());
+        when(chatCompletionGatewayService.processChatCompletion(any())).thenReturn(createSuccessResult());
 
         mockMvc.perform(post("/v1/chat/completions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -106,6 +114,23 @@ class OpenAiChatCompletionsControllerTest {
                 .andExpect(jsonPath("$.code").doesNotExist())
                 .andExpect(jsonPath("$.message").doesNotExist())
                 .andExpect(jsonPath("$.data").doesNotExist());
+
+        ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
+                ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
+        verify(apiRequestLogService).record(captor.capture());
+        com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
+        assertThat(command.getUserId()).isEqualTo(USER_ID);
+        assertThat(command.getAppId()).isEqualTo(APP_ID);
+        assertThat(command.getApiKeyId()).isEqualTo(API_KEY_ID);
+        assertThat(command.getStatus()).isEqualTo("success");
+        assertThat(command.getErrorCode()).isNull();
+        assertThat(command.getModel()).isEqualTo("gpt-4o-mini");
+        assertThat(command.getProviderName()).isEqualTo("openai");
+        assertThat(command.getUpstreamLatencyMs()).isEqualTo(500L);
+        assertThat(command.getPromptTokens()).isEqualTo(1);
+        assertThat(command.getCompletionTokens()).isEqualTo(1);
+        assertThat(command.getTotalTokens()).isEqualTo(2);
+        assertThat(command.getMessagesCount()).isEqualTo(1);
     }
 
     @Test
@@ -130,6 +155,16 @@ class OpenAiChatCompletionsControllerTest {
                 .andExpect(jsonPath("$.error.code").value("invalid_request"))
                 .andExpect(jsonPath("$.error.type").value("invalid_request_error"))
                 .andExpect(jsonPath("$.code").doesNotExist());
+
+        ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
+                ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
+        verify(apiRequestLogService).record(captor.capture());
+        com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
+        assertThat(command.getStatus()).isEqualTo("failure");
+        assertThat(command.getErrorCode()).isEqualTo("invalid_request");
+        assertThat(command.getMessagesCount()).isEqualTo(1);
+        assertThat(command.getModel()).isNull();
+        assertThat(command.getProviderName()).isNull();
     }
 
     @Test
@@ -222,7 +257,7 @@ class OpenAiChatCompletionsControllerTest {
     @Test
     void shouldNotContainUpstreamKeyInResponse() throws Exception {
         setContext();
-        when(chatCompletionGatewayService.processChatCompletion(any())).thenReturn(createSuccessResponse());
+        when(chatCompletionGatewayService.processChatCompletion(any())).thenReturn(createSuccessResult());
 
         mockMvc.perform(post("/v1/chat/completions")
                         .contentType(MediaType.APPLICATION_JSON)

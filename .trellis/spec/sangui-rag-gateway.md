@@ -1033,6 +1033,98 @@ mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest"
 mvn test
 ```
 
+### Implemented Request Log Persistence Baseline
+
+The request log persistence baseline stores one safe row per authenticated non-streaming `POST /v1/chat/completions` request in the `rag_request_log` table.
+
+#### Table Schema
+
+Introduced by `V4__create_request_log_table.sql`:
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | yes | Primary key |
+| `request_id` | `VARCHAR(64)` | yes | Unique per request |
+| `user_id` | `BIGINT` | yes | Tenant boundary |
+| `app_id` | `BIGINT` | yes | App boundary |
+| `api_key_id` | `BIGINT` | yes | Safe key metadata ID only |
+| `model` | `VARCHAR(255)` | no | Resolved model from config, null on validation failures |
+| `provider_name` | `VARCHAR(128)` | no | Resolved provider from config, null on validation failures |
+| `status` | `VARCHAR(32)` | yes | `success` or `failure` |
+| `error_code` | `VARCHAR(64)` | no | Stable gateway error code |
+| `latency_ms` | `BIGINT` | no | Total controller elapsed time |
+| `upstream_latency_ms` | `BIGINT` | no | Upstream latency when available |
+| `prompt_tokens` | `INTEGER` | no | From upstream usage |
+| `completion_tokens` | `INTEGER` | no | From upstream usage |
+| `total_tokens` | `INTEGER` | no | From upstream usage |
+| `messages_count` | `INTEGER` | no | Count only, no content |
+| `question_summary` | `VARCHAR(512)` | no | Null for this baseline |
+| `hit_chunk_ids` | `JSONB` | no | Null for this baseline |
+| `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP` |
+| `updated_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP` |
+
+Indexes:
+- `idx_rag_request_log_app_created_at` on `(app_id, created_at DESC)`
+- `idx_rag_request_log_user_created_at` on `(user_id, created_at DESC)`
+- `idx_rag_request_log_api_key_created_at` on `(api_key_id, created_at DESC)`
+- `idx_rag_request_log_request_id` unique on `request_id`
+
+#### Persistence Rules
+
+- One row is inserted per non-streaming authenticated request, covering success and failure.
+- `ApiRequestLogService.record()` catches all exceptions internally; insert failures log at ERROR but never propagate to callers.
+- Sensitive data never persisted: no app API key plaintext/hash, upstream key plaintext/encrypted, Authorization header, full messages, provider raw body, or stack traces.
+
+#### Persisted Error Matrix
+
+| Scenario | Persisted status | Persisted error_code | model/provider populated |
+|---|---|---|---|
+| Success (200) | `success` | null | yes |
+| Validation failure (400) | `failure` | `invalid_request` | no |
+| Model config not ready (409) | `failure` | `model_config_not_ready` | no |
+| Upstream error (502) | `failure` | `upstream_error` | no |
+| Upstream timeout (504) | `failure` | `upstream_timeout` | no |
+| Malformed JSON (400) | not persisted | N/A | N/A |
+| Auth failure from filter (401) | not persisted | N/A | N/A |
+
+#### Implemented files (new)
+
+```text
+backend/src/main/resources/db/migration/V4__create_request_log_table.sql
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogEntity.java
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogMapper.java
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java
+backend/src/main/java/com/sangui/raggateway/log/CreateRequestLogCommand.java
+backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionResult.java
+backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java
+```
+
+#### Updated files
+
+```text
+backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java
+backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java
+backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java
+```
+
+#### Limitations (documented)
+
+- Malformed JSON (400) requests are NOT persisted because the request body cannot be read to create a request ID before deserialization fails in `HttpMessageNotReadableException` handling.
+- Auth failures from `GatewayAuthFilter` (401) are NOT persisted because the filter writes the response directly and does not have a safe persistence boundary.
+- `question_summary` and `hit_chunk_ids` are null until future RAG retrieval implementation.
+- Streaming requests are out of scope for this baseline.
+
+Run after changes:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=ApiRequestLogServiceTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest,OpenAiCompatibleUpstreamClientTest" test
+mvn -q "-Dtest=GatewayAuthFilterTest,GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test
+mvn test
+```
+
 ## Trellis Workflow Rules
 
 At the start of each task, classify it:

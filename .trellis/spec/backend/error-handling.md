@@ -367,6 +367,27 @@ All upstream failures map to `502 upstream_error` (or `504 upstream_timeout` for
 
 Public gateway responses remain OpenAI-compatible for all error cases. Upstream provider body content is never included in logs or client responses. Upstream client and response-parse failure logs record exception class names only, not throwable messages or stack traces, because those exception messages can contain raw upstream URL or body fragments.
 
+### Implemented Request Log Persistence Error Classification
+
+`OpenAiChatCompletionsController` persists one `rag_request_log` row per authenticated non-streaming request, mapping GatewayException codes to persisted `error_code`:
+
+| GatewayException code | Persisted status | Persisted error_code | model/provider populated |
+|---|---|---|---|
+| (success, no exception) | `success` | null | yes |
+| `invalid_request` | `failure` | `invalid_request` | no |
+| `model_config_not_ready` | `failure` | `model_config_not_ready` | no |
+| `upstream_error` | `failure` | `upstream_error` | no |
+| `upstream_timeout` | `failure` | `upstream_timeout` | no |
+
+Known unpersisted scenarios:
+
+| Scenario | Reason |
+|---|---|
+| Malformed JSON body (400) | Request body cannot be deserialized; request ID is not generated before `HttpMessageNotReadableException` handling in `GlobalExceptionHandler`. |
+| Gateway auth filter failure (401) | `GatewayAuthFilter` writes the OpenAI-compatible 401 response directly without reaching the controller's persistence boundary. |
+
+Log persistence insert failure: `ApiRequestLogService.record()` catches all exceptions internally and logs at ERROR. The public gateway response is never affected by a logging persistence failure. Application-level log events (`gateway.chat.completed`) remain unchanged.
+
 ## Document Pipeline Errors
 
 Document processing must update status and error reason:

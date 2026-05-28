@@ -7,6 +7,7 @@ import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
 import com.sangui.raggateway.common.security.GatewayRequestContextHolder;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
+import com.sangui.raggateway.gateway.completion.ChatCompletionResult;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionRequest;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionResponse;
 import com.sangui.raggateway.gateway.openai.OpenAiChatMessage;
@@ -129,7 +130,8 @@ class ChatCompletionGatewayServiceTest {
                 .thenReturn(UPSTREAM_RESPONSE);
 
         OpenAiChatCompletionRequest request = createValidRequest();
-        OpenAiChatCompletionResponse response = service.processChatCompletion(request);
+        ChatCompletionResult result = service.processChatCompletion(request);
+        OpenAiChatCompletionResponse response = result.getResponse();
 
         assertThat(response.getObject()).isEqualTo("chat.completion");
         assertThat(response.getId()).isEqualTo("chatcmpl-test");
@@ -141,6 +143,13 @@ class ChatCompletionGatewayServiceTest {
         assertThat(response.getUsage().getPromptTokens()).isEqualTo(1);
         assertThat(response.getUsage().getCompletionTokens()).isEqualTo(1);
         assertThat(response.getUsage().getTotalTokens()).isEqualTo(2);
+
+        assertThat(result.getModel()).isEqualTo("gpt-4o-mini");
+        assertThat(result.getProviderName()).isEqualTo("openai");
+        assertThat(result.getUpstreamLatencyMs()).isGreaterThanOrEqualTo(0);
+        assertThat(result.getPromptTokens()).isEqualTo(1);
+        assertThat(result.getCompletionTokens()).isEqualTo(1);
+        assertThat(result.getTotalTokens()).isEqualTo(2);
     }
 
     @Test

@@ -483,3 +483,60 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: Chat Completions observability check and finish
+
+**Date**: 2026-05-28
+**Task**: Chat Completions observability check and finish
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| Commit | `4d6b028 fix:?? chat completions ??????` |
+| Task | Archived `05-28-chat-completions-observability` after code commit and verification. |
+| Backend implementation | Added safe structured Chat Completions observability with request_id propagation, stage logs, sanitized upstream URL logging, upstream latency/total latency fields, and safe GatewayException request_id logging. |
+| Safety fixes | Ensured upstream and parse failure logs record exception class only, not throwable messages/stack traces, to avoid raw URL/body leakage. Added null-safe message counting in controller. |
+| Tests added | Added OutputCapture-based assertions for validation failure, upstream failure, parse failure, safe request_id propagation, safe upstream_url, and absence of app key/upstream key/Authorization/message/provider body in logs. |
+| Spec updates | Updated backend logging and error-handling specs with the concrete gateway chat log contract and upstream error classification behavior. |
+| Verification | `mvn -q -DskipTests compile` passed; `mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest,OpenAiCompatibleUpstreamClientTest" test` passed; `mvn -q "-Dtest=GatewayAuthFilterTest,GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test` passed; `mvn test` passed with `Tests run: 225, Failures: 0, Errors: 0, Skipped: 0`. |
+| Manual testing | User verified direct upstream request succeeded and created fresh test App id `5` and ModelConfig id `6`; ModelConfig response did not expose upstream plaintext key or `api_key_encrypted` and did include `api_key_masked`. Subsequent 403s were due to continuing with stale/unset `$appId` instead of assigning `$appId = $createAppResponse.data.id`, not a backend code issue. |
+| Boundary | No public API request/response shape changes, no database migration, no frontend changes, no streaming implementation, no record table persistence. |
+
+**Primary files changed**:
+- `backend/src/main/java/com/sangui/raggateway/log/ChatCompletionLogHelper.java`
+- `backend/src/main/java/com/sangui/raggateway/common/security/GatewayRequestContext.java`
+- `backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java`
+- `backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java`
+- `backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java`
+- `.trellis/spec/backend/logging-guidelines.md`
+- `.trellis/spec/backend/error-handling.md`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4d6b028` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

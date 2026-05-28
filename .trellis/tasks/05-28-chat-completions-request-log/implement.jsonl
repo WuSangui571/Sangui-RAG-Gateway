@@ -1,0 +1,19 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/tasks/05-28-chat-completions-request-log/prd.md", "reason": "Implementation PRD with scope, DB contract, error matrix, acceptance criteria, and required tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project source of truth for ApiRequestLog, gateway flow, logging safety, and roadmap request logs"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Package placement and layer responsibility for log module, service, mapper, and controller boundaries"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Migration, table, tenant, timestamp, index, MyBatis-Plus, and request log schema guidance"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "OpenAI-compatible Chat Completions error matrix and safe upstream/config/validation classification"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe structured logging contract and request-log persisted field constraints"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend testing/security/observability quality checklist"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer flow for public gateway API, DB schema, tenant, secret, and observability boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java", "reason": "Current request_id creation and gateway.chat.completed success/failure completion point"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Current validation, model config resolution, upstream forwarding, parse failure, and usage parsing behavior"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java", "reason": "Current upstream 502/504 classification and safe upstream logging behavior"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ChatCompletionLogHelper.java", "reason": "Existing log helper for request_id and sanitized upstream URL patterns"}
+{"file": "backend/src/main/resources/db/migration/V2__create_app_api_key_tables.sql", "reason": "Migration naming/style, timestamp, FK, and index baseline"}
+{"file": "backend/src/main/resources/db/migration/V3__create_model_config_and_app_default.sql", "reason": "Migration naming/style and model config fields used by request log"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java", "reason": "Controller test pattern for OpenAI-compatible responses and gateway exceptions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java", "reason": "Service test pattern for validation, config, upstream, parse, usage, and safe logs"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java", "reason": "Upstream error/safety test examples for provider body and secret omission"}

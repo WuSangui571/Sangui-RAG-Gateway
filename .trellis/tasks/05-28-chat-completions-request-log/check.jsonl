@@ -1,0 +1,17 @@
+{"file": ".trellis/tasks/05-28-chat-completions-request-log/prd.md", "reason": "Check PRD acceptance criteria, boundaries, and test assertions"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify implementation stays inside lightweight RAG gateway product boundary and public API contract"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Review package/layer responsibilities and avoid SQL in controller/client"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Verify migration/entity/indexes and tenant-safe fields"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify response shapes/status codes unchanged and failure categories persisted safely"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Verify persisted fields omit secrets, full messages, prompts, and provider bodies"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Review tests, security, database migration, and request log safety"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Verify flow, contracts, validation owner, tenant/secret boundaries, and cases"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java", "reason": "Verify persisted completion log aligns with existing controller behavior and malformed JSON limitation"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Verify error classification and safe model/provider/usage extraction"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java", "reason": "Verify upstream failure details and provider body remain out of persistence"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ChatCompletionLogHelper.java", "reason": "Verify helper reuse does not broaden sensitive logging"}
+{"file": "backend/src/main/resources/db/migration/V2__create_app_api_key_tables.sql", "reason": "Compare request-log migration style against existing app/API key tables"}
+{"file": "backend/src/main/resources/db/migration/V3__create_model_config_and_app_default.sql", "reason": "Compare request-log migration style and model/provider field alignment"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java", "reason": "Verify added persistence tests preserve response contracts and sensitive data assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java", "reason": "Verify service tests cover failure classes and no sensitive persistence"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java", "reason": "Verify upstream error paths remain normalized and safe"}

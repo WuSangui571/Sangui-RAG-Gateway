@@ -381,6 +381,81 @@ cd backend
 mvn -q "-Dtest=UpstreamApiKeyEncryptorTest,UpstreamApiKeyMaskerTest,ModelConfigServiceTest" test
 ```
 
+### Implemented Request Log Baseline
+
+The request log schema is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V4__create_request_log_table.sql
+```
+
+`rag_request_log` columns:
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | yes | Primary key |
+| `request_id` | `VARCHAR(64)` | yes | Unique per request |
+| `user_id` | `BIGINT` | yes | Tenant boundary |
+| `app_id` | `BIGINT` | yes | App boundary |
+| `api_key_id` | `BIGINT` | yes | Safe key metadata ID only |
+| `model` | `VARCHAR(255)` | no | Resolved model from config |
+| `provider_name` | `VARCHAR(128)` | no | Resolved provider from config |
+| `status` | `VARCHAR(32)` | yes | `success` or `failure` |
+| `error_code` | `VARCHAR(64)` | no | Stable gateway error code |
+| `latency_ms` | `BIGINT` | no | Total controller elapsed time |
+| `upstream_latency_ms` | `BIGINT` | no | Upstream latency when available |
+| `prompt_tokens` | `INTEGER` | no | From upstream usage |
+| `completion_tokens` | `INTEGER` | no | From upstream usage |
+| `total_tokens` | `INTEGER` | no | From upstream usage |
+| `messages_count` | `INTEGER` | no | Count only, no content |
+| `question_summary` | `VARCHAR(512)` | no | Bounded prefix only |
+| `hit_chunk_ids` | `JSONB` | no | Future RAG retrieval IDs |
+| `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP` |
+| `updated_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP` |
+
+Required indexes:
+
+```text
+idx_rag_request_log_app_created_at on rag_request_log(app_id, created_at DESC)
+idx_rag_request_log_user_created_at on rag_request_log(user_id, created_at DESC)
+idx_rag_request_log_api_key_created_at on rag_request_log(api_key_id, created_at DESC)
+unique idx_rag_request_log_request_id on rag_request_log(request_id)
+```
+
+Matching Java contracts:
+
+```text
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogEntity.java
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogMapper.java
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java
+backend/src/main/java/com/sangui/raggateway/log/CreateRequestLogCommand.java
+```
+
+Tenant rule: `rag_request_log` carries `user_id` and `app_id` directly. Future admin log query APIs must scope by user/app. Gateway inserts use resolved context IDs from `GatewayRequestContext`.
+
+Secret safety: persisted rows must never contain app API key plaintext/hash, upstream key plaintext/encrypted, Authorization header, full messages, or provider raw body. Only safe operational fields and IDs are stored.
+
+Validation cases:
+
+| Case | Expected result | Required assertion |
+|---|---|---|
+| Success request | One `success` row with model, provider, usage, latency | `ApiRequestLogServiceTest` |
+| Validation failure | One `failure` row with `invalid_request` error_code | `ApiRequestLogServiceTest` |
+| Model config not ready | One `failure` row with `model_config_not_ready` | `ApiRequestLogServiceTest` |
+| Upstream 502 | One `failure` row with `upstream_error` | `ApiRequestLogServiceTest` |
+| Upstream 504 | One `failure` row with `upstream_timeout` | `ApiRequestLogServiceTest` |
+| No sensitive data persisted | Entity toString() does not contain secrets | `ApiRequestLogServiceTest` |
+| Insert failure | Exception caught, gateway response unchanged | `ApiRequestLogServiceTest` |
+
+Run these checks after changing this schema or the matching services:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=ApiRequestLogServiceTest" test
+mvn test
+```
+
 ## Migrations
 
 - Every schema change must be represented by a migration file.

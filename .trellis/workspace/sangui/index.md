@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 9
+- **Total Sessions**: 10
 - **Last Active**: 2026-05-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~485 | Active |
+| `journal-1.md` | ~542 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 10 | 2026-05-28 | Chat Completions observability check and finish | `4d6b028` | `main` |
 | 9 | 2026-05-28 | 上游 Base URL 兼容与 Chat Completions 联调收尾 | `ab6d19d` | `main` |
 | 8 | 2026-05-27 | OpenAI Chat Completions 非流式转发基线 | `57431e9` | `main` |
 | 7 | 2026-05-27 | 应用 API Key 管理 Admin API 基线收尾 | `8f54b15` | `main` |

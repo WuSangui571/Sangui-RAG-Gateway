@@ -59,7 +59,7 @@ public class ChatCompletionGatewayService {
         this.objectMapper = objectMapper;
     }
 
-    public OpenAiChatCompletionResponse processChatCompletion(OpenAiChatCompletionRequest request) {
+    public ChatCompletionResult processChatCompletion(OpenAiChatCompletionRequest request) {
         GatewayRequestContext context = GatewayRequestContextHolder.get();
         if (context == null) {
             throw new GatewayException("Invalid API key.", ERR_TYPE, "invalid_api_key", HttpStatus.UNAUTHORIZED);
@@ -109,7 +109,17 @@ public class ChatCompletionGatewayService {
             long upstreamLatency = System.currentTimeMillis() - upstreamStart;
 
             OpenAiChatCompletionResponse response = parseResponse(responseBody, modelConfig.getChatModel(), upstreamLatency);
-            return response;
+            Integer promptTokens = null;
+            Integer completionTokens = null;
+            Integer totalTokens = null;
+            if (response.getUsage() != null) {
+                promptTokens = response.getUsage().getPromptTokens();
+                completionTokens = response.getUsage().getCompletionTokens();
+                totalTokens = response.getUsage().getTotalTokens();
+            }
+            return new ChatCompletionResult(response, modelConfig.getChatModel(),
+                    modelConfig.getProviderName(), upstreamLatency,
+                    promptTokens, completionTokens, totalTokens);
         } catch (GatewayException e) {
             throw e;
         } catch (Exception e) {
