@@ -1,0 +1,22 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, OpenAI-compatible chat completions and streaming roadmap contract"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Gateway/completion/upstream/log module ownership and layering rules"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Request log persistence schema and tenant-safe logging constraints"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Gateway OpenAI-compatible error mapping and streaming error boundaries"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe structured chat logs and request-log persistence rules"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend streaming, security, compatibility and test expectations"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API/streaming/request-log boundary checklist"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Search/reuse guidance before adding streaming abstractions"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java", "reason": "Current /v1/chat/completions HTTP boundary, request_id and request-log finalization pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Current validation, app/model config resolution, decrypt and upstream orchestration pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java", "reason": "Current upstream URL construction, RestClient use, timeout/error classification and safe logs"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/CreateRequestLogCommand.java", "reason": "Request log command fields available for streaming persistence"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Safe request log insert behavior and failure isolation"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java", "reason": "Controller regression patterns for OpenAI shape and request-log assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java", "reason": "Service tests for validation, upstream request construction and safe logs"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java", "reason": "Upstream client test patterns for URL normalization, errors and secret-safe logs"}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java", "reason": "Request log persistence assertions and sensitive data safety tests"}
+{"file": ".trellis/tasks/05-28-chat-completions-streaming-baseline/prd.md", "reason": "Check acceptance criteria and explicit out-of-scope boundaries"}
+{"file": ".trellis/tasks/05-28-chat-completions-streaming-baseline/research.md", "reason": "Check implementation against researched patterns and risks"}
+{"file": ".trellis/tasks/05-28-chat-completions-streaming-baseline/handoff-deepseek.md", "reason": "Check final implementation against handoff constraints"}

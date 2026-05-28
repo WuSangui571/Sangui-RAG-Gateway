@@ -14,8 +14,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Component
 public class OpenAiCompatibleUpstreamClient {
@@ -106,6 +113,128 @@ public class OpenAiCompatibleUpstreamClient {
                 );
             }
             long upstreamLatency = System.currentTimeMillis() - start;
+            log.error("gateway.chat.upstream_failed request_id={} upstream_url={} error_class={} error_code={} upstream_latency_ms={}",
+                    requestId, safeUrl, e.getClass().getSimpleName(), ERR_CODE_UPSTREAM_ERROR, upstreamLatency);
+            throw new GatewayException(
+                    "Upstream service is unavailable",
+                    ERR_TYPE_SERVER,
+                    ERR_CODE_UPSTREAM_ERROR,
+                    HttpStatus.BAD_GATEWAY,
+                    e
+            );
+        } catch (Exception e) {
+            long upstreamLatency = System.currentTimeMillis() - start;
+            log.error("gateway.chat.upstream_failed request_id={} upstream_url={} error_class={} error_code={} upstream_latency_ms={}",
+                    requestId, safeUrl, e.getClass().getSimpleName(), ERR_CODE_UPSTREAM_ERROR, upstreamLatency);
+            throw new GatewayException(
+                    "Upstream service is unavailable",
+                    ERR_TYPE_SERVER,
+                    ERR_CODE_UPSTREAM_ERROR,
+                    HttpStatus.BAD_GATEWAY,
+                    e
+            );
+        }
+    }
+
+    public void streamChatCompletion(String baseUrl, String apiKey,
+                                      UpstreamChatCompletionRequest request,
+                                      SseEmitter emitter, String requestId) {
+        streamChatCompletion(baseUrl, apiKey, request, emitter, requestId, () -> {
+        });
+    }
+
+    public void streamChatCompletion(String baseUrl, String apiKey,
+                                      UpstreamChatCompletionRequest request,
+                                      SseEmitter emitter, String requestId,
+                                      Runnable onStreamReady) {
+        String base = normalizeBaseUrl(baseUrl);
+        String url = base.endsWith("/v1") ? base + "/chat/completions" : base + CHAT_PATH;
+        String safeUrl = ChatCompletionLogHelper.sanitizeUpstreamUrl(url);
+
+        log.info("gateway.chat.stream_started request_id={} upstream_url={} model={} messages_count={}",
+                requestId, safeUrl, request.getModel(), request.getMessages().size());
+
+        long start = System.currentTimeMillis();
+        try {
+            restClient.post()
+                    .uri(url)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .exchange((req, resp) -> {
+                        HttpStatusCode status = resp.getStatusCode();
+                        if (!status.is2xxSuccessful()) {
+                            long upstreamLatency = System.currentTimeMillis() - start;
+                            log.warn("gateway.chat.upstream_failed request_id={} upstream_url={} status={} model={} upstream_latency_ms={}",
+                                    requestId, safeUrl, status.value(), request.getModel(), upstreamLatency);
+                            throw new GatewayException(
+                                    "Upstream service returned an error",
+                                    ERR_TYPE_SERVER,
+                                    ERR_CODE_UPSTREAM_ERROR,
+                                    HttpStatus.BAD_GATEWAY
+                            );
+                        }
+
+                        onStreamReady.run();
+
+                        boolean doneReceived = false;
+                        try (InputStream bodyStream = resp.getBody();
+                             BufferedReader reader = new BufferedReader(
+                                     new InputStreamReader(bodyStream, StandardCharsets.UTF_8))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                if (line.startsWith("data: ")) {
+                                    String data = line.substring(6);
+                                    try {
+                                        emitter.send(SseEmitter.event().data(data));
+                                    } catch (IOException e) {
+                                        log.info("gateway.chat.stream_cancelled request_id={}",
+                                                requestId);
+                                        return null;
+                                    }
+                                    if ("[DONE]".equals(data.trim())) {
+                                        doneReceived = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (!doneReceived) {
+                            throw new GatewayException(
+                                    "Upstream stream closed before completion",
+                                    ERR_TYPE_SERVER,
+                                    ERR_CODE_UPSTREAM_ERROR,
+                                    HttpStatus.BAD_GATEWAY
+                            );
+                        }
+                        return null;
+                    });
+
+            long upstreamLatency = System.currentTimeMillis() - start;
+            log.info("gateway.chat.stream_completed request_id={} upstream_url={} model={} upstream_latency_ms={}",
+                    requestId, safeUrl, request.getModel(), upstreamLatency);
+        } catch (GatewayException e) {
+            long upstreamLatency = System.currentTimeMillis() - start;
+            log.info("gateway.chat.stream_failed request_id={} upstream_url={} error_code={} upstream_latency_ms={}",
+                    requestId, safeUrl, e.getCode(), upstreamLatency);
+            throw e;
+        } catch (ResourceAccessException e) {
+            Throwable cause = e.getCause();
+            long upstreamLatency = System.currentTimeMillis() - start;
+            if (cause instanceof SocketTimeoutException
+                    || (cause instanceof java.net.ConnectException
+                    && cause.getMessage() != null
+                    && cause.getMessage().contains("time"))) {
+                log.error("gateway.chat.upstream_failed request_id={} upstream_url={} error_class={} error_code={} upstream_latency_ms={}",
+                        requestId, safeUrl, e.getClass().getSimpleName(), ERR_CODE_UPSTREAM_TIMEOUT, upstreamLatency);
+                throw new GatewayException(
+                        "Upstream request timed out",
+                        ERR_TYPE_SERVER,
+                        ERR_CODE_UPSTREAM_TIMEOUT,
+                        HttpStatus.GATEWAY_TIMEOUT,
+                        e
+                );
+            }
             log.error("gateway.chat.upstream_failed request_id={} upstream_url={} error_class={} error_code={} upstream_latency_ms={}",
                     requestId, safeUrl, e.getClass().getSimpleName(), ERR_CODE_UPSTREAM_ERROR, upstreamLatency);
             throw new GatewayException(

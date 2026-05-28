@@ -329,13 +329,17 @@ Run targeted tests with `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExcepti
 
 ## Streaming Errors
 
-For `stream=true`:
+For `stream=true` (implemented baseline):
 
-- If authentication, app loading, or retrieval fails before streaming starts, return a normal error response.
-- If upstream fails after streaming begins, emit the most compatible error event possible and close the stream.
-- If the client disconnects, cancel upstream forwarding and avoid logging it as an internal server error.
+- Pre-stream errors (validation, model config not ready, upstream non-2xx before the response stream is ready, upstream connection failure, upstream timeout) return OpenAI-compatible JSON via `GatewayException`.
+- The controller starts upstream work on a virtual thread but waits until the upstream response is confirmed as 2xx before returning the `SseEmitter`, so upstream setup failures can still use `GlobalExceptionHandler`.
+- If upstream fails after a 2xx stream has started, emit an SSE error event (`data: {"error":{"message":"...","type":"server_error","code":"upstream_error"}}`) and close the stream.
+- If the client disconnects (detected as `IOException` on `emitter.send()`), upstream reading is stopped and the stream is closed quietly. This is logged as `gateway.chat.stream_cancelled` at INFO level, not as an internal server error.
+- If the upstream closes without `data: [DONE]`, treat it as a detectable post-start `upstream_error`.
+- Usage data is null for streaming in this baseline. The limitation is documented in tests and specs.
+- Streaming error events do not expose raw provider bodies or stack traces.
 
-Usage data may be missing in MVP streaming responses; document this limitation.
+Implementation uses Spring MVC `SseEmitter` and `RestClient.exchange()` with background `Thread.ofVirtual()` for streaming. The `GlobalExceptionHandler` is involved only for errors detected before the SSE response is committed.
 
 ## Upstream Error Handling
 

@@ -1,11 +1,15 @@
 package com.sangui.raggateway.gateway.openai;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
 import com.sangui.raggateway.common.security.GatewayRequestContextHolder;
 import com.sangui.raggateway.gateway.completion.ChatCompletionGatewayService;
 import com.sangui.raggateway.gateway.completion.ChatCompletionResult;
+import com.sangui.raggateway.gateway.stream.ChatCompletionStreamPreparation;
+import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
+import com.sangui.raggateway.gateway.upstream.UpstreamChatCompletionRequest;
 import com.sangui.raggateway.log.ApiRequestLogService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,12 +22,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -38,6 +46,11 @@ class OpenAiChatCompletionsControllerTest {
     @Mock
     private ApiRequestLogService apiRequestLogService;
 
+    @Mock
+    private OpenAiCompatibleUpstreamClient upstreamClient;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     private MockMvc mockMvc;
 
     private static final Long APP_ID = 1L;
@@ -46,7 +59,8 @@ class OpenAiChatCompletionsControllerTest {
 
     @BeforeEach
     void setUp() {
-        OpenAiChatCompletionsController controller = new OpenAiChatCompletionsController(chatCompletionGatewayService, apiRequestLogService);
+        OpenAiChatCompletionsController controller = new OpenAiChatCompletionsController(
+                chatCompletionGatewayService, apiRequestLogService, upstreamClient, objectMapper);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -84,6 +98,14 @@ class OpenAiChatCompletionsControllerTest {
         usage.setTotalTokens(2);
         mockResponse.setUsage(usage);
         return new ChatCompletionResult(mockResponse, "gpt-4o-mini", "openai", 500L, 1, 1, 2);
+    }
+
+    private ChatCompletionStreamPreparation createStreamPreparation() {
+        UpstreamChatCompletionRequest upstreamRequest = new UpstreamChatCompletionRequest();
+        upstreamRequest.setModel("gpt-4o-mini");
+        upstreamRequest.setStream(true);
+        return new ChatCompletionStreamPreparation("https://api.openai.com", "sk-upstream-key",
+                upstreamRequest, "gpt-4o-mini", "openai");
     }
 
     @Test
@@ -134,11 +156,18 @@ class OpenAiChatCompletionsControllerTest {
     }
 
     @Test
-    void shouldReturn400WhenStreamIsTrue() throws Exception {
+    void shouldReturnSseEmitterWhenStreamIsTrue() throws Exception {
         setContext();
-        when(chatCompletionGatewayService.processChatCompletion(any()))
-                .thenThrow(new GatewayException("Streaming is not supported in this version.",
-                        "invalid_request_error", "invalid_request", HttpStatus.BAD_REQUEST));
+        when(chatCompletionGatewayService.prepareStreamCompletion(any()))
+                .thenReturn(createStreamPreparation());
+        doAnswer(invocation -> {
+            SseEmitter emitter = invocation.getArgument(3);
+            Runnable onStreamReady = invocation.getArgument(5);
+            onStreamReady.run();
+            emitter.complete();
+            return null;
+        }).when(upstreamClient).streamChatCompletion(anyString(), anyString(),
+                any(UpstreamChatCompletionRequest.class), any(SseEmitter.class), anyString(), any(Runnable.class));
 
         mockMvc.perform(post("/v1/chat/completions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -148,6 +177,77 @@ class OpenAiChatCompletionsControllerTest {
                                   "messages": [
                                     {"role": "user", "content": "Hello"}
                                   ],
+                                  "stream": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
+
+        ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
+                ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
+        verify(apiRequestLogService).record(captor.capture());
+        com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
+        assertThat(command.getUserId()).isEqualTo(USER_ID);
+        assertThat(command.getAppId()).isEqualTo(APP_ID);
+        assertThat(command.getApiKeyId()).isEqualTo(API_KEY_ID);
+        assertThat(command.getStatus()).isEqualTo("success");
+        assertThat(command.getErrorCode()).isNull();
+        assertThat(command.getModel()).isEqualTo("gpt-4o-mini");
+        assertThat(command.getProviderName()).isEqualTo("openai");
+        assertThat(command.getMessagesCount()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldReturn502JsonWhenStreamUpstreamFailsBeforeReady() throws Exception {
+        setContext();
+        when(chatCompletionGatewayService.prepareStreamCompletion(any()))
+                .thenReturn(createStreamPreparation());
+        doAnswer(invocation -> {
+            throw new GatewayException("Upstream service returned an error",
+                    "server_error", "upstream_error", HttpStatus.BAD_GATEWAY);
+        }).when(upstreamClient).streamChatCompletion(anyString(), anyString(),
+                any(UpstreamChatCompletionRequest.class), any(SseEmitter.class), anyString(), any(Runnable.class));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ],
+                                  "stream": true
+                                }
+                                """))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.error.code").value("upstream_error"))
+                .andExpect(jsonPath("$.error.type").value("server_error"))
+                .andExpect(jsonPath("$.code").doesNotExist())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+        ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
+                ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
+        verify(apiRequestLogService).record(captor.capture());
+        com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
+        assertThat(command.getStatus()).isEqualTo("failure");
+        assertThat(command.getErrorCode()).isEqualTo("upstream_error");
+        assertThat(command.getModel()).isEqualTo("gpt-4o-mini");
+        assertThat(command.getProviderName()).isEqualTo("openai");
+    }
+
+    @Test
+    void shouldReturn400WhenStreamPreValidationFails() throws Exception {
+        setContext();
+        when(chatCompletionGatewayService.prepareStreamCompletion(any()))
+                .thenThrow(new GatewayException("messages must be a non-empty array.",
+                        "invalid_request_error", "invalid_request", HttpStatus.BAD_REQUEST));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [],
                                   "stream": true
                                 }
                                 """))
@@ -162,7 +262,7 @@ class OpenAiChatCompletionsControllerTest {
         com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
         assertThat(command.getStatus()).isEqualTo("failure");
         assertThat(command.getErrorCode()).isEqualTo("invalid_request");
-        assertThat(command.getMessagesCount()).isEqualTo(1);
+        assertThat(command.getMessagesCount()).isEqualTo(0);
         assertThat(command.getModel()).isNull();
         assertThat(command.getProviderName()).isNull();
     }

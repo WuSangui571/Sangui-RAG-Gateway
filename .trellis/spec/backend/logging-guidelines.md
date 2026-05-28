@@ -102,6 +102,10 @@ gateway.chat.response_parse_succeeded
 gateway.chat.response_parse_failed
 gateway.chat.validation_failed
 gateway.chat.completed
+gateway.chat.stream_started
+gateway.chat.stream_completed
+gateway.chat.stream_cancelled
+gateway.chat.stream_failed
 ```
 
 Each event includes only safe key/value fields:

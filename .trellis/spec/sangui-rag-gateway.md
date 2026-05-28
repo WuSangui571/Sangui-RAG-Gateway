@@ -655,7 +655,7 @@ Supported request fields:
 | `temperature` | no | Forwarded to upstream when present. |
 | `max_tokens` | no | Forwarded to upstream when present. |
 | `top_p` | no | Forwarded to upstream when present. |
-| `stream` | no | `true` is rejected until the streaming task; absent or `false` uses non-streaming forwarding. |
+| `stream` | no | `true` activates SSE streaming forwarding; absent or `false` uses non-streaming forwarding. |
 
 Upstream forwarding contract:
 
@@ -674,7 +674,7 @@ Upstream forwarding contract:
 
 - `model` is always `ModelConfigEntity.chatModel` from the app default model config.
 - `Authorization: Bearer <decrypted-upstream-api-key>` is used only for the outbound call and is never logged or returned.
-- `stream` is forced to `false` for this baseline.
+- `stream` is forwarded as-is: absent/`false` uses whole-response forwarding; `true` uses stream chunk forwarding via `SseEmitter` and `text/event-stream`.
 - Upstream non-2xx and network failures map to `502 upstream_error`; timeout maps to `504 upstream_timeout`.
 - Upstream error bodies are not passed through to public callers.
 
@@ -712,7 +712,7 @@ Validation and error matrix:
 | Missing/disabled default model config | 409 | `model_config_not_ready` | Same semantics as `/v1/models`. |
 | Missing encrypted upstream key or decrypt failure | 409 | `model_config_not_ready` | Do not call upstream; do not expose config internals. |
 | Malformed JSON, null body, empty `messages`, missing role/content, unsupported role | 400 | `invalid_request` | OpenAI-compatible error shape; no upstream call. |
-| `stream=true` | 400 | `invalid_request` | Explicitly rejected until streaming support exists. |
+| `stream=true` | 200 SSE | `text/event-stream` | Forwards upstream SSE chunks and `data: [DONE]`; pre-stream validation/config errors return JSON; post-start upstream errors use SSE error event. |
 | Upstream non-2xx or network failure | 502 | `upstream_error` | Do not pass through provider body. |
 | Upstream timeout | 504 | `upstream_timeout` | Generic client-facing message. |
 
@@ -759,9 +759,98 @@ Validation matrix for this baseline:
 | Migration | `V3__create_model_config_and_app_default.sql` creates model config and app FK | Plaintext upstream keys stored or cross-user config exposed | Review migration + service test |
 | Health API | `GET /api/health` returns the admin envelope with `data.status=UP` | Endpoint returns stack traces or exposes unsupported `/v1/*` behavior | MockMvc test and route search |
 | `/v1/models` | Authenticated app with enabled config returns 200 model list | Missing/disabled config returns 409 `model_config_not_ready`; unauthenticated returns 401 | `OpenAiModelsControllerTest` |
-| `/v1/chat/completions` | Authenticated non-streaming request forwards to app default upstream model and returns chat completion JSON | Invalid body/messages/role or `stream=true` returns 400; missing config returns 409; upstream failure returns 502/504 | `OpenAiChatCompletionsControllerTest`, `ChatCompletionGatewayServiceTest`, `OpenAiCompatibleUpstreamClientTest` |
+| `/v1/chat/completions` | Authenticated non-streaming request forwards to app default upstream model and returns chat completion JSON; `stream=true` forwards SSE chunks with `text/event-stream` | Invalid body/messages/role returns 400; missing config returns 409; upstream failure returns 502/504 pre-stream or SSE error post-stream | `OpenAiChatCompletionsControllerTest`, `ChatCompletionGatewayServiceTest`, `OpenAiCompatibleUpstreamClientTest` |
 | Unmatched routes | Unknown paths, `/favicon.ico` return 404 `NOT_FOUND` envelope with no stack traces | Routes return 500 with stack traces or fake OpenAI responses | MockMvc test |
 | Tests | Unit and focused MVC tests pass without local PostgreSQL or Redis | Tests require local infrastructure for unit-level checks | `mvn test` under `backend/` |
+
+### Implemented Streaming Baseline
+
+`POST /v1/chat/completions` now supports `stream=true` with SSE (`text/event-stream`) forwarding. The non-streaming path (`stream=false` or absent) is unchanged.
+
+#### Streaming Behavior
+
+- `stream=true` receives `text/event-stream` with forwarded upstream SSE chunks and `data: [DONE]`.
+- Pre-stream errors (validation 400, model config not ready 409) still return OpenAI-compatible JSON.
+- Upstream setup failures before the upstream 2xx stream is ready return OpenAI-compatible JSON (`502 upstream_error` or `504 upstream_timeout`).
+- Post-start upstream errors after the upstream 2xx stream is ready send an SSE error event with OpenAI-compatible `{"error":{...}}` JSON data and close the stream safely.
+- Client disconnect (detected as `IOException` on `SseEmitter.send()`) cancels upstream forwarding gracefully and is logged as `gateway.chat.stream_cancelled`, not an internal error.
+- One `rag_request_log` row is persisted per streaming request. Usage token fields are nullable in this baseline.
+
+#### Streaming Error Matrix
+
+| Scenario | Before first byte? | Response | Error code |
+|---|---|---|---|
+| Missing/invalid API key | yes | 401 JSON | `invalid_api_key` |
+| Malformed JSON | yes | 400 JSON | `invalid_request` |
+| Validation failure (empty messages, missing role, etc.) | yes | 400 JSON | `invalid_request` |
+| Model config missing/disabled/key decrypt failure | yes | 409 JSON | `model_config_not_ready` |
+| Upstream non-2xx before streaming | yes | 502 JSON | `upstream_error` |
+| Upstream connection failure before streaming | yes | 502 JSON | `upstream_error` |
+| Upstream timeout before streaming | yes | 504 JSON | `upstream_timeout` |
+| Upstream closes without `[DONE]` after chunks | no | SSE error then close | `upstream_error` |
+| Client disconnect | no | Connection closed | none |
+| Successful streaming | no | 200 SSE | none |
+
+#### Request Log Contract (Streaming)
+
+| Field | Streaming value |
+|---|---|
+| `request_id` | Controller-generated UUID. |
+| `user_id`, `app_id`, `api_key_id` | From captured `GatewayRequestContext`. |
+| `model`, `provider_name` | From resolved model config. |
+| `status` | `success` or `failure`. |
+| `error_code` | `invalid_request`, `model_config_not_ready`, `upstream_error`, or `upstream_timeout` for failures. |
+| `latency_ms` | Total elapsed time from controller entry until stream close/failure/cancellation. |
+| `upstream_latency_ms` | Time to upstream lifecycle completion. |
+| `prompt_tokens`, `completion_tokens`, `total_tokens` | Null in baseline streaming. |
+| `messages_count` | Count only; no message content. |
+
+#### Streaming Log Events
+
+```
+gateway.chat.stream_started
+gateway.chat.stream_completed
+gateway.chat.stream_failed
+gateway.chat.stream_cancelled
+gateway.chat.completed (streaming success/failure finalization)
+```
+
+Safe fields: `request_id`, `app_id`, `api_key_id`, `user_id`, `provider_name`, `model`, `status`, `error_code`, `latency_ms`, `upstream_latency_ms`, `messages_count`, `error_class`.
+
+Never logged: chunk payloads, request messages, provider raw bodies, Authorization headers, or secrets.
+
+#### Implemented Files (New)
+
+```text
+backend/src/main/java/com/sangui/raggateway/gateway/stream/ChatCompletionStreamPreparation.java
+backend/src/main/java/com/sangui/raggateway/gateway/stream/StreamLogContext.java
+```
+
+#### Updated Files
+
+```text
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java
+backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java
+backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java
+```
+
+#### Updated Test Files
+
+```text
+backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java
+backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java
+backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java
+```
+
+#### Streaming Test Commands
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest,OpenAiCompatibleUpstreamClientTest,ApiRequestLogServiceTest" test
+mvn -q "-Dtest=GatewayAuthFilterTest,GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test
+mvn test
+```
 
 ### Implemented Admin Model Config API Baseline
 

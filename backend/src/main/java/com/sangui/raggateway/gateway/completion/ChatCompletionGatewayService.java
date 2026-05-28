@@ -10,6 +10,7 @@ import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionRequest;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionResponse;
 import com.sangui.raggateway.gateway.openai.OpenAiChatMessage;
+import com.sangui.raggateway.gateway.stream.ChatCompletionStreamPreparation;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
 import com.sangui.raggateway.gateway.upstream.UpstreamChatCompletionRequest;
 import com.sangui.raggateway.log.ChatCompletionLogHelper;
@@ -34,7 +35,6 @@ public class ChatCompletionGatewayService {
     private static final String ERR_CODE_INVALID_REQUEST = "invalid_request";
     private static final String ERR_CODE_MODEL_CONFIG_NOT_READY = "model_config_not_ready";
 
-    private static final String ERR_MESSAGE_STREAM_REJECTED = "Streaming is not supported in this version.";
     private static final String ERR_MESSAGE_EMPTY_MESSAGES = "messages must be a non-empty array.";
     private static final String ERR_MESSAGE_MISSING_ROLE = "Each message must have a role.";
     private static final String ERR_MESSAGE_UNSUPPORTED_ROLE = "Unsupported message role.";
@@ -134,15 +134,60 @@ public class ChatCompletionGatewayService {
         }
     }
 
+    public ChatCompletionStreamPreparation prepareStreamCompletion(OpenAiChatCompletionRequest request) {
+        GatewayRequestContext context = GatewayRequestContextHolder.get();
+        if (context == null) {
+            throw new GatewayException("Invalid API key.", ERR_TYPE, "invalid_api_key", HttpStatus.UNAUTHORIZED);
+        }
+
+        validateRequest(request);
+
+        AppEntity app = appService.findById(context.getAppId());
+        if (app == null) {
+            log.warn("App not found for appId={}", context.getAppId());
+            throw new GatewayException(ERR_MESSAGE_CONFIG_NOT_READY, ERR_TYPE, ERR_CODE_MODEL_CONFIG_NOT_READY, HttpStatus.CONFLICT);
+        }
+
+        ModelConfigEntity modelConfig = appService.resolveDefaultModelConfig(app);
+        if (modelConfig == null) {
+            log.warn("Default model config not ready for appId={}", app.getId());
+            throw new GatewayException(ERR_MESSAGE_CONFIG_NOT_READY, ERR_TYPE, ERR_CODE_MODEL_CONFIG_NOT_READY, HttpStatus.CONFLICT);
+        }
+
+        if (modelConfig.getApiKeyEncrypted() == null || modelConfig.getApiKeyEncrypted().isBlank()) {
+            log.warn("Model config has no encrypted API key for configId={}", modelConfig.getId());
+            throw new GatewayException(ERR_MESSAGE_CONFIG_NOT_READY, ERR_TYPE, ERR_CODE_MODEL_CONFIG_NOT_READY, HttpStatus.CONFLICT);
+        }
+
+        String decryptedKey;
+        try {
+            decryptedKey = encryptor.decrypt(modelConfig.getApiKeyEncrypted());
+        } catch (Exception e) {
+            log.warn("Failed to decrypt upstream API key for configId={}, errorType={}",
+                    modelConfig.getId(), e.getClass().getSimpleName());
+            throw new GatewayException(ERR_MESSAGE_CONFIG_NOT_READY, ERR_TYPE, ERR_CODE_MODEL_CONFIG_NOT_READY, HttpStatus.CONFLICT);
+        }
+
+        log.info("gateway.chat.config_resolved request_id={} app_id={} api_key_id={} provider_name={} model={}",
+                context.getRequestId(), context.getAppId(), context.getApiKeyId(),
+                modelConfig.getProviderName(), modelConfig.getChatModel());
+
+        UpstreamChatCompletionRequest upstreamRequest = buildUpstreamRequest(request, modelConfig);
+        upstreamRequest.setStream(true);
+
+        return new ChatCompletionStreamPreparation(
+                modelConfig.getBaseUrl(),
+                decryptedKey,
+                upstreamRequest,
+                modelConfig.getChatModel(),
+                modelConfig.getProviderName()
+        );
+    }
+
     void validateRequest(OpenAiChatCompletionRequest request) {
         if (request == null) {
             logValidationFailed(null);
             throw new GatewayException(ERR_MESSAGE_EMPTY_MESSAGES, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
-        }
-
-        if (Boolean.TRUE.equals(request.getStream())) {
-            logValidationFailed("stream_rejected");
-            throw new GatewayException(ERR_MESSAGE_STREAM_REJECTED, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
         }
 
         if (request.getMessages() == null || request.getMessages().isEmpty()) {

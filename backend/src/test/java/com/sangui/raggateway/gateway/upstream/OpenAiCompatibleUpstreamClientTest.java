@@ -18,10 +18,13 @@ import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.RestClient;
 
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
@@ -292,5 +295,136 @@ class OpenAiCompatibleUpstreamClientTest {
                 });
 
         mockServer.verify();
+    }
+
+    @Test
+    void shouldStreamChunksToSseEmitter() {
+        String sseBody = """
+                data: {"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"delta":{"content":"Hello"}}]}
+                
+                data: [DONE]
+                
+                """;
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setStream(true);
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "Hello")));
+
+        mockServer.expect(requestTo(BASE_URL + "/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", "Bearer " + API_KEY))
+                .andRespond(withSuccess(sseBody, MediaType.TEXT_PLAIN));
+
+        SseEmitter emitter = new SseEmitter(0L);
+        assertDoesNotThrow(() -> client.streamChatCompletion(BASE_URL, API_KEY, request, emitter, "request-stream-1"));
+        mockServer.verify();
+    }
+
+    @Test
+    void shouldThrowGatewayExceptionOnStreamUpstreamNon2xx() {
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setStream(true);
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "Hello")));
+
+        mockServer.expect(requestTo(BASE_URL + "/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                                {"error": {"message": "Internal server error"}}
+                                """));
+
+        SseEmitter emitter = new SseEmitter(0L);
+        assertThatThrownBy(() -> client.streamChatCompletion(BASE_URL, API_KEY, request, emitter, "request-stream-2"))
+                .isInstanceOf(GatewayException.class)
+                .matches(e -> {
+                    GatewayException ge = (GatewayException) e;
+                    return ge.getCode().equals("upstream_error")
+                            && ge.getHttpStatus().value() == 502;
+                });
+
+        mockServer.verify();
+    }
+
+    @Test
+    void shouldThrowGatewayExceptionWhenStreamClosesWithoutDone() {
+        String sseBody = """
+                data: {"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"delta":{"content":"Hello"}}]}
+                
+                """;
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setStream(true);
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "Hello")));
+
+        mockServer.expect(requestTo(BASE_URL + "/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(sseBody, MediaType.TEXT_PLAIN));
+
+        SseEmitter emitter = new SseEmitter(0L);
+        assertThatThrownBy(() -> client.streamChatCompletion(BASE_URL, API_KEY, request, emitter, "request-stream-no-done"))
+                .isInstanceOf(GatewayException.class)
+                .matches(e -> {
+                    GatewayException ge = (GatewayException) e;
+                    return ge.getCode().equals("upstream_error")
+                            && ge.getHttpStatus().value() == 502;
+                });
+
+        mockServer.verify();
+    }
+
+    @Test
+    void shouldLogSafeFieldsInStreamStartAndComplete(CapturedOutput output) {
+        String sseBody = """
+                data: {"id":"chatcmpl-1"}
+                
+                data: [DONE]
+                
+                """;
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setStream(true);
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "secret user message")));
+
+        mockServer.expect(requestTo(BASE_URL + "/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(sseBody, MediaType.TEXT_PLAIN));
+
+        SseEmitter emitter = new SseEmitter(0L);
+        assertDoesNotThrow(() -> client.streamChatCompletion(BASE_URL, API_KEY, request, emitter, "request-stream-3"));
+
+        String logs = output.getOut() + output.getErr();
+        assertThat(logs).contains("gateway.chat.stream_started");
+        assertThat(logs).contains("gateway.chat.stream_completed");
+        assertThat(logs).contains("request_id=request-stream-3");
+        assertThat(logs).doesNotContain(API_KEY);
+        assertThat(logs).doesNotContain("secret user message");
+    }
+
+    @Test
+    void shouldLogStreamFailedOnNon2xx(CapturedOutput output) {
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setStream(true);
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "Hello")));
+
+        mockServer.expect(requestTo(BASE_URL + "/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.BAD_GATEWAY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                                {"error": {"message": "provider-secret details"}}
+                                """));
+
+        SseEmitter emitter = new SseEmitter(0L);
+        assertThatThrownBy(() -> client.streamChatCompletion(BASE_URL, API_KEY, request, emitter, "request-stream-4"))
+                .isInstanceOf(GatewayException.class);
+
+        String logs = output.getOut() + output.getErr();
+        assertThat(logs).contains("gateway.chat.stream_started");
+        assertThat(logs).contains("gateway.chat.stream_failed");
+        assertThat(logs).contains("request_id=request-stream-4");
+        assertThat(logs).doesNotContain("provider-secret");
     }
 }

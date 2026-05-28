@@ -9,6 +9,7 @@ import com.sangui.raggateway.common.security.GatewayRequestContextHolder;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
 import com.sangui.raggateway.gateway.completion.ChatCompletionResult;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionRequest;
+import com.sangui.raggateway.gateway.stream.ChatCompletionStreamPreparation;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionResponse;
 import com.sangui.raggateway.gateway.openai.OpenAiChatMessage;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
@@ -279,11 +280,29 @@ class ChatCompletionGatewayServiceTest {
     }
 
     @Test
-    void shouldReturn400WhenStreamIsTrue() {
+    void shouldPrepareStreamCompletionSuccessfully() {
+        AppEntity app = createEnabledApp();
+        ModelConfigEntity config = createEnabledModelConfig();
+
+        when(appService.findById(APP_ID)).thenReturn(app);
+        when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
+        when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+
         OpenAiChatCompletionRequest request = createValidRequest();
         request.setStream(true);
+        ChatCompletionStreamPreparation prep = service.prepareStreamCompletion(request);
 
-        assertThatThrownBy(() -> service.validateRequest(request))
+        assertThat(prep.getModel()).isEqualTo("gpt-4o-mini");
+        assertThat(prep.getProviderName()).isEqualTo("openai");
+        assertThat(prep.getBaseUrl()).isEqualTo("https://api.openai.com");
+        assertThat(prep.getApiKey()).isEqualTo(DECRYPTED_KEY);
+        assertThat(prep.getUpstreamRequest().getStream()).isTrue();
+        assertThat(prep.getUpstreamRequest().getModel()).isEqualTo("gpt-4o-mini");
+    }
+
+    @Test
+    void shouldRejectNullRequestInPrepareStream() {
+        assertThatThrownBy(() -> service.prepareStreamCompletion(null))
                 .isInstanceOf(GatewayException.class)
                 .matches(e -> {
                     GatewayException ge = (GatewayException) e;
@@ -293,9 +312,60 @@ class ChatCompletionGatewayServiceTest {
     }
 
     @Test
-    void shouldLogValidationFailureWithRequestIdWithoutMessageContent(CapturedOutput output) {
+    void shouldRejectEmptyMessagesInPrepareStream() {
         OpenAiChatCompletionRequest request = createValidRequest();
         request.setStream(true);
+        request.setMessages(List.of());
+
+        assertThatThrownBy(() -> service.prepareStreamCompletion(request))
+                .isInstanceOf(GatewayException.class)
+                .matches(e -> {
+                    GatewayException ge = (GatewayException) e;
+                    return ge.getCode().equals("invalid_request")
+                            && ge.getHttpStatus().value() == 400;
+                });
+    }
+
+    @Test
+    void shouldReturn409WhenNoModelConfigInPrepareStream() {
+        AppEntity app = createEnabledApp();
+        app.setDefaultModelConfigId(null);
+
+        when(appService.findById(APP_ID)).thenReturn(app);
+        when(appService.resolveDefaultModelConfig(app)).thenReturn(null);
+
+        OpenAiChatCompletionRequest request = createValidRequest();
+        request.setStream(true);
+
+        assertThatThrownBy(() -> service.prepareStreamCompletion(request))
+                .isInstanceOf(GatewayException.class)
+                .matches(e -> {
+                    GatewayException ge = (GatewayException) e;
+                    return ge.getCode().equals("model_config_not_ready")
+                            && ge.getHttpStatus().value() == 409;
+                });
+    }
+
+    @Test
+    void shouldForwardStreamTrueToUpstreamForStreamRequest() {
+        AppEntity app = createEnabledApp();
+        ModelConfigEntity config = createEnabledModelConfig();
+
+        when(appService.findById(APP_ID)).thenReturn(app);
+        when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
+        when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+
+        OpenAiChatCompletionRequest request = createValidRequest();
+        request.setStream(true);
+
+        ChatCompletionStreamPreparation prep = service.prepareStreamCompletion(request);
+        assertThat(prep.getUpstreamRequest().getStream()).isTrue();
+    }
+
+    @Test
+    void shouldLogValidationFailureWithRequestIdWithoutMessageContent(CapturedOutput output) {
+        OpenAiChatCompletionRequest request = createValidRequest();
+        request.setMessages(null);
 
         assertThatThrownBy(() -> service.validateRequest(request))
                 .isInstanceOf(GatewayException.class);
@@ -304,7 +374,6 @@ class ChatCompletionGatewayServiceTest {
         assertThat(logs).contains("gateway.chat.validation_failed");
         assertThat(logs).contains("request_id=request-123");
         assertThat(logs).contains("error_code=invalid_request");
-        assertThat(logs).contains("reason=stream_rejected");
         assertThat(logs).doesNotContain("Hello");
         assertThat(logs).doesNotContain("sk-sangui-abcdef");
     }

@@ -50,7 +50,7 @@ Before completing backend work, verify:
 - [ ] Vector retrieval is scoped in SQL, not filtered after retrieval in Java.
 - [ ] Document status transitions are explicit and failure states are persisted.
 - [ ] Upstream HTTP calls have timeouts and normalized error handling.
-- [ ] Streaming requests cancel upstream calls when clients disconnect.
+- [ ] Streaming requests cancel upstream calls when clients disconnect (tested via `SseEmitter` send `IOException` handling in `OpenAiCompatibleUpstreamClient`).
 - [ ] Request logs avoid full prompts and document content.
 - [ ] New database fields have migration notes and indexes where needed.
 - [ ] Tests cover both success and relevant failure paths.
