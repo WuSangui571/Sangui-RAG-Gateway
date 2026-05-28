@@ -2,6 +2,8 @@ package com.sangui.raggateway.common.exception;
 
 import com.sangui.raggateway.common.response.ApiResponse;
 import com.sangui.raggateway.common.response.OpenAiErrorResponse;
+import com.sangui.raggateway.common.security.GatewayRequestContext;
+import com.sangui.raggateway.common.security.GatewayRequestContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +45,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(GatewayException.class)
     public ResponseEntity<OpenAiErrorResponse> handleGatewayException(GatewayException ex) {
-        log.warn("Gateway exception: code={}, type={}, message={}", ex.getCode(), ex.getType(), ex.getMessage());
+        GatewayRequestContext context = GatewayRequestContextHolder.get();
+        String requestId = context != null ? context.getRequestId() : null;
+        log.warn("Gateway exception: request_id={} code={} type={} message={}",
+                requestId, ex.getCode(), ex.getType(), ex.getMessage());
         return ResponseEntity.status(ex.getHttpStatus())
                 .body(OpenAiErrorResponse.of(ex.getMessage(), ex.getType(), ex.getCode()));
     }

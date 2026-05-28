@@ -440,3 +440,46 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: 上游 Base URL 兼容与 Chat Completions 联调收尾
+
+**Date**: 2026-05-28
+**Task**: 上游 Base URL 兼容与 Chat Completions 联调收尾
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Code commit | `ab6d19d fix:???? base_url v1 ??` |
+| Main change | Fixed OpenAI-compatible upstream Chat Completions URL construction so both provider root URLs and `/v1` API-root URLs target exactly `/v1/chat/completions`. |
+| Startup fix | Added a dev-profile placeholder `rag.gateway.secret-key` default so local `mvn spring-boot:run` starts without requiring an env var, while preserving `RAG_GATEWAY_SECRET_KEY` override for production-like runs. |
+| Specs updated | Documented accepted `base_url` formats, upstream safe error/logging behavior, and dev-only encryption secret placeholder rule. |
+| Updated files | `backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java`; `backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java`; `backend/src/main/resources/application-dev.yml`; `.trellis/spec/sangui-rag-gateway.md`; `.trellis/spec/backend/error-handling.md`; `.trellis/spec/backend/database-guidelines.md` |
+| Automated verification | `mvn -q -DskipTests compile` PASS; `mvn -q "-Dtest=*OpenAiCompatibleUpstreamClientTest" test` PASS; `mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest,OpenAiCompatibleUpstreamClientTest" test` PASS; `mvn -q "-Dtest=OpenAiModelsControllerTest,GatewayAuthFilterTest" test` PASS; `mvn -q "-Dtest=*GlobalExceptionHandlerTest,*GlobalExceptionHandlerIntegrationTest" test` PASS; `mvn -q "-Dtest=UpstreamApiKeyEncryptorTest,UpstreamApiKeyMaskerTest,ModelConfigServiceTest" test` PASS; `mvn -q spring-boot:run "-Dspring-boot.run.arguments=--spring.main.web-application-type=none"` PASS; `mvn test` PASS with 222 tests, 0 failures/errors/skips. |
+| Manual verification | Human verified `/actuator/health` UP, Admin model config/app/API-key/default-model binding, `/v1/models`, successful `/v1/chat/completions` against `https://api.sanguicode.com/v1`, and Admin updates for all four accepted `base_url` forms. |
+| Boundary | No frontend, DB schema, Redis/MQ, streaming, RAG retrieval, public request DTO, or upstream provider-specific routing changes. Upstream provider error bodies remain non-public. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ab6d19d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -6,6 +6,7 @@ public class GatewayRequestContext {
     private final Long userId;
     private final Long apiKeyId;
     private final String apiKeyPrefix;
+    private String requestId;
 
     public GatewayRequestContext(Long appId, Long userId, Long apiKeyId, String apiKeyPrefix) {
         this.appId = appId;
@@ -28,5 +29,13 @@ public class GatewayRequestContext {
 
     public String getApiKeyPrefix() {
         return apiKeyPrefix;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 }

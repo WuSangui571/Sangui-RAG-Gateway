@@ -351,30 +351,21 @@ invalid upstream API key -> upstream_error for public gateway callers; admin API
 
 All upstream failures map to `502 upstream_error` (or `504 upstream_timeout` for timeouts). Upstream provider response bodies must never be passed through to public gateway callers — they may include provider internals, sensitive request fragments, or API key context.
 
-### Safe Internal Logging
+### Implemented Upstream Error Classification
 
-On upstream failure, internal logs may include:
+`OpenAiCompatibleUpstreamClient` classifies upstream failures as follows:
 
-```text
-upstream HTTP status (safe)
-normalized final upstream URL or URL path (contains only the configured host and path, no query params)
-provider/model name (non-secret)
-exception class name or bounded safe message
-```
+| Scenario | GatewayException code | HTTP status | Log event | Log fields |
+|---|---|---|---|---|
+| Upstream non-2xx (any) | `upstream_error` | 502 | `gateway.chat.upstream_failed` | request_id, safe upstream_url, upstream status, model, upstream_latency_ms |
+| Network failure (connection refused, etc.) | `upstream_error` | 502 | `gateway.chat.upstream_failed` | request_id, safe upstream_url, error_class, error_code, upstream_latency_ms |
+| Socket timeout | `upstream_timeout` | 504 | `gateway.chat.upstream_failed` | request_id, safe upstream_url, error_class, error_code=upstream_timeout, upstream_latency_ms |
+| Invalid upstream success body (parse failure) | `upstream_error` | 502 | `gateway.chat.response_parse_failed` | request_id, model, error_class |
+| Unexpected internal exception | `upstream_error` | 502 | `gateway.chat.upstream_failed` | request_id, safe upstream_url, error_class, error_code, upstream_latency_ms |
 
-Forbidden in upstream error logs:
+`ChatCompletionGatewayService` forwards GatewayException from upstream/client through the controller to GlobalExceptionHandler. The completed log in the controller captures the final success/failure status, error_code, and total latency_ms.
 
-```text
-plaintext upstream API key
-encrypted upstream API key ciphertext
-Authorization header value
-public app API key
-full request body / messages
-upstream provider response body
-full prompt content
-```
-
-These constraints apply to all layers: upstream client, gateway service, exception handlers, and any retry or circuit-breaker wrappers.
+Public gateway responses remain OpenAI-compatible for all error cases. Upstream provider body content is never included in logs or client responses. Upstream client and response-parse failure logs record exception class names only, not throwable messages or stack traces, because those exception messages can contain raw upstream URL or body fragments.
 
 ## Document Pipeline Errors
 

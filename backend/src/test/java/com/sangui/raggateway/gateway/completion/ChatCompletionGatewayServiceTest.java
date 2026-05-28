@@ -17,6 +17,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -30,7 +32,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ChatCompletionGatewayServiceTest {
 
     @Mock
@@ -76,7 +78,9 @@ class ChatCompletionGatewayServiceTest {
     @BeforeEach
     void setUp() {
         service = new ChatCompletionGatewayService(appService, encryptor, upstreamClient, new ObjectMapper());
-        GatewayRequestContextHolder.set(new GatewayRequestContext(APP_ID, USER_ID, API_KEY_ID, "sk-sangui-abcdef"));
+        GatewayRequestContext context = new GatewayRequestContext(APP_ID, USER_ID, API_KEY_ID, "sk-sangui-abcdef");
+        context.setRequestId("request-123");
+        GatewayRequestContextHolder.set(context);
     }
 
     @AfterEach
@@ -280,6 +284,23 @@ class ChatCompletionGatewayServiceTest {
     }
 
     @Test
+    void shouldLogValidationFailureWithRequestIdWithoutMessageContent(CapturedOutput output) {
+        OpenAiChatCompletionRequest request = createValidRequest();
+        request.setStream(true);
+
+        assertThatThrownBy(() -> service.validateRequest(request))
+                .isInstanceOf(GatewayException.class);
+
+        String logs = output.getOut() + output.getErr();
+        assertThat(logs).contains("gateway.chat.validation_failed");
+        assertThat(logs).contains("request_id=request-123");
+        assertThat(logs).contains("error_code=invalid_request");
+        assertThat(logs).contains("reason=stream_rejected");
+        assertThat(logs).doesNotContain("Hello");
+        assertThat(logs).doesNotContain("sk-sangui-abcdef");
+    }
+
+    @Test
     void shouldReturn400WhenMessagesIsNull() {
         OpenAiChatCompletionRequest request = new OpenAiChatCompletionRequest();
         request.setModel("gpt-4o");
@@ -391,11 +412,27 @@ class ChatCompletionGatewayServiceTest {
                 }
                 """;
 
-        OpenAiChatCompletionResponse response = service.parseResponse(responseWithExtraFields, "gpt-4o-mini");
+        OpenAiChatCompletionResponse response = service.parseResponse(responseWithExtraFields, "gpt-4o-mini", 0L);
 
         assertThat(response.getObject()).isEqualTo("chat.completion");
         assertThat(response.getChoices()).hasSize(1);
         assertThat(response.getChoices().get(0).getMessage().getContent()).isEqualTo("Hello");
+    }
+
+    @Test
+    void shouldLogParseFailureWithoutUpstreamBodyOrMessages(CapturedOutput output) {
+        String invalidResponse = "provider-secret Hello";
+
+        assertThatThrownBy(() -> service.parseResponse(invalidResponse, "gpt-4o-mini", 12L))
+                .isInstanceOf(GatewayException.class)
+                .matches(e -> ((GatewayException) e).getCode().equals("upstream_error"));
+
+        String logs = output.getOut() + output.getErr();
+        assertThat(logs).contains("gateway.chat.response_parse_failed");
+        assertThat(logs).contains("request_id=request-123");
+        assertThat(logs).contains("model=gpt-4o-mini");
+        assertThat(logs).doesNotContain("provider-secret");
+        assertThat(logs).doesNotContain("Hello");
     }
 
     @Test

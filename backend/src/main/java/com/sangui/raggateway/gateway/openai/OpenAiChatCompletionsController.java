@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 @RestController
 @Profile("!test")
 public class OpenAiChatCompletionsController {
@@ -33,8 +35,25 @@ public class OpenAiChatCompletionsController {
             throw new GatewayException("Invalid API key.", "invalid_request_error", "invalid_api_key", HttpStatus.UNAUTHORIZED);
         }
 
-        log.info("Received chat completions request: apiKeyId={}, appId={}", context.getApiKeyId(), context.getAppId());
-        OpenAiChatCompletionResponse response = chatCompletionGatewayService.processChatCompletion(request);
-        return ResponseEntity.ok(response);
+        String requestId = UUID.randomUUID().toString();
+        context.setRequestId(requestId);
+
+        int messagesCount = request != null && request.getMessages() != null ? request.getMessages().size() : 0;
+        long start = System.currentTimeMillis();
+
+        try {
+            OpenAiChatCompletionResponse response = chatCompletionGatewayService.processChatCompletion(request);
+            long latencyMs = System.currentTimeMillis() - start;
+            log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=success messages_count={} latency_ms={}",
+                    requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
+                    messagesCount, latencyMs);
+            return ResponseEntity.ok(response);
+        } catch (GatewayException e) {
+            long latencyMs = System.currentTimeMillis() - start;
+            log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=failure error_code={} messages_count={} latency_ms={}",
+                    requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
+                    e.getCode(), messagesCount, latencyMs);
+            throw e;
+        }
     }
 }

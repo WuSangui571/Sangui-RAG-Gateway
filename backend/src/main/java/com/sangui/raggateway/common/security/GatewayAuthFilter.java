@@ -105,12 +105,17 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
 
         apiKeyService.updateLastUsed(apiKey.getId());
 
-        return new GatewayRequestContext(
+        GatewayRequestContext context = new GatewayRequestContext(
                 app.getId(),
                 app.getUserId(),
                 apiKey.getId(),
                 apiKey.getKeyPrefix()
         );
+
+        log.info("gateway.chat.auth_completed app_id={} api_key_id={} user_id={}",
+                context.getAppId(), context.getApiKeyId(), context.getUserId());
+
+        return context;
     }
 
     private void writeAuthError(HttpServletResponse response) throws IOException {

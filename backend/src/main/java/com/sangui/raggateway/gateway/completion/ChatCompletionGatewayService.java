@@ -12,6 +12,7 @@ import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionResponse;
 import com.sangui.raggateway.gateway.openai.OpenAiChatMessage;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
 import com.sangui.raggateway.gateway.upstream.UpstreamChatCompletionRequest;
+import com.sangui.raggateway.log.ChatCompletionLogHelper;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,16 +93,23 @@ public class ChatCompletionGatewayService {
             throw new GatewayException(ERR_MESSAGE_CONFIG_NOT_READY, ERR_TYPE, ERR_CODE_MODEL_CONFIG_NOT_READY, HttpStatus.CONFLICT);
         }
 
+        log.info("gateway.chat.config_resolved request_id={} app_id={} api_key_id={} provider_name={} model={}",
+                context.getRequestId(), context.getAppId(), context.getApiKeyId(),
+                modelConfig.getProviderName(), modelConfig.getChatModel());
+
         UpstreamChatCompletionRequest upstreamRequest = buildUpstreamRequest(request, modelConfig);
 
         try {
+            long upstreamStart = System.currentTimeMillis();
             String responseBody = upstreamClient.sendChatCompletion(
                     modelConfig.getBaseUrl(),
                     decryptedKey,
                     upstreamRequest
             );
+            long upstreamLatency = System.currentTimeMillis() - upstreamStart;
 
-            return parseResponse(responseBody, modelConfig.getChatModel());
+            OpenAiChatCompletionResponse response = parseResponse(responseBody, modelConfig.getChatModel(), upstreamLatency);
+            return response;
         } catch (GatewayException e) {
             throw e;
         } catch (Exception e) {
@@ -118,32 +126,50 @@ public class ChatCompletionGatewayService {
 
     void validateRequest(OpenAiChatCompletionRequest request) {
         if (request == null) {
+            logValidationFailed(null);
             throw new GatewayException(ERR_MESSAGE_EMPTY_MESSAGES, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
         }
 
         if (Boolean.TRUE.equals(request.getStream())) {
+            logValidationFailed("stream_rejected");
             throw new GatewayException(ERR_MESSAGE_STREAM_REJECTED, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
         }
 
         if (request.getMessages() == null || request.getMessages().isEmpty()) {
+            logValidationFailed("empty_messages");
             throw new GatewayException(ERR_MESSAGE_EMPTY_MESSAGES, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
         }
 
         for (int i = 0; i < request.getMessages().size(); i++) {
             OpenAiChatMessage msg = request.getMessages().get(i);
             if (msg == null) {
+                logValidationFailed("null_message");
                 throw new GatewayException(ERR_MESSAGE_MISSING_ROLE, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
             }
             if (msg.getRole() == null || msg.getRole().isBlank()) {
+                logValidationFailed("missing_role");
                 throw new GatewayException(ERR_MESSAGE_MISSING_ROLE, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
             }
             if (!SUPPORTED_ROLES.contains(msg.getRole())) {
+                logValidationFailed("unsupported_role");
                 throw new GatewayException(ERR_MESSAGE_UNSUPPORTED_ROLE, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
             }
             if (msg.getContent() == null || msg.getContent().isBlank()) {
+                logValidationFailed("missing_content");
                 throw new GatewayException(ERR_MESSAGE_MISSING_CONTENT, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
             }
         }
+    }
+
+    private void logValidationFailed(String reason) {
+        String requestId = ChatCompletionLogHelper.currentRequestId();
+        if (reason == null) {
+            log.warn("gateway.chat.validation_failed request_id={} error_code={}",
+                    requestId, ERR_CODE_INVALID_REQUEST);
+            return;
+        }
+        log.warn("gateway.chat.validation_failed request_id={} error_code={} reason={}",
+                requestId, ERR_CODE_INVALID_REQUEST, reason);
     }
 
     UpstreamChatCompletionRequest buildUpstreamRequest(OpenAiChatCompletionRequest request, ModelConfigEntity modelConfig) {
@@ -176,7 +202,7 @@ public class ChatCompletionGatewayService {
         return upstream;
     }
 
-    OpenAiChatCompletionResponse parseResponse(String responseBody, String chatModel) {
+    OpenAiChatCompletionResponse parseResponse(String responseBody, String chatModel, long upstreamLatencyMs) {
         try {
             OpenAiChatCompletionResponse response = objectMapper.readValue(responseBody, OpenAiChatCompletionResponse.class);
             if (response.getObject() == null) {
@@ -185,9 +211,14 @@ public class ChatCompletionGatewayService {
             if (response.getModel() == null) {
                 response.setModel(chatModel);
             }
+            String requestId = ChatCompletionLogHelper.currentRequestId();
+            log.info("gateway.chat.response_parse_succeeded request_id={} model={} upstream_latency_ms={}",
+                    requestId, chatModel, upstreamLatencyMs);
             return response;
         } catch (Exception e) {
-            log.error("Failed to parse upstream chat completion response", e);
+            String requestId = ChatCompletionLogHelper.currentRequestId();
+            log.error("gateway.chat.response_parse_failed request_id={} model={} error_class={}",
+                    requestId, chatModel, e.getClass().getSimpleName());
             throw new GatewayException(
                     "Upstream service returned an invalid response",
                     ERR_TYPE_SERVER,

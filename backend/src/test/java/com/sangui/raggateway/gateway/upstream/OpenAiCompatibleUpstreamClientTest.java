@@ -1,8 +1,15 @@
 package com.sangui.raggateway.gateway.upstream;
 
 import com.sangui.raggateway.common.exception.GatewayException;
+import com.sangui.raggateway.common.security.GatewayRequestContext;
+import com.sangui.raggateway.common.security.GatewayRequestContextHolder;
+import com.sangui.raggateway.log.ChatCompletionLogHelper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
+@ExtendWith(OutputCaptureExtension.class)
 class OpenAiCompatibleUpstreamClientTest {
 
     private static final String BASE_URL = "https://api.openai.com";
@@ -55,6 +63,14 @@ class OpenAiCompatibleUpstreamClientTest {
         mockServer = MockRestServiceServer.bindTo(builder).build();
         RestClient restClient = builder.build();
         client = new OpenAiCompatibleUpstreamClient(restClient);
+        GatewayRequestContext context = new GatewayRequestContext(1L, 100L, 30L, "sk-sangui-prefix");
+        context.setRequestId("request-123");
+        GatewayRequestContextHolder.set(context);
+    }
+
+    @AfterEach
+    void tearDown() {
+        GatewayRequestContextHolder.clear();
     }
 
     @Test
@@ -124,6 +140,37 @@ class OpenAiCompatibleUpstreamClientTest {
                 });
 
         mockServer.verify();
+    }
+
+    @Test
+    void shouldLogSafeUpstreamFieldsWithoutSecretsOrProviderBody(CapturedOutput output) {
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "secret user message")));
+
+        mockServer.expect(requestTo("https://user:password@api.openai.com/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.BAD_GATEWAY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                                {"error": {"message": "provider-secret Authorization secret user message"}}
+                                """));
+
+        assertThatThrownBy(() -> client.sendChatCompletion("https://user:password@api.openai.com", API_KEY, request))
+                .isInstanceOf(GatewayException.class);
+
+        String logs = output.getOut() + output.getErr();
+        assertThat(logs).contains("gateway.chat.upstream_started");
+        assertThat(logs).contains("gateway.chat.upstream_failed");
+        assertThat(logs).contains("request_id=request-123");
+        assertThat(logs).contains("upstream_url=api.openai.com/v1/chat/completions");
+        assertThat(logs).doesNotContain(API_KEY);
+        assertThat(logs).doesNotContain("Authorization");
+        assertThat(logs).doesNotContain("provider-secret");
+        assertThat(logs).doesNotContain("secret user message");
+        assertThat(logs).doesNotContain("user:password");
+        assertThat(ChatCompletionLogHelper.sanitizeUpstreamUrl("https://user:password@api.openai.com/v1/chat/completions?token=secret"))
+                .isEqualTo("api.openai.com/v1/chat/completions");
     }
 
     @Test

@@ -1,0 +1,16 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product boundary, gateway API scope, request log domain, and Chat Completions baseline"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Package placement for gateway, common, and log modules"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe structured logging fields and sensitive data rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "OpenAI-compatible gateway errors and upstream error classification"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Confirms DB logging rules and that DB persistence is out of scope this task"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required backend test and security review checklist"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer observability, secret, API, and error boundary checklist"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java", "reason": "Existing public Chat Completions controller and thin-controller pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Existing service orchestration, validation, config resolution, upstream call, response parse"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java", "reason": "Existing upstream URL construction, timeout, non-2xx, and network error mapping"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java", "reason": "Existing gateway auth context and safe auth failure behavior"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java", "reason": "Existing gateway exception response mapping and logging"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java", "reason": "Existing service test pattern for success, validation, upstream errors"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java", "reason": "Existing upstream client test pattern and MockRestServiceServer usage"}

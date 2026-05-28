@@ -1,7 +1,7 @@
 {
-  "id": "upstream-base-url-chat-completions-debug",
-  "name": "upstream-base-url-chat-completions-debug",
-  "title": "上游 Base URL 兼容与 Chat Completions 手动联调增强",
+  "id": "chat-completions-observability",
+  "name": "chat-completions-observability",
+  "title": "Chat Completions 请求日志与上游错误可观测性增强",
   "description": "",
   "status": "planning",
   "dev_type": "backend",

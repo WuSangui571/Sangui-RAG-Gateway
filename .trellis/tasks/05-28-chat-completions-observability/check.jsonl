@@ -1,0 +1,14 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify observability stays within lightweight RAG gateway scope"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Verify logs use safe fields and omit secrets/content"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify public gateway errors remain OpenAI-compatible and upstream errors normalized"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify test coverage and backend completion checklist"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Verify API, secret, tenant, and observability boundaries"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java", "reason": "Check public response shape and request completion logging"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Check stage logging, error classification, and no sensitive content"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java", "reason": "Check sanitized upstream URL/error logging"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java", "reason": "Check authentication logs do not leak raw tokens or headers"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java", "reason": "Check controller assertions for OpenAI shape and safe logs"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java", "reason": "Check service assertions for safe fields and failure classification"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java", "reason": "Check upstream tests for safe logging and provider body exclusion"}
