@@ -659,7 +659,19 @@ Supported request fields:
 
 Upstream forwarding contract:
 
-- Target URL is `{normalized_base_url}/v1/chat/completions`.
+- Target URL is constructed from `base_url`:
+  - Remove trailing slash characters.
+  - If the resulting URL ends with `/v1`, append `/chat/completions`.
+  - Otherwise, append `/v1/chat/completions`.
+- Accepted `base_url` formats and resulting upstream request URLs:
+
+  | Input `base_url` | Final upstream request URL |
+  |---|---|
+  | `https://api.example.com` | `https://api.example.com/v1/chat/completions` |
+  | `https://api.example.com/` | `https://api.example.com/v1/chat/completions` |
+  | `https://api.example.com/v1` | `https://api.example.com/v1/chat/completions` |
+  | `https://api.example.com/v1/` | `https://api.example.com/v1/chat/completions` |
+
 - `model` is always `ModelConfigEntity.chatModel` from the app default model config.
 - `Authorization: Bearer <decrypted-upstream-api-key>` is used only for the outbound call and is never logged or returned.
 - `stream` is forced to `false` for this baseline.

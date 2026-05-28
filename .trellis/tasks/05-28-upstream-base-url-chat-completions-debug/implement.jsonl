@@ -1,0 +1,12 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\tasks\\05-28-upstream-base-url-chat-completions-debug\\prd.md", "reason": "Task contract, acceptance criteria, URL normalization matrix, and scope limits"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project API scope and existing Chat Completions upstream forwarding contract"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Gateway upstream error mapping and provider body secrecy rules"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe upstream logging constraints for URL/status and secret avoidance"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend testing expectations for upstream forwarding changes"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Public gateway/upstream contract boundary review"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClient.java", "reason": "Primary implementation target: URL construction, upstream headers, and error mapping"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClientTest.java", "reason": "Focused test target for all baseUrl forms and upstream error mapping"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayService.java", "reason": "Context: service passes modelConfig baseUrl and decrypted upstream key to client"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayServiceTest.java", "reason": "Regression context for baseUrl pass-through and upstream exception propagation"}

@@ -35,3 +35,7 @@ management:
 logging:
   level:
     com.sangui.raggateway: DEBUG
+
+rag:
+  gateway:
+    secret-key: ${RAG_GATEWAY_SECRET_KEY:local-dev-change-me}

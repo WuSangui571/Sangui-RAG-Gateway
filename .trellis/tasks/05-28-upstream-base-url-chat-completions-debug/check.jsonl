@@ -1,0 +1,12 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\05-28-upstream-base-url-chat-completions-debug\\prd.md", "reason": "Acceptance criteria and required regression checks"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify spec update and public gateway contract remain aligned"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check 502/504 behavior and no provider body pass-through"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Verify logs avoid keys, request body, response body, and prompts"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Quality checklist and required test coverage"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer self-check before completion"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClient.java", "reason": "Verify URL normalization and safe upstream error handling"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClientTest.java", "reason": "Ensure required baseUrl assertions are covered"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayService.java", "reason": "Verify service behavior remains unchanged"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayServiceTest.java", "reason": "Verify no service-level behavior regression"}

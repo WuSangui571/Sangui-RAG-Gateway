@@ -152,6 +152,81 @@ class OpenAiCompatibleUpstreamClientTest {
     }
 
     @Test
+    void shouldSendRequestWithBaseUrlContainingV1() {
+        String baseUrl = "https://api.openai.com/v1";
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "Hello")));
+        request.setStream(false);
+
+        mockServer.expect(requestTo(baseUrl + "/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", "Bearer " + API_KEY))
+                .andRespond(withSuccess(UPSTREAM_RESPONSE, MediaType.APPLICATION_JSON));
+
+        String response = client.sendChatCompletion(baseUrl, API_KEY, request);
+
+        assertThat(response).contains("chat.completion");
+        mockServer.verify();
+    }
+
+    @Test
+    void shouldSendRequestWithBaseUrlContainingV1AndTrailingSlash() {
+        String baseUrl = "https://api.openai.com/v1/";
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "Hello")));
+        request.setStream(false);
+
+        mockServer.expect(requestTo("https://api.openai.com/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", "Bearer " + API_KEY))
+                .andRespond(withSuccess(UPSTREAM_RESPONSE, MediaType.APPLICATION_JSON));
+
+        String response = client.sendChatCompletion(baseUrl, API_KEY, request);
+
+        assertThat(response).contains("chat.completion");
+        mockServer.verify();
+    }
+
+    @Test
+    void shouldSendRequestWithBaseUrlTrailingSlash() {
+        String baseUrl = "https://api.openai.com/";
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "Hello")));
+        request.setStream(false);
+
+        mockServer.expect(requestTo(BASE_URL + "/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", "Bearer " + API_KEY))
+                .andRespond(withSuccess(UPSTREAM_RESPONSE, MediaType.APPLICATION_JSON));
+
+        String response = client.sendChatCompletion(baseUrl, API_KEY, request);
+
+        assertThat(response).contains("chat.completion");
+        mockServer.verify();
+    }
+
+    @Test
+    void shouldSendRequestWithBaseUrlNoTrailingSlash() {
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "Hello")));
+        request.setStream(false);
+
+        mockServer.expect(requestTo(BASE_URL + "/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", "Bearer " + API_KEY))
+                .andRespond(withSuccess(UPSTREAM_RESPONSE, MediaType.APPLICATION_JSON));
+
+        String response = client.sendChatCompletion(BASE_URL, API_KEY, request);
+
+        assertThat(response).contains("chat.completion");
+        mockServer.verify();
+    }
+
+    @Test
     void shouldThrowGatewayExceptionOnConnectionRefused() {
         UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
         request.setModel("gpt-4o-mini");

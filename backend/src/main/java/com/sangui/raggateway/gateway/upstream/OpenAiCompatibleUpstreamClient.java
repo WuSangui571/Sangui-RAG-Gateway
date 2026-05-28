@@ -50,7 +50,8 @@ public class OpenAiCompatibleUpstreamClient {
     }
 
     public String sendChatCompletion(String baseUrl, String apiKey, UpstreamChatCompletionRequest request) {
-        String url = normalizeBaseUrl(baseUrl) + CHAT_PATH;
+        String base = normalizeBaseUrl(baseUrl);
+        String url = base.endsWith("/v1") ? base + "/chat/completions" : base + CHAT_PATH;
 
         log.info("Forwarding chat completion to upstream: url={}, model={}, messagesCount={}",
                 url, request.getModel(), request.getMessages().size());

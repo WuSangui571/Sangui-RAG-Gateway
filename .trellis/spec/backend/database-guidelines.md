@@ -330,7 +330,7 @@ api_key_masked or prefix for display
 encryption_version if key rotation is introduced
 ```
 
-The encryption master key must come from environment variables (`RAG_GATEWAY_SECRET_KEY`), not source code.
+The encryption master key must come from environment variables (`RAG_GATEWAY_SECRET_KEY`), not source code, outside local development. The `dev` profile may provide a safe placeholder default matching `.env.example` so `mvn spring-boot:run` starts locally; production-like runs must override it with `RAG_GATEWAY_SECRET_KEY`.
 
 ### Implemented Encryption Baseline
 

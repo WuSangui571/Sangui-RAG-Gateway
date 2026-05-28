@@ -349,7 +349,32 @@ provider 5xx -> upstream_error
 invalid upstream API key -> upstream_error for public gateway callers; admin APIs may show a masked configuration error
 ```
 
-Do not pass through upstream response bodies blindly. They may include provider details or sensitive request fragments.
+All upstream failures map to `502 upstream_error` (or `504 upstream_timeout` for timeouts). Upstream provider response bodies must never be passed through to public gateway callers — they may include provider internals, sensitive request fragments, or API key context.
+
+### Safe Internal Logging
+
+On upstream failure, internal logs may include:
+
+```text
+upstream HTTP status (safe)
+normalized final upstream URL or URL path (contains only the configured host and path, no query params)
+provider/model name (non-secret)
+exception class name or bounded safe message
+```
+
+Forbidden in upstream error logs:
+
+```text
+plaintext upstream API key
+encrypted upstream API key ciphertext
+Authorization header value
+public app API key
+full request body / messages
+upstream provider response body
+full prompt content
+```
+
+These constraints apply to all layers: upstream client, gateway service, exception handlers, and any retry or circuit-breaker wrappers.
 
 ## Document Pipeline Errors
 
