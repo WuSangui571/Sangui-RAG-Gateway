@@ -403,6 +403,21 @@ UPLOADED/PARSING/PARSED/EMBEDDING -> FAILED
 
 Store a bounded error message suitable for admin display. Full stack traces belong in server logs only.
 
+### Embedding Failure Behavior
+
+Embedding failures are handled inline during document ingestion, not via separate error endpoints:
+
+| Scenario | API response | Document status | KB status | Vectors persisted |
+|---|---|---|---|---|
+| Missing/disabled/mismatched embedding config | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` if prior ready docs exist | no |
+| Embedding dimension mismatch with KB | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
+| Provider returns wrong count or dimension | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
+| Provider non-2xx or network error | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
+| Provider timeout | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
+| Upstream key decrypt failure | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
+
+`error_message` is bounded to 512 characters. Provider raw bodies, upstream keys, and stack traces are never exposed in `error_message`.
+
 ## Forbidden Patterns
 
 - Returning Java stack traces to clients.

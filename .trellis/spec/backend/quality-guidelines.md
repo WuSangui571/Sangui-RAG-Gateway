@@ -149,3 +149,26 @@ Regression tests must still pass:
 - All existing admin tests (app, API key, model config).
 - All existing gateway tests (chat completions, upstream forwarding).
 - All existing auth and error handler tests.
+
+## Embedding and Vector Storage Baseline Tests
+
+Required targeted tests:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=OpenAiCompatibleEmbeddingClientTest" test
+mvn -q "-Dtest=DocumentServiceTest,DocumentAdminControllerTest" test
+mvn -q "-Dtest=ModelConfigServiceTest" test
+```
+
+Tested areas:
+- Embedding client URL construction for base URL variants.
+- Safe logging (no vectors, chunk content, upstream keys, provider bodies).
+- Response count/index/dimension validation.
+- Non-2xx, timeout, and malformed response handling.
+- Document happy path through EMBEDDING to READY.
+- Vector persistence per chunk with tenant-safe fields.
+- Missing/disabled/mismatched embedding config safe failure.
+- Embedding failure safe error_message and KB status preservation.
+- Admin status filter accepts EMBEDDING and READY.

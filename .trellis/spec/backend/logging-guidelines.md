@@ -283,3 +283,16 @@ LocalFileStorageService: "File saved: storageKey={}, size={}"
 Safe fields logged: `id`, `userId`, `kbId`, `filename`, `status`, `chunkCount`, `storageKey`, `size`.
 
 Never logged in ingestion: parsed text, chunk content, raw multipart payloads, raw uploaded file content, storage absolute paths, or stack traces in admin responses.
+
+## Embedding Logs
+
+Embedding operations emit these structured log events:
+
+```text
+embedding.completed
+embedding.upstream_failed
+```
+
+Safe fields logged: `model`, `input_count`, `output_count`, `dimension`, `latency_ms`, `status`, `error_class`, `timeout`.
+
+Never logged in embedding: embedding vectors, chunk content, upstream API key (plaintext or encrypted), provider raw response bodies, Authorization headers.

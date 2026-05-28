@@ -168,6 +168,30 @@ public class ModelConfigService {
         return modelConfigMapper.selectOne(wrapper);
     }
 
+    public ModelConfigEntity findEnabledEmbeddingConfig(Long userId, String embeddingModel, Integer embeddingDimension) {
+        if (embeddingModel == null || embeddingModel.isBlank()) {
+            return null;
+        }
+        if (embeddingDimension == null || embeddingDimension <= 0) {
+            return null;
+        }
+        LambdaQueryWrapper<ModelConfigEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ModelConfigEntity::getUserId, userId)
+                .eq(ModelConfigEntity::getEmbeddingModel, embeddingModel)
+                .eq(ModelConfigEntity::getEmbeddingDimension, embeddingDimension)
+                .eq(ModelConfigEntity::getStatus, ModelConfigStatus.ENABLED.name())
+                .last("LIMIT 2");
+        List<ModelConfigEntity> matches = modelConfigMapper.selectList(wrapper);
+        return matches.size() == 1 ? matches.get(0) : null;
+    }
+
+    public String decryptUpstreamKey(ModelConfigEntity config) {
+        if (config == null || config.getApiKeyEncrypted() == null) {
+            return null;
+        }
+        return encryptor.decrypt(config.getApiKeyEncrypted());
+    }
+
     public boolean isEnabled(ModelConfigEntity entity) {
         return entity != null && ModelConfigStatus.ENABLED.name().equals(entity.getStatus());
     }

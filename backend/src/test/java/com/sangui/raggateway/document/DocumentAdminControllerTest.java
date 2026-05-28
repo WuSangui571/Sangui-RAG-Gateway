@@ -203,14 +203,29 @@ class DocumentAdminControllerTest {
     }
 
     @Test
-    void shouldListDocumentsWithStatusFilter() throws Exception {
+    void shouldListDocumentsWithStatusFilterReady() throws Exception {
         KnowledgeBaseEntity kb = createKb(1L, 100L);
         when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
 
         DocumentEntity doc = createDoc(10L, 100L, 1L);
-        when(documentService.listByKnowledgeBase(100L, 1L, "PARSED")).thenReturn(List.of(doc));
+        doc.setStatus(DocumentStatus.READY.name());
+        when(documentService.listByKnowledgeBase(100L, 1L, "READY")).thenReturn(List.of(doc));
 
-        mockMvc.perform(get("/api/admin/knowledge-bases/1/documents?status=PARSED")
+        mockMvc.perform(get("/api/admin/knowledge-bases/1/documents?status=READY")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldAcceptEmbeddingStatusFilter() throws Exception {
+        KnowledgeBaseEntity kb = createKb(1L, 100L);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        DocumentEntity doc = createDoc(10L, 100L, 1L);
+        doc.setStatus(DocumentStatus.EMBEDDING.name());
+        when(documentService.listByKnowledgeBase(100L, 1L, "EMBEDDING")).thenReturn(List.of(doc));
+
+        mockMvc.perform(get("/api/admin/knowledge-bases/1/documents?status=EMBEDDING")
                         .header("X-Admin-User-Id", "100"))
                 .andExpect(status().isOk());
     }

@@ -1327,7 +1327,73 @@ One-sentence summary:
 
 > Sangui-RAG-Gateway packages private-document RAG capability as a lightweight OpenAI-compatible API gateway, so existing systems can replace Base URL and API Key to gain knowledge-base enhancement.
 
-### Implemented Knowledge Base and Document Upload Baseline
+### Implemented Embedding and Vector Storage Baseline
+
+The embedding generation and pgvector storage baseline is implemented, extending the document ingestion pipeline from `PARSED` through `EMBEDDING` to `READY`.
+
+#### Document Status Flow
+
+```text
+UPLOADED -> PARSING -> PARSED -> EMBEDDING -> READY
+UPLOADED/PARSING/PARSED/EMBEDDING -> FAILED
+```
+
+`DocumentStatus` enum now includes `EMBEDDING` and `READY`.
+
+#### Vector Storage
+
+Vectors are stored in a separate `rag_document_chunk_embedding` table (migration `V6__create_document_chunk_embedding_table.sql`) with:
+- Tenant-safe columns: `user_id`, `knowledge_base_id`, `document_id`, `chunk_id`
+- `embedding` column (pgvector `VECTOR` type, variable dimension)
+- Unique index on `chunk_id` (one vector per chunk)
+- Lookup indexes on `(user_id, knowledge_base_id)` and `(document_id)`
+
+#### Embedding Upstream Contract
+
+`OpenAiCompatibleEmbeddingClient` implements the `EmbeddingClient` interface, calling an OpenAI-compatible `/v1/embeddings` endpoint:
+- URL construction follows the same pattern as chat completions (trailing-slash + `/v1` normalization)
+- Preserves input order by `data[].index`
+- Validates response count, index order, and vector dimensions
+- Normalizes non-2xx, timeout, network errors, and malformed responses to safe `EmbeddingException`
+- Safe logging: no vectors, chunk content, upstream keys, or provider bodies
+- Timeout configured via `rag.gateway.embedding.timeout-seconds` (default 30s)
+
+#### Model Config Resolution
+
+`ModelConfigService.findEnabledEmbeddingConfig(userId, embeddingModel, embeddingDimension)` finds a unique enabled config by user, embedding model, dimension, and `ENABLED` status. The upstream key is decrypted in-memory only; it is never logged or persisted.
+
+#### Implementation Files
+
+New:
+```text
+backend/src/main/resources/db/migration/V6__create_document_chunk_embedding_table.sql
+backend/src/main/java/com/sangui/raggateway/embedding/EmbeddingClient.java
+backend/src/main/java/com/sangui/raggateway/embedding/OpenAiCompatibleEmbeddingClient.java
+backend/src/main/java/com/sangui/raggateway/embedding/EmbeddingRequest.java
+backend/src/main/java/com/sangui/raggateway/embedding/EmbeddingResponse.java
+backend/src/main/java/com/sangui/raggateway/embedding/EmbeddingException.java
+backend/src/main/java/com/sangui/raggateway/embedding/RestClientUtils.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentChunkEmbeddingEntity.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentChunkEmbeddingMapper.java
+backend/src/test/java/com/sangui/raggateway/embedding/OpenAiCompatibleEmbeddingClientTest.java
+```
+
+Updated:
+```text
+backend/src/main/java/com/sangui/raggateway/document/DocumentStatus.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentService.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java
+backend/src/main/resources/application.yml
+backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java
+backend/src/test/java/com/sangui/raggateway/document/DocumentAdminControllerTest.java
+backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java
+```
+
+#### Limitations
+
+- ANN vector index (HNSW/IVFFlat) is deferred until the retrieval metric is chosen.
+- Embedding is synchronous; no batching strategy beyond single-request embedding.
+- No retry or async embedding pipeline in this baseline.
 
 The knowledge base creation/list/detail and document upload/list/detail admin APIs are implemented with tenant isolation and synchronous document processing.
 
@@ -1350,7 +1416,7 @@ GET    /api/admin/documents/{documentId}                 Detail document
 |--------|-------------|
 | `EMPTY` | Created with no documents. |
 | `PROCESSING` | A document is being ingested. |
-| `READY` | At least one document is fully parsed. |
+| `READY` | At least one document has completed embedding and vector persistence. |
 | `FAILED` | Processing failure with no successfully parsed documents. |
 
 #### Document Status
@@ -1359,8 +1425,10 @@ GET    /api/admin/documents/{documentId}                 Detail document
 |--------|-------------|
 | `UPLOADED` | File stored, not yet parsed. |
 | `PARSING` | Parsing in progress. |
-| `PARSED` | Successfully parsed and chunked. |
-| `FAILED` | Processing failed, with bounded error_message. |
+| `PARSED` | Successfully parsed and chunked; embedding has not finished yet. |
+| `EMBEDDING` | Embedding generation and vector persistence are in progress. |
+| `READY` | All chunks for the document have persisted vectors. |
+| `FAILED` | Processing or embedding failed, with bounded error_message. |
 
 #### Supported File Types
 

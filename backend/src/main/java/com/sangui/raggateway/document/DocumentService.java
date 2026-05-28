@@ -7,17 +7,24 @@ import com.sangui.raggateway.document.parser.DocumentParser;
 import com.sangui.raggateway.document.parser.ParsedDocument;
 import com.sangui.raggateway.document.storage.FileStorageService;
 import com.sangui.raggateway.document.storage.StoredFile;
+import com.sangui.raggateway.embedding.EmbeddingClient;
+import com.sangui.raggateway.embedding.EmbeddingException;
+import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.knowledge.KnowledgeBaseService;
 import com.sangui.raggateway.knowledge.KnowledgeBaseStatus;
+import com.sangui.raggateway.model.ModelConfigEntity;
+import com.sangui.raggateway.model.ModelConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -28,32 +35,55 @@ public class DocumentService {
 
     private final DocumentMapper documentMapper;
     private final DocumentChunkMapper documentChunkMapper;
+    private final DocumentChunkEmbeddingMapper documentChunkEmbeddingMapper;
     private final KnowledgeBaseService knowledgeBaseService;
+    private final ModelConfigService modelConfigService;
     private final FileStorageService fileStorageService;
+    private final EmbeddingClient embeddingClient;
+    private final TransactionTemplate transactionTemplate;
     private final TextChunker textChunker;
     private final List<DocumentParser> parsers;
     private final DocumentProperties documentProperties;
 
     public DocumentService(DocumentMapper documentMapper,
                            DocumentChunkMapper documentChunkMapper,
+                           DocumentChunkEmbeddingMapper documentChunkEmbeddingMapper,
                            KnowledgeBaseService knowledgeBaseService,
+                           ModelConfigService modelConfigService,
                            FileStorageService fileStorageService,
+                           EmbeddingClient embeddingClient,
+                           TransactionTemplate transactionTemplate,
                            TextChunker textChunker,
                            List<DocumentParser> parsers,
                            DocumentProperties documentProperties) {
         this.documentMapper = documentMapper;
         this.documentChunkMapper = documentChunkMapper;
+        this.documentChunkEmbeddingMapper = documentChunkEmbeddingMapper;
         this.knowledgeBaseService = knowledgeBaseService;
+        this.modelConfigService = modelConfigService;
         this.fileStorageService = fileStorageService;
+        this.embeddingClient = embeddingClient;
+        this.transactionTemplate = transactionTemplate;
         this.textChunker = textChunker;
         this.parsers = parsers;
         this.documentProperties = documentProperties;
     }
 
-    @Transactional
     public DocumentEntity uploadAndProcess(Long userId, Long knowledgeBaseId,
                                             String originalFilename, String contentType,
                                             byte[] fileContent) {
+        DocumentEntity doc = transactionTemplate.execute(status ->
+                uploadAndParse(userId, knowledgeBaseId, originalFilename, contentType, fileContent));
+        if (doc == null || DocumentStatus.FAILED.name().equals(doc.getStatus())) {
+            return doc;
+        }
+        return embedAndFinalize(userId, knowledgeBaseId, doc);
+    }
+
+    @Transactional
+    public DocumentEntity uploadAndParse(Long userId, Long knowledgeBaseId,
+                                          String originalFilename, String contentType,
+                                          byte[] fileContent) {
         if (!DocumentUploadRules.isSupportedFilename(originalFilename)) {
             throw new IllegalArgumentException("Unsupported file type: " + originalFilename + ". Only .txt, .md, and .markdown files are supported.");
         }
@@ -135,9 +165,7 @@ public class DocumentService {
             doc.setChunkCount(chunks.size());
             doc.setUpdatedAt(LocalDateTime.now());
             documentMapper.updateById(doc);
-
-            knowledgeBaseService.updateStatus(knowledgeBaseId, KnowledgeBaseStatus.READY.name());
-            log.info("Document processed successfully: id={}, chunks={}", doc.getId(), chunks.size());
+            log.info("Document parsed successfully: id={}, chunks={}", doc.getId(), chunks.size());
             return doc;
 
         } catch (Exception e) {
@@ -149,6 +177,137 @@ public class DocumentService {
             updateKnowledgeBaseAfterFailure(userId, knowledgeBaseId);
             return doc;
         }
+    }
+
+    private DocumentEntity embedAndFinalize(Long userId, Long knowledgeBaseId, DocumentEntity doc) {
+        KnowledgeBaseEntity kb = knowledgeBaseService.findByIdAndUserId(knowledgeBaseId, userId);
+        if (kb == null) {
+            markFailed(doc, "Knowledge base not found");
+            updateKnowledgeBaseAfterFailure(userId, knowledgeBaseId);
+            return doc;
+        }
+
+        ModelConfigEntity embeddingConfig = modelConfigService.findEnabledEmbeddingConfig(
+                userId, kb.getEmbeddingModel(), kb.getEmbeddingDimension());
+        if (embeddingConfig == null) {
+            markFailed(doc, "Embedding model config is not ready");
+            updateKnowledgeBaseAfterFailure(userId, knowledgeBaseId);
+            return doc;
+        }
+
+        String upstreamApiKey;
+        try {
+            upstreamApiKey = modelConfigService.decryptUpstreamKey(embeddingConfig);
+        } catch (Exception e) {
+            log.error("Failed to decrypt upstream key for embedding: docId={}", doc.getId(), e);
+            markFailed(doc, "Embedding model config is not ready");
+            updateKnowledgeBaseAfterFailure(userId, knowledgeBaseId);
+            return doc;
+        }
+
+        if (upstreamApiKey == null || upstreamApiKey.isBlank()) {
+            markFailed(doc, "Embedding model config is not ready");
+            updateKnowledgeBaseAfterFailure(userId, knowledgeBaseId);
+            return doc;
+        }
+
+        doc.setStatus(DocumentStatus.EMBEDDING.name());
+        doc.setUpdatedAt(LocalDateTime.now());
+        documentMapper.updateById(doc);
+
+        List<DocumentChunkEntity> chunks = findChunksByDocumentId(doc.getId());
+        if (chunks.isEmpty()) {
+            markFailed(doc, "No chunks found for document");
+            updateKnowledgeBaseAfterFailure(userId, knowledgeBaseId);
+            return doc;
+        }
+
+        List<String> chunkTexts = new ArrayList<>(chunks.size());
+        for (DocumentChunkEntity chunk : chunks) {
+            chunkTexts.add(chunk.getContent());
+        }
+
+        try {
+            List<float[]> vectors = embeddingClient.embed(
+                    embeddingConfig.getBaseUrl(),
+                    upstreamApiKey,
+                    kb.getEmbeddingModel(),
+                    chunkTexts,
+                    kb.getEmbeddingDimension());
+
+            validateEmbeddingVectors(chunks, vectors, kb.getEmbeddingDimension());
+
+            transactionTemplate.executeWithoutResult(status -> {
+                persistEmbeddings(userId, knowledgeBaseId, doc.getId(), chunks, vectors,
+                        kb.getEmbeddingModel(), kb.getEmbeddingDimension());
+
+                doc.setStatus(DocumentStatus.READY.name());
+                doc.setUpdatedAt(LocalDateTime.now());
+                documentMapper.updateById(doc);
+
+                knowledgeBaseService.updateStatus(knowledgeBaseId, KnowledgeBaseStatus.READY.name());
+            });
+            log.info("Document embedding completed successfully: id={}, chunks={}", doc.getId(), vectors.size());
+            return doc;
+
+        } catch (EmbeddingException e) {
+            log.error("Document embedding failed: id={}", doc.getId(), e);
+            markFailed(doc, truncateSafe(e.getMessage()));
+            updateKnowledgeBaseAfterFailure(userId, knowledgeBaseId);
+            return doc;
+        } catch (Exception e) {
+            log.error("Document embedding unexpected failure: id={}", doc.getId(), e);
+            markFailed(doc, "Embedding processing failed");
+            updateKnowledgeBaseAfterFailure(userId, knowledgeBaseId);
+            return doc;
+        }
+    }
+
+    public void persistEmbeddings(Long userId, Long knowledgeBaseId, Long documentId,
+                                   List<DocumentChunkEntity> chunks, List<float[]> vectors,
+                                   String embeddingModel, int embeddingDimension) {
+        for (int i = 0; i < vectors.size(); i++) {
+            DocumentChunkEmbeddingEntity embedding = new DocumentChunkEmbeddingEntity();
+            embedding.setUserId(userId);
+            embedding.setKnowledgeBaseId(knowledgeBaseId);
+            embedding.setDocumentId(documentId);
+            embedding.setChunkId(chunks.get(i).getId());
+            embedding.setEmbeddingModel(embeddingModel);
+            embedding.setEmbeddingDimension(embeddingDimension);
+            embedding.setEmbedding(vectorToPgString(vectors.get(i)));
+            embedding.setCreatedAt(LocalDateTime.now());
+            embedding.setUpdatedAt(LocalDateTime.now());
+            documentChunkEmbeddingMapper.insertEmbedding(embedding);
+        }
+    }
+
+    private void validateEmbeddingVectors(List<DocumentChunkEntity> chunks, List<float[]> vectors, int expectedDimension) {
+        if (vectors == null || vectors.size() != chunks.size()) {
+            throw new EmbeddingException("Embedding response count mismatch", false);
+        }
+        for (int i = 0; i < vectors.size(); i++) {
+            float[] vector = vectors.get(i);
+            if (vector == null) {
+                throw new EmbeddingException("Embedding vector at index " + i + " is null", false);
+            }
+            if (vector.length != expectedDimension) {
+                throw new EmbeddingException("Embedding dimension mismatch at index " + i, false);
+            }
+        }
+    }
+
+    private void markFailed(DocumentEntity doc, String errorMessage) {
+        doc.setStatus(DocumentStatus.FAILED.name());
+        doc.setErrorMessage(truncateSafe(errorMessage));
+        doc.setUpdatedAt(LocalDateTime.now());
+        documentMapper.updateById(doc);
+    }
+
+    public List<DocumentChunkEntity> findChunksByDocumentId(Long documentId) {
+        LambdaQueryWrapper<DocumentChunkEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DocumentChunkEntity::getDocumentId, documentId);
+        wrapper.orderByAsc(DocumentChunkEntity::getChunkIndex);
+        return documentChunkMapper.selectList(wrapper);
     }
 
     public List<DocumentEntity> listByKnowledgeBase(Long userId, Long knowledgeBaseId, String status) {
@@ -199,9 +358,9 @@ public class DocumentService {
         LambdaQueryWrapper<DocumentEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DocumentEntity::getUserId, userId);
         wrapper.eq(DocumentEntity::getKnowledgeBaseId, knowledgeBaseId);
-        wrapper.eq(DocumentEntity::getStatus, DocumentStatus.PARSED.name());
-        Long parsedCount = documentMapper.selectCount(wrapper);
-        String nextStatus = parsedCount != null && parsedCount > 0
+        wrapper.eq(DocumentEntity::getStatus, DocumentStatus.READY.name());
+        Long readyCount = documentMapper.selectCount(wrapper);
+        String nextStatus = readyCount != null && readyCount > 0
                 ? KnowledgeBaseStatus.READY.name()
                 : KnowledgeBaseStatus.FAILED.name();
         knowledgeBaseService.updateStatus(knowledgeBaseId, nextStatus);
@@ -214,5 +373,15 @@ public class DocumentService {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
+    }
+
+    private String vectorToPgString(float[] vector) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < vector.length; i++) {
+            if (i > 0) sb.append(",");
+            sb.append(vector[i]);
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }

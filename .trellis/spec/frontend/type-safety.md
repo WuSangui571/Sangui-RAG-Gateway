@@ -144,18 +144,9 @@ export type DocumentStatus =
   | 'UPLOADED'
   | 'PARSING'
   | 'PARSED'
+  | 'EMBEDDING'
+  | 'READY'
   | 'FAILED';
-
-export interface KnowledgeBaseVO {
-  id: number;
-  user_id: number;
-  name: string;
-  embedding_model: string;
-  embedding_dimension: number;
-  status: KnowledgeBaseStatus;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface DocumentVO {
   id: number;
@@ -167,6 +158,17 @@ export interface DocumentVO {
   status: DocumentStatus;
   chunk_count: number;
   error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeBaseVO {
+  id: number;
+  user_id: number;
+  name: string;
+  embedding_model: string;
+  embedding_dimension: number;
+  status: KnowledgeBaseStatus;
   created_at: string;
   updated_at: string;
 }

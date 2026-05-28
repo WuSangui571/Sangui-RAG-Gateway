@@ -1,0 +1,22 @@
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Check implementation against product boundary and documented embedding/vector contract."}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Verify new classes live in the right modules and layering remains clean."}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Check schema, indexes, dimension validation, and SQL-level tenant boundaries."}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check public/admin error boundaries and no secret/provider leakage."}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Check logs include safe IDs only and omit embeddings, contents, keys, provider bodies."}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Verify targeted/full tests and backend quality checklist."}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Check API/DB/status/secret/tenant contract alignment."}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Check no duplicated URL normalization, validation, or persistence patterns where reuse is available."}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Check spec alignment for DocumentStatus READY/EMBEDDING and snake_case DTO fields."}
+{"file": ".trellis\\tasks\\05-28-embedding-vector-storage-baseline\\prd.md", "reason": "Acceptance criteria and no-goal scope for final review."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Review ingestion state transitions, transaction boundaries, and failure status behavior."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentStatus.java", "reason": "Verify status validation accepts all documented statuses only."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\knowledge\\KnowledgeBaseStatus.java", "reason": "Verify KB status semantics remain aligned with spec and frontend types."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkEntity.java", "reason": "Check chunk entity still avoids exposing vectors/content outside persistence needs."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkMapper.java", "reason": "Verify mapper SQL preserves JSON/vector typing and generated keys."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigService.java", "reason": "Check model config lookup is same-user, enabled, deterministic, and secret safe."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClient.java", "reason": "Check embedding client follows established upstream safety and timeout behavior without leaking provider bodies."}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V5__create_knowledge_document_tables.sql", "reason": "Check new migration remains compatible with existing schema and indexes."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Verify tests cover embedding happy/failure paths and regression cases."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClientTest.java", "reason": "Use as benchmark for embedding client tests and log-safety assertions."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigServiceTest.java", "reason": "Verify matching embedding config lookup and dimension constraints are covered."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentAdminControllerTest.java", "reason": "Verify READY/EMBEDDING status filters and response contracts are covered."}

@@ -40,7 +40,7 @@ rag_request_log
 - Status fields must use explicit enum values.
 - Large text may use `text`.
 - Flexible metadata should use `jsonb`.
-- Embeddings should use pgvector column types with fixed dimensions.
+- Embeddings should use fixed-dimension pgvector columns when the deployment has one global dimension. If the product allows per-knowledge-base dimensions, store vectors in a separate table with a variable `VECTOR` column and enforce dimensions in service/provider validation before insert.
 
 ## Tenant Isolation
 
@@ -519,7 +519,7 @@ unique idx_rag_knowledge_base_user_name on (user_id, name)
 | `content_type` | `VARCHAR(255)` | no | Client-provided content type. |
 | `file_size` | `BIGINT` | yes | Uploaded size. |
 | `storage_path` | `VARCHAR(1024)` | yes | Internal storage key, never exposed by VO. |
-| `status` | `VARCHAR(32)` | yes | `UPLOADED`, `PARSING`, `PARSED`, `FAILED`. |
+| `status` | `VARCHAR(32)` | yes | `UPLOADED`, `PARSING`, `PARSED`, `EMBEDDING`, `READY`, `FAILED`. |
 | `chunk_count` | `INTEGER` | yes | Default `0`. |
 | `error_message` | `VARCHAR(512)` | no | Bounded admin-safe message. |
 | `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
@@ -557,6 +557,43 @@ unique idx_rag_document_chunk_document_index on (document_id, chunk_index)
 ```
 
 Tenant rule: every admin query must include `user_id` or explicitly verify ownership before mutation/listing. `rag_document_chunk` carries `user_id` even before retrieval so future vector retrieval can enforce tenant boundaries in SQL.
+
+### Implemented Document Chunk Embedding Schema
+
+The chunk embedding vector table is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V6__create_document_chunk_embedding_table.sql
+```
+
+`rag_document_chunk_embedding` columns:
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `user_id` | `BIGINT` | yes | Tenant boundary. |
+| `knowledge_base_id` | `BIGINT` | yes | FK to `rag_knowledge_base(id)`. |
+| `document_id` | `BIGINT` | yes | FK to `rag_document(id)`. |
+| `chunk_id` | `BIGINT` | yes | FK to `rag_document_chunk(id)`, unique. |
+| `embedding_model` | `VARCHAR(255)` | yes | Must match KB embedding model used at ingestion time. |
+| `embedding_dimension` | `INTEGER` | yes | Must match KB dimension and actual vector length. |
+| `embedding` | `VECTOR` | yes | pgvector vector value, variable dimension. |
+| `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+| `updated_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+
+Required indexes:
+
+```text
+unique idx_rag_doc_chunk_emb_chunk_id on rag_document_chunk_embedding(chunk_id)
+idx_rag_doc_chunk_emb_user_kb on rag_document_chunk_embedding(user_id, knowledge_base_id)
+idx_rag_doc_chunk_emb_document on rag_document_chunk_embedding(document_id)
+```
+
+Tenant rule: every vector row duplicates `user_id` and `knowledge_base_id`. Future vector queries must include both `user_id` and `knowledge_base_id` in SQL before ordering by vector distance. Java-only tenant filtering after vector operations is forbidden.
+
+Dimension safety: the number of vectors returned by the embedding provider must equal the number of input chunks. Every vector length must equal `rag_knowledge_base.embedding_dimension`. The model config used for embedding must have same `user_id`, `status=ENABLED`, non-blank `embedding_model`, `embedding_dimension` equal to KB dimension, and a usable encrypted upstream API key.
+
+ANN index (HNSW/IVFFlat) is deferred until the retrieval distance metric is chosen.
 
 ## Transaction Boundaries
 

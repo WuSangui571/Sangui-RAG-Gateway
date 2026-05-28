@@ -12,6 +12,8 @@ rag:
     secret-key: ${RAG_GATEWAY_SECRET_KEY:}
     upstream:
       timeout-seconds: 30
+    embedding:
+      timeout-seconds: 30
     storage:
       type: ${FILE_STORAGE_TYPE:local}
       local-path: ${FILE_STORAGE_LOCAL_PATH:./data/uploads}

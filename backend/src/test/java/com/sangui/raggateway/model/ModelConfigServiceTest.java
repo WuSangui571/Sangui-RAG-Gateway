@@ -419,4 +419,89 @@ class ModelConfigServiceTest {
 
         assertThat(vo.getApiKeyMasked()).isEqualTo("sk-***");
     }
+
+    @Test
+    void shouldFindEnabledEmbeddingConfig() {
+        ModelConfigEntity entity = new ModelConfigEntity();
+        entity.setId(10L);
+        entity.setUserId(100L);
+        entity.setEmbeddingModel("text-embedding-3-small");
+        entity.setEmbeddingDimension(1536);
+        entity.setStatus("ENABLED");
+        when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(entity));
+
+        ModelConfigEntity result = modelConfigService.findEnabledEmbeddingConfig(
+                100L, "text-embedding-3-small", 1536);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getEmbeddingDimension()).isEqualTo(1536);
+        verify(modelConfigMapper).selectList(wrapperCaptor.capture());
+    }
+
+    @Test
+    void shouldReturnNullWhenNoMatchingEmbeddingConfig() {
+        when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        ModelConfigEntity result = modelConfigService.findEnabledEmbeddingConfig(
+                100L, "text-embedding-3-small", 1536);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldReturnNullWhenMultipleEmbeddingConfigsMatch() {
+        ModelConfigEntity first = new ModelConfigEntity();
+        first.setId(10L);
+        ModelConfigEntity second = new ModelConfigEntity();
+        second.setId(11L);
+        when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(first, second));
+
+        ModelConfigEntity result = modelConfigService.findEnabledEmbeddingConfig(
+                100L, "text-embedding-3-small", 1536);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldReturnNullWhenEmbeddingModelIsNull() {
+        ModelConfigEntity result = modelConfigService.findEnabledEmbeddingConfig(100L, null, 1536);
+        assertThat(result).isNull();
+        verifyNoInteractions(modelConfigMapper);
+    }
+
+    @Test
+    void shouldReturnNullWhenEmbeddingDimensionIsZero() {
+        ModelConfigEntity result = modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 0);
+        assertThat(result).isNull();
+        verifyNoInteractions(modelConfigMapper);
+    }
+
+    @Test
+    void shouldDecryptUpstreamKey() {
+        ModelConfigEntity config = new ModelConfigEntity();
+        config.setApiKeyEncrypted("v1:encrypted:key");
+        when(encryptor.decrypt("v1:encrypted:key")).thenReturn("plaintext-key");
+
+        String result = modelConfigService.decryptUpstreamKey(config);
+
+        assertThat(result).isEqualTo("plaintext-key");
+    }
+
+    @Test
+    void shouldReturnNullWhenDecryptConfigHasNoEncryptedKey() {
+        ModelConfigEntity config = new ModelConfigEntity();
+
+        String result = modelConfigService.decryptUpstreamKey(config);
+
+        assertThat(result).isNull();
+        verifyNoInteractions(encryptor);
+    }
+
+    @Test
+    void shouldReturnNullWhenDecryptConfigIsNull() {
+        String result = modelConfigService.decryptUpstreamKey(null);
+
+        assertThat(result).isNull();
+        verifyNoInteractions(encryptor);
+    }
 }

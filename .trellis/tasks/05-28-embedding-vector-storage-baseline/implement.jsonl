@@ -1,0 +1,24 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product boundary, RAG flow, embedding/vector MVP contract, and roadmap scope."}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Use package boundaries for embedding, document, model, gateway, common modules."}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "DB migration, pgvector, embedding dimension, tenant-safe vector persistence rules."}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Embedding failure normalization, admin upload error shape, bounded failure messages."}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe embedding/document logs and forbidden vectors/chunk content/secrets."}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required tests for ingestion, embedding dimension, tenant isolation, regressions."}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer flow for upload -> chunks -> embeddings -> vector persistence -> status display."}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Search and reuse existing upstream, status, DTO, mapper, and test patterns."}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Keep future frontend DocumentStatus/KnowledgeBaseVO/DocumentVO status contracts aligned."}
+{"file": ".trellis\\tasks\\05-28-embedding-vector-storage-baseline\\prd.md", "reason": "Task requirements, boundaries, acceptance criteria, validation matrix, tests."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Existing synchronous upload -> parse -> chunk pipeline and status/failure handling to extend with embedding."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentStatus.java", "reason": "Existing document status enum to extend with EMBEDDING and READY."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\knowledge\\KnowledgeBaseStatus.java", "reason": "Existing KB status enum used by ingestion readiness updates."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkEntity.java", "reason": "Existing chunk persistence shape to relate vector rows to chunks."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkMapper.java", "reason": "Existing custom JSONB insert pattern for chunks; useful for vector-row mapper style."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigService.java", "reason": "Existing embedding model/dimension validation and enabled same-user lookup patterns."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClient.java", "reason": "Existing OpenAI-compatible URL normalization, timeout, safe logging, and upstream error normalization pattern."}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V5__create_knowledge_document_tables.sql", "reason": "Current KB/document/chunk schema that the vector migration must extend safely."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Existing document ingestion test patterns for status, parser, chunking, and KB readiness."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClientTest.java", "reason": "Existing MockRestServiceServer upstream client tests for URL/auth/error/log safety."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigServiceTest.java", "reason": "Existing embedding field validation tests for model config."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentAdminControllerTest.java", "reason": "Existing admin document API status filter and upload response tests."}

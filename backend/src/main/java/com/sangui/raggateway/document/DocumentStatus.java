@@ -4,6 +4,8 @@ public enum DocumentStatus {
     UPLOADED,
     PARSING,
     PARSED,
+    EMBEDDING,
+    READY,
     FAILED;
 
     public static boolean isValid(String value) {
