@@ -540,3 +540,66 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: Chat Completions request log persistence
+
+**Date**: 2026-05-28
+**Task**: Chat Completions request log persistence
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Code commit | b92447f feat:???chat completions???? |
+| Main scope | Backend request-log persistence for authenticated non-streaming POST /v1/chat/completions |
+| Core implementation | Added rag_request_log migration, ApiRequestLog entity/mapper/service/command, ChatCompletionResult, and controller integration for success/failure persistence |
+| Gateway behavior | Success writes status=success with model/provider, latency, upstream latency, token usage, and messages_count. GatewayException paths write status=failure with invalid_request, model_config_not_ready, upstream_error, or upstream_timeout. Public OpenAI-compatible responses remain unchanged. |
+| Safety boundary | Request logs persist only safe IDs and operational metadata. No app API key plaintext/hash, upstream key plaintext/encrypted value, Authorization header, full messages, raw provider body, full prompt, or stack trace is persisted. Insert failures are swallowed and logged with request_id plus exception class only. |
+| Specs updated | .trellis/spec/sangui-rag-gateway.md, .trellis/spec/backend/database-guidelines.md, .trellis/spec/backend/error-handling.md, .trellis/spec/backend/logging-guidelines.md |
+| Tests run by Codex | mvn -q -DskipTests compile; mvn -q "-Dtest=ApiRequestLogServiceTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest,OpenAiCompatibleUpstreamClientTest" test; mvn -q "-Dtest=GatewayAuthFilterTest,GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test; mvn test |
+| Full test result | mvn test passed: 232 tests, 0 failures, 0 errors, 0 skipped |
+| Manual validation | Created app_id=6, api_key_id=5, model_config_id=7, bound app to model config, called POST /v1/chat/completions successfully with HTTP 200 and model deepseek-v4-pro. rag_request_log persisted status=success, provider_name=sanguicode, prompt/completion/total tokens 84/293/377, messages_count=1. |
+| Manual failure validation | Verified model_config_not_ready and invalid_request persisted for app_id=6. Earlier verified upstream_error persisted for app_id=4 with bad upstream key config. |
+| Known boundaries | Malformed JSON and auth-filter 401 remain unpersisted by design because request context/request ID is unavailable at the current persistence boundary. Streaming remains out of scope. |
+
+**Updated Files**:
+- `backend/src/main/resources/db/migration/V4__create_request_log_table.sql`
+- `backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogEntity.java`
+- `backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogMapper.java`
+- `backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java`
+- `backend/src/main/java/com/sangui/raggateway/log/CreateRequestLogCommand.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionResult.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java`
+- `backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/backend/error-handling.md`
+- `.trellis/spec/backend/logging-guidelines.md`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b92447f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
