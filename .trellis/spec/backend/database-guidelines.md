@@ -479,6 +479,85 @@ rag_request_log(app_id, created_at)
 
 Add vector indexes only after confirming pgvector operator class and distance metric choices.
 
+### Implemented Knowledge Base and Document Upload Schema
+
+The knowledge base/document/chunk schema is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V5__create_knowledge_document_tables.sql
+```
+
+`rag_knowledge_base` columns:
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `user_id` | `BIGINT` | yes | Tenant boundary. |
+| `name` | `VARCHAR(255)` | yes | KB display name. Unique per user. |
+| `embedding_model` | `VARCHAR(255)` | yes | Future embedding contract. |
+| `embedding_dimension` | `INTEGER` | yes | Must be positive, fixed at creation. |
+| `status` | `VARCHAR(32)` | yes | `EMPTY`, `PROCESSING`, `READY`, `FAILED`. |
+| `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+| `updated_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+
+Required indexes:
+
+```text
+idx_rag_knowledge_base_user_status on (user_id, status)
+idx_rag_knowledge_base_user_created_at on (user_id, created_at DESC)
+unique idx_rag_knowledge_base_user_name on (user_id, name)
+```
+
+`rag_document` columns:
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `user_id` | `BIGINT` | yes | Tenant boundary. |
+| `knowledge_base_id` | `BIGINT` | yes | FK to `rag_knowledge_base(id)`. |
+| `original_filename` | `VARCHAR(512)` | yes | Safe filename only. |
+| `content_type` | `VARCHAR(255)` | no | Client-provided content type. |
+| `file_size` | `BIGINT` | yes | Uploaded size. |
+| `storage_path` | `VARCHAR(1024)` | yes | Internal storage key, never exposed by VO. |
+| `status` | `VARCHAR(32)` | yes | `UPLOADED`, `PARSING`, `PARSED`, `FAILED`. |
+| `chunk_count` | `INTEGER` | yes | Default `0`. |
+| `error_message` | `VARCHAR(512)` | no | Bounded admin-safe message. |
+| `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+| `updated_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+
+Required indexes:
+
+```text
+idx_rag_document_user_status on (user_id, status)
+idx_rag_document_kb_status on (knowledge_base_id, status)
+idx_rag_document_user_kb_created_at on (user_id, knowledge_base_id, created_at DESC)
+```
+
+`rag_document_chunk` columns:
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `user_id` | `BIGINT` | yes | Tenant boundary, denormalized for SQL-level future retrieval. |
+| `knowledge_base_id` | `BIGINT` | yes | FK to `rag_knowledge_base(id)`. |
+| `document_id` | `BIGINT` | yes | FK to `rag_document(id)`. |
+| `chunk_index` | `INTEGER` | yes | 0-based index within document. |
+| `content` | `TEXT` | yes | Chunk text. |
+| `token_count` | `INTEGER` | no | Placeholder (character count in baseline). |
+| `metadata` | `JSONB` | no | Source filename, parser info. |
+| `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+| `updated_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+
+Required indexes:
+
+```text
+idx_rag_document_chunk_user_kb on (user_id, knowledge_base_id)
+idx_rag_document_chunk_document on (document_id)
+unique idx_rag_document_chunk_document_index on (document_id, chunk_index)
+```
+
+Tenant rule: every admin query must include `user_id` or explicitly verify ownership before mutation/listing. `rag_document_chunk` carries `user_id` even before retrieval so future vector retrieval can enforce tenant boundaries in SQL.
+
 ## Transaction Boundaries
 
 Use service methods as transaction boundaries.

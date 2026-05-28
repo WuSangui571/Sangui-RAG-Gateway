@@ -603,3 +603,71 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: Chat Completions Streaming Baseline
+
+**Date**: 2026-05-28
+**Task**: Chat Completions Streaming Baseline
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | `a7776c0 feat:?? chat completions ????` |
+| Task | Completed and archived `05-28-chat-completions-streaming-baseline` |
+| Main change | Added authenticated `POST /v1/chat/completions` `stream=true` baseline using Spring MVC `SseEmitter` and upstream OpenAI-compatible SSE forwarding. |
+| Gateway behavior | `stream=false` remains JSON pass-through; `stream=true` returns `text/event-stream`, forwards upstream `data:` chunks, and forwards `data: [DONE]`. |
+| Error boundary | Pre-stream validation/model-config/upstream setup failures return OpenAI-compatible JSON. Post-start upstream failures emit safe SSE error data and close. Client disconnect is treated as cancellation, not internal failure. |
+| Request logs | Streaming requests persist one safe `rag_request_log` row with captured user/app/api-key IDs, model/provider metadata, nullable usage fields, and no message content or secrets. |
+| Specs updated | `.trellis/spec/sangui-rag-gateway.md`, `.trellis/spec/backend/error-handling.md`, `.trellis/spec/backend/logging-guidelines.md`, `.trellis/spec/backend/quality-guidelines.md`. |
+| Key implementation files | `OpenAiChatCompletionsController`, `ChatCompletionGatewayService`, `OpenAiCompatibleUpstreamClient`, `ChatCompletionStreamPreparation`. |
+| Tests updated | `OpenAiChatCompletionsControllerTest`, `ChatCompletionGatewayServiceTest`, `OpenAiCompatibleUpstreamClientTest`. |
+
+**Automated Verification**
+
+- `mvn -q -DskipTests compile` passed.
+- `mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest,OpenAiCompatibleUpstreamClientTest,ApiRequestLogServiceTest" test` passed.
+- `mvn -q "-Dtest=GatewayAuthFilterTest,GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test` passed.
+- `mvn test` passed with `Tests run: 243, Failures: 0, Errors: 0, Skipped: 0`.
+- Static search found no `console.log`, `debugger`, `TODO`, or `System.out.println` in changed backend/spec/task scope.
+
+**Manual Verification**
+
+- Created admin model config, app, default-model binding, and Sangui app API key through admin APIs.
+- Verified upstream directly: `https://api.sanguicode.com/v1/chat/completions` returned 200 for non-streaming, and `https://api.sanguicode.com/v1/models` returned available model list including `deepseek-v4-pro`.
+- Verified gateway `GET /v1/models` returned 200 with `deepseek-chat` / later configured model metadata.
+- Verified gateway non-streaming `POST /v1/chat/completions` returned 200 JSON chat completion with resolved upstream model, not caller model.
+- Verified gateway streaming `POST /v1/chat/completions` returned 200 `text/event-stream`, forwarded many upstream `data:` chunks, forwarded final usage chunk, and ended with `data:[DONE]`.
+- Verified validation error path with empty `messages` returned 400 OpenAI-compatible JSON `invalid_request`, proving JSON parsing and pre-stream validation boundary work.
+
+**Boundary / Notes**
+
+- No database migration was needed; existing nullable request-log fields support baseline streaming usage gaps.
+- Baseline does not parse streaming usage into persisted token fields; usage remains nullable by design.
+- Full RAG retrieval, embeddings, prompt augmentation, citations, admin log UI, and provider-specific path configuration remain out of scope.
+- User manually tested with real upstream and committed the implementation before recording this session.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a7776c0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

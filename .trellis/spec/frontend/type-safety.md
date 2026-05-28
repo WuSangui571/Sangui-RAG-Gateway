@@ -128,3 +128,48 @@ Frontend validation improves UX but does not replace backend validation.
 - Reusing create DTOs as update DTOs when semantics differ.
 - Modeling secrets as optional fields on normal list/detail VOs.
 - Accepting arbitrary string statuses in components without a fallback display.
+
+## Knowledge Base and Document Types
+
+Backend contracts for future frontend admin pages:
+
+```ts
+export type KnowledgeBaseStatus =
+  | 'EMPTY'
+  | 'PROCESSING'
+  | 'READY'
+  | 'FAILED';
+
+export type DocumentStatus =
+  | 'UPLOADED'
+  | 'PARSING'
+  | 'PARSED'
+  | 'FAILED';
+
+export interface KnowledgeBaseVO {
+  id: number;
+  user_id: number;
+  name: string;
+  embedding_model: string;
+  embedding_dimension: number;
+  status: KnowledgeBaseStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentVO {
+  id: number;
+  user_id: number;
+  knowledge_base_id: number;
+  original_filename: string;
+  content_type: string | null;
+  file_size: number;
+  status: DocumentStatus;
+  chunk_count: number;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+Note: `DocumentVO` does not expose `storage_path`. All fields use snake_case as produced by backend `@JsonProperty`.

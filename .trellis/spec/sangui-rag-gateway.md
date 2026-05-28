@@ -1326,3 +1326,111 @@ Demoable, explainable, extensible
 One-sentence summary:
 
 > Sangui-RAG-Gateway packages private-document RAG capability as a lightweight OpenAI-compatible API gateway, so existing systems can replace Base URL and API Key to gain knowledge-base enhancement.
+
+### Implemented Knowledge Base and Document Upload Baseline
+
+The knowledge base creation/list/detail and document upload/list/detail admin APIs are implemented with tenant isolation and synchronous document processing.
+
+#### Admin API Endpoints
+
+All endpoints use `ApiResponse<T>` and require `X-Admin-User-Id` header:
+
+```http
+POST   /api/admin/knowledge-bases                        Create knowledge base
+GET    /api/admin/knowledge-bases?status=...              List user's knowledge bases
+GET    /api/admin/knowledge-bases/{id}                   Detail knowledge base
+POST   /api/admin/knowledge-bases/{kbId}/documents        Upload txt/md/markdown file
+GET    /api/admin/knowledge-bases/{kbId}/documents?status=... List documents
+GET    /api/admin/documents/{documentId}                 Detail document
+```
+
+#### Knowledge Base Status
+
+| Status | Description |
+|--------|-------------|
+| `EMPTY` | Created with no documents. |
+| `PROCESSING` | A document is being ingested. |
+| `READY` | At least one document is fully parsed. |
+| `FAILED` | Processing failure with no successfully parsed documents. |
+
+#### Document Status
+
+| Status | Description |
+|--------|-------------|
+| `UPLOADED` | File stored, not yet parsed. |
+| `PARSING` | Parsing in progress. |
+| `PARSED` | Successfully parsed and chunked. |
+| `FAILED` | Processing failed, with bounded error_message. |
+
+#### Supported File Types
+
+`.txt`, `.md`, `.markdown` only. Processing is synchronous for the baseline.
+
+#### Storage
+
+Local file storage under `rag.gateway.storage.local-path` (default `./data/uploads`). `FileStorageService` interface provides a future seam for MinIO. Storage paths are internal and not exposed in `DocumentVO` or admin responses.
+
+#### Parsing and Chunking
+
+- `PlainTextDocumentParser` for `.txt`, `MarkdownDocumentParser` for `.md/.markdown`.
+- UTF-8 text read, CRLF normalization, excessive blank line collapse.
+- Default chunk size: 800 characters, default overlap: 100 characters (configurable via `rag.gateway.document.chunk-size` and `rag.gateway.document.chunk-overlap`).
+
+#### Database
+
+Migration `V5__create_knowledge_document_tables.sql` introduces:
+- `rag_knowledge_base`: tenant-scoped with `user_id`, embedding model/dimension contract, status.
+- `rag_document`: metadata, `storage_path` (internal), status, chunk count, bounded `error_message`.
+- `rag_document_chunk`: content, `chunk_index`, `token_count` placeholder, `metadata` JSONB.
+
+#### Implemented Files (New)
+
+```text
+backend/src/main/resources/db/migration/V5__create_knowledge_document_tables.sql
+backend/src/main/java/com/sangui/raggateway/knowledge/KnowledgeBaseStatus.java
+backend/src/main/java/com/sangui/raggateway/knowledge/KnowledgeBaseEntity.java
+backend/src/main/java/com/sangui/raggateway/knowledge/KnowledgeBaseMapper.java
+backend/src/main/java/com/sangui/raggateway/knowledge/KnowledgeBaseService.java
+backend/src/main/java/com/sangui/raggateway/knowledge/dto/CreateKnowledgeBaseDTO.java
+backend/src/main/java/com/sangui/raggateway/knowledge/vo/KnowledgeBaseVO.java
+backend/src/main/java/com/sangui/raggateway/knowledge/KnowledgeBaseAdminController.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentStatus.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentEntity.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentChunkEntity.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentMapper.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentChunkMapper.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentService.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentAdminController.java
+backend/src/main/java/com/sangui/raggateway/document/vo/DocumentVO.java
+backend/src/main/java/com/sangui/raggateway/document/parser/DocumentParser.java
+backend/src/main/java/com/sangui/raggateway/document/parser/ParsedDocument.java
+backend/src/main/java/com/sangui/raggateway/document/parser/PlainTextDocumentParser.java
+backend/src/main/java/com/sangui/raggateway/document/parser/MarkdownDocumentParser.java
+backend/src/main/java/com/sangui/raggateway/document/chunk/TextChunker.java
+backend/src/main/java/com/sangui/raggateway/document/storage/FileStorageService.java
+backend/src/main/java/com/sangui/raggateway/document/storage/StoredFile.java
+backend/src/main/java/com/sangui/raggateway/document/storage/LocalFileStorageService.java
+backend/src/main/java/com/sangui/raggateway/document/config/DocumentProperties.java
+backend/src/main/java/com/sangui/raggateway/document/config/DocumentConfig.java
+```
+
+#### Updated Config Files
+
+```text
+backend/src/main/resources/application.yml
+.env.example
+```
+
+#### Configuration Keys
+
+```yaml
+rag:
+  gateway:
+    storage:
+      type: ${FILE_STORAGE_TYPE:local}
+      local-path: ${FILE_STORAGE_LOCAL_PATH:./data/uploads}
+    document:
+      chunk-size: ${RAG_DOCUMENT_CHUNK_SIZE:800}
+      chunk-overlap: ${RAG_DOCUMENT_CHUNK_OVERLAP:100}
+      max-file-size-bytes: ${RAG_DOCUMENT_MAX_FILE_SIZE_BYTES:1048576}
+```

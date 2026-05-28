@@ -410,3 +410,28 @@ Store a bounded error message suitable for admin display. Full stack traces belo
 - Treating tenant access failures as retriable internal errors.
 - Swallowing embedding failures and marking documents as ready.
 - Wrapping every exception as `500 internal_error` when the client should receive `401`, `429`, `409`, or upstream error classes.
+
+## Knowledge Base and Document Admin API Error Codes
+
+The knowledge base and document admin endpoints use the `ApiResponse` envelope with these error codes:
+
+| Scenario | HTTP | Code | Notes |
+|---|---|---|---|
+| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException`. |
+| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException`. |
+| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated in controller. |
+| Create KB with null/blank name | 400 | `INVALID_REQUEST` | No row inserted. |
+| Create KB with blank embedding model | 400 | `INVALID_REQUEST` | No row inserted. |
+| Create KB with null/non-positive dimension | 400 | `INVALID_REQUEST` | No row inserted. |
+| Invalid KB status filter | 400 | `INVALID_REQUEST` | Do not echo arbitrary input. |
+| Get missing KB | 404 | `NOT_FOUND` | Safe admin envelope. |
+| Get cross-user KB | 403 | `FORBIDDEN` | Generic access denied. |
+| Upload to missing KB | 404 | `NOT_FOUND` | No file write, no document row. |
+| Upload to cross-user KB | 403 | `FORBIDDEN` | No file write, no document row. |
+| Missing multipart file | 400 | `INVALID_REQUEST` | No document row. |
+| Empty multipart file | 400 | `INVALID_REQUEST` | No document row. |
+| Unsupported filename | 400 | `INVALID_REQUEST` | No document row. |
+| Parse/chunk failure after document row | 200 | `OK` with `DocumentVO.status=FAILED` | Bounded `error_message`. |
+| Invalid document status filter | 400 | `INVALID_REQUEST` | Do not echo arbitrary input. |
+| Get missing document | 404 | `NOT_FOUND` | Safe admin envelope. |
+| Get cross-user document | 403 | `FORBIDDEN` | Generic access denied. |

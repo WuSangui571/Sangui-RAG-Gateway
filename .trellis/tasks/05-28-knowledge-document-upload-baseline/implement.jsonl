@@ -1,0 +1,24 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/tasks/05-28-knowledge-document-upload-baseline/prd.md", "reason": "Task requirements, API/DB/storage contract, validation matrix, and acceptance criteria"}
+{"file": ".trellis/tasks/05-28-knowledge-document-upload-baseline/research.md", "reason": "Focused code research, expected files, risks, and required tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project product boundary and RAG ingestion domain model"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend package boundaries for knowledge/document/storage/parser/chunker modules"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Schema, migration, tenant isolation, status, and transaction rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin ApiResponse errors and gateway/admin response boundary"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Document ingestion observability and sensitive data logging rules"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required backend tests and RAG pipeline quality checks"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Future frontend type/status alignment for admin API contracts"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Future document upload/status polling state assumptions"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Future admin UX and document status display constraints"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API/DB/storage/tenant/secret boundary checklist"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Search-first reuse guidance before adding helpers"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java", "reason": "Existing admin controller pattern for ApiResponse, header validation, and 403/404 tenant distinction"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigAdminController.java", "reason": "Existing admin controller pattern for DTO validation and same-user ownership checks"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Existing service transaction and LambdaQueryWrapper tenant scope pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java", "reason": "Existing service validation, status, and admin VO conversion pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/vo/ModelConfigVO.java", "reason": "Existing snake_case VO field mapping pattern"}
+{"file": "backend/src/main/resources/db/migration/V4__create_request_log_table.sql", "reason": "Latest migration style and index conventions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java", "reason": "Existing standalone MockMvc admin controller test pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java", "reason": "Existing Mockito service test and persistence assertion pattern"}
+{"file": ".trellis/tasks/05-28-knowledge-document-upload-baseline/handoff-deepseek.md", "reason": "DeepSeek execution handoff and planning self-check"}

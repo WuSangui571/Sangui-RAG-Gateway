@@ -123,3 +123,29 @@ If unsupported fields are received, either ignore them only when safe and docume
 - Prompt construction mixed into retrieval SQL or upstream client code.
 - Silent fallback to pass-through when the app is configured for strict RAG.
 - Adding broad platform features that do not serve the lightweight RAG gateway goal.
+
+## Knowledge Base and Document Ingestion Baseline Tests
+
+Required targeted tests:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=KnowledgeBaseServiceTest,KnowledgeBaseAdminControllerTest,DocumentServiceTest,DocumentAdminControllerTest,PlainTextDocumentParserTest,MarkdownDocumentParserTest,TextChunkerTest,LocalFileStorageServiceTest" test
+```
+
+Tested areas:
+- Knowledge base create/list/detail with tenant isolation and status validation.
+- Document upload (txt/md/markdown) with sync processing (UPLOADED->PARSING->PARSED/FAILED).
+- Parser selection by filename extension.
+- UTF-8 text parsing and text normalization.
+- Deterministic character-based chunking with overlap.
+- Local file storage with path traversal prevention and UUID-based keys.
+- Document VO excludes `storage_path`.
+- Controller 403/404/400 error matrix for admin endpoints.
+- Empty file, unsupported extension, and parse failure handling.
+
+Regression tests must still pass:
+- All existing admin tests (app, API key, model config).
+- All existing gateway tests (chat completions, upstream forwarding).
+- All existing auth and error handler tests.

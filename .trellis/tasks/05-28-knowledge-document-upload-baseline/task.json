@@ -1,7 +1,7 @@
 {
-  "id": "chat-completions-streaming-baseline",
-  "name": "chat-completions-streaming-baseline",
-  "title": "Chat Completions Streaming Baseline",
+  "id": "knowledge-document-upload-baseline",
+  "name": "knowledge-document-upload-baseline",
+  "title": "Knowledge Base and Document Upload Baseline",
   "description": "",
   "status": "planning",
   "dev_type": "backend",

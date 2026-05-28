@@ -264,3 +264,22 @@ app call count
 ```
 
 Later extensions may add Prometheus, Grafana, tracing, and slow request analysis.
+
+## Knowledge Base and Document Ingestion Log Contract
+
+Document ingestion emits these structured log events:
+
+```text
+KnowledgeBaseService: "Knowledge base created: id={}, userId={}, name={}"
+KnowledgeBaseService: "Knowledge base status updated: id={}, status={}"
+DocumentService: "Document created: id={}, kbId={}, filename={}, status=UPLOADED"
+DocumentService: "Document chunked: id={}, chunkCount={}"
+DocumentService: "Document processed successfully: id={}, chunks={}"
+DocumentService: "Document parsed with no readable text: id={}"
+DocumentService: "Document processing failed: id={}" (with stack trace at ERROR)
+LocalFileStorageService: "File saved: storageKey={}, size={}"
+```
+
+Safe fields logged: `id`, `userId`, `kbId`, `filename`, `status`, `chunkCount`, `storageKey`, `size`.
+
+Never logged in ingestion: parsed text, chunk content, raw multipart payloads, raw uploaded file content, storage absolute paths, or stack traces in admin responses.
