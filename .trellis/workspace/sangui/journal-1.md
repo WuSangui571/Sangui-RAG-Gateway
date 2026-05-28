@@ -15,7 +15,7 @@
 
 ### Summary
 
-(Add summary)
+Implemented and verified the backend knowledge base and document upload baseline. The task adds tenant-scoped knowledge bases, txt/markdown document upload, local file storage, parsing, deterministic chunking, admin APIs, database migration, tests, and executable spec updates. Codex completed quality checks, fixed targeted validation/status/JSONB issues, and the user completed manual acceptance testing.
 
 ### Main Changes
 
@@ -663,6 +663,71 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Testing
 
 - [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 13: Knowledge Document Upload Baseline
+
+**Date**: 2026-05-28
+**Task**: Knowledge Document Upload Baseline
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|---|---|
+| Commit | `45ba7b3` |
+| Task | Knowledge Base and Document Upload Baseline |
+| Backend API | Added admin `POST/GET /api/admin/knowledge-bases`, `POST/GET /api/admin/knowledge-bases/{knowledgeBaseId}/documents`, and `GET /api/admin/documents/{documentId}` using `ApiResponse<T>` and `X-Admin-User-Id`. |
+| Database | Added Flyway migration `V5__create_knowledge_document_tables.sql` for `rag_knowledge_base`, `rag_document`, and `rag_document_chunk` with tenant indexes and no vector column. |
+| Ingestion | Added local storage abstraction, safe filename handling, txt/markdown parser abstraction, deterministic text normalization/chunking, document status transitions, and internal-only `storage_path`. |
+| Codex Check Fixes | Enforced upload content type whitelist, wired `max-file-size-bytes`, sanitized persisted original filenames, preserved `READY` KB status when a later failed upload has existing parsed documents, added explicit JSONB insert for chunk metadata, prechecked duplicate KB names, and removed absolute storage root path from logs. |
+| Spec Sync | Updated project/backend/frontend specs for API contracts, DB schema, errors, logging, config keys, tests, and future frontend `KnowledgeBaseVO`/`DocumentVO` types. |
+| Automated Verification | Passed `mvn -q -DskipTests compile`; targeted ingestion tests; admin regression tests; gateway regression tests; auth/error regression tests; full `mvn test` with `Tests run: 325, Failures: 0, Errors: 0, Skipped: 0`; `git diff --check` passed. |
+| Manual Verification | User created KB, uploaded markdown, confirmed document `PARSED`, KB `READY`, unsupported `.pdf` returned `400 INVALID_REQUEST`, `.md` with `application/pdf` returned `400 INVALID_REQUEST`, cross-user KB detail returned `403 FORBIDDEN`, and existing gateway chat forwarding through `https://api.sanguicode.com` with `deepseek-v4-pro` returned a successful chat completion. |
+| Boundary | This task intentionally does not implement embeddings, pgvector storage, retrieval, prompt augmentation, frontend UI, PDF/DOCX parsing, MinIO, async processing, or app-to-knowledge-base binding. |
+| Residual Notes | Manual oversized-file curl command failed locally before reaching the server, but controller/service oversized validation is covered by automated tests. User should rotate the upstream key pasted during manual testing and revoke/regenerate the displayed gateway key if it should remain secret. |
+
+**Updated Files / Modules**:
+- `backend/src/main/java/com/sangui/raggateway/knowledge/`
+- `backend/src/main/java/com/sangui/raggateway/document/`
+- `backend/src/main/resources/db/migration/V5__create_knowledge_document_tables.sql`
+- `backend/src/main/resources/application.yml`
+- `.env.example`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/backend/error-handling.md`
+- `.trellis/spec/backend/logging-guidelines.md`
+- `.trellis/spec/backend/quality-guidelines.md`
+- `.trellis/spec/frontend/type-safety.md`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `45ba7b3` | (see git log) |
+
+### Testing
+
+- [OK] `mvn -q -DskipTests compile`
+- [OK] Targeted ingestion tests for knowledge/document services, controllers, parsers, chunker, and local storage.
+- [OK] Admin regression tests for app, API key, model config, and related services.
+- [OK] Gateway regression tests for chat completions, upstream client, and request log service.
+- [OK] Auth/error regression tests for gateway auth and global exception handling.
+- [OK] Full `mvn test`: 325 tests, 0 failures, 0 errors, 0 skipped.
+- [OK] Manual acceptance: KB create, markdown upload, document `PARSED`, KB `READY`, unsupported file/content-type rejection, cross-user 403, and existing gateway upstream forwarding.
 
 ### Status
 
