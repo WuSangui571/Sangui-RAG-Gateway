@@ -7,14 +7,19 @@ import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
 import com.sangui.raggateway.common.security.GatewayRequestContextHolder;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
+import com.sangui.raggateway.embedding.EmbeddingException;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionRequest;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionResponse;
 import com.sangui.raggateway.gateway.openai.OpenAiChatMessage;
 import com.sangui.raggateway.gateway.stream.ChatCompletionStreamPreparation;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
 import com.sangui.raggateway.gateway.upstream.UpstreamChatCompletionRequest;
+import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.log.ChatCompletionLogHelper;
 import com.sangui.raggateway.model.ModelConfigEntity;
+import com.sangui.raggateway.rag.prompt.RagPromptBuilder;
+import com.sangui.raggateway.retrieval.RetrievalResult;
+import com.sangui.raggateway.retrieval.RetrievalService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -34,12 +39,16 @@ public class ChatCompletionGatewayService {
     private static final String ERR_TYPE = "invalid_request_error";
     private static final String ERR_CODE_INVALID_REQUEST = "invalid_request";
     private static final String ERR_CODE_MODEL_CONFIG_NOT_READY = "model_config_not_ready";
+    private static final String ERR_CODE_KNOWLEDGE_BASE_NOT_READY = "knowledge_base_not_ready";
+    private static final String ERR_CODE_EMBEDDING_FAILED = "embedding_failed";
 
     private static final String ERR_MESSAGE_EMPTY_MESSAGES = "messages must be a non-empty array.";
     private static final String ERR_MESSAGE_MISSING_ROLE = "Each message must have a role.";
     private static final String ERR_MESSAGE_UNSUPPORTED_ROLE = "Unsupported message role.";
     private static final String ERR_MESSAGE_MISSING_CONTENT = "Each message must have content.";
     private static final String ERR_MESSAGE_CONFIG_NOT_READY = "Default model config is not configured for this app.";
+    private static final String ERR_MESSAGE_KB_NOT_READY = "Knowledge base is not ready for this app.";
+    private static final String ERR_MESSAGE_NO_USER_MESSAGE = "At least one user message is required for retrieval.";
 
     private static final String ERR_TYPE_SERVER = "server_error";
     private static final Set<String> SUPPORTED_ROLES = Set.of("system", "user", "assistant");
@@ -48,15 +57,18 @@ public class ChatCompletionGatewayService {
     private final UpstreamApiKeyEncryptor encryptor;
     private final OpenAiCompatibleUpstreamClient upstreamClient;
     private final ObjectMapper objectMapper;
+    private final RetrievalService retrievalService;
 
     public ChatCompletionGatewayService(AppService appService,
                                         UpstreamApiKeyEncryptor encryptor,
                                         OpenAiCompatibleUpstreamClient upstreamClient,
-                                        ObjectMapper objectMapper) {
+                                        ObjectMapper objectMapper,
+                                        RetrievalService retrievalService) {
         this.appService = appService;
         this.encryptor = encryptor;
         this.upstreamClient = upstreamClient;
         this.objectMapper = objectMapper;
+        this.retrievalService = retrievalService;
     }
 
     public ChatCompletionResult processChatCompletion(OpenAiChatCompletionRequest request) {
@@ -97,7 +109,13 @@ public class ChatCompletionGatewayService {
                 context.getRequestId(), context.getAppId(), context.getApiKeyId(),
                 modelConfig.getProviderName(), modelConfig.getChatModel());
 
-        UpstreamChatCompletionRequest upstreamRequest = buildUpstreamRequest(request, modelConfig);
+        RetrievalResult retrievalResult = performRetrieval(request, app);
+
+        List<OpenAiChatMessage> augmentedMessages = RagPromptBuilder.buildAugmentedMessages(
+                request.getMessages(), retrievalResult);
+
+        UpstreamChatCompletionRequest upstreamRequest = buildUpstreamRequest(
+                request, modelConfig, augmentedMessages);
 
         try {
             long upstreamStart = System.currentTimeMillis();
@@ -117,9 +135,12 @@ public class ChatCompletionGatewayService {
                 completionTokens = response.getUsage().getCompletionTokens();
                 totalTokens = response.getUsage().getTotalTokens();
             }
+            String questionSummary = truncateForSummary(extractLastUserMessage(request.getMessages()));
+            String hitChunkIdsJson = toJsonArray(retrievalResult.getHitChunkIds());
             return new ChatCompletionResult(response, modelConfig.getChatModel(),
                     modelConfig.getProviderName(), upstreamLatency,
-                    promptTokens, completionTokens, totalTokens);
+                    promptTokens, completionTokens, totalTokens,
+                    questionSummary, hitChunkIdsJson);
         } catch (GatewayException e) {
             throw e;
         } catch (Exception e) {
@@ -172,15 +193,26 @@ public class ChatCompletionGatewayService {
                 context.getRequestId(), context.getAppId(), context.getApiKeyId(),
                 modelConfig.getProviderName(), modelConfig.getChatModel());
 
-        UpstreamChatCompletionRequest upstreamRequest = buildUpstreamRequest(request, modelConfig);
+        RetrievalResult retrievalResult = performRetrieval(request, app);
+
+        List<OpenAiChatMessage> augmentedMessages = RagPromptBuilder.buildAugmentedMessages(
+                request.getMessages(), retrievalResult);
+
+        UpstreamChatCompletionRequest upstreamRequest = buildUpstreamRequest(
+                request, modelConfig, augmentedMessages);
         upstreamRequest.setStream(true);
+
+        String questionSummary = truncateForSummary(extractLastUserMessage(request.getMessages()));
+        String hitChunkIdsJson = toJsonArray(retrievalResult.getHitChunkIds());
 
         return new ChatCompletionStreamPreparation(
                 modelConfig.getBaseUrl(),
                 decryptedKey,
                 upstreamRequest,
                 modelConfig.getChatModel(),
-                modelConfig.getProviderName()
+                modelConfig.getProviderName(),
+                questionSummary,
+                hitChunkIdsJson
         );
     }
 
@@ -227,13 +259,15 @@ public class ChatCompletionGatewayService {
                 requestId, ERR_CODE_INVALID_REQUEST, reason);
     }
 
-    UpstreamChatCompletionRequest buildUpstreamRequest(OpenAiChatCompletionRequest request, ModelConfigEntity modelConfig) {
+    UpstreamChatCompletionRequest buildUpstreamRequest(OpenAiChatCompletionRequest request,
+                                                       ModelConfigEntity modelConfig,
+                                                       List<OpenAiChatMessage> augmentedMessages) {
         UpstreamChatCompletionRequest upstream = new UpstreamChatCompletionRequest();
 
         upstream.setModel(modelConfig.getChatModel());
 
         List<UpstreamChatCompletionRequest.Message> upstreamMessages = new ArrayList<>();
-        for (OpenAiChatMessage msg : request.getMessages()) {
+        for (OpenAiChatMessage msg : augmentedMessages) {
             upstreamMessages.add(new UpstreamChatCompletionRequest.Message(msg.getRole(), msg.getContent()));
         }
         upstream.setMessages(upstreamMessages);
@@ -282,5 +316,74 @@ public class ChatCompletionGatewayService {
                     e
             );
         }
+    }
+
+    private RetrievalResult performRetrieval(OpenAiChatCompletionRequest request, AppEntity app) {
+        KnowledgeBaseEntity kb = appService.resolveDefaultKnowledgeBase(app);
+        if (kb == null) {
+            log.warn("Default knowledge base not ready for appId={}", app.getId());
+            throw new GatewayException(ERR_MESSAGE_KB_NOT_READY, ERR_TYPE,
+                    ERR_CODE_KNOWLEDGE_BASE_NOT_READY, HttpStatus.CONFLICT);
+        }
+
+        String userMessage = extractLastUserMessage(request.getMessages());
+        if (userMessage == null) {
+            throw new GatewayException(ERR_MESSAGE_NO_USER_MESSAGE, ERR_TYPE,
+                    ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
+        }
+
+        int topK = app.getRetrievalTopK() != null ? app.getRetrievalTopK() : 5;
+        double threshold = app.getRetrievalSimilarityThreshold() != null
+                ? app.getRetrievalSimilarityThreshold() : 0.700;
+        int maxChunks = app.getRetrievalMaxContextChunks() != null
+                ? app.getRetrievalMaxContextChunks() : 5;
+        int maxChars = app.getRetrievalMaxContextChars() != null
+                ? app.getRetrievalMaxContextChars() : 12000;
+        int maxSingleChars = app.getRetrievalMaxSingleChunkChars() != null
+                ? app.getRetrievalMaxSingleChunkChars() : 3000;
+
+        try {
+            return retrievalService.retrieve(
+                    userMessage, kb, topK, threshold, maxChunks, maxChars, maxSingleChars);
+        } catch (EmbeddingException e) {
+            log.warn("Embedding failed for appId={} kbId={}", app.getId(), kb.getId());
+            throw new GatewayException("Embedding failed for retrieval",
+                    ERR_TYPE_SERVER, ERR_CODE_EMBEDDING_FAILED, HttpStatus.BAD_GATEWAY);
+        }
+    }
+
+    static String extractLastUserMessage(List<OpenAiChatMessage> messages) {
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            OpenAiChatMessage msg = messages.get(i);
+            if ("user".equals(msg.getRole()) && msg.getContent() != null) {
+                return msg.getContent();
+            }
+        }
+        return null;
+    }
+
+    static String truncateForSummary(String text) {
+        if (text == null) {
+            return null;
+        }
+        if (text.length() <= 512) {
+            return text;
+        }
+        return text.substring(0, 512);
+    }
+
+    static String toJsonArray(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < ids.size(); i++) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append(ids.get(i));
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }

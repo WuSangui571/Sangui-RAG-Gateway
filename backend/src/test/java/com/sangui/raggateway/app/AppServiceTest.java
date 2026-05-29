@@ -1,6 +1,8 @@
 package com.sangui.raggateway.app;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
+import com.sangui.raggateway.knowledge.KnowledgeBaseService;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import com.sangui.raggateway.model.ModelConfigService;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,11 +30,14 @@ class AppServiceTest {
     @Mock
     private ModelConfigService modelConfigService;
 
+    @Mock
+    private KnowledgeBaseService knowledgeBaseService;
+
     private AppService appService;
 
     @BeforeEach
     void setUp() {
-        appService = new AppService(appMapper, modelConfigService);
+        appService = new AppService(appMapper, modelConfigService, knowledgeBaseService);
     }
 
     @Test
@@ -150,6 +155,105 @@ class AppServiceTest {
     }
 
     @Test
+    void shouldResolveDefaultKnowledgeBaseWithAppUserBoundary() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        app.setDefaultKnowledgeBaseId(20L);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        when(knowledgeBaseService.findByIdAndUserId(20L, 100L)).thenReturn(kb);
+
+        KnowledgeBaseEntity result = appService.resolveDefaultKnowledgeBase(app);
+
+        assertThat(result).isSameAs(kb);
+        verify(knowledgeBaseService).findByIdAndUserId(20L, 100L);
+    }
+
+    @Test
+    void shouldNotResolveWhenDefaultKnowledgeBaseIsMissing() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+
+        KnowledgeBaseEntity result = appService.resolveDefaultKnowledgeBase(app);
+
+        assertThat(result).isNull();
+        verifyNoInteractions(knowledgeBaseService);
+    }
+
+    @Test
+    void shouldNotResolveNonReadyDefaultKnowledgeBase() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        app.setDefaultKnowledgeBaseId(20L);
+        when(knowledgeBaseService.findByIdAndUserId(20L, 100L))
+                .thenReturn(createKnowledgeBase(20L, 100L, "EMPTY"));
+
+        KnowledgeBaseEntity result = appService.resolveDefaultKnowledgeBase(app);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldBindDefaultKnowledgeBaseForSameUserReadyKb() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        app.setStatus("ENABLED");
+        when(appMapper.selectById(1L)).thenReturn(app);
+        when(knowledgeBaseService.findByIdAndUserId(20L, 100L))
+                .thenReturn(createKnowledgeBase(20L, 100L, "READY"));
+
+        AppEntity result = appService.bindDefaultKnowledgeBase(1L, 20L, 100L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getDefaultKnowledgeBaseId()).isEqualTo(20L);
+        verify(appMapper).updateById(any(AppEntity.class));
+    }
+
+    @Test
+    void shouldFailBindDefaultKnowledgeBaseForCrossUserApp() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(200L);
+        when(appMapper.selectById(1L)).thenReturn(app);
+
+        AppEntity result = appService.bindDefaultKnowledgeBase(1L, 20L, 100L);
+
+        assertThat(result).isNull();
+        verifyNoInteractions(knowledgeBaseService);
+    }
+
+    @Test
+    void shouldFailBindDefaultKnowledgeBaseWhenKbMissingOrCrossUser() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        when(appMapper.selectById(1L)).thenReturn(app);
+        when(knowledgeBaseService.findByIdAndUserId(20L, 100L)).thenReturn(null);
+
+        AppEntity result = appService.bindDefaultKnowledgeBase(1L, 20L, 100L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldFailBindDefaultKnowledgeBaseWhenKbNotReady() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        when(appMapper.selectById(1L)).thenReturn(app);
+        when(knowledgeBaseService.findByIdAndUserId(20L, 100L))
+                .thenReturn(createKnowledgeBase(20L, 100L, "PROCESSING"));
+
+        AppEntity result = appService.bindDefaultKnowledgeBase(1L, 20L, 100L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
     void shouldCreateAppWithEnabledStatus() {
         ArgumentCaptor<AppEntity> captor = ArgumentCaptor.forClass(AppEntity.class);
         appService.create("Test App", 100L);
@@ -219,5 +323,16 @@ class AppServiceTest {
         AppEntity result = appService.findByIdAndUserId(1L, 999L);
 
         assertThat(result).isNull();
+    }
+
+    private KnowledgeBaseEntity createKnowledgeBase(Long id, Long userId, String status) {
+        KnowledgeBaseEntity kb = new KnowledgeBaseEntity();
+        kb.setId(id);
+        kb.setUserId(userId);
+        kb.setName("Default KB");
+        kb.setEmbeddingModel("text-embedding-v4");
+        kb.setEmbeddingDimension(1536);
+        kb.setStatus(status);
+        return kb;
     }
 }

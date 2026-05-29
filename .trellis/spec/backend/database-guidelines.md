@@ -591,9 +591,58 @@ idx_rag_doc_chunk_emb_document on rag_document_chunk_embedding(document_id)
 
 Tenant rule: every vector row duplicates `user_id` and `knowledge_base_id`. Future vector queries must include both `user_id` and `knowledge_base_id` in SQL before ordering by vector distance. Java-only tenant filtering after vector operations is forbidden.
 
-Dimension safety: the number of vectors returned by the embedding provider must equal the number of input chunks. Every vector length must equal `rag_knowledge_base.embedding_dimension`. The model config used for embedding must have same `user_id`, `status=ENABLED`, non-blank `embedding_model`, `embedding_dimension` equal to KB dimension, and a usable encrypted upstream API key.
+Dimension safety: the number of vectors returned by the embedding provider must equal the number of input chunks. Every vector length must equal `rag_knowledge_base.embedding_dimension`. The model config used for embedding must have same `user_id`, `status=ENABLED`, non-blank `embedding_model`, `embedding_dimension` equal to KB dimension, and a usable encrypted upstream API key. If multiple enabled model configs match the same embedding model and dimension for one user, the latest updated config is the operational default.
 
 ANN index (HNSW/IVFFlat) is deferred until the retrieval distance metric is chosen.
+
+### Implemented App/KB Binding and Retrieval Schema
+
+The app-to-knowledge-base binding and retrieval configuration schema is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V7__add_app_default_knowledge_base.sql
+```
+
+`rag_app` new columns:
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `default_knowledge_base_id` | `BIGINT` | no | FK to `rag_knowledge_base(id)`. |
+| `retrieval_top_k` | `INTEGER` | yes | Default `5`. |
+| `retrieval_similarity_threshold` | `NUMERIC(4,3)` | yes | Default `0.700`. |
+| `retrieval_max_context_chunks` | `INTEGER` | yes | Default `5`. |
+| `retrieval_max_context_chars` | `INTEGER` | yes | Default `12000`. |
+| `retrieval_max_single_chunk_chars` | `INTEGER` | yes | Default `3000`. |
+| `no_hit_policy` | `VARCHAR(32)` | yes | Default `STRICT_RAG`. |
+
+Required indexes:
+
+```text
+idx_rag_app_default_knowledge_base on rag_app(default_knowledge_base_id)
+```
+
+FK constraint:
+
+```text
+fk_rag_app_default_knowledge_base: rag_app(default_knowledge_base_id) -> rag_knowledge_base(id)
+```
+
+Tenant rule: when resolving or assigning `default_knowledge_base_id`, `app.user_id` must equal `knowledge_base.user_id`. Enforced in service logic.
+
+#### Retrieval SQL Contract
+
+```sql
+SELECT c.id AS chunk_id, c.document_id, c.content, c.metadata::text,
+       1 - (e.embedding <=> ?::vector) AS similarity
+FROM rag_document_chunk_embedding e
+JOIN rag_document_chunk c ON c.id = e.chunk_id
+WHERE e.user_id = ?
+  AND e.knowledge_base_id = ?
+ORDER BY e.embedding <=> ?::vector
+LIMIT ?
+```
+
+Vector similarity: `1 - cosine_distance` (pgvector `<=>` returns cosine distance).
 
 ## Transaction Boundaries
 

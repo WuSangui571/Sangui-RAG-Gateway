@@ -1360,7 +1360,7 @@ Vectors are stored in a separate `rag_document_chunk_embedding` table (migration
 
 #### Model Config Resolution
 
-`ModelConfigService.findEnabledEmbeddingConfig(userId, embeddingModel, embeddingDimension)` finds a unique enabled config by user, embedding model, dimension, and `ENABLED` status. The upstream key is decrypted in-memory only; it is never logged or persisted.
+`ModelConfigService.findEnabledEmbeddingConfig(userId, embeddingModel, embeddingDimension)` resolves an enabled config by user, embedding model, dimension, and `ENABLED` status. If multiple enabled configs match, the latest updated row is used as the operational default. The upstream key is decrypted in-memory only; it is never logged or persisted.
 
 #### Implementation Files
 
@@ -1500,5 +1500,85 @@ rag:
     document:
       chunk-size: ${RAG_DOCUMENT_CHUNK_SIZE:800}
       chunk-overlap: ${RAG_DOCUMENT_CHUNK_OVERLAP:100}
-      max-file-size-bytes: ${RAG_DOCUMENT_MAX_FILE_SIZE_BYTES:1048576}
+       max-file-size-bytes: ${RAG_DOCUMENT_MAX_FILE_SIZE_BYTES:1048576}
+
+### Implemented RAG Retrieval and Prompt Augmentation Baseline
+
+The RAG retrieval and prompt augmentation baseline is implemented, completing the MVP RAG chat path for apps with a bound knowledge base.
+
+#### Chat Flow (Updated)
+
+```text
+POST /v1/chat/completions
+  -> API key auth (GatewayAuthFilter)
+  -> validate request (messages, role, content)
+  -> resolve app (AppService.findById)
+  -> resolve default model config (AppService.resolveDefaultModelConfig)
+  -> resolve default knowledge base (AppService.resolveDefaultKnowledgeBase)
+  -> validate KB READY -> otherwise 409 knowledge_base_not_ready
+  -> extract last user message as retrieval query
+  -> generate query embedding (EmbeddingClient)
+  -> pgvector retrieval scoped by user_id + knowledge_base_id
+  -> filter by similarity_threshold, deduplicate, truncate
+  -> build RAG-augmented messages (RagPromptBuilder)
+  -> forward to upstream chat model
+  -> return OpenAI-compatible response
+  -> persist request log (question_summary, hit_chunk_ids)
+```
+
+#### App/KB Binding Admin API
+
+```http
+PUT /api/admin/apps/{appId}/knowledge-base
+X-Admin-User-Id: <userId>
+Content-Type: application/json
+
+{"knowledge_base_id": 123}
+```
+
+Response: `ApiResponse<BindAppDefaultKnowledgeBaseVO>` with `app_id`, `user_id`, `default_knowledge_base_id`.
+
+#### No-Hit Policy: STRICT_RAG
+
+When retrieval returns no chunks above threshold, the gateway still calls upstream with an internal no-hit context message instructing the model to inform the user that the knowledge base does not contain enough information.
+
+#### Request Log Retrieval Fields
+
+| Field | Source | Notes |
+|---|---|---|
+| `question_summary` | Last user message truncated to 512 chars | Safe bounded prefix |
+| `hit_chunk_ids` | JSON array of chunk IDs from retrieval | `[1,2,3]` or null for no-hits |
+
+#### Implemented Files (New)
+
+```text
+backend/src/main/resources/db/migration/V7__add_app_default_knowledge_base.sql
+backend/src/main/java/com/sangui/raggateway/app/dto/BindAppDefaultKnowledgeBaseDTO.java
+backend/src/main/java/com/sangui/raggateway/app/vo/BindAppDefaultKnowledgeBaseVO.java
+backend/src/main/java/com/sangui/raggateway/retrieval/RetrievalService.java
+backend/src/main/java/com/sangui/raggateway/retrieval/RetrievalMapper.java
+backend/src/main/java/com/sangui/raggateway/retrieval/RetrievalResult.java
+backend/src/main/java/com/sangui/raggateway/retrieval/ChunkRow.java
+backend/src/main/java/com/sangui/raggateway/rag/prompt/RagPromptBuilder.java
+backend/src/main/java/com/sangui/raggateway/rag/prompt/NoHitPolicy.java
+backend/src/test/java/com/sangui/raggateway/retrieval/RetrievalServiceTest.java
+backend/src/test/java/com/sangui/raggateway/rag/prompt/RagPromptBuilderTest.java
+```
+
+#### Updated Files
+
+```text
+backend/src/main/java/com/sangui/raggateway/app/AppEntity.java
+backend/src/main/java/com/sangui/raggateway/app/vo/AppVO.java
+backend/src/main/java/com/sangui/raggateway/app/AppService.java
+backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java
+backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java
+backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionResult.java
+backend/src/main/java/com/sangui/raggateway/gateway/stream/ChatCompletionStreamPreparation.java
+backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java
+backend/src/main/resources/application.yml
+backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java
+backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java
+backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java
+backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java
 ```

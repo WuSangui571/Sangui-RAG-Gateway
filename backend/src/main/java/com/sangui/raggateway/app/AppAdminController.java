@@ -1,9 +1,11 @@
 package com.sangui.raggateway.app;
 
 import com.sangui.raggateway.app.dto.BindAppDefaultModelConfigDTO;
+import com.sangui.raggateway.app.dto.BindAppDefaultKnowledgeBaseDTO;
 import com.sangui.raggateway.app.dto.CreateAppDTO;
 import com.sangui.raggateway.app.vo.AppVO;
 import com.sangui.raggateway.app.vo.BindAppDefaultModelConfigVO;
+import com.sangui.raggateway.app.vo.BindAppDefaultKnowledgeBaseVO;
 import com.sangui.raggateway.apikey.ApiKeyEntity;
 import com.sangui.raggateway.apikey.ApiKeyService;
 import com.sangui.raggateway.apikey.dto.CreateApiKeyDTO;
@@ -12,6 +14,9 @@ import com.sangui.raggateway.apikey.vo.ApiKeyCreateVO;
 import com.sangui.raggateway.apikey.vo.ApiKeyVO;
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.response.ApiResponse;
+import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
+import com.sangui.raggateway.knowledge.KnowledgeBaseService;
+import com.sangui.raggateway.knowledge.KnowledgeBaseStatus;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import com.sangui.raggateway.model.ModelConfigService;
 import org.slf4j.Logger;
@@ -32,11 +37,14 @@ public class AppAdminController {
     private final AppService appService;
     private final ModelConfigService modelConfigService;
     private final ApiKeyService apiKeyService;
+    private final KnowledgeBaseService knowledgeBaseService;
 
-    public AppAdminController(AppService appService, ModelConfigService modelConfigService, ApiKeyService apiKeyService) {
+    public AppAdminController(AppService appService, ModelConfigService modelConfigService,
+                              ApiKeyService apiKeyService, KnowledgeBaseService knowledgeBaseService) {
         this.appService = appService;
         this.modelConfigService = modelConfigService;
         this.apiKeyService = apiKeyService;
+        this.knowledgeBaseService = knowledgeBaseService;
     }
 
     @PostMapping
@@ -145,7 +153,7 @@ public class AppAdminController {
             throw new BusinessException("NOT_FOUND", "App not found", HttpStatus.NOT_FOUND);
         }
         if (!app.getUserId().equals(userId)) {
-            throw new BusinessException("FORBIDDEN", "Access denied for this app", HttpStatus.FORBIDDEN);
+            throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
         }
 
         Long modelConfigId = dto == null ? null : dto.getModelConfigId();
@@ -168,6 +176,51 @@ public class AppAdminController {
 
         BindAppDefaultModelConfigVO vo = new BindAppDefaultModelConfigVO(
                 updated.getId(), updated.getUserId(), updated.getDefaultModelConfigId());
+        return ApiResponse.success(vo);
+    }
+
+    @PutMapping("/{appId}/knowledge-base")
+    public ApiResponse<BindAppDefaultKnowledgeBaseVO> bindDefaultKnowledgeBase(
+            @RequestHeader("X-Admin-User-Id") Long userId,
+            @PathVariable Long appId,
+            @RequestBody BindAppDefaultKnowledgeBaseDTO dto) {
+        if (userId == null || userId <= 0) {
+            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
+        }
+
+        AppEntity app = appService.findById(appId);
+        if (app == null) {
+            throw new BusinessException("NOT_FOUND", "App not found", HttpStatus.NOT_FOUND);
+        }
+        if (!app.getUserId().equals(userId)) {
+            throw new BusinessException("FORBIDDEN", "Access denied for this app", HttpStatus.FORBIDDEN);
+        }
+
+        Long knowledgeBaseId = dto == null ? null : dto.getKnowledgeBaseId();
+        if (knowledgeBaseId == null || knowledgeBaseId <= 0) {
+            throw new BusinessException("INVALID_REQUEST", "knowledge_base_id is required");
+        }
+
+        KnowledgeBaseEntity kb = knowledgeBaseService.findById(knowledgeBaseId);
+        if (kb == null) {
+            throw new BusinessException("NOT_FOUND", "Knowledge base not found", HttpStatus.NOT_FOUND);
+        }
+        if (!kb.getUserId().equals(userId)) {
+            throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+        }
+        if (!KnowledgeBaseStatus.READY.name().equals(kb.getStatus())) {
+            throw new BusinessException("KNOWLEDGE_BASE_NOT_READY",
+                    "Knowledge base is not ready", HttpStatus.BAD_REQUEST);
+        }
+
+        AppEntity updated = appService.bindDefaultKnowledgeBase(appId, knowledgeBaseId, userId);
+        if (updated == null) {
+            throw new BusinessException("KNOWLEDGE_BASE_NOT_READY",
+                    "Knowledge base is not available for this app", HttpStatus.BAD_REQUEST);
+        }
+
+        BindAppDefaultKnowledgeBaseVO vo = new BindAppDefaultKnowledgeBaseVO(
+                updated.getId(), updated.getUserId(), updated.getDefaultKnowledgeBaseId());
         return ApiResponse.success(vo);
     }
 

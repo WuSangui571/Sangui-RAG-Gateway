@@ -296,3 +296,24 @@ embedding.upstream_failed
 Safe fields logged: `model`, `input_count`, `output_count`, `dimension`, `latency_ms`, `status`, `error_class`, `timeout`.
 
 Never logged in embedding: embedding vectors, chunk content, upstream API key (plaintext or encrypted), provider raw response bodies, Authorization headers.
+
+## Retrieval and Prompt Logging
+
+Retrieval operations emit:
+
+```text
+retrieval.completed kb_id={} query_length={} hit_count={} no_hits={} latency_ms={}
+```
+
+Prompt builder does not produce structured logs; augmented prompt content is never logged.
+
+#### Request Log Retrieval Fields (Updated)
+
+`question_summary` and `hit_chunk_ids` are now populated for RAG requests:
+
+| Field | Source | Bounds |
+|---|---|---|
+| `question_summary` | Last user message, truncated to 512 characters | Safe bounded prefix |
+| `hit_chunk_ids` | JSON array of chunk IDs from retrieval, e.g. `[1,2,3]` | Null for no-hits or pre-retrieval failures |
+
+Never logged: full augmented prompts, chunk content, embedding vectors, provider raw bodies, or decrypted upstream keys.

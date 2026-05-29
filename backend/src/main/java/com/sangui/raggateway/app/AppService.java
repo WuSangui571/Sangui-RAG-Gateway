@@ -3,6 +3,9 @@ package com.sangui.raggateway.app;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import com.sangui.raggateway.model.ModelConfigService;
+import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
+import com.sangui.raggateway.knowledge.KnowledgeBaseService;
+import com.sangui.raggateway.knowledge.KnowledgeBaseStatus;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,10 +19,12 @@ public class AppService {
 
     private final AppMapper appMapper;
     private final ModelConfigService modelConfigService;
+    private final KnowledgeBaseService knowledgeBaseService;
 
-    public AppService(AppMapper appMapper, ModelConfigService modelConfigService) {
+    public AppService(AppMapper appMapper, ModelConfigService modelConfigService, KnowledgeBaseService knowledgeBaseService) {
         this.appMapper = appMapper;
         this.modelConfigService = modelConfigService;
+        this.knowledgeBaseService = knowledgeBaseService;
     }
 
     @Transactional
@@ -89,5 +94,39 @@ public class AppService {
         app.setUpdatedAt(LocalDateTime.now());
         appMapper.updateById(app);
         return app;
+    }
+
+    @Transactional
+    public AppEntity bindDefaultKnowledgeBase(Long appId, Long knowledgeBaseId, Long userId) {
+        AppEntity app = findById(appId);
+        if (app == null || !app.getUserId().equals(userId)) {
+            return null;
+        }
+
+        KnowledgeBaseEntity kb = knowledgeBaseService.findByIdAndUserId(knowledgeBaseId, userId);
+        if (kb == null) {
+            return null;
+        }
+
+        if (!KnowledgeBaseStatus.READY.name().equals(kb.getStatus())) {
+            return null;
+        }
+
+        app.setDefaultKnowledgeBaseId(knowledgeBaseId);
+        app.setUpdatedAt(LocalDateTime.now());
+        appMapper.updateById(app);
+        return app;
+    }
+
+    public KnowledgeBaseEntity resolveDefaultKnowledgeBase(AppEntity app) {
+        if (app == null || app.getDefaultKnowledgeBaseId() == null) {
+            return null;
+        }
+        KnowledgeBaseEntity kb = knowledgeBaseService.findByIdAndUserId(
+                app.getDefaultKnowledgeBaseId(), app.getUserId());
+        if (kb == null || !KnowledgeBaseStatus.READY.name().equals(kb.getStatus())) {
+            return null;
+        }
+        return kb;
     }
 }

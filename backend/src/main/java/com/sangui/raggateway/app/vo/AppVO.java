@@ -14,6 +14,8 @@ public class AppVO {
     private String status;
     @JsonProperty("default_model_config_id")
     private Long defaultModelConfigId;
+    @JsonProperty("default_knowledge_base_id")
+    private Long defaultKnowledgeBaseId;
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
     @JsonProperty("updated_at")
@@ -26,6 +28,7 @@ public class AppVO {
         vo.name = entity.getName();
         vo.status = entity.getStatus();
         vo.defaultModelConfigId = entity.getDefaultModelConfigId();
+        vo.defaultKnowledgeBaseId = entity.getDefaultKnowledgeBaseId();
         vo.createdAt = entity.getCreatedAt();
         vo.updatedAt = entity.getUpdatedAt();
         return vo;
@@ -49,6 +52,10 @@ public class AppVO {
 
     public Long getDefaultModelConfigId() {
         return defaultModelConfigId;
+    }
+
+    public Long getDefaultKnowledgeBaseId() {
+        return defaultKnowledgeBaseId;
     }
 
     public LocalDateTime getCreatedAt() {

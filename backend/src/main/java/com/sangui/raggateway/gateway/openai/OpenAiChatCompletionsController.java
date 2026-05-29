@@ -86,6 +86,8 @@ public class OpenAiChatCompletionsController {
                     .completionTokens(result.getCompletionTokens())
                     .totalTokens(result.getTotalTokens())
                     .messagesCount(messagesCount)
+                    .questionSummary(result.getQuestionSummary())
+                    .hitChunkIds(result.getHitChunkIds())
                     .build());
 
             return ResponseEntity.ok(result.getResponse());
@@ -172,6 +174,8 @@ public class OpenAiChatCompletionsController {
                         .latencyMs(latencyMs)
                         .upstreamLatencyMs(upstreamLatencyMs)
                         .messagesCount(messagesCount)
+                        .questionSummary(prep.getQuestionSummary())
+                        .hitChunkIds(prep.getHitChunkIds())
                         .build());
             } catch (GatewayException e) {
                 if (!responseCommitted.get()) {
@@ -195,6 +199,8 @@ public class OpenAiChatCompletionsController {
                         .errorCode(e.getCode())
                         .latencyMs(latencyMs)
                         .messagesCount(messagesCount)
+                        .questionSummary(prep.getQuestionSummary())
+                        .hitChunkIds(prep.getHitChunkIds())
                         .build());
             } catch (Exception e) {
                 if (!responseCommitted.get()) {
@@ -225,11 +231,14 @@ public class OpenAiChatCompletionsController {
                         .errorCode(errorCode)
                         .latencyMs(latencyMs)
                         .messagesCount(messagesCount)
+                        .questionSummary(prep.getQuestionSummary())
+                        .hitChunkIds(prep.getHitChunkIds())
                         .build());
             }
         });
 
-        waitForStreamReady(streamReady, context, requestId, messagesCount, start, model, providerName);
+        waitForStreamReady(streamReady, context, requestId, messagesCount, start, model, providerName,
+                prep.getQuestionSummary(), prep.getHitChunkIds());
         return emitter;
     }
 
@@ -239,7 +248,9 @@ public class OpenAiChatCompletionsController {
                                     int messagesCount,
                                     long start,
                                     String model,
-                                    String providerName) {
+                                    String providerName,
+                                    String questionSummary,
+                                    String hitChunkIds) {
         try {
             streamReady.join();
         } catch (CompletionException e) {
@@ -273,6 +284,8 @@ public class OpenAiChatCompletionsController {
                     .errorCode(gatewayException.getCode())
                     .latencyMs(latencyMs)
                     .messagesCount(messagesCount)
+                    .questionSummary(questionSummary)
+                    .hitChunkIds(hitChunkIds)
                     .build());
 
             throw gatewayException;

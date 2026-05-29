@@ -1,0 +1,43 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/tasks/05-29-rag-retrieval-prompt-augmentation-baseline/prd.md", "reason": "Task PRD with scope, contracts, acceptance criteria, error matrix, tests, and handoff constraints."}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project-level RAG gateway boundary, chat flow, retrieval defaults, no-hit policy, and security rules."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Package placement rules for retrieval and rag.prompt modules."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Tenant-safe schema, app/KB binding, pgvector retrieval SQL, migration, and vector boundary rules."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "OpenAI-compatible chat error mapping, knowledge_base_not_ready, embedding/upstream failure behavior."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe retrieval/prompt/request log fields and forbidden sensitive data."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required backend tests for retrieval, prompt construction, gateway regressions, and tenant isolation."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Future frontend AppVO/default KB type alignment if backend admin payloads change."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API, DB, RAG, prompt, streaming, logging, and tenant boundary checklist."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Search/reuse guidance before adding new services, DTOs, or builders."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Existing app default model config resolution and binding pattern to mirror for default KB binding."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java", "reason": "Existing admin app endpoints, X-Admin-User-Id validation, and binding error style."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppEntity.java", "reason": "App entity currently has defaultModelConfigId and needs default KB field if persisted."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/vo/AppVO.java", "reason": "App response shape currently exposes default_model_config_id and likely needs default_knowledge_base_id."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/dto/BindAppDefaultModelConfigDTO.java", "reason": "DTO naming and snake_case binding pattern to mirror for KB binding."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/vo/BindAppDefaultModelConfigVO.java", "reason": "VO naming and response pattern to mirror for KB binding."}
+{"file": "backend/src/main/java/com/sangui/raggateway/knowledge/KnowledgeBaseService.java", "reason": "Existing KB tenant-safe lookup and READY status source for app binding and chat validation."}
+{"file": "backend/src/main/java/com/sangui/raggateway/knowledge/KnowledgeBaseEntity.java", "reason": "KB embedding model/dimension/status fields required by retrieval."}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentChunkEntity.java", "reason": "Chunk content, IDs, metadata, and tenant fields needed by retrieval result."}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentChunkEmbeddingMapper.java", "reason": "Existing pgvector insert mapper style and vector cast pattern for retrieval mapper SQL."}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentChunkEmbeddingEntity.java", "reason": "Embedding table entity fields used by retrieval SQL and result mapping."}
+{"file": "backend/src/main/java/com/sangui/raggateway/embedding/EmbeddingClient.java", "reason": "Existing query embedding client interface to reuse."}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java", "reason": "Embedding config lookup and upstream key decrypt behavior to reuse for query embeddings."}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Main chat orchestration point to integrate retrieval and prompt augmentation for JSON and stream."}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java", "reason": "Controller request ID, streaming boundary, and request log persistence pattern."}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/upstream/UpstreamChatCompletionRequest.java", "reason": "Upstream message shape that prompt builder will produce."}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/stream/ChatCompletionStreamPreparation.java", "reason": "Streaming preparation object may need retrieval metadata for logs."}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionResult.java", "reason": "Non-streaming result object may need retrieval metadata for request logs."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/CreateRequestLogCommand.java", "reason": "Existing safe request log command already supports questionSummary and hitChunkIds."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Existing request log persistence boundary to populate retrieval metadata."}
+{"file": "backend/src/main/resources/db/migration/V3__create_model_config_and_app_default.sql", "reason": "Existing app default FK migration pattern to mirror for default KB migration."}
+{"file": "backend/src/main/resources/db/migration/V5__create_knowledge_document_tables.sql", "reason": "KB/chunk schema tenant fields used by retrieval and app binding."}
+{"file": "backend/src/main/resources/db/migration/V6__create_document_chunk_embedding_table.sql", "reason": "Vector table schema requiring user_id and knowledge_base_id scoped retrieval."}
+{"file": "backend/src/main/resources/application.yml", "reason": "Existing RAG gateway config namespace for retrieval defaults if properties are added."}
+{"file": "backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java", "reason": "Existing app binding service test patterns to extend for default KB binding."}
+{"file": "backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java", "reason": "Existing app binding controller tests and error matrix patterns."}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java", "reason": "Existing chat service regression tests to extend for retrieval and augmented upstream calls."}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java", "reason": "Existing controller/request-log/streaming tests to extend."}
+{"file": "backend/src/test/java/com/sangui/raggateway/embedding/OpenAiCompatibleEmbeddingClientTest.java", "reason": "Embedding client behavior and failure tests to preserve/reuse."}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java", "reason": "Request log persistence tests to extend for questionSummary and hitChunkIds."}
+{"file": "backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java", "reason": "Embedding config lookup tests to preserve when query retrieval reuses model config resolution."}

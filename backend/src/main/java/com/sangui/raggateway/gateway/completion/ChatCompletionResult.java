@@ -11,6 +11,8 @@ public class ChatCompletionResult {
     private final Integer promptTokens;
     private final Integer completionTokens;
     private final Integer totalTokens;
+    private final String questionSummary;
+    private final String hitChunkIds;
 
     public ChatCompletionResult(OpenAiChatCompletionResponse response,
                                 String model,
@@ -18,7 +20,9 @@ public class ChatCompletionResult {
                                 long upstreamLatencyMs,
                                 Integer promptTokens,
                                 Integer completionTokens,
-                                Integer totalTokens) {
+                                Integer totalTokens,
+                                String questionSummary,
+                                String hitChunkIds) {
         this.response = response;
         this.model = model;
         this.providerName = providerName;
@@ -26,6 +30,8 @@ public class ChatCompletionResult {
         this.promptTokens = promptTokens;
         this.completionTokens = completionTokens;
         this.totalTokens = totalTokens;
+        this.questionSummary = questionSummary;
+        this.hitChunkIds = hitChunkIds;
     }
 
     public OpenAiChatCompletionResponse getResponse() {
@@ -54,5 +60,13 @@ public class ChatCompletionResult {
 
     public Integer getTotalTokens() {
         return totalTokens;
+    }
+
+    public String getQuestionSummary() {
+        return questionSummary;
+    }
+
+    public String getHitChunkIds() {
+        return hitChunkIds;
     }
 }

@@ -175,3 +175,34 @@ export interface KnowledgeBaseVO {
 ```
 
 Note: `DocumentVO` does not expose `storage_path`. All fields use snake_case as produced by backend `@JsonProperty`.
+
+## AppVO with Default Knowledge Base
+
+`AppVO` now exposes `default_knowledge_base_id` (mirroring `default_model_config_id`):
+
+```ts
+export interface AppVO {
+  id: number;
+  user_id: number;
+  name: string;
+  status: AppStatus;
+  default_model_config_id: number | null;
+  default_knowledge_base_id: number | null;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+KB binding admin API uses:
+
+```ts
+export interface BindAppDefaultKnowledgeBaseDTO {
+  knowledge_base_id: number;
+}
+
+export interface BindAppDefaultKnowledgeBaseVO {
+  app_id: number;
+  user_id: number;
+  default_knowledge_base_id: number;
+}
+```

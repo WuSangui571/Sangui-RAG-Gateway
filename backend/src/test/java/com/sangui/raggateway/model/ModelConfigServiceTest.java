@@ -449,9 +449,9 @@ class ModelConfigServiceTest {
     }
 
     @Test
-    void shouldReturnNullWhenMultipleEmbeddingConfigsMatch() {
+    void shouldReturnLatestEnabledEmbeddingConfigWhenMultipleMatch() {
         ModelConfigEntity first = new ModelConfigEntity();
-        first.setId(10L);
+        first.setId(12L);
         ModelConfigEntity second = new ModelConfigEntity();
         second.setId(11L);
         when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(first, second));
@@ -459,7 +459,9 @@ class ModelConfigServiceTest {
         ModelConfigEntity result = modelConfigService.findEnabledEmbeddingConfig(
                 100L, "text-embedding-3-small", 1536);
 
-        assertThat(result).isNull();
+        assertThat(result).isSameAs(first);
+        verify(modelConfigMapper).selectList(wrapperCaptor.capture());
+        assertThat(wrapperCaptor.getValue()).isNotNull();
     }
 
     @Test

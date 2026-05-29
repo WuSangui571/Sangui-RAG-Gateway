@@ -450,3 +450,35 @@ The knowledge base and document admin endpoints use the `ApiResponse` envelope w
 | Invalid document status filter | 400 | `INVALID_REQUEST` | Do not echo arbitrary input. |
 | Get missing document | 404 | `NOT_FOUND` | Safe admin envelope. |
 | Get cross-user document | 403 | `FORBIDDEN` | Generic access denied. |
+
+## RAG Retrieval Error Codes
+
+### Gateway Chat (Public `/v1/chat/completions`)
+
+| Scenario | HTTP | Error code | Required behavior |
+|---|---|---|---|
+| App has no default KB | 409 | `knowledge_base_not_ready` | OpenAiErrorResponse shape; no embedding/upstream call. |
+| Default KB not READY | 409 | `knowledge_base_not_ready` | No retrieval or upstream call. |
+| Missing/disabled/mismatched embedding config | 502 | `embedding_failed` | Safe message; no upstream chat call. |
+| Query embedding provider non-2xx/network error | 502 | `embedding_failed` | No provider body. |
+| Query embedding timeout | 502 | `embedding_failed` | Generic client-facing message. |
+| No user message in request | 400 | `invalid_request` | OpenAI-compatible error shape. |
+
+### Admin App/KB Binding
+
+| Scenario | HTTP | Code | Required behavior |
+|---|---|---|---|
+| Missing/null/non-positive `knowledge_base_id` | 400 | `INVALID_REQUEST` | No app mutation. |
+| App missing | 404 | `NOT_FOUND` | Safe admin envelope. |
+| App belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`. |
+| KB missing | 404 | `NOT_FOUND` | Safe admin envelope. |
+| KB belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`. |
+| KB not `READY` | 400 | `KNOWLEDGE_BASE_NOT_READY` | Binding rejected. |
+| App and READY KB same user | 200 | `OK` | Persist binding and update `updated_at`. |
+
+### Persisted Request Log Error Codes
+
+| GatewayException code | Persisted status | Persisted error_code |
+|---|---|---|
+| `knowledge_base_not_ready` | `failure` | `knowledge_base_not_ready` |
+| `embedding_failed` | `failure` | `embedding_failed` |

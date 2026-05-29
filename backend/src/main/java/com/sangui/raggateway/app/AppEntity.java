@@ -15,6 +15,13 @@ public class AppEntity {
     private String name;
     private String status;
     private Long defaultModelConfigId;
+    private Long defaultKnowledgeBaseId;
+    private Integer retrievalTopK;
+    private Double retrievalSimilarityThreshold;
+    private Integer retrievalMaxContextChunks;
+    private Integer retrievalMaxContextChars;
+    private Integer retrievalMaxSingleChunkChars;
+    private String noHitPolicy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -56,6 +63,62 @@ public class AppEntity {
 
     public void setDefaultModelConfigId(Long defaultModelConfigId) {
         this.defaultModelConfigId = defaultModelConfigId;
+    }
+
+    public Long getDefaultKnowledgeBaseId() {
+        return defaultKnowledgeBaseId;
+    }
+
+    public void setDefaultKnowledgeBaseId(Long defaultKnowledgeBaseId) {
+        this.defaultKnowledgeBaseId = defaultKnowledgeBaseId;
+    }
+
+    public Integer getRetrievalTopK() {
+        return retrievalTopK;
+    }
+
+    public void setRetrievalTopK(Integer retrievalTopK) {
+        this.retrievalTopK = retrievalTopK;
+    }
+
+    public Double getRetrievalSimilarityThreshold() {
+        return retrievalSimilarityThreshold;
+    }
+
+    public void setRetrievalSimilarityThreshold(Double retrievalSimilarityThreshold) {
+        this.retrievalSimilarityThreshold = retrievalSimilarityThreshold;
+    }
+
+    public Integer getRetrievalMaxContextChunks() {
+        return retrievalMaxContextChunks;
+    }
+
+    public void setRetrievalMaxContextChunks(Integer retrievalMaxContextChunks) {
+        this.retrievalMaxContextChunks = retrievalMaxContextChunks;
+    }
+
+    public Integer getRetrievalMaxContextChars() {
+        return retrievalMaxContextChars;
+    }
+
+    public void setRetrievalMaxContextChars(Integer retrievalMaxContextChars) {
+        this.retrievalMaxContextChars = retrievalMaxContextChars;
+    }
+
+    public Integer getRetrievalMaxSingleChunkChars() {
+        return retrievalMaxSingleChunkChars;
+    }
+
+    public void setRetrievalMaxSingleChunkChars(Integer retrievalMaxSingleChunkChars) {
+        this.retrievalMaxSingleChunkChars = retrievalMaxSingleChunkChars;
+    }
+
+    public String getNoHitPolicy() {
+        return noHitPolicy;
+    }
+
+    public void setNoHitPolicy(String noHitPolicy) {
+        this.noHitPolicy = noHitPolicy;
     }
 
     public LocalDateTime getCreatedAt() {

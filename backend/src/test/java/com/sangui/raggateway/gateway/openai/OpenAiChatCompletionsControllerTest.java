@@ -97,7 +97,8 @@ class OpenAiChatCompletionsControllerTest {
         usage.setCompletionTokens(1);
         usage.setTotalTokens(2);
         mockResponse.setUsage(usage);
-        return new ChatCompletionResult(mockResponse, "gpt-4o-mini", "openai", 500L, 1, 1, 2);
+        return new ChatCompletionResult(mockResponse, "gpt-4o-mini", "openai", 500L, 1, 1, 2,
+                "What is RAG?", "[1,2,3]");
     }
 
     private ChatCompletionStreamPreparation createStreamPreparation() {
@@ -105,7 +106,8 @@ class OpenAiChatCompletionsControllerTest {
         upstreamRequest.setModel("gpt-4o-mini");
         upstreamRequest.setStream(true);
         return new ChatCompletionStreamPreparation("https://api.openai.com", "sk-upstream-key",
-                upstreamRequest, "gpt-4o-mini", "openai");
+                upstreamRequest, "gpt-4o-mini", "openai",
+                "What is RAG?", "[1,2,3]");
     }
 
     @Test
@@ -153,6 +155,8 @@ class OpenAiChatCompletionsControllerTest {
         assertThat(command.getCompletionTokens()).isEqualTo(1);
         assertThat(command.getTotalTokens()).isEqualTo(2);
         assertThat(command.getMessagesCount()).isEqualTo(1);
+        assertThat(command.getQuestionSummary()).isEqualTo("What is RAG?");
+        assertThat(command.getHitChunkIds()).isEqualTo("[1,2,3]");
     }
 
     @Test
@@ -195,6 +199,8 @@ class OpenAiChatCompletionsControllerTest {
         assertThat(command.getModel()).isEqualTo("gpt-4o-mini");
         assertThat(command.getProviderName()).isEqualTo("openai");
         assertThat(command.getMessagesCount()).isEqualTo(1);
+        assertThat(command.getQuestionSummary()).isEqualTo("What is RAG?");
+        assertThat(command.getHitChunkIds()).isEqualTo("[1,2,3]");
     }
 
     @Test
@@ -233,6 +239,8 @@ class OpenAiChatCompletionsControllerTest {
         assertThat(command.getErrorCode()).isEqualTo("upstream_error");
         assertThat(command.getModel()).isEqualTo("gpt-4o-mini");
         assertThat(command.getProviderName()).isEqualTo("openai");
+        assertThat(command.getQuestionSummary()).isEqualTo("What is RAG?");
+        assertThat(command.getHitChunkIds()).isEqualTo("[1,2,3]");
     }
 
     @Test

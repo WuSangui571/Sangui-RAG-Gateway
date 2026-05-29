@@ -180,9 +180,11 @@ public class ModelConfigService {
                 .eq(ModelConfigEntity::getEmbeddingModel, embeddingModel)
                 .eq(ModelConfigEntity::getEmbeddingDimension, embeddingDimension)
                 .eq(ModelConfigEntity::getStatus, ModelConfigStatus.ENABLED.name())
-                .last("LIMIT 2");
+                .orderByDesc(ModelConfigEntity::getUpdatedAt)
+                .orderByDesc(ModelConfigEntity::getId)
+                .last("LIMIT 1");
         List<ModelConfigEntity> matches = modelConfigMapper.selectList(wrapper);
-        return matches.size() == 1 ? matches.get(0) : null;
+        return matches.isEmpty() ? null : matches.get(0);
     }
 
     public String decryptUpstreamKey(ModelConfigEntity config) {

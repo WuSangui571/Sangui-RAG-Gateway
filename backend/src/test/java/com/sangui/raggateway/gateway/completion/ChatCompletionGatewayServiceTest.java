@@ -7,14 +7,16 @@ import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
 import com.sangui.raggateway.common.security.GatewayRequestContextHolder;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
-import com.sangui.raggateway.gateway.completion.ChatCompletionResult;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionRequest;
 import com.sangui.raggateway.gateway.stream.ChatCompletionStreamPreparation;
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionResponse;
 import com.sangui.raggateway.gateway.openai.OpenAiChatMessage;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
 import com.sangui.raggateway.gateway.upstream.UpstreamChatCompletionRequest;
+import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.model.ModelConfigEntity;
+import com.sangui.raggateway.retrieval.RetrievalResult;
+import com.sangui.raggateway.retrieval.RetrievalService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +32,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,12 +51,16 @@ class ChatCompletionGatewayServiceTest {
     @Mock
     private OpenAiCompatibleUpstreamClient upstreamClient;
 
+    @Mock
+    private RetrievalService retrievalService;
+
     private ChatCompletionGatewayService service;
 
     private static final Long APP_ID = 1L;
     private static final Long USER_ID = 100L;
     private static final Long API_KEY_ID = 30L;
     private static final Long MODEL_CONFIG_ID = 10L;
+    private static final Long KB_ID = 20L;
     private static final String DECRYPTED_KEY = "sk-upstream-real-key";
     private static final String UPSTREAM_RESPONSE = """
             {
@@ -79,7 +88,7 @@ class ChatCompletionGatewayServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ChatCompletionGatewayService(appService, encryptor, upstreamClient, new ObjectMapper());
+        service = new ChatCompletionGatewayService(appService, encryptor, upstreamClient, new ObjectMapper(), retrievalService);
         GatewayRequestContext context = new GatewayRequestContext(APP_ID, USER_ID, API_KEY_ID, "sk-sangui-abcdef");
         context.setRequestId("request-123");
         GatewayRequestContextHolder.set(context);
@@ -97,6 +106,12 @@ class ChatCompletionGatewayServiceTest {
         app.setName("Test App");
         app.setStatus("ENABLED");
         app.setDefaultModelConfigId(MODEL_CONFIG_ID);
+        app.setDefaultKnowledgeBaseId(KB_ID);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.700);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
         return app;
     }
 
@@ -112,6 +127,17 @@ class ChatCompletionGatewayServiceTest {
         return config;
     }
 
+    private KnowledgeBaseEntity createReadyKnowledgeBase() {
+        KnowledgeBaseEntity kb = new KnowledgeBaseEntity();
+        kb.setId(KB_ID);
+        kb.setUserId(USER_ID);
+        kb.setName("Test KB");
+        kb.setEmbeddingModel("text-embedding-3-small");
+        kb.setEmbeddingDimension(1536);
+        kb.setStatus("READY");
+        return kb;
+    }
+
     private OpenAiChatCompletionRequest createValidRequest() {
         OpenAiChatCompletionRequest request = new OpenAiChatCompletionRequest();
         request.setModel("gpt-4o");
@@ -119,14 +145,25 @@ class ChatCompletionGatewayServiceTest {
         return request;
     }
 
+    private RetrievalResult createHitRetrievalResult() {
+        RetrievalResult.RetrievedChunk chunk = new RetrievalResult.RetrievedChunk(
+                1L, 10L, "chunk content", null, 0.85);
+        return new RetrievalResult(List.of(chunk), List.of(1L), false, 50L);
+    }
+
     @Test
     void shouldReturnValidResponseForGoodCase() {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+        RetrievalResult retrievalResult = createHitRetrievalResult();
 
         when(appService.findById(APP_ID)).thenReturn(app);
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
+                anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
                 .thenReturn(UPSTREAM_RESPONSE);
 
@@ -151,16 +188,23 @@ class ChatCompletionGatewayServiceTest {
         assertThat(result.getPromptTokens()).isEqualTo(1);
         assertThat(result.getCompletionTokens()).isEqualTo(1);
         assertThat(result.getTotalTokens()).isEqualTo(2);
+        assertThat(result.getQuestionSummary()).isEqualTo("Hello");
+        assertThat(result.getHitChunkIds()).isEqualTo("[1]");
     }
 
     @Test
     void shouldUseConfiguredChatModelNotCallerModel() {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+        RetrievalResult retrievalResult = createHitRetrievalResult();
 
         when(appService.findById(APP_ID)).thenReturn(app);
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
+                anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
                 .thenReturn(UPSTREAM_RESPONSE);
 
@@ -180,10 +224,15 @@ class ChatCompletionGatewayServiceTest {
     void shouldForwardOptionalFields() {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+        RetrievalResult retrievalResult = createHitRetrievalResult();
 
         when(appService.findById(APP_ID)).thenReturn(app);
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
+                anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
                 .thenReturn(UPSTREAM_RESPONSE);
 
@@ -208,10 +257,15 @@ class ChatCompletionGatewayServiceTest {
     void shouldForceStreamFalseWhenAbsent() {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+        RetrievalResult retrievalResult = createHitRetrievalResult();
 
         when(appService.findById(APP_ID)).thenReturn(app);
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
+                anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
                 .thenReturn(UPSTREAM_RESPONSE);
 
@@ -280,13 +334,37 @@ class ChatCompletionGatewayServiceTest {
     }
 
     @Test
-    void shouldPrepareStreamCompletionSuccessfully() {
+    void shouldReturn409WhenNoDefaultKnowledgeBase() {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
 
         when(appService.findById(APP_ID)).thenReturn(app);
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.processChatCompletion(createValidRequest()))
+                .isInstanceOf(GatewayException.class)
+                .matches(e -> {
+                    GatewayException ge = (GatewayException) e;
+                    return ge.getCode().equals("knowledge_base_not_ready")
+                            && ge.getHttpStatus().value() == 409;
+                });
+    }
+
+    @Test
+    void shouldPrepareStreamCompletionSuccessfully() {
+        AppEntity app = createEnabledApp();
+        ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+        RetrievalResult retrievalResult = createHitRetrievalResult();
+
+        when(appService.findById(APP_ID)).thenReturn(app);
+        when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
+        when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
+                anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
 
         OpenAiChatCompletionRequest request = createValidRequest();
         request.setStream(true);
@@ -298,6 +376,8 @@ class ChatCompletionGatewayServiceTest {
         assertThat(prep.getApiKey()).isEqualTo(DECRYPTED_KEY);
         assertThat(prep.getUpstreamRequest().getStream()).isTrue();
         assertThat(prep.getUpstreamRequest().getModel()).isEqualTo("gpt-4o-mini");
+        assertThat(prep.getQuestionSummary()).isEqualTo("Hello");
+        assertThat(prep.getHitChunkIds()).isEqualTo("[1]");
     }
 
     @Test
@@ -350,10 +430,15 @@ class ChatCompletionGatewayServiceTest {
     void shouldForwardStreamTrueToUpstreamForStreamRequest() {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+        RetrievalResult retrievalResult = createHitRetrievalResult();
 
         when(appService.findById(APP_ID)).thenReturn(app);
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
+                anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
 
         OpenAiChatCompletionRequest request = createValidRequest();
         request.setStream(true);
@@ -517,10 +602,15 @@ class ChatCompletionGatewayServiceTest {
     void shouldReturn502OnUpstreamError() {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+        RetrievalResult retrievalResult = createHitRetrievalResult();
 
         when(appService.findById(APP_ID)).thenReturn(app);
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
+                anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
                 .thenThrow(new GatewayException("Upstream service returned an error",
                         "server_error", "upstream_error", org.springframework.http.HttpStatus.BAD_GATEWAY));
@@ -538,10 +628,15 @@ class ChatCompletionGatewayServiceTest {
     void shouldReturn504OnUpstreamTimeout() {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+        RetrievalResult retrievalResult = createHitRetrievalResult();
 
         when(appService.findById(APP_ID)).thenReturn(app);
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
+                anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
                 .thenThrow(new GatewayException("Upstream request timed out",
                         "server_error", "upstream_timeout", org.springframework.http.HttpStatus.GATEWAY_TIMEOUT));
@@ -552,6 +647,52 @@ class ChatCompletionGatewayServiceTest {
                     GatewayException ge = (GatewayException) e;
                     return ge.getCode().equals("upstream_timeout")
                             && ge.getHttpStatus().value() == 504;
+                });
+    }
+
+    @Test
+    void shouldCallUpstreamWithNoHits() {
+        AppEntity app = createEnabledApp();
+        ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+        RetrievalResult noHitResult = new RetrievalResult(List.of(), List.of(), true, 50L);
+
+        when(appService.findById(APP_ID)).thenReturn(app);
+        when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
+        when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
+                anyInt(), anyInt(), anyInt())).thenReturn(noHitResult);
+        when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
+                .thenReturn(UPSTREAM_RESPONSE);
+
+        OpenAiChatCompletionRequest request = createValidRequest();
+        ChatCompletionResult result = service.processChatCompletion(request);
+
+        assertThat(result.getResponse().getObject()).isEqualTo("chat.completion");
+        assertThat(result.getHitChunkIds()).isNull();
+        assertThat(result.getQuestionSummary()).isEqualTo("Hello");
+    }
+
+    @Test
+    void shouldReturn400WhenNoUserMessage() {
+        AppEntity app = createEnabledApp();
+        ModelConfigEntity config = createEnabledModelConfig();
+
+        when(appService.findById(APP_ID)).thenReturn(app);
+        when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
+        when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(createReadyKnowledgeBase());
+
+        OpenAiChatCompletionRequest request = new OpenAiChatCompletionRequest();
+        request.setMessages(List.of(new OpenAiChatMessage("system", "You are a helpful assistant.")));
+
+        assertThatThrownBy(() -> service.processChatCompletion(request))
+                .isInstanceOf(GatewayException.class)
+                .matches(e -> {
+                    GatewayException ge = (GatewayException) e;
+                    return ge.getCode().equals("invalid_request")
+                            && ge.getHttpStatus().value() == 400;
                 });
     }
 }

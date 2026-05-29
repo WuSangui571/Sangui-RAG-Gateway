@@ -162,6 +162,19 @@ mvn -q "-Dtest=DocumentServiceTest,DocumentAdminControllerTest" test
 mvn -q "-Dtest=ModelConfigServiceTest" test
 ```
 
+RAG retrieval and prompt augmentation baseline tests:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test
+mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test
+mvn -q "-Dtest=ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest,OpenAiCompatibleUpstreamClientTest" test
+mvn -q "-Dtest=OpenAiCompatibleEmbeddingClientTest,DocumentServiceTest,DocumentAdminControllerTest,ModelConfigServiceTest" test
+mvn -q "-Dtest=GatewayAuthFilterTest,GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest,ApiRequestLogServiceTest" test
+mvn test
+```
+
 Tested areas:
 - Embedding client URL construction for base URL variants.
 - Safe logging (no vectors, chunk content, upstream keys, provider bodies).

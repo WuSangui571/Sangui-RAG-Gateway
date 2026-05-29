@@ -5,8 +5,10 @@ import com.sangui.raggateway.apikey.ApiKeyService;
 import com.sangui.raggateway.apikey.dto.CreateApiKeyDTO;
 import com.sangui.raggateway.apikey.dto.CreateApiKeyResult;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
+import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import com.sangui.raggateway.model.ModelConfigService;
+import com.sangui.raggateway.knowledge.KnowledgeBaseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,11 +49,14 @@ class AppAdminControllerTest {
     @Mock
     private ApiKeyService apiKeyService;
 
+    @Mock
+    private KnowledgeBaseService knowledgeBaseService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        AppAdminController controller = new AppAdminController(appService, modelConfigService, apiKeyService);
+        AppAdminController controller = new AppAdminController(appService, modelConfigService, apiKeyService, knowledgeBaseService);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -462,6 +467,114 @@ class AppAdminControllerTest {
                 .andExpect(jsonPath("$.code").value("MODEL_CONFIG_NOT_READY"));
     }
 
+    // ---- Bind default knowledge base ----
+
+    @Test
+    void shouldBindDefaultKnowledgeBaseWithSnakeCaseRequest() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        AppEntity updated = createApp(1L, 100L);
+        updated.setDefaultKnowledgeBaseId(20L);
+
+        when(appService.findById(1L)).thenReturn(app);
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+        when(appService.bindDefaultKnowledgeBase(1L, 20L, 100L)).thenReturn(updated);
+
+        mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "knowledge_base_id": 20
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.app_id").value(1))
+                .andExpect(jsonPath("$.data.user_id").value(100))
+                .andExpect(jsonPath("$.data.default_knowledge_base_id").value(20));
+
+        verify(appService).bindDefaultKnowledgeBase(1L, 20L, 100L);
+    }
+
+    @Test
+    void shouldRejectMissingKnowledgeBaseId() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findById(1L)).thenReturn(app);
+
+        mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        verifyNoInteractions(knowledgeBaseService);
+    }
+
+    @Test
+    void shouldReturn404ForMissingKnowledgeBaseWhenBinding() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findById(1L)).thenReturn(app);
+        when(knowledgeBaseService.findById(20L)).thenReturn(null);
+
+        mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "knowledge_base_id": 20
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+
+        verify(appService, never()).bindDefaultKnowledgeBase(anyLong(), anyLong(), anyLong());
+    }
+
+    @Test
+    void shouldRejectCrossUserKnowledgeBaseWhenBinding() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        KnowledgeBaseEntity otherUserKb = createKnowledgeBase(20L, 200L, "READY");
+        when(appService.findById(1L)).thenReturn(app);
+        when(knowledgeBaseService.findById(20L)).thenReturn(otherUserKb);
+
+        mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "knowledge_base_id": 20
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.message").value("Access denied"));
+
+        verify(appService, never()).bindDefaultKnowledgeBase(anyLong(), anyLong(), anyLong());
+    }
+
+    @Test
+    void shouldRejectNonReadyKnowledgeBaseWhenBinding() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "PROCESSING");
+        when(appService.findById(1L)).thenReturn(app);
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "knowledge_base_id": 20
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("KNOWLEDGE_BASE_NOT_READY"));
+
+        verify(appService, never()).bindDefaultKnowledgeBase(anyLong(), anyLong(), anyLong());
+    }
+
     // ---- Secret safety ----
 
     @Test
@@ -493,6 +606,17 @@ class AppAdminControllerTest {
         modelConfig.setUserId(userId);
         modelConfig.setStatus("ENABLED");
         return modelConfig;
+    }
+
+    private KnowledgeBaseEntity createKnowledgeBase(Long id, Long userId, String status) {
+        KnowledgeBaseEntity kb = new KnowledgeBaseEntity();
+        kb.setId(id);
+        kb.setUserId(userId);
+        kb.setName("Default KB");
+        kb.setEmbeddingModel("text-embedding-v4");
+        kb.setEmbeddingDimension(1536);
+        kb.setStatus(status);
+        return kb;
     }
 
     private ApiKeyEntity createKeyEntity(Long id, Long appId, Long userId) {
