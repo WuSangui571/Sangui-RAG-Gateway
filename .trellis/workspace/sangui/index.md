@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 13
-- **Last Active**: 2026-05-28
+- **Total Sessions**: 14
+- **Last Active**: 2026-05-29
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~732 | Active |
+| `journal-1.md` | ~784 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 14 | 2026-05-29 | Embedding and vector storage baseline | `49e4ed6` | `main` |
 | 13 | 2026-05-28 | Knowledge Document Upload Baseline | `45ba7b3` | `main` |
 | 12 | 2026-05-28 | Chat Completions Streaming Baseline | `a7776c0` | `main` |
 | 11 | 2026-05-28 | Chat Completions request log persistence | `b92447f` | `main` |

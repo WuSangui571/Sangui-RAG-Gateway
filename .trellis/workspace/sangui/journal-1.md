@@ -736,3 +736,49 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: Embedding and vector storage baseline
+
+**Date**: 2026-05-29
+**Task**: Embedding and vector storage baseline
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | `49e4ed6 feat:????embedding??????` |
+| Main backend change | Added the embedding/vector storage baseline after document parsing and chunking. Documents now progress through `PARSED -> EMBEDDING -> READY`, and embedding failures end in `FAILED` with bounded admin-safe messages. |
+| Vector storage | Added `rag_document_chunk_embedding` via `V6__create_document_chunk_embedding_table.sql`, with tenant-safe `user_id`, `knowledge_base_id`, `document_id`, `chunk_id`, `embedding_model`, `embedding_dimension`, and pgvector `embedding` fields. |
+| Embedding client | Added internal OpenAI-compatible `/v1/embeddings` client under `backend/src/main/java/com/sangui/raggateway/embedding/`, including URL normalization, timeout handling, response count/index/dimension validation, and safe error normalization. |
+| Model config contract | Added same-user enabled embedding config lookup by `embedding_model` and `embedding_dimension`; chat and embedding can be separated by using one model config bound to the app for chat and one enabled unique model config matching the KB for embeddings. |
+| Document pipeline | Split parse/chunk and embedding/finalization boundaries, kept upstream embedding HTTP calls outside DB transactions, and persisted vectors plus READY state in a short post-call transaction. KB remains READY if previous READY documents exist after a later embedding failure. |
+| Specs updated | Updated project spec, backend database/error/logging/quality guidelines, and frontend type-safety contract for `DocumentStatus` values `EMBEDDING` and `READY`. |
+| Tests added/updated | Added embedding client tests, document service embedding happy/failure tests, admin READY/EMBEDDING status filter tests, and model config embedding lookup/decrypt tests. |
+| Manual validation | Human tested split providers: DashScope `https://dashscope.aliyuncs.com/compatible-mode/v1` with `text-embedding-v4` returned dimension 1024; uploaded markdown returned `DocumentVO.status=READY`; KB became `READY`; DB query showed `rag_document_chunk_embedding` row with `embedding_model=text-embedding-v4`, `embedding_dimension=1024`, and `vector_dims(embedding)=1024`; app bound to Sanguicode chat config returned `/v1/models` with `deepseek-v4-pro`; `/v1/chat/completions` returned `chat.completion`. |
+| Boundaries | No retrieval, prompt augmentation, citations, public `/v1/embeddings` endpoint, async jobs, queues, retries, or frontend pages were implemented in this task. |
+| Residual local state | Manual testing produced untracked local upload artifacts under `backend/data/uploads/knowledge/3/`, `4/`, and `5/`; they are not part of the committed feature and should be deleted or ignored separately. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `49e4ed6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
