@@ -782,3 +782,97 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: RAG Retrieval and Prompt Augmentation Baseline
+
+**Date**: 2026-05-31
+**Task**: RAG Retrieval and Prompt Augmentation Baseline
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| RAG baseline | Implemented app default knowledge-base binding, tenant-scoped pgvector retrieval, prompt augmentation, and request-log metadata for `POST /v1/chat/completions`. |
+| Admin API | Added `PUT /api/admin/apps/{appId}/knowledge-base` for same-user READY KB binding and exposed `default_knowledge_base_id` on `AppVO`. |
+| Retrieval | Added `RetrievalService`, `RetrievalMapper`, `RetrievalResult`, and context truncation/topK/threshold enforcement. |
+| Prompt | Added `RagPromptBuilder` with STRICT_RAG hit/no-hit system context injection while preserving original messages. |
+| Logging | Added bounded `question_summary` and JSONB `hit_chunk_ids`; fixed JSONB insert with explicit `::jsonb` cast. |
+| Follow-up fix | Lowered default retrieval threshold to `0.300` via V8 migration to improve recall for short Chinese queries with OpenAI-compatible embedding providers. |
+| Specs | Updated project/backend/frontend Trellis specs for DB schema, retrieval SQL, RAG flow, logging, errors, quality checks, and future frontend types. |
+
+**Updated Files**:
+- `backend/src/main/resources/db/migration/V7__add_app_default_knowledge_base.sql`
+- `backend/src/main/resources/db/migration/V8__lower_default_retrieval_threshold.sql`
+- `backend/src/main/java/com/sangui/raggateway/app/AppEntity.java`
+- `backend/src/main/java/com/sangui/raggateway/app/AppService.java`
+- `backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java`
+- `backend/src/main/java/com/sangui/raggateway/app/dto/BindAppDefaultKnowledgeBaseDTO.java`
+- `backend/src/main/java/com/sangui/raggateway/app/vo/BindAppDefaultKnowledgeBaseVO.java`
+- `backend/src/main/java/com/sangui/raggateway/app/vo/AppVO.java`
+- `backend/src/main/java/com/sangui/raggateway/retrieval/*`
+- `backend/src/main/java/com/sangui/raggateway/rag/prompt/*`
+- `backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionResult.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/stream/ChatCompletionStreamPreparation.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java`
+- `backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogMapper.java`
+- `backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java`
+- `backend/src/main/resources/application.yml`
+- `backend/src/test/java/com/sangui/raggateway/retrieval/RetrievalServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/rag/prompt/RagPromptBuilderTest.java`
+- `backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java`
+- `backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java`
+- `backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/backend/error-handling.md`
+- `.trellis/spec/backend/logging-guidelines.md`
+- `.trellis/spec/backend/quality-guidelines.md`
+- `.trellis/spec/frontend/type-safety.md`
+
+**Validation Commands**:
+- `cd backend; mvn -q -DskipTests compile` - passed
+- `cd backend; mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test` - passed
+- `cd backend; mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test` - passed
+- `cd backend; mvn -q "-Dtest=ApiRequestLogServiceTest,RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test` - passed
+- `cd backend; mvn -q test` - passed
+
+**Manual Acceptance**:
+- Created/used app `11` and KB `6`; KB status `READY` and app default KB binding verified.
+- Verified V8 migration set `rag_app.retrieval_similarity_threshold = 0.300` for app `11`.
+- Uploaded unique Markdown knowledge content containing passphrase `??? 729`.
+- Chinese query returned the passphrase from KB context.
+- English query returned the passphrase from KB context.
+- Request logs persisted `question_summary` and non-empty `hit_chunk_ids` (`[9, 8]`) for both Chinese and English queries.
+
+**Boundaries / Notes**:
+- Frontend UI, citations, multiple KBs, rerank/hybrid search, public `/v1/embeddings`, async jobs, retries, PDF/DOCX, and request-log UI remain out of scope.
+- Manual local upload artifacts under `backend/data/uploads/knowledge/6/...` and `manual-kb-unique.md` are test data and remain untracked.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e3ef961` | (see git log) |
+| `9dad012` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
