@@ -482,3 +482,26 @@ The knowledge base and document admin endpoints use the `ApiResponse` envelope w
 |---|---|---|
 | `knowledge_base_not_ready` | `failure` | `knowledge_base_not_ready` |
 | `embedding_failed` | `failure` | `embedding_failed` |
+
+## Admin Request Log API Error Codes
+
+The request log observability endpoints (`/api/admin/apps/{appId}/request-logs/**`) use the `ApiResponse` envelope with these error codes:
+
+| Scenario | HTTP | Code | Notes |
+|---|---|---|---|
+| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException`. |
+| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException`. |
+| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated in controller before any DB query. |
+| App id does not exist | 404 | `NOT_FOUND` | Applies to all endpoints. |
+| App id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no log/chunk queries executed. |
+| Invalid `page` (< 1) | 400 | `INVALID_REQUEST` | No mapper query. |
+| Invalid `page_size` (< 1 or > 100) | 400 | `INVALID_REQUEST` | No mapper query. |
+| Invalid `status` (!= `success`/`failure`) | 400 | `INVALID_REQUEST` | Case-insensitive input normalized. |
+| Invalid time format | 400 | `INVALID_REQUEST` | Safe message; does not echo raw input. |
+| `start_time` after `end_time` | 400 | `INVALID_REQUEST` | No mapper query. |
+| Log request ID missing under owned app | 404 | `NOT_FOUND` | `Request log not found`. |
+| App has no default KB for hit-chunks | 400 | `INVALID_REQUEST` | `App has no default knowledge base`. |
+| Valid filters, no results | 200 | `OK` | Empty `items`, correct pagination metadata. |
+| `hit_chunk_ids` null/empty | 200 | `OK` | Empty chunk summary list. |
+
+Secret-safe error responses: error messages never include raw API keys, upstream keys, chunk content, embedding vectors, or stack traces. Cross-user access failures use generic `Access denied` to avoid information leakage.

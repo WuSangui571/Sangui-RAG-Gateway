@@ -657,3 +657,43 @@ Typical transactions:
 - Persist chunks and update document/knowledge-base readiness.
 
 Do not keep a database transaction open while calling upstream model or embedding APIs. Persist an intermediate state, call the external service, then persist the result or failure.
+
+### Implemented Request Log Admin Queries
+
+Admin query methods added to `ApiRequestLogMapper`:
+
+```java
+@Select("SELECT * FROM rag_request_log WHERE user_id = #{userId} AND app_id = #{appId} AND request_id = #{requestId}")
+ApiRequestLogEntity selectByRequestIdAndUserAndApp(@Param("userId") Long userId,
+                                                    @Param("appId") Long appId,
+                                                    @Param("requestId") String requestId);
+```
+
+List and count queries use `LambdaQueryWrapper` with dynamic filters for `status`, `error_code`, `start_time`, `end_time`, scoped by `user_id` and `app_id`. Pagination uses manual `LIMIT`/`OFFSET` without MyBatis-Plus page interceptor.
+
+`hit_chunk_ids` JSONB read contract:
+- Persisted as `String` in entity (raw JSON like `"[8,9]"`).
+- Parsed to `List<Long>` in VO layer using Jackson `ObjectMapper`.
+- Malformed JSONB fails visibly via `IllegalArgumentException` (no silent fallback).
+- Null/empty maps to empty list in VO.
+
+Hit chunk tenant-scoped query in `DocumentChunkMapper`:
+
+```java
+@Select("<script>" +
+    "SELECT * FROM rag_document_chunk " +
+    "WHERE user_id = #{userId} " +
+    "AND knowledge_base_id = #{knowledgeBaseId} " +
+    "<choose>" +
+    "<when test='ids != null and ids.size() > 0'>" +
+    "AND id IN <foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach>" +
+    "</when>" +
+    "<otherwise>AND 1 = 0</otherwise>" +
+    "</choose>" +
+    "</script>")
+List<DocumentChunkEntity> selectByIdsAndUserAndKb(...)
+```
+
+The service checks null/empty hit IDs before mapper calls; the mapper also returns no rows for null/empty `ids` instead of generating invalid `IN ()` SQL.
+
+No new table required; existing `rag_request_log` and `rag_document_chunk` schemas are sufficient.

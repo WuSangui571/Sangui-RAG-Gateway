@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface ApiRequestLogMapper extends BaseMapper<ApiRequestLogEntity> {
@@ -51,4 +53,9 @@ public interface ApiRequestLogMapper extends BaseMapper<ApiRequestLogEntity> {
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insertRequestLog(ApiRequestLogEntity entity);
+
+    @Select("SELECT * FROM rag_request_log WHERE user_id = #{userId} AND app_id = #{appId} AND request_id = #{requestId}")
+    ApiRequestLogEntity selectByRequestIdAndUserAndApp(@Param("userId") Long userId,
+                                                        @Param("appId") Long appId,
+                                                        @Param("requestId") String requestId);
 }

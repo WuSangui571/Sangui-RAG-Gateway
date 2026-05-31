@@ -185,3 +185,30 @@ Tested areas:
 - Missing/disabled/mismatched embedding config safe failure.
 - Embedding failure safe error_message and KB status preservation.
 - Admin status filter accepts EMBEDDING and READY.
+
+## Request Log Observability Admin API Tests
+
+Required targeted tests:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test
+```
+
+Tested areas:
+- List endpoint with default pagination, status filter (success/failure case-insensitive), error_code, start_time/end_time range.
+- Invalid page/page_size/status/time format/time range returns `400 INVALID_REQUEST`.
+- Missing app returns `404 NOT_FOUND`; cross-user app returns `403 FORBIDDEN` (no log query executed).
+- Detail endpoint returns safe fields only (no prompt, messages, api_key, key_hash, upstream_api_key, chunk_content, embedding, provider_response_body, stack_trace).
+- Hit chunk endpoint returns tenant-scoped summaries with bounded content (200 chars).
+- App with no default KB returns `400 INVALID_REQUEST` for hit-chunks.
+- Empty/null hit_chunk_ids returns empty summary list.
+- JSONB `hit_chunk_ids` parsed to numeric array; sensitive fields absent from responses.
+- Admin identity validation (missing/non-numeric/non-positive `X-Admin-User-Id`).
+
+Regression tests must still pass:
+```bash
+mvn -q "-Dtest=AppAdminControllerTest,DocumentAdminControllerTest,RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test
+mvn test
+```

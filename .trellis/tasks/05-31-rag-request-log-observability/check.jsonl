@@ -1,0 +1,24 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/tasks/05-31-rag-request-log-observability/prd.md", "reason": "Acceptance criteria and forbidden scope for review"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify behavior stays within lightweight RAG gateway scope"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Review package/layer boundaries"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Verify DB query scope and JSONB contract"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify response codes and safe messages"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Verify logs/responses do not leak sensitive data"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Validate required test coverage"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify frontend type spec aligns with backend VO fields"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Review frontend contract placement guidance"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Verify future UI contract remains server-state oriented"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Verify future UI-facing contract omits sensitive data"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer verification checklist"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogEntity.java", "reason": "Check VO mapping against persisted fields"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogMapper.java", "reason": "Check scoped query and JSONB read additions"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Check new read methods do not hide failures incorrectly"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java", "reason": "Compare admin ownership validation style"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentAdminController.java", "reason": "Compare forbidden/not-found and secret omission patterns"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentChunkMapper.java", "reason": "Check hit chunk summary query tenant scope"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentChunkEntity.java", "reason": "Ensure full content is summarized only"}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java", "reason": "Verify new tests cover filtering, JSONB, no leaks"}
+{"file": "backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java", "reason": "Compare controller test style and cross-user assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/DocumentAdminControllerTest.java", "reason": "Compare safe response assertions"}

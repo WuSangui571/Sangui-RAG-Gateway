@@ -317,3 +317,29 @@ Prompt builder does not produce structured logs; augmented prompt content is nev
 | `hit_chunk_ids` | JSON array of chunk IDs from retrieval, e.g. `[1,2,3]` | Null for no-hits or pre-retrieval failures |
 
 Never logged: full augmented prompts, chunk content, embedding vectors, provider raw bodies, or decrypted upstream keys.
+
+## Admin Request Log API Safe Observability Fields
+
+The Admin request log API returns only safe operational fields for observability:
+
+Exposed safe fields in API responses:
+```text
+id, request_id, user_id (detail only), app_id, api_key_id, model, provider_name,
+status, error_code, latency_ms, upstream_latency_ms, usage (prompt_tokens, completion_tokens, total_tokens),
+messages_count, question_summary (bounded prefix only), hit_chunk_ids (numeric array parsed from JSONB),
+created_at, updated_at (detail only)
+```
+
+Exposed hit chunk summary fields:
+```text
+chunk_id, document_id, knowledge_base_id, source_filename, chunk_index, summary (first 200 chars only)
+```
+
+Forbidden fields never returned by any request log API:
+```text
+prompt, messages, full_messages, augmented_prompt, api_key, key_hash, authorization,
+upstream_api_key, api_key_encrypted, chunk_content, embedding, provider_response_body,
+stack_trace, storage_path
+```
+
+`hit_chunk_ids` JSONB parsing: the raw JSONB string is parsed to `List<Long>` before serialization. Malformed JSONB fails visibly (no silent fallback). Null/empty maps to empty list. Chunk summary `content` is truncated to `HIT_CHUNK_SUMMARY_MAX_CHARS` (200) via a named constant in `ApiRequestLogService`.

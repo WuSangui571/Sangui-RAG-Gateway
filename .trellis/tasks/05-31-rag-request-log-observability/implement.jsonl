@@ -1,0 +1,25 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/tasks/05-31-rag-request-log-observability/prd.md", "reason": "Primary PRD with API contract, boundaries, and tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project product boundary, RAG flow, request log contract"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend package/layer placement for log/admin APIs"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Tenant-safe request-log and chunk queries, JSONB rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin error matrix and secret-safe errors"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe observability fields and forbidden sensitive data"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required backend tests and quality checklist"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Future frontend request-log type contract"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Future request-logs API/types placement"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Request logs are server state, no secret persistence"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Request log filter/security expectations"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API/auth/log/chunk observability boundaries"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogEntity.java", "reason": "Existing request log entity fields"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogMapper.java", "reason": "Existing JSONB insert and mapper style"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Existing log service style and safety boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java", "reason": "Existing admin app ownership and error patterns"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentAdminController.java", "reason": "Existing document admin tenant checks and safe VO style"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentChunkMapper.java", "reason": "Chunk metadata/content persistence and mapper style"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentChunkEntity.java", "reason": "Chunk fields available for safe summary"}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java", "reason": "Existing request log service tests"}
+{"file": "backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java", "reason": "Existing standalone MockMvc admin tests"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/DocumentAdminControllerTest.java", "reason": "Existing no-leak and cross-user admin tests"}

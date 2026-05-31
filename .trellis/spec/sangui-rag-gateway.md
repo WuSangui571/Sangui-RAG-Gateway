@@ -1582,3 +1582,69 @@ backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java
 backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java
 backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java
 ```
+
+### Implemented Request Log Observability Admin API
+
+The request log observability admin API baseline is implemented, providing paginated, filtered request-log access and safe hit-chunk summaries for app owners.
+
+#### Admin API Endpoints
+
+All endpoints use `ApiResponse<T>` and require `X-Admin-User-Id`:
+
+```http
+GET /api/admin/apps/{appId}/request-logs?page=1&page_size=20&status=success&error_code=upstream_error&start_time=2026-05-31T00:00:00&end_time=2026-06-01T00:00:00
+GET /api/admin/apps/{appId}/request-logs/{requestId}
+GET /api/admin/apps/{appId}/request-logs/{requestId}/hit-chunks
+```
+
+#### List Request Logs
+
+Query params: `page` (default 1, positive), `page_size` (default 20, 1-100), `status` (success/failure, case-insensitive), `error_code` (exact match), `start_time` (ISO, inclusive), `end_time` (ISO, inclusive).
+
+Response: `ApiResponse<ApiRequestLogPageVO<ApiRequestLogVO>>` with items, page, page_size, total. `hit_chunk_ids` is returned as a numeric array parsed from JSONB. `usage` may be null when token data is unavailable.
+
+#### Request Log Detail
+
+Returns `ApiResponse<ApiRequestLogDetailVO>` with all safe fields plus `user_id` and `updated_at`. Forbidden fields (prompt, messages, api_key, key_hash, upstream_api_key, chunk_content, embedding, provider_response_body, stack_trace) are never present in responses.
+
+#### Hit Chunk Summary
+
+Returns `ApiResponse<List<HitChunkSummaryVO>>` with `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`, and a bounded `summary` (first 200 chars only). Full chunk `content`, `storage_path`, and embedding data are never returned. Chunks are tenant-scoped by `user_id` + `knowledge_base_id`. Original `hit_chunk_ids` order is preserved.
+
+#### Tenant Isolation
+
+- App ownership verified via `AppService.findByIdAndUserId` before any log/chunk queries.
+- Log queries scope by `user_id` and `app_id` at mapper level.
+- Chunk queries scope by `user_id` and `knowledge_base_id` at mapper level.
+- Cross-user app access returns 403 FORBIDDEN; missing app returns 404 NOT_FOUND.
+
+#### Implemented Files (New)
+
+```text
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogQuery.java
+backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogVO.java
+backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogDetailVO.java
+backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogPageVO.java
+backend/src/main/java/com/sangui/raggateway/log/vo/RequestLogUsageVO.java
+backend/src/main/java/com/sangui/raggateway/log/vo/HitChunkSummaryVO.java
+backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogAdminControllerTest.java
+```
+
+#### Updated Files
+
+```text
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogMapper.java
+backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java
+backend/src/main/java/com/sangui/raggateway/document/DocumentChunkMapper.java
+```
+
+Run after changes:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test
+mvn -q "-Dtest=AppAdminControllerTest,DocumentAdminControllerTest,RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test
+mvn test
+```
