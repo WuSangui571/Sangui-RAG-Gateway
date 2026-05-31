@@ -1,0 +1,18 @@
+{"file": ".trellis/tasks/05-31-admin-request-log-observability-frontend/prd.md", "reason": "Review against accepted scope, forbidden fields, required validation, and smoke-test criteria."}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify frontend stays within lightweight RAG gateway boundary and matches API contract."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Verify created frontend files follow project structure rules."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify TS types match snake_case backend VO fields without forbidden fields."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Verify state scope, error handling, and no secret persistence."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Verify loading/empty/error states and dense admin UI patterns."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Verify network calls go through typed API client and errors are visible."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Verify quality checklist, forbidden patterns, and smoke-test expectations."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Review cross-layer API/types/error/security alignment."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify frontend displays backend error codes/messages safely."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Verify UI does not render sensitive observability fields."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java", "reason": "Verify frontend client matches actual endpoint paths and params."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogVO.java", "reason": "Verify frontend request-log types match backend JSON properties."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogDetailVO.java", "reason": "Verify detail UI/types include only safe detail fields."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogPageVO.java", "reason": "Verify pagination UI/client handles page_size and total correctly."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/RequestLogUsageVO.java", "reason": "Verify usage null handling and token labels."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/HitChunkSummaryVO.java", "reason": "Verify hit chunk panel uses summary only, not full chunk content."}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogAdminControllerTest.java", "reason": "Use backend tests as assertions for frontend API alignment and forbidden fields."}

@@ -1,0 +1,20 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/tasks/05-31-admin-request-log-observability-frontend/prd.md", "reason": "Implementation requirements, acceptance criteria, forbidden scope, API contract, error matrix."}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary and implemented request-log Admin API contract."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend file organization and API client/page boundaries."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Request-log TypeScript contracts and forbidden sensitive fields."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Keep request-log state local/server-state oriented, no broad global cache."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Admin table/detail/drawer/status component behavior."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Composable/hook API loading and error mapping guidance."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend UX, safety, accessibility, and validation expectations."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Admin API payload consumed by frontend; map fields/errors/secret boundaries."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin request-log error matrix: 400/403/404 and ApiResponse envelope."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe request-log and hit chunk fields; forbidden sensitive data."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java", "reason": "Concrete endpoint paths, query params, header, validation, ownership errors."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogVO.java", "reason": "Concrete list/detail base VO snake_case fields."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogDetailVO.java", "reason": "Concrete detail-only user_id and updated_at fields."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogPageVO.java", "reason": "Pagination response shape items/page/page_size/total."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/RequestLogUsageVO.java", "reason": "Usage object nullability and token field names."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/HitChunkSummaryVO.java", "reason": "Hit chunk summary field names and bounded summary contract."}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogAdminControllerTest.java", "reason": "Executable examples for response fields, filters, and error behavior."}

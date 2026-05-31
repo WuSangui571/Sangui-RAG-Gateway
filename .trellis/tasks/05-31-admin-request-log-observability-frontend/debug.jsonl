@@ -1,0 +1,3 @@
+{"file": ".trellis/tasks/05-31-admin-request-log-observability-frontend/prd.md", "reason": "Debug against accepted request-log frontend scope and API/error contract."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Debug loading/error/empty states, browser smoke failures, and frontend safety issues."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Debug 400/403/404 Admin API error display and ApiResponse behavior."}
