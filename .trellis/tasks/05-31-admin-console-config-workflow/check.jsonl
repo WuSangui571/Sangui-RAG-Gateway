@@ -1,0 +1,30 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\05-31-admin-console-config-workflow\\prd.md", "reason": "Acceptance criteria and non-goal boundary checks"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify frontend workflow stays within lightweight RAG gateway scope"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Check new files follow frontend structure"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Check forms, status display, accessibility, and secret UI"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Check no plaintext key persistence or broad entity store"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Check polling stops and errors are not swallowed"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Check typed API contracts and no forbidden fields"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Check API/DTO/type alignment and secret/tenant boundaries"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Quality checklist for loading/error/empty/success states and build"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Check duplicated API/status/component logic"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Check no forbidden log/request-log fields are typed or rendered"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check frontend displays admin and OpenAI-compatible errors safely"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Check no unnecessary schema changes and contract-aligned IDs/statuses"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Check any backend touch stays in proper module"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend security/RAG/API compatibility regression checklist"}
+{"file": "frontend\\src\\pages\\request-logs\\RequestLogListPage.tsx", "reason": "Regression check for existing request-log behavior"}
+{"file": "frontend\\src\\api\\http.ts", "reason": "Check API helper changes preserve existing request-log behavior"}
+{"file": "frontend\\src\\types\\request-log.ts", "reason": "Check request-log forbidden fields remain absent"}
+{"file": "frontend\\src\\api\\request-logs.ts", "reason": "Check request-log API integration remains typed and working"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "Check app/API-key/binding contract remains compatible if touched"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\vo\\ApiKeyCreateVO.java", "reason": "Check plaintext key is only typed/rendered for create response"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppAdminControllerTest.java", "reason": "Backend app/binding/key admin contract regression tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminControllerTest.java", "reason": "Backend model config admin contract regression tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\knowledge\\KnowledgeBaseAdminControllerTest.java", "reason": "Backend KB admin contract regression tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentAdminControllerTest.java", "reason": "Backend document upload/status contract regression tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminControllerTest.java", "reason": "Backend API key admin one-time/list contract regression tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminControllerTest.java", "reason": "Request log admin regression tests after frontend integration"}
+{"file": "frontend\\package.json", "reason": "Frontend typecheck/build commands"}

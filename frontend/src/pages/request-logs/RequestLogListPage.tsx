@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Table, Button, Select, Input, Space, Typography, Alert, Form,
 } from 'antd'
@@ -11,11 +11,17 @@ import RequestLogDetailDrawer from '../../components/domain/RequestLogDetailDraw
 
 const { Title } = Typography
 
-export default function RequestLogListPage() {
+interface RequestLogListPageProps {
+  persistentAppId?: number
+  persistentAdminUserId?: number
+}
+
+export default function RequestLogListPage({ persistentAppId, persistentAdminUserId }: RequestLogListPageProps) {
   const [appId, setAppId] = useState<string>('')
   const [adminUserId, setAdminUserId] = useState<string>('')
   const [submittedAppId, setSubmittedAppId] = useState<number | null>(null)
   const [submittedAdminUserId, setSubmittedAdminUserId] = useState<number | null>(null)
+  const autoConnectDone = useRef(false)
 
   const [filters, setFilters] = useState<RequestLogListParams>({
     page: 1,
@@ -59,6 +65,16 @@ export default function RequestLogListPage() {
       setLoading(false)
     }
   }, [canQuery, submittedAppId, submittedAdminUserId, filters])
+
+  useEffect(() => {
+    if (autoConnectDone.current) return
+    if (persistentAppId !== undefined && persistentAdminUserId !== undefined
+      && persistentAppId > 0 && persistentAdminUserId > 0) {
+      autoConnectDone.current = true
+      setSubmittedAppId(persistentAppId)
+      setSubmittedAdminUserId(persistentAdminUserId)
+    }
+  }, [persistentAppId, persistentAdminUserId])
 
   useEffect(() => {
     fetchLogs()
@@ -301,13 +317,15 @@ export default function RequestLogListPage() {
         scroll={{ x: 1100 }}
       />
 
-      <RequestLogDetailDrawer
-        open={detailOpen}
-        appId={submittedAppId}
-        requestId={detailRequestId}
-        adminUserId={submittedAdminUserId}
-        onClose={closeDetail}
-      />
+      {submittedAppId !== null && submittedAdminUserId !== null && (
+        <RequestLogDetailDrawer
+          open={detailOpen}
+          appId={submittedAppId}
+          requestId={detailRequestId}
+          adminUserId={submittedAdminUserId}
+          onClose={closeDetail}
+        />
+      )}
     </div>
   )
 }

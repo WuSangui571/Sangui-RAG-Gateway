@@ -1,0 +1,38 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\05-31-admin-console-config-workflow\\prd.md", "reason": "Primary requirements, API contracts, acceptance criteria, and boundaries"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project product boundary and implemented admin/RAG contracts"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend file layout and page/API organization"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Admin workflow components, status tags, forms, and one-time key UX"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Data loading, polling, and one-time secret clearing hooks"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Admin user, selected app, server state, and secret state boundaries"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend DTO/VO/status unions and forbidden secret fields"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer flow, API payload, tenant, and secret boundary planning"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend workflow quality, build checks, accessibility, and secret safety"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Reuse existing request-log and API client patterns before adding abstractions"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe fields for request logs, secrets, documents, and smoke output"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Backend admin/gateway error shapes consumed by frontend"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Existing model/app/key/KB/document/log schema and tenant contracts"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend package boundaries if a verified API gap requires small backend change"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend contract regression tests if consumed APIs change"}
+{"file": "frontend\\src\\api\\request-logs.ts", "reason": "Existing typed request-log API client pattern"}
+{"file": "frontend\\src\\pages\\request-logs\\RequestLogListPage.tsx", "reason": "Existing request-log page to integrate with app-shell selected context"}
+{"file": "frontend\\src\\api\\http.ts", "reason": "Existing frontend ApiResponse/ApiError and GET helper pattern to extend"}
+{"file": "frontend\\src\\types\\common.ts", "reason": "Shared ApiResponse type"}
+{"file": "frontend\\src\\types\\request-log.ts", "reason": "Existing request-log type contracts to preserve"}
+{"file": "frontend\\src\\components\\domain\\RequestLogDetailDrawer.tsx", "reason": "Existing drawer/loading/error pattern and hit-chunks integration"}
+{"file": "frontend\\src\\components\\domain\\HitChunksPanel.tsx", "reason": "Existing domain component empty/error/loading pattern"}
+{"file": "frontend\\src\\components\\domain\\RequestLogStatusTag.tsx", "reason": "Status tag component pattern to mirror for app/document/key statuses"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "App create/bind/API-key endpoints consumed by frontend workflow"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminController.java", "reason": "Model config admin endpoints and error behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminController.java", "reason": "API key disable/revoke endpoint contract if page lists key actions"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\knowledge\\KnowledgeBaseAdminController.java", "reason": "Knowledge base create/list/detail API contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\dto\\CreateModelConfigDTO.java", "reason": "Model config create payload field names"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\vo\\ModelConfigVO.java", "reason": "Model config response field names and masked key only"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\vo\\ApiKeyCreateVO.java", "reason": "One-time plaintext key response shape"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\vo\\DocumentVO.java", "reason": "Document status response field names and safe fields"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\vo\\AppVO.java", "reason": "App response includes default model config and knowledge base IDs"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\vo\\ApiKeyVO.java", "reason": "Normal API key list response without plaintext key/hash"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionResponse.java", "reason": "Gateway smoke success response shape"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionRequest.java", "reason": "Gateway smoke request shape"}
