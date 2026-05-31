@@ -20,7 +20,7 @@ public class ApiRequestLogService {
     public void record(CreateRequestLogCommand command) {
         try {
             ApiRequestLogEntity entity = toEntity(command);
-            apiRequestLogMapper.insert(entity);
+            apiRequestLogMapper.insertRequestLog(entity);
         } catch (Exception e) {
             log.error("Failed to persist request log for request_id={}, errorType={}",
                     command.getRequestId(), e.getClass().getSimpleName());

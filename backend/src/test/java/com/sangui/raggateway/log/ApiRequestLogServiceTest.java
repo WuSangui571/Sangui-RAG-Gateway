@@ -26,7 +26,7 @@ class ApiRequestLogServiceTest {
 
     @Test
     void shouldInsertSuccessRow() {
-        when(apiRequestLogMapper.insert(any(ApiRequestLogEntity.class))).thenReturn(1);
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class))).thenReturn(1);
 
         service.record(CreateRequestLogCommand.builder()
                 .requestId("req-001")
@@ -45,7 +45,7 @@ class ApiRequestLogServiceTest {
                 .build());
 
         ArgumentCaptor<ApiRequestLogEntity> captor = ArgumentCaptor.forClass(ApiRequestLogEntity.class);
-        verify(apiRequestLogMapper).insert(captor.capture());
+        verify(apiRequestLogMapper).insertRequestLog(captor.capture());
         ApiRequestLogEntity entity = captor.getValue();
 
         assertThat(entity.getRequestId()).isEqualTo("req-001");
@@ -65,8 +65,34 @@ class ApiRequestLogServiceTest {
     }
 
     @Test
+    void shouldPersistQuestionSummaryAndHitChunkIds() {
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class))).thenReturn(1);
+
+        service.record(CreateRequestLogCommand.builder()
+                .requestId("req-rag-001")
+                .userId(100L)
+                .appId(1L)
+                .apiKeyId(30L)
+                .model("deepseek-v4-pro")
+                .providerName("sanguicode")
+                .status("success")
+                .latencyMs(900L)
+                .messagesCount(1)
+                .questionSummary("手动知识库测试暗号是什么？")
+                .hitChunkIds("[8,9]")
+                .build());
+
+        ArgumentCaptor<ApiRequestLogEntity> captor = ArgumentCaptor.forClass(ApiRequestLogEntity.class);
+        verify(apiRequestLogMapper).insertRequestLog(captor.capture());
+        ApiRequestLogEntity entity = captor.getValue();
+
+        assertThat(entity.getQuestionSummary()).isEqualTo("手动知识库测试暗号是什么？");
+        assertThat(entity.getHitChunkIds()).isEqualTo("[8,9]");
+    }
+
+    @Test
     void shouldInsertFailureRow() {
-        when(apiRequestLogMapper.insert(any(ApiRequestLogEntity.class))).thenReturn(1);
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class))).thenReturn(1);
 
         service.record(CreateRequestLogCommand.builder()
                 .requestId("req-002")
@@ -80,7 +106,7 @@ class ApiRequestLogServiceTest {
                 .build());
 
         ArgumentCaptor<ApiRequestLogEntity> captor = ArgumentCaptor.forClass(ApiRequestLogEntity.class);
-        verify(apiRequestLogMapper).insert(captor.capture());
+        verify(apiRequestLogMapper).insertRequestLog(captor.capture());
         ApiRequestLogEntity entity = captor.getValue();
 
         assertThat(entity.getRequestId()).isEqualTo("req-002");
@@ -96,7 +122,7 @@ class ApiRequestLogServiceTest {
 
     @Test
     void shouldNotPersistSensitiveValues() {
-        when(apiRequestLogMapper.insert(any(ApiRequestLogEntity.class))).thenReturn(1);
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class))).thenReturn(1);
 
         service.record(CreateRequestLogCommand.builder()
                 .requestId("req-003")
@@ -111,7 +137,7 @@ class ApiRequestLogServiceTest {
                 .build());
 
         ArgumentCaptor<ApiRequestLogEntity> captor = ArgumentCaptor.forClass(ApiRequestLogEntity.class);
-        verify(apiRequestLogMapper).insert(captor.capture());
+        verify(apiRequestLogMapper).insertRequestLog(captor.capture());
         ApiRequestLogEntity entity = captor.getValue();
 
         String entityStr = entity.toString();
@@ -122,7 +148,7 @@ class ApiRequestLogServiceTest {
 
     @Test
     void shouldHandleInsertFailureSafely() {
-        when(apiRequestLogMapper.insert(any(ApiRequestLogEntity.class)))
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class)))
                 .thenThrow(new RuntimeException("Database connection lost"));
 
         service.record(CreateRequestLogCommand.builder()
@@ -135,12 +161,12 @@ class ApiRequestLogServiceTest {
                 .messagesCount(1)
                 .build());
 
-        verify(apiRequestLogMapper).insert(any(ApiRequestLogEntity.class));
+        verify(apiRequestLogMapper).insertRequestLog(any(ApiRequestLogEntity.class));
     }
 
     @Test
     void shouldPersistUpstreamErrorRow() {
-        when(apiRequestLogMapper.insert(any(ApiRequestLogEntity.class))).thenReturn(1);
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class))).thenReturn(1);
 
         service.record(CreateRequestLogCommand.builder()
                 .requestId("req-005")
@@ -154,7 +180,7 @@ class ApiRequestLogServiceTest {
                 .build());
 
         ArgumentCaptor<ApiRequestLogEntity> captor = ArgumentCaptor.forClass(ApiRequestLogEntity.class);
-        verify(apiRequestLogMapper).insert(captor.capture());
+        verify(apiRequestLogMapper).insertRequestLog(captor.capture());
         ApiRequestLogEntity entity = captor.getValue();
 
         assertThat(entity.getErrorCode()).isEqualTo("upstream_error");
@@ -163,7 +189,7 @@ class ApiRequestLogServiceTest {
 
     @Test
     void shouldPersistUpstreamTimeoutRow() {
-        when(apiRequestLogMapper.insert(any(ApiRequestLogEntity.class))).thenReturn(1);
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class))).thenReturn(1);
 
         service.record(CreateRequestLogCommand.builder()
                 .requestId("req-006")
@@ -177,7 +203,7 @@ class ApiRequestLogServiceTest {
                 .build());
 
         ArgumentCaptor<ApiRequestLogEntity> captor = ArgumentCaptor.forClass(ApiRequestLogEntity.class);
-        verify(apiRequestLogMapper).insert(captor.capture());
+        verify(apiRequestLogMapper).insertRequestLog(captor.capture());
         ApiRequestLogEntity entity = captor.getValue();
 
         assertThat(entity.getErrorCode()).isEqualTo("upstream_timeout");
@@ -186,7 +212,7 @@ class ApiRequestLogServiceTest {
 
     @Test
     void shouldPersistModelConfigNotReadyRow() {
-        when(apiRequestLogMapper.insert(any(ApiRequestLogEntity.class))).thenReturn(1);
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class))).thenReturn(1);
 
         service.record(CreateRequestLogCommand.builder()
                 .requestId("req-007")
@@ -200,7 +226,7 @@ class ApiRequestLogServiceTest {
                 .build());
 
         ArgumentCaptor<ApiRequestLogEntity> captor = ArgumentCaptor.forClass(ApiRequestLogEntity.class);
-        verify(apiRequestLogMapper).insert(captor.capture());
+        verify(apiRequestLogMapper).insertRequestLog(captor.capture());
         ApiRequestLogEntity entity = captor.getValue();
 
         assertThat(entity.getErrorCode()).isEqualTo("model_config_not_ready");

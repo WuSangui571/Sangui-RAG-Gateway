@@ -345,7 +345,7 @@ Retrieval defaults:
 
 ```text
 top_k = 5
-similarity_threshold = 0.70 - 0.75
+similarity_threshold = 0.30
 max_context_tokens = 3000
 max_single_chunk_tokens = 800
 ```

@@ -108,7 +108,7 @@ class ChatCompletionGatewayServiceTest {
         app.setDefaultModelConfigId(MODEL_CONFIG_ID);
         app.setDefaultKnowledgeBaseId(KB_ID);
         app.setRetrievalTopK(5);
-        app.setRetrievalSimilarityThreshold(0.700);
+        app.setRetrievalSimilarityThreshold(0.300);
         app.setRetrievalMaxContextChunks(5);
         app.setRetrievalMaxContextChars(12000);
         app.setRetrievalMaxSingleChunkChars(3000);

@@ -609,7 +609,7 @@ backend/src/main/resources/db/migration/V7__add_app_default_knowledge_base.sql
 |---|---|---|---|
 | `default_knowledge_base_id` | `BIGINT` | no | FK to `rag_knowledge_base(id)`. |
 | `retrieval_top_k` | `INTEGER` | yes | Default `5`. |
-| `retrieval_similarity_threshold` | `NUMERIC(4,3)` | yes | Default `0.700`. |
+| `retrieval_similarity_threshold` | `NUMERIC(4,3)` | yes | Default `0.300`; chosen for baseline recall with OpenAI-compatible embedding providers and short Chinese queries. |
 | `retrieval_max_context_chunks` | `INTEGER` | yes | Default `5`. |
 | `retrieval_max_context_chars` | `INTEGER` | yes | Default `12000`. |
 | `retrieval_max_single_chunk_chars` | `INTEGER` | yes | Default `3000`. |

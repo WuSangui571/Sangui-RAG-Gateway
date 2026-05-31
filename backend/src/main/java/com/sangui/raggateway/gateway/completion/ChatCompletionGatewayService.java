@@ -334,7 +334,7 @@ public class ChatCompletionGatewayService {
 
         int topK = app.getRetrievalTopK() != null ? app.getRetrievalTopK() : 5;
         double threshold = app.getRetrievalSimilarityThreshold() != null
-                ? app.getRetrievalSimilarityThreshold() : 0.700;
+                ? app.getRetrievalSimilarityThreshold() : 0.300;
         int maxChunks = app.getRetrievalMaxContextChunks() != null
                 ? app.getRetrievalMaxContextChunks() : 5;
         int maxChars = app.getRetrievalMaxContextChars() != null
