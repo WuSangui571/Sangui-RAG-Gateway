@@ -1,0 +1,24 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product boundary, deployment/env contract, health endpoint, supported OpenAI API subset"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend resource layout and module boundary; deployment work must avoid business package drift"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Postgres/pgvector/Redis and secret/storage constraints; no schema change expected"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Deployment must preserve gateway/admin error response shapes"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-safe logging and provider key boundaries for docs/config"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend checks and secret-safety review checklist"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend static deployment must preserve React/Vite admin structure"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "No frontend API/type contract changes expected"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "No persistent frontend secret state"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend build/UX/secret-safety completion expectations"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Required for Docker Compose, env vars, proxy and multi-layer deployment flow"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Search existing config/env/proxy patterns before adding parallel contracts"}
+{"file": "deploy/docker-compose.yml", "reason": "Existing Compose style for service env defaults, named volumes and healthchecks"}
+{"file": ".env.example", "reason": "Existing env contract to extend with safe placeholders"}
+{"file": "README.md", "reason": "Deployment docs and current status need synchronization"}
+{"file": "backend/src/main/resources/application.yml", "reason": "Backend env-backed server/storage/document/retrieval config"}
+{"file": "backend/src/main/resources/application-dev.yml", "reason": "Datasource and Redis env-backed config for Compose service names"}
+{"file": "frontend/package.json", "reason": "Frontend scripts for CI typecheck/build"}
+{"file": "frontend/vite.config.ts", "reason": "Existing dev proxy pattern and missing /v1 proxy consideration"}
+{"file": "frontend/src/api/http.ts", "reason": "Relative /api admin client supports production same-origin proxy"}
+{"file": "frontend/src/api/openai.ts", "reason": "Relative /v1 smoke client requires production proxy"}

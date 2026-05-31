@@ -32,6 +32,60 @@ services:
       start_period: 5s
     command: redis-server --save 60 1 --loglevel warning
 
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: sangui-backend
+    ports:
+      - "${BACKEND_PORT:-8080}:${SERVER_PORT:-8080}"
+    environment:
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-sangui_rag_gateway}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sangui}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sangui_password}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      RAG_GATEWAY_SECRET_KEY: ${RAG_GATEWAY_SECRET_KEY:-local-dev-change-me}
+      FILE_STORAGE_TYPE: ${FILE_STORAGE_TYPE:-local}
+      FILE_STORAGE_LOCAL_PATH: /app/data/uploads
+      RAG_DOCUMENT_CHUNK_SIZE: ${RAG_DOCUMENT_CHUNK_SIZE:-800}
+      RAG_DOCUMENT_CHUNK_OVERLAP: ${RAG_DOCUMENT_CHUNK_OVERLAP:-100}
+      RAG_DOCUMENT_MAX_FILE_SIZE_BYTES: ${RAG_DOCUMENT_MAX_FILE_SIZE_BYTES:-1048576}
+      RAG_RETRIEVAL_DEFAULT_TOP_K: ${RAG_RETRIEVAL_DEFAULT_TOP_K:-5}
+      RAG_RETRIEVAL_DEFAULT_SIMILARITY_THRESHOLD: ${RAG_RETRIEVAL_DEFAULT_SIMILARITY_THRESHOLD:-0.300}
+      RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS: ${RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS:-5}
+      RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHARS: ${RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHARS:-12000}
+      RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS: ${RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS:-3000}
+    volumes:
+      - backend-data:/app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:${SERVER_PORT:-8080}/api/health | grep -q '\"code\":\"OK\"' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: sangui-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      BACKEND_UPSTREAM: http://backend:${SERVER_PORT:-8080}
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   postgres-data:
   redis-data:
+  backend-data:

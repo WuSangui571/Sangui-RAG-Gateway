@@ -965,3 +965,87 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: Admin console configuration workflow
+
+**Date**: 2026-05-31
+**Task**: Admin console configuration workflow
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| Commit | c66c186 feat:??Admin???????? |
+| Frontend workflow | Added AdminShell navigation and pages for model configs, knowledge bases/documents, apps, API keys, smoke testing, and request log verification. |
+| Typed clients/types | Added typed frontend API clients and TypeScript contracts for admin apps, model configs, knowledge bases, documents, API keys, OpenAI smoke responses/errors. |
+| Secret safety | App API key plaintext is displayed only after create and cleared on close/app switch; upstream model keys are entered through password input and only masked values are rendered after save. |
+| Request log integration | Request logs can reuse selected Admin User ID/App ID context and still work directly with manual IDs. |
+| Codex check fixes | Removed non-null assertions, cleared smoke/API-key plaintext on app changes, exposed helper-load errors, aligned API key expiry format, removed unused helper and manual test artifact from tracked changes. |
+| Manual acceptance | User confirmed all frontend pages are usable, non-streaming gateway smoke succeeds, and Request Log detail shows SUCCESS with model deepseek-v4-pro, provider openai-compatible, question summary, tokens, latency, and hit chunk ID 12. |
+
+**Updated Files**:
+- `frontend/src/App.tsx`
+- `frontend/src/api/http.ts`
+- `frontend/src/api/api-keys.ts`
+- `frontend/src/api/apps.ts`
+- `frontend/src/api/documents.ts`
+- `frontend/src/api/knowledge.ts`
+- `frontend/src/api/model-configs.ts`
+- `frontend/src/api/openai.ts`
+- `frontend/src/components/layout/AdminShell.tsx`
+- `frontend/src/components/domain/ApiKeyOneTimeSecret.tsx`
+- `frontend/src/components/domain/StatusTag.tsx`
+- `frontend/src/pages/model-configs/ModelConfigPage.tsx`
+- `frontend/src/pages/knowledge/KnowledgeBasePage.tsx`
+- `frontend/src/pages/apps/AppConfigPage.tsx`
+- `frontend/src/pages/api-keys/ApiKeyPage.tsx`
+- `frontend/src/pages/smoke/SmokeTestPage.tsx`
+- `frontend/src/pages/request-logs/RequestLogListPage.tsx`
+- `frontend/src/types/api-key.ts`
+- `frontend/src/types/app.ts`
+- `frontend/src/types/document.ts`
+- `frontend/src/types/knowledge.ts`
+- `frontend/src/types/model-config.ts`
+- `frontend/src/types/openai.ts`
+
+**Verification**:
+- `cmd /c npm run typecheck` passed.
+- `cmd /c npm run build` passed, with only Vite chunk-size warning for the Ant Design bundle.
+- `mvn -q "-Dtest=ModelConfigAdminControllerTest,KnowledgeBaseAdminControllerTest,DocumentAdminControllerTest,AppAdminControllerTest,ApiKeyAdminControllerTest,ApiRequestLogAdminControllerTest" test` passed after approved Maven dependency access.
+- `git diff --check` passed.
+- Pattern scan found no `any`, `console.log`, `debugger`, `TODO`, non-null assertions, `localStorage`, or `sessionStorage` in `frontend/src`.
+
+**Manual Smoke Evidence**:
+- Gateway request: `POST /v1/chat/completions` with generated `sk-sangui-*` app key and file-based JSON body.
+- Response: OpenAI-compatible success with model `deepseek-v4-pro`, prompt/completion/total tokens `219/372/591`.
+- Request Log detail: status `SUCCESS`, model `deepseek-v4-pro`, provider `openai-compatible`, latency `11521 ms`, upstream latency `10772 ms`, question summary `What integration style does Sangui RAG Gateway provide?`, hit chunk ID `12`.
+
+**Boundaries**:
+- No backend business code, schema migration, infra, Docker, or CI workflow changes in this task.
+- Frontend lint/test scripts are not configured yet; lint/test commands cannot run until scripts and test framework are added.
+- Manual test files `manual-chat-body.json` and `manual-rag-smoke.md` remain untracked local artifacts and were not included in the feature commit.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c66c186` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

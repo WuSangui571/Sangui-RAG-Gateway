@@ -1,0 +1,1 @@
+﻿Sangui RAG Gateway is a lightweight OpenAI-compatible gateway. It lets existing business systems replace only the base URL and API key to gain private-document RAG enhancement. The expected integration style is low modification and API-first.

@@ -1,7 +1,7 @@
 {
-  "id": "admin-console-config-workflow",
-  "name": "admin-console-config-workflow",
-  "title": "Admin 控制台基础配置工作流",
+  "id": "fullstack-docker-compose-ci-baseline",
+  "name": "fullstack-docker-compose-ci-baseline",
+  "title": "Full-stack Docker Compose deployment and CI image build baseline",
   "description": "",
   "status": "planning",
   "dev_type": "fullstack",

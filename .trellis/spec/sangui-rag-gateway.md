@@ -514,6 +514,116 @@ REDIS_HOST=
 REDIS_PORT=
 ```
 
+### Implemented Full-Stack Docker Compose and CI Baseline
+
+The full-stack deployment baseline is implemented through these files:
+
+```text
+backend/Dockerfile
+backend/.dockerignore
+frontend/Dockerfile
+frontend/.dockerignore
+frontend/nginx.conf
+deploy/docker-compose.yml
+.env.example
+.github/workflows/ci.yml
+README.md
+```
+
+Runtime command:
+
+```bash
+docker compose --env-file .env -f deploy/docker-compose.yml up -d --build
+```
+
+Service contracts:
+
+| Service | Image/build source | Internal dependency contract | Host exposure |
+|---|---|---|---|
+| `postgres` | `pgvector/pgvector:pg16` | database name/user/password from `.env` | `${POSTGRES_PORT:-5432}:5432` |
+| `redis` | `redis:7-alpine` | used by backend through service name `redis` | `${REDIS_PORT:-6379}:6379` |
+| `backend` | `backend/Dockerfile` | PostgreSQL at `postgres:5432`, Redis at `redis:6379`, uploads at `/app/data/uploads` | `${BACKEND_PORT:-8080}:${SERVER_PORT:-8080}` |
+| `frontend` | `frontend/Dockerfile` | Nginx proxies API calls to `${BACKEND_UPSTREAM:-http://backend:8080}` | `${FRONTEND_PORT:-3000}:80` |
+
+Proxy contract in `frontend/nginx.conf`:
+
+| Incoming path | Target | Requirement |
+|---|---|---|
+| `/api/*` | `${BACKEND_UPSTREAM}/api/*` | Admin APIs and `/api/health` must not fall through to SPA HTML. |
+| `/v1/*` | `${BACKEND_UPSTREAM}/v1/*` | OpenAI-compatible gateway APIs must preserve streaming behavior with buffering disabled. |
+| static assets | `/usr/share/nginx/html` | Serve Vite `dist`. |
+| SPA routes | `/index.html` | Refresh of future frontend routes must work. |
+
+Environment variables documented by `.env.example`:
+
+```text
+POSTGRES_DB
+POSTGRES_USER
+POSTGRES_PASSWORD
+POSTGRES_PORT
+REDIS_PORT
+BACKEND_PORT
+FRONTEND_PORT
+SERVER_PORT
+SPRING_PROFILES_ACTIVE
+SPRING_DATASOURCE_URL
+SPRING_DATASOURCE_USERNAME
+SPRING_DATASOURCE_PASSWORD
+SPRING_DATA_REDIS_HOST
+SPRING_DATA_REDIS_PORT
+RAG_GATEWAY_SECRET_KEY
+FILE_STORAGE_TYPE
+FILE_STORAGE_LOCAL_PATH
+RAG_DOCUMENT_CHUNK_SIZE
+RAG_DOCUMENT_CHUNK_OVERLAP
+RAG_DOCUMENT_MAX_FILE_SIZE_BYTES
+RAG_RETRIEVAL_DEFAULT_TOP_K
+RAG_RETRIEVAL_DEFAULT_SIMILARITY_THRESHOLD
+RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS
+RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHARS
+RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS
+```
+
+Secret rules:
+
+- `.env.example` contains only safe local placeholders.
+- Real `.env`, generated app API keys, upstream provider keys, Maven `target`, frontend `dist`, `node_modules`, and uploaded knowledge files must not be committed.
+- Provider keys remain configured through Admin model config workflows and encrypted at rest; Docker images must not bake provider keys through `ARG`, `ENV`, copied files, or README examples.
+
+CI baseline:
+
+```text
+.github/workflows/ci.yml
+```
+
+Required jobs:
+
+| Job | Command contract |
+|---|---|
+| Backend check | `mvn -q -DskipTests compile`, then `mvn test` from `backend/` with PostgreSQL and Redis service containers. |
+| Frontend check | `npm ci`, `npm run typecheck`, `npm run build` from `frontend/`. |
+| Docker build backend | `docker build -t sangui-rag-gateway-backend:ci -f backend/Dockerfile backend`. |
+| Docker build frontend | `docker build -t sangui-rag-gateway-frontend:ci -f frontend/Dockerfile frontend`. |
+
+Validation matrix:
+
+| Scenario | Expected result | Assertion point |
+|---|---|---|
+| Compose config renders | Compose file has `postgres`, `redis`, `backend`, `frontend`, and named volume `backend-data` | `docker compose --env-file .env -f deploy/docker-compose.yml config` succeeds. |
+| Backend dependencies resolve in Compose | Backend uses service names, not `localhost`, for PostgreSQL and Redis | Rendered config contains `jdbc:postgresql://postgres:5432/...` and `SPRING_DATA_REDIS_HOST=redis`. |
+| Upload persistence | Uploaded knowledge files survive backend container recreation | `backend-data` is mounted at `/app/data/uploads`. |
+| Frontend `/api` proxy | Admin calls reach backend | `/api/health` through frontend origin returns JSON, not `index.html`. |
+| Frontend `/v1` proxy | Gateway smoke calls reach backend and streaming is not buffered | `/v1/chat/completions` succeeds after Admin setup; `stream=true` emits SSE chunks. |
+| CI without secrets | Workflow runs compile/test/build/image-build without provider keys | Workflow has no `docker login`, push, or provider secret dependency. |
+
+Good/base/bad cases:
+
+| Case | Expected result |
+|---|---|
+| Good | Fresh checkout, copy `.env.example` to `.env`, run the Compose command, backend health returns `code=OK`, and frontend opens on `${FRONTEND_PORT:-3000}`. |
+| Base | Local development can still run infra-only Compose plus `mvn spring-boot:run` and `npm run dev`; Vite proxies both `/api` and `/v1` to backend. |
+| Bad | Any real secret or generated `sk-sangui-*` key appears in committed files, frontend proxy returns SPA HTML for `/api` or `/v1`, or backend uses `localhost` for database/Redis inside Compose. |
+
 ## Baseline Engineering Contracts
 
 The initial project baseline uses these concrete files and commands:
