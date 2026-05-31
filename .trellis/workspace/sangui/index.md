@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 15
+- **Total Sessions**: 16
 - **Last Active**: 2026-05-31
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~878 | Active |
+| `journal-1.md` | ~921 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 16 | 2026-05-31 | 完成RAG请求日志观测Admin API | `1edaf77` | `main` |
 | 15 | 2026-05-31 | RAG Retrieval and Prompt Augmentation Baseline | `e3ef961`, `9dad012` | `main` |
 | 14 | 2026-05-29 | Embedding and vector storage baseline | `49e4ed6` | `main` |
 | 13 | 2026-05-28 | Knowledge Document Upload Baseline | `45ba7b3` | `main` |
