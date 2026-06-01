@@ -162,12 +162,26 @@ Expected: JSON (starts with `{`), NOT SPA HTML. Same `code=OK` and `data.status=
 
 ### 3. Non-streaming chat (via frontend /v1 proxy)
 
+Formal acceptance command (UTF-8 no-BOM temp file + `--data-binary`):
+
 ```powershell
-$body = '{"model":"ignored","messages":[{"role":"user","content":"What integration style does Sangui RAG Gateway provide?"}]}'
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$chatBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($chatBodyPath, '{"model":"ignored","messages":[{"role":"user","content":"What integration style does Sangui RAG Gateway provide?"}]}', $utf8)
 curl.exe -s -X POST "$FrontendBaseUrl/v1/chat/completions" `
   -H "Content-Type: application/json" `
   -H "Authorization: Bearer $ApiKey" `
-  -d $body
+  --data-binary "@$chatBodyPath"
+Remove-Item -LiteralPath $chatBodyPath -Force
+```
+
+A quick inline one-liner is also acceptable for non-formal manual checks:
+
+```powershell
+curl.exe -s -X POST "$FrontendBaseUrl/v1/chat/completions" `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer $ApiKey" `
+  -d '{"model":"ignored","messages":[{"role":"user","content":"test"}]}'
 ```
 
 Expected: HTTP 200 with JSON `choices[0].message.content` containing an answer grounded in the uploaded knowledge base.
@@ -181,12 +195,26 @@ Failure boundary by error code:
 
 ### 4. Streaming chat (via frontend /v1 proxy)
 
+Formal acceptance command (UTF-8 no-BOM temp file + `--data-binary`):
+
 ```powershell
-$body = '{"model":"ignored","messages":[{"role":"user","content":"What integration style does Sangui RAG Gateway provide?"}],"stream":true}'
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$streamBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($streamBodyPath, '{"model":"ignored","messages":[{"role":"user","content":"What integration style does Sangui RAG Gateway provide?"}],"stream":true}', $utf8)
 curl.exe -s -N -X POST "$FrontendBaseUrl/v1/chat/completions" `
   -H "Content-Type: application/json" `
   -H "Authorization: Bearer $ApiKey" `
-  -d $body
+  --data-binary "@$streamBodyPath"
+Remove-Item -LiteralPath $streamBodyPath -Force
+```
+
+A quick inline one-liner is also acceptable for non-formal manual checks:
+
+```powershell
+curl.exe -s -N -X POST "$FrontendBaseUrl/v1/chat/completions" `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer $ApiKey" `
+  -d '{"model":"ignored","messages":[{"role":"user","content":"test"}],"stream":true}'
 ```
 
 The `-N` flag disables output buffering. Expected: visible `data:` SSE chunks and a final `data: [DONE]` at stream end. Same boundary rules apply as non-streaming.
@@ -245,7 +273,7 @@ Open the admin console Request Logs page for the app. After a successful non-str
 ### Notes
 
 - Do not use `curl` (PowerShell alias) — always use `curl.exe`.
-- Do not write JSON request bodies to temporary files with default PowerShell encoding to avoid UTF-8 BOM issues. For inline bodies, use `-d` with single-quoted JSON strings as shown above. For file-based bodies, write the file with `[System.Text.UTF8Encoding]::new($false)` and submit with `curl.exe --data-binary "@<path>"`.
+- For **formal acceptance and regression tests**, write JSON request bodies to temp files using `New-Object System.Text.UTF8Encoding($false)` and submit with `curl.exe --data-binary "@<path>"`. This avoids PowerShell 5.1 `curl.exe -d $variable` encoding corruptions. Quick one-liners using literal inline `-d '{"key":"value"}'` (single-quoted JSON, not variable-based) are acceptable only for non-formal manual checks.
 - If backend or frontend is not running, `curl.exe` will exit non-zero or return empty output. No fake success should be accepted.
 - Never commit the full plaintext API key, upstream provider keys, or `backend/data/` to git.
 
@@ -275,11 +303,14 @@ Content-Type: application/json
 ```
 
 ```powershell
-$createBody = '{"name":"demo-acceptance-20260601","expires_at":null}'
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$createBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($createBodyPath, '{"name":"demo-acceptance-20260601","expires_at":null}', $utf8)
 curl.exe -s -X POST "$FrontendBaseUrl/api/admin/apps/<app-id>/api-keys" `
   -H "X-Admin-User-Id: 1" `
   -H "Content-Type: application/json" `
-  -d $createBody
+  --data-binary "@$createBodyPath"
+Remove-Item -LiteralPath $createBodyPath -Force
 ```
 
 Copy the full `key` field from the create response immediately — it will not be shown again. Never commit the plaintext key to source code or documentation.
