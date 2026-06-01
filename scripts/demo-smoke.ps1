@@ -10,7 +10,11 @@ param(
 
     [int]$AppId = 0,
 
-    [long]$AdminUserId = 0
+    [long]$AdminUserId = 0,
+
+    [string]$RevokedApiKey = "",
+
+    [switch]$VerifyRevokedKey
 )
 
 $ErrorActionPreference = 'Stop'
@@ -264,7 +268,6 @@ try {
             if ($err.error) {
                 $boundary = Classify-GatewayError -StatusCode $response.StatusCode -ErrorCode $err.error.code
                 Write-FailBoundary $boundary "Stream returned JSON error instead of SSE: code=$($err.error.code), message=$($err.error.message)"
-                return
             }
         }
         catch {
@@ -470,6 +473,45 @@ else {
     }
     catch {
         Write-FailBoundary "request-log" "Exception: $_"
+    }
+}
+
+Write-Step "6. Revoked-key 401 verification"
+if (-not $VerifyRevokedKey) {
+    Write-Host "  SKIP: -VerifyRevokedKey not supplied; revoked-key automation skipped." -ForegroundColor Yellow
+}
+elseif ([string]::IsNullOrWhiteSpace($RevokedApiKey)) {
+    Write-FailBoundary "auth" "-VerifyRevokedKey supplied but -RevokedApiKey is blank."
+}
+else {
+    try {
+        $revokedBody = Get-JsonBody -Content "test"
+        $revokedHeaders = @("Content-Type: application/json", "Authorization: Bearer $RevokedApiKey")
+        $revokedResp = Invoke-CurlCapture -Url "$FrontendBaseUrl/v1/chat/completions" -Method "POST" -Headers $revokedHeaders -Body $revokedBody -MaxTimeSeconds 30
+
+        if ($revokedResp.CurlExit -ne 0) {
+            Write-FailBoundary "auth" "curl exit code $($revokedResp.CurlExit) on revoked-key call"
+        }
+        elseif ($revokedResp.StatusCode -ne 401) {
+            Write-FailBoundary "auth" "HTTP $($revokedResp.StatusCode), expected 401 for revoked key"
+        }
+        else {
+            try {
+                $revokedJson = $revokedResp.Body | ConvertFrom-Json -ErrorAction Stop
+                if ($revokedJson.error -and $revokedJson.error.code -eq 'invalid_api_key') {
+                    Write-Pass "HTTP 401, error.code=invalid_api_key"
+                }
+                else {
+                    Write-FailBoundary "auth" "HTTP 401 but error.code is not invalid_api_key"
+                }
+            }
+            catch {
+                Write-FailBoundary "auth" "HTTP 401 but response is not valid JSON"
+            }
+        }
+    }
+    catch {
+        Write-FailBoundary "auth" "Exception: $_"
     }
 }
 

@@ -1,0 +1,18 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product boundary, RAG demo acceptance rule, Admin endpoint contracts, request-log and smoke assertions"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe request-log and hit-chunk evidence fields; forbidden secrets and prompt/content logging"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "RAG prompt and no-fabrication boundaries for acceptance answers"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret-safe observability, hit chunk evidence, tenant and prompt containment"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Retrieval hit IDs, no-hit policy, tenant-safe evidence requirements"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Gateway/Admin error shapes, invalid_api_key, RAG retrieval and request-log error matrix"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Upstream and embedding failure boundaries, streaming pre/post commit behavior"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Targeted backend test expectations for auth, RAG, streaming, request logs"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "KB READY, embedding status, provider split ingestion boundaries"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Public auth failure boundary for revoked-key 401 invalid_api_key"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer acceptance flow and API/secret/streaming checklist"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminController.java", "reason": "Request-log list/detail/hit-chunks Admin endpoint pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "Default model config and knowledge-base binding endpoint contract"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Current PowerShell smoke implementation to harden without changing business code"}
+{"file": "README.md", "reason": "Existing runbook, provider setup, smoke command, revocation checklist"}

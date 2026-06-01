@@ -1776,8 +1776,23 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
   -AdminUserId <admin-user-id> `
   -BackendBaseUrl "http://localhost:8080" `
   -FrontendBaseUrl "http://localhost:3000" `
-  -Message "What integration style does Sangui RAG Gateway provide?"
+  -Message "What integration style does Sangui RAG Gateway provide?" `
+  -RevokedApiKey "<revoked-demo-key>" `
+  -VerifyRevokedKey
 ```
+
+**Parameters:**
+
+| Parameter | Required | Contract |
+|---|---:|---|
+| `ApiKey` | yes | Plaintext app API key used only in `Authorization`; never echoed. |
+| `BackendBaseUrl` | no | Base URL for direct backend `/api/health`. |
+| `FrontendBaseUrl` | no | Base URL for frontend `/api` and `/v1` proxy validation. |
+| `Message` | no | Sent to chat and used for request-log `question_summary` prefix matching. |
+| `AppId` | no | Enables request-log automation only when supplied with `AdminUserId`. |
+| `AdminUserId` | no | Temporary Admin identity header value for request-log APIs. |
+| `RevokedApiKey` | no | Plaintext revoked key used only for one negative auth call; never echoed. Required when `-VerifyRevokedKey` is supplied. |
+| `VerifyRevokedKey` | no | Switch to enable negative auth verification (step 6). |
 
 **Required assertions:**
 
@@ -1792,7 +1807,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
 | 7 | Hit-chunks endpoint returns non-empty list with `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`. | `request-log` |
 | 8 | Script output contains only safe evidence: request ID, model, provider_name, latency_ms, hit chunk IDs/count, chunk metadata. | `request-log` |
 | 9 | Script output never prints: chunk summary text, full prompt, API key, key hash, upstream provider body. | `request-log` |
-| 10 | Revoked key returns HTTP 401 with error `code=invalid_api_key` (boundary: `auth`). | `auth` |
+| 10 | `-VerifyRevokedKey` not supplied: revoked-key step skipped with neutral message. | — |
+| 11 | `-VerifyRevokedKey` supplied with blank `-RevokedApiKey`: fail with `auth` boundary. | `auth` |
+| 12 | Revoked key returns HTTP 401 with error `code=invalid_api_key` (boundary: `auth`). | `auth` |
 
 **Safe evidence fields (allowed in output):**
 
@@ -1845,10 +1862,38 @@ Remove-Item -LiteralPath $bodyPath -Force
 Write-Host "HTTP $status"
 ```
 
+**Split-provider demo setup:**
+
+The demo uses two separate upstream providers:
+
+| Role | Provider | Base URL | Model | Dimension |
+|---|---|---|---|---|
+| Chat | Sanguicode | `https://api.sanguicode.com` | `deepseek-v4-pro` | — |
+| Embedding | DashScope | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `text-embedding-v4` | `1024` |
+
+Both configs must be `ENABLED` under the same admin user. The Sanguicode chat config is bound as the app default model config. The DashScope embedding config is resolved automatically by `findEnabledEmbeddingConfig(userId, embeddingModel, embeddingDimension)`.
+
+Current Admin model-config creation requires `chat_model` on every config. Split-provider runbooks must omit embedding fields from the chat config when they are unused, and must set a non-empty `chat_model` placeholder on the DashScope embedding config without binding that config as the app default chat config.
+
+**Evidence checklist:**
+
+| # | Check | Expected evidence | Boundary |
+|---|---|---|---|
+| 1 | Backend health | HTTP 200, `code=OK`, `data.status=UP` | `health` |
+| 2 | Frontend `/api` proxy health | JSON response (not SPA HTML), `code=OK` | `proxy` |
+| 3 | Model config presence | App has `ENABLED` Sanguicode chat config bound as default | `retrieval` |
+| 4 | KB status `READY` | App has bound knowledge base with status `READY` | `retrieval` |
+| 5 | Non-streaming chat success | HTTP 200, `choices[0].message.content` present | `upstream` |
+| 6 | Streaming SSE success | `data:` chunks received, `data: [DONE]` present | `upstream` |
+| 7 | Request-log list/detail | `status=success`, non-blank `model`/`provider_name`, numeric `latency_ms`, non-empty `hit_chunk_ids` | `request-log` |
+| 8 | Hit-chunks safe metadata | `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index` present; no full chunk content | `request-log` |
+| 9 | Revoked-key 401 | HTTP 401 with `error.code=invalid_api_key` after key revocation | `auth` |
+| 10 | No secrets in output | No API keys, key hashes, encrypted keys, provider bodies, stack traces, or embedding vectors in script output or committed files | — |
+
 **Good / Base / Bad cases:**
 
 | Case | Expected result |
 |---|---|
-| Good | Backend and frontend running; app has ready KB and valid model config; non-streaming chat succeeds; request-log automation finds latest matching success row with model/provider/latency/question_summary/hit_chunk_ids; hit-chunks count matches safe evidence expectations; streaming emits `[DONE]`. |
-| Base | User runs script without `-AppId`/`-AdminUserId`; existing health/chat/stream checks still work; README provides manual and automated request-log commands. |
-| Bad | Script accepts a passing chat run while request-log fields are missing, stale, unsafe, or empty; script prints full key/chunk content; README uses PowerShell default encoding or `curl` alias. |
+| Good | Backend and frontend running; app has ready KB, enabled Sanguicode chat config, and enabled DashScope embedding config; non-streaming chat succeeds; request-log automation finds latest matching success row with model/provider/latency/question_summary/hit_chunk_ids; hit-chunks count matches safe evidence expectations; streaming emits `[DONE]`; revoked-key verification returns HTTP 401 with `error.code=invalid_api_key`. |
+| Base | User runs script without `-AppId`/`-AdminUserId`; existing health/chat/stream checks still work; README provides manual and automated request-log commands. Revoked-key verification skipped unless `-VerifyRevokedKey` is explicitly supplied. |
+| Bad | Script accepts a passing chat run while request-log fields are missing, stale, unsafe, or empty; script prints full key/chunk content; README uses PowerShell default encoding or `curl` alias; revoked-key verification passes without actually checking HTTP 401 and `error.code`. |

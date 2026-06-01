@@ -1,0 +1,17 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify README/script/spec executable acceptance contract remains synchronized"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check gateway/admin error and revoked-key 401 contracts"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Check safe evidence and forbidden sensitive fields"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Check upstream/embedding/streaming failure boundary docs"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Check secret-safe request-log and hit-chunk exposure"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Check hit_chunk_ids and retrieval/no-hit evidence contracts"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Check required targeted backend validation commands"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Check PowerShell 5.1 smoke behavior and safe output"}
+{"file": "README.md", "reason": "Check runbook provider placeholders, acceptance matrix, and no secret leakage"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogServiceTest.java", "reason": "Targeted request-log service validation coverage"}
+{"file": "frontend\\package.json", "reason": "Frontend typecheck/build validation commands"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilterTest.java", "reason": "Targeted revoked/disabled/invalid key boundary validation"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsControllerTest.java", "reason": "Targeted non-streaming/streaming gateway validation coverage"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminControllerTest.java", "reason": "Targeted request-log Admin API and hit-chunk validation coverage"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayServiceTest.java", "reason": "Targeted RAG chat orchestration validation coverage"}

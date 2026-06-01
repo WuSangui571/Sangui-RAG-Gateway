@@ -143,6 +143,62 @@ All admin APIs require the temporary identity header `X-Admin-User-Id: <positive
 | Get request log detail | `GET` | `/api/admin/apps/{appId}/request-logs/{requestId}` |
 | Get hit chunk summaries | `GET` | `/api/admin/apps/{appId}/request-logs/{requestId}/hit-chunks` |
 
+## Split-Provider Runtime Setup
+
+The demo gateway uses two separate upstream providers:
+
+| Role | Provider | Base URL | Model | Notes |
+|---|---|---|---|---|
+| Chat | Sanguicode | `https://api.sanguicode.com` | `deepseek-v4-pro` | Used for `POST /v1/chat/completions` upstream forwarding. |
+| Embedding | DashScope | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `text-embedding-v4` | Used for document ingestion and query embedding. Dimension: `1024`. |
+
+### Why two providers
+
+- The chat provider handles conversational completions.
+- The embedding provider generates vector embeddings for document chunks and query retrieval.
+- Both providers must be configured as `ENABLED` model configs under the same admin user.
+- The app binds one model config as its default (for chat). The embedding config is resolved automatically by `findEnabledEmbeddingConfig(userId, embeddingModel, embeddingDimension)` during document ingestion and query embedding.
+
+### Model config payloads (split-provider)
+
+**Option A: Two separate model configs (recommended for clarity)**
+
+Sanguicode chat config:
+
+```powershell
+$modelConfigBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($modelConfigBodyPath, '{"name":"demo-sanguicode-chat","provider_name":"openai-compatible","base_url":"https://api.sanguicode.com","api_key":"<sanguicode-provider-key>","chat_model":"deepseek-v4-pro","status":"ENABLED"}', $utf8)
+curl.exe -s -X POST "$BackendBaseUrl/api/admin/model-configs" `
+  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Content-Type: application/json" `
+  --data-binary "@$modelConfigBodyPath"
+Remove-Item -LiteralPath $modelConfigBodyPath -Force
+```
+
+DashScope embedding config:
+
+```powershell
+$modelConfigBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($modelConfigBodyPath, '{"name":"demo-dashscope-embedding","provider_name":"openai-compatible","base_url":"https://dashscope.aliyuncs.com/compatible-mode/v1","api_key":"<dashscope-provider-key>","chat_model":"unused-embedding-config","embedding_model":"text-embedding-v4","embedding_dimension":1024,"status":"ENABLED"}', $utf8)
+curl.exe -s -X POST "$BackendBaseUrl/api/admin/model-configs" `
+  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Content-Type: application/json" `
+  --data-binary "@$modelConfigBodyPath"
+Remove-Item -LiteralPath $modelConfigBodyPath -Force
+```
+
+**Option B: One combined model config**
+
+A single config can carry both chat and embedding fields. This works when both providers share the same base URL, but for split providers, Option A is clearer.
+
+### Operational notes
+
+- Bind the Sanguicode chat config as the app default model config via `PUT /api/admin/apps/{appId}/default-model-config`.
+- The DashScope embedding config is resolved automatically during document ingestion and query embedding by matching `embedding_model` and `embedding_dimension`.
+- Both configs must belong to the same admin user and have status `ENABLED`.
+- Current Admin model-config creation requires `chat_model` on every config. For the DashScope embedding config, keep `chat_model` as a non-empty placeholder and do not bind that config as the app default chat config.
+- Replace `<sanguicode-provider-key>` and `<dashscope-provider-key>` with actual provider keys. These are encrypted at rest and never returned in responses.
+
 ## Admin API Setup Runbook (Formal Commands)
 
 These commands set up the gateway through the Admin API from PowerShell 5.1. All formal commands use UTF-8 no-BOM temp files and `curl.exe --data-binary` to avoid PowerShell 5.1 encoding issues. Set common variables first:
@@ -365,7 +421,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
   -AdminUserId <admin-user-id> `
   -BackendBaseUrl "http://localhost:8080" `
   -FrontendBaseUrl "http://localhost:3000" `
-  -Message "What integration style does Sangui RAG Gateway provide?"
+  -Message "What integration style does Sangui RAG Gateway provide?" `
+  -RevokedApiKey "sk-sangui-<revoked-key>" `
+  -VerifyRevokedKey
 ```
 
 When `-AppId` and `-AdminUserId` are both supplied, the script queries the Admin request-log API after non-streaming chat succeeds and validates:
@@ -420,6 +478,23 @@ Open the admin console Request Logs page for the app. After a successful non-str
 - For **formal acceptance and regression tests**, write JSON request bodies to temp files using `New-Object System.Text.UTF8Encoding($false)` and submit with `curl.exe --data-binary "@<path>"`. This avoids PowerShell 5.1 `curl.exe -d $variable` encoding corruptions. Quick one-liners using literal inline `-d '{"key":"value"}'` (single-quoted JSON, not variable-based) are acceptable only for non-formal manual checks.
 - If backend or frontend is not running, `curl.exe` will exit non-zero or return empty output. No fake success should be accepted.
 - Never commit the full plaintext API key, upstream provider keys, or `backend/data/` to git.
+
+## Demo Acceptance Evidence Checklist
+
+After completing the admin setup and running the smoke flow, verify that each item below has concrete runtime evidence. No real API keys, generated `sk-sangui-*` keys, upstream keys, upload artifacts, prompt bodies, chunk contents, or provider bodies should appear in committed files or terminal output.
+
+| # | Check | Expected evidence | Boundary |
+|---|---|---|---|
+| 1 | Backend health | HTTP 200, `code=OK`, `data.status=UP` | `health` |
+| 2 | Frontend `/api` proxy health | JSON response (not SPA HTML), `code=OK` | `proxy` |
+| 3 | Model config presence | App has `ENABLED` Sanguicode chat config bound as default | `retrieval` |
+| 4 | KB status `READY` | App has bound knowledge base with status `READY` | `retrieval` |
+| 5 | Non-streaming chat success | HTTP 200, `choices[0].message.content` present | `upstream` |
+| 6 | Streaming SSE success | `data:` chunks received, `data: [DONE]` present | `upstream` |
+| 7 | Request-log list/detail | `status=success`, non-blank `model`/`provider_name`, numeric `latency_ms`, non-empty `hit_chunk_ids` | `request-log` |
+| 8 | Hit-chunks safe metadata | `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index` present; no full chunk content | `request-log` |
+| 9 | Revoked-key 401 | HTTP 401 with `error.code=invalid_api_key` after key revocation | `auth` |
+| 10 | No secrets in output | No API keys, key hashes, encrypted keys, provider bodies, stack traces, or embedding vectors in script output or committed files | — |
 
 ## Key Rotation and Revocation
 
@@ -520,7 +595,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
   -AdminUserId <admin-user-id> `
   -BackendBaseUrl "http://localhost:8080" `
   -FrontendBaseUrl "http://localhost:3000" `
-  -Message "What integration style does Sangui RAG Gateway provide?"
+  -Message "What integration style does Sangui RAG Gateway provide?" `
+  -RevokedApiKey "sk-sangui-<revoked-key>" `
+  -VerifyRevokedKey
 ```
 
 | Parameter | Required | Default | Notes |
@@ -531,10 +608,12 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
 | `Message` | no | demo question | Used for chat and request-log `question_summary` assertion. |
 | `AppId` | no | none | Enables request-log automation when present with `AdminUserId`. |
 | `AdminUserId` | no | none | Enables request-log automation when present with `AppId`. |
+| `RevokedApiKey` | no | none | Plaintext revoked key used only for one negative auth call. Never echoed. Required when `-VerifyRevokedKey` is supplied. |
+| `VerifyRevokedKey` | no | off | Switch to enable revoked-key 401 verification (step 6). |
 
-The script checks backend health, frontend proxy health, non-streaming chat, and streaming chat. When `-AppId` and `-AdminUserId` are both supplied, it additionally queries the Admin request-log API to validate persistence, field integrity, and hit-chunk evidence. The script requires `-ApiKey` (never reads from repo files) and exits non-zero on any failure.
+The script checks backend health, frontend proxy health, non-streaming chat, streaming chat, and optionally request-log persistence and revoked-key rejection. When `-AppId` and `-AdminUserId` are both supplied, it additionally queries the Admin request-log API to validate persistence, field integrity, and hit-chunk evidence. When `-VerifyRevokedKey` is supplied with `-RevokedApiKey`, it verifies that the revoked key is rejected with HTTP 401 and `error.code=invalid_api_key`. The script requires `-ApiKey` (never reads from repo files) and exits non-zero on any failure.
 
-Request-log automation is skipped with a neutral message when both `-AppId` and `-AdminUserId` are missing. Supplying only one of the two is an error.
+Request-log automation is skipped with a neutral message when both `-AppId` and `-AdminUserId` are missing. Supplying only one of the two is an error. Revoked-key verification is skipped unless `-VerifyRevokedKey` is explicitly supplied.
 
 ## Development (Local, Without Docker Images)
 
