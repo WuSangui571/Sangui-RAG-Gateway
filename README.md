@@ -191,23 +191,61 @@ curl.exe -s -N -X POST "$FrontendBaseUrl/v1/chat/completions" `
 
 The `-N` flag disables output buffering. Expected: visible `data:` SSE chunks and a final `data: [DONE]` at stream end. Same boundary rules apply as non-streaming.
 
-### 5. Verify request logs
+### 5. Verify request logs (automated)
 
-Open the admin console Request Logs page for the app. After a successful non-streaming RAG chat, the log entry must show:
+Run the automated smoke script with `-AppId` and `-AdminUserId` to validate request-log persistence after non-streaming chat:
 
-- `status`: `success`
-- Resolved `model` and `provider_name`
-- `latency_ms`
-- `usage` (prompt_tokens, completion_tokens, total_tokens) where the upstream provider supplies them; nullable for streaming
-- `question_summary` matching the demo prompt prefix (up to 512 chars)
-- Non-empty `hit_chunk_ids` (e.g. `[8, 9, 10]`) for a retrieval-hit demo
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
+  -ApiKey "sk-sangui-<your-key>" `
+  -AppId <app-id> `
+  -AdminUserId <admin-user-id> `
+  -BackendBaseUrl "http://localhost:8080" `
+  -FrontendBaseUrl "http://localhost:3000" `
+  -Message "What integration style does Sangui RAG Gateway provide?"
+```
 
-Optionally, click the Detail button and inspect "Hit Chunks" for chunk summary evidence. The summary is bounded to 200 characters per chunk and does not expose full chunk content or embeddings.
+When `-AppId` and `-AdminUserId` are both supplied, the script queries the Admin request-log API after non-streaming chat succeeds and validates:
+
+- `status = success`
+- Non-blank `model` and `provider_name`
+- Numeric non-negative `latency_ms`
+- `question_summary` matching the smoke `-Message` prefix (up to 512 chars)
+- Non-empty `hit_chunk_ids` for the retrieval-hit demo path
+- Hit-chunk summaries return chunk IDs, document IDs, source filenames, and chunk indices
+
+The script prints only safe evidence: request ID, model, provider name, latency, hit chunk IDs/count, and chunk metadata. It never prints chunk summary text, full prompts, API keys, key hashes, or upstream provider bodies.
+
+If both `-AppId` and `-AdminUserId` are missing, the script skips request-log automation with a neutral message and does not turn a passing smoke run into a failure. Supplying only one of the two is an error because the Admin request-log API needs both app scope and admin identity.
+
+### 5b. Verify request logs (manual via PowerShell)
+
+To query the request-log API directly from PowerShell 5.1:
+
+```powershell
+curl.exe -s "$FrontendBaseUrl/api/admin/apps/<app-id>/request-logs?page=1&page_size=5&status=success" `
+  -H "X-Admin-User-Id: <admin-user-id>"
+```
+
+Expected: JSON response with `code=OK`, `data.items` containing the latest success log with the fields listed above.
+
+To query hit-chunk summaries:
+
+```powershell
+curl.exe -s "$FrontendBaseUrl/api/admin/apps/<app-id>/request-logs/<request-id>/hit-chunks" `
+  -H "X-Admin-User-Id: <admin-user-id>"
+```
+
+The script and these commands must use `curl.exe` (Windows system curl), not the PowerShell `curl` alias which maps to `Invoke-WebRequest`.
+
+### 5c. Verify request logs (manual via Admin UI)
+
+Open the admin console Request Logs page for the app. After a successful non-streaming RAG chat, the log entry must show the same safe evidence fields. Optionally, click the Detail button and inspect "Hit Chunks" for chunk summary evidence. The summary is bounded to 200 characters per chunk and does not expose full chunk content or embeddings.
 
 ### Notes
 
 - Do not use `curl` (PowerShell alias) — always use `curl.exe`.
-- Do not write JSON request bodies to temporary files with default PowerShell encoding to avoid UTF-8 BOM issues. Use inline `$body` variables as shown above.
+- Do not write JSON request bodies to temporary files with default PowerShell encoding to avoid UTF-8 BOM issues. For inline bodies, use `-d` with single-quoted JSON strings as shown above. For file-based bodies, write the file with `[System.Text.UTF8Encoding]::new($false)` and submit with `curl.exe --data-binary "@<path>"`.
 - If backend or frontend is not running, `curl.exe` will exit non-zero or return empty output. No fake success should be accepted.
 - Never commit the full plaintext API key, upstream provider keys, or `backend/data/` to git.
 
@@ -255,14 +293,28 @@ After a demo session completes, run these steps to revoke the demo key and clean
    curl.exe -s -X POST "$FrontendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
      -H "X-Admin-User-Id: 1"
    ```
-2. **Verify the key is rejected** (boundary: `auth`):
+2. **Verify the revoked key is rejected** (boundary: `auth`):
+   ```powershell
+   $utf8 = New-Object System.Text.UTF8Encoding($false)
+   $bodyPath = [System.IO.Path]::GetTempFileName()
+   $body = '{"messages":[{"role":"user","content":"test"}]}'
+   [System.IO.File]::WriteAllText($bodyPath, $body, $utf8)
+   $status = curl.exe -s -o NUL -w "%{http_code}" -X POST "$FrontendBaseUrl/v1/chat/completions" `
+     -H "Content-Type: application/json" `
+     -H "Authorization: Bearer <revoked-key>" `
+     --data-binary "@$bodyPath"
+   Remove-Item -LiteralPath $bodyPath -Force
+   Write-Host "HTTP $status"
+   ```
+   Expected: HTTP `401` with response body `{"error":{"code":"invalid_api_key"}}`.
+   A simpler one-liner using inline `-d` is also acceptable for quick manual checks:
    ```powershell
    curl.exe -s -X POST "$FrontendBaseUrl/v1/chat/completions" `
      -H "Content-Type: application/json" `
      -H "Authorization: Bearer <revoked-key>" `
      -d '{"messages":[{"role":"user","content":"test"}]}'
    ```
-   Expected: HTTP 401 with `{"error":{"code":"invalid_api_key"}}`.
+   But for formal acceptance verification, prefer the `--data-binary` with UTF-8 no-BOM temp file approach to avoid encoding issues.
 
 3. **Delete any local plaintext key copy-paste artifacts** from your terminal clipboard, scratch files, or notes. Do not save the full key to disk.
 
@@ -270,17 +322,30 @@ After a demo session completes, run these steps to revoke the demo key and clean
 
 ## Automated Smoke Script (Optional)
 
-A minimal PowerShell 5.1 smoke script is available at `scripts/demo-smoke.ps1`:
+A PowerShell 5.1 smoke script is available at `scripts/demo-smoke.ps1`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
   -ApiKey "sk-sangui-<your-key>" `
+  -AppId <app-id> `
+  -AdminUserId <admin-user-id> `
   -BackendBaseUrl "http://localhost:8080" `
   -FrontendBaseUrl "http://localhost:3000" `
   -Message "What integration style does Sangui RAG Gateway provide?"
 ```
 
-The script checks backend health, frontend proxy health, non-streaming chat, and streaming chat. It requires `-ApiKey` (never reads from repo files) and exits non-zero on any failure.
+| Parameter | Required | Default | Notes |
+|---|---|---|---|
+| `ApiKey` | yes | none | Plaintext app key used only in Authorization header. Never echoed. |
+| `BackendBaseUrl` | no | `http://localhost:8080` | Backend health base URL. |
+| `FrontendBaseUrl` | no | `http://localhost:3000` | Frontend proxy and Admin API base URL. |
+| `Message` | no | demo question | Used for chat and request-log `question_summary` assertion. |
+| `AppId` | no | none | Enables request-log automation when present with `AdminUserId`. |
+| `AdminUserId` | no | none | Enables request-log automation when present with `AppId`. |
+
+The script checks backend health, frontend proxy health, non-streaming chat, and streaming chat. When `-AppId` and `-AdminUserId` are both supplied, it additionally queries the Admin request-log API to validate persistence, field integrity, and hit-chunk evidence. The script requires `-ApiKey` (never reads from repo files) and exits non-zero on any failure.
+
+Request-log automation is skipped with a neutral message when both `-AppId` and `-AdminUserId` are missing. Supplying only one of the two is an error.
 
 ## Development (Local, Without Docker Images)
 

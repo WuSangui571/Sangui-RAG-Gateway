@@ -1758,3 +1758,97 @@ mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test
 mvn -q "-Dtest=AppAdminControllerTest,DocumentAdminControllerTest,RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test
 mvn test
 ```
+
+### Implemented Demo Acceptance Automation Rule
+
+The demo acceptance flow includes an executable rule for automated request-log verification via `scripts/demo-smoke.ps1`.
+
+#### Rule: Automated Request-Log Acceptance
+
+When `-AppId` and `-AdminUserId` are both supplied, the script must validate request-log persistence after a successful non-streaming RAG chat.
+
+**Invocation:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
+  -ApiKey "<fresh-demo-key>" `
+  -AppId <app-id> `
+  -AdminUserId <admin-user-id> `
+  -BackendBaseUrl "http://localhost:8080" `
+  -FrontendBaseUrl "http://localhost:3000" `
+  -Message "What integration style does Sangui RAG Gateway provide?"
+```
+
+**Required assertions:**
+
+| # | Assertion | Failure boundary |
+|---|---|---|
+| 1 | Script exits `0` only when all enabled checks pass. | — |
+| 2 | `AppId` and `AdminUserId` both missing: request-log automation skipped with neutral message; existing health/chat/stream checks still run. | — |
+| 3 | Only one of `AppId`/`AdminUserId` supplied: fail with `request-log` boundary. | `request-log` |
+| 4 | Request-log list API returns HTTP 200 with envelope `code=OK`. | `request-log` |
+| 5 | At least one recent success log's `question_summary` matches the smoke `-Message` prefix. | `request-log` |
+| 6 | Matched log: `status = success`, `model` non-blank, `provider_name` non-blank, `latency_ms` non-negative numeric, `hit_chunk_ids` non-empty. | `request-log` |
+| 7 | Hit-chunks endpoint returns non-empty list with `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`. | `request-log` |
+| 8 | Script output contains only safe evidence: request ID, model, provider_name, latency_ms, hit chunk IDs/count, chunk metadata. | `request-log` |
+| 9 | Script output never prints: chunk summary text, full prompt, API key, key hash, upstream provider body. | `request-log` |
+| 10 | Revoked key returns HTTP 401 with error `code=invalid_api_key` (boundary: `auth`). | `auth` |
+
+**Safe evidence fields (allowed in output):**
+
+```text
+request_id, model, provider_name, latency_ms, hit_chunk_ids (array + count),
+chunk_id, document_id, knowledge_base_id, source_filename, chunk_index
+```
+
+**Forbidden fields (never printed by any smoke script or README example):**
+
+```text
+summary text content, full prompt, messages content, app API key, key_hash,
+api_key_encrypted, upstream_api_key, provider_response_body, stack_trace,
+embedding vectors, chunk content
+```
+
+**PowerShell compatibility requirements:**
+
+- Script remains PowerShell 5.1 compatible.
+- JSON request bodies in `Invoke-CurlCapture` are written as UTF-8 without BOM (`[System.Text.UTF8Encoding]::new($false)`).
+- All `curl` calls use `curl.exe`, not the PowerShell `curl` alias.
+- Temp files are always cleaned in `finally` blocks.
+
+**Targeted test commands (backend unchanged by this spec rule):**
+
+```bash
+cd backend
+mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test
+mvn -q "-Dtest=GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test
+```
+
+**Manual validation (PowerShell 5.1):**
+
+```powershell
+# Syntax check
+$null = [System.Management.Automation.PSParser]::Tokenize((Get-Content .\scripts\demo-smoke.ps1 -Raw), [ref]$null)
+```
+
+```powershell
+# Revoked-key 401 verification after demo cleanup
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$bodyPath = [System.IO.Path]::GetTempFileName()
+$body = '{"messages":[{"role":"user","content":"test"}]}'
+[System.IO.File]::WriteAllText($bodyPath, $body, $utf8)
+$status = curl.exe -s -o NUL -w "%{http_code}" -X POST "$FrontendBaseUrl/v1/chat/completions" `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer <revoked-key>" `
+  --data-binary "@$bodyPath"
+Remove-Item -LiteralPath $bodyPath -Force
+Write-Host "HTTP $status"
+```
+
+**Good / Base / Bad cases:**
+
+| Case | Expected result |
+|---|---|
+| Good | Backend and frontend running; app has ready KB and valid model config; non-streaming chat succeeds; request-log automation finds latest matching success row with model/provider/latency/question_summary/hit_chunk_ids; hit-chunks count matches safe evidence expectations; streaming emits `[DONE]`. |
+| Base | User runs script without `-AppId`/`-AdminUserId`; existing health/chat/stream checks still work; README provides manual and automated request-log commands. |
+| Bad | Script accepts a passing chat run while request-log fields are missing, stale, unsafe, or empty; script prints full key/chunk content; README uses PowerShell default encoding or `curl` alias. |

@@ -1,0 +1,19 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-01-rag-request-log-acceptance-automation-demo-runbook\\prd.md", "reason": "PRD contract, scope boundaries, acceptance criteria, and DeepSeek handoff"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product/API source of truth for RAG chat, request logs, demo acceptance, and executable rules"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Request-log safe fields, forbidden sensitive output, and hit chunk summary safety"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin request-log error matrix and gateway revoked-key 401 invalid_api_key behavior"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Request-log schema, query ordering, tenant boundaries, and hit_chunk_ids contract"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required request-log tests and backend regression checks"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Existing request-log DTO field names and forbidden fields"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Admin request-log safety and no full prompt/content display rules"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer flow and secret/tenant/request-log boundary checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Reuse existing smoke script helpers instead of duplicating curl/JSON handling"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Existing PowerShell 5.1 smoke script and curl/temp-file helper patterns"}
+{"file": "README.md", "reason": "Existing demo acceptance and revoke runbook sections to update"}
+{"file": "frontend\\src\\api\\request-logs.ts", "reason": "Existing typed frontend request-log API call patterns"}
+{"file": "frontend\\src\\types\\request-log.ts", "reason": "Request-log VO field nullability and hit chunk summary contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminController.java", "reason": "Admin request-log route, params, and validation contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Request-log ordering and safe hit chunk summary behavior"}

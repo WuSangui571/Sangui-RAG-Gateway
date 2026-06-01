@@ -6,7 +6,11 @@ param(
 
     [string]$FrontendBaseUrl = "http://localhost:3000",
 
-    [string]$Message = "What integration style does Sangui RAG Gateway provide?"
+    [string]$Message = "What integration style does Sangui RAG Gateway provide?",
+
+    [int]$AppId = 0,
+
+    [long]$AdminUserId = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -122,7 +126,11 @@ function Invoke-CurlCapture {
 Write-Host "RAG Demo Smoke Test" -ForegroundColor Yellow
 Write-Host "Backend : $BackendBaseUrl"
 Write-Host "Frontend: $FrontendBaseUrl"
-Write-Host "Message : $Message"
+Write-Host "Message : configured (length=$($Message.Length))"
+if ($AppId -gt 0 -and $AdminUserId -gt 0) {
+    Write-Host "AppId   : $AppId"
+    Write-Host "Admin   : $AdminUserId"
+}
 Write-Host ""
 
 if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
@@ -276,6 +284,193 @@ try {
 }
 catch {
     Write-FailBoundary "proxy" "Exception: $_"
+}
+
+Write-Step "5. Request-log validation"
+if ($AppId -le 0 -and $AdminUserId -le 0) {
+    Write-Host "  SKIP: -AppId and -AdminUserId not supplied; request-log automation skipped." -ForegroundColor Yellow
+}
+elseif ($AppId -le 0 -or $AdminUserId -le 0) {
+    Write-FailBoundary "request-log" "Both -AppId and -AdminUserId are required for request-log automation."
+}
+else {
+    try {
+        # 5a. Query request-log list
+        $listUrl = "$FrontendBaseUrl/api/admin/apps/$AppId/request-logs?page=1&page_size=5&status=success"
+        $listHeaders = @("X-Admin-User-Id: $AdminUserId")
+        $listResp = Invoke-CurlCapture -Url $listUrl -Headers $listHeaders -MaxTimeSeconds 30
+
+        if ($listResp.CurlExit -ne 0) {
+            Write-FailBoundary "request-log" "curl exit code $($listResp.CurlExit) on request-log list"
+            return
+        }
+        if ($listResp.StatusCode -ne 200) {
+            $safePreview = $listResp.Body
+            if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
+            Write-FailBoundary "request-log" "HTTP $($listResp.StatusCode) on request-log list. Body: $safePreview"
+            return
+        }
+
+        $listJson = $null
+        try {
+            $listJson = $listResp.Body | ConvertFrom-Json -ErrorAction Stop
+        }
+        catch {
+            $safePreview = $listResp.Body
+            if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
+            Write-FailBoundary "request-log" "Request-log list response is not valid JSON: $safePreview"
+            return
+        }
+
+        if ($listJson.code -ne 'OK') {
+            Write-FailBoundary "request-log" "Request-log list envelope code=$($listJson.code)"
+            return
+        }
+
+        if (-not $listJson.data -or -not $listJson.data.items -or $listJson.data.items.Count -eq 0) {
+            Write-FailBoundary "request-log" "No success request log found for app $AppId"
+            return
+        }
+
+        # 5b. Find the log matching this smoke run's Message
+        $matchPrefix = if ($Message.Length -gt 30) { $Message.Substring(0, 30) } else { $Message }
+        $matchedLog = $null
+        foreach ($item in $listJson.data.items) {
+            if ($item.question_summary -and $item.question_summary.StartsWith($matchPrefix)) {
+                $matchedLog = $item
+                break
+            }
+        }
+
+        if (-not $matchedLog) {
+            Write-FailBoundary "request-log" "No recent success log found with question_summary matching '$matchPrefix'"
+            return
+        }
+
+        $logId = $matchedLog.request_id
+        if (-not $logId) {
+            Write-FailBoundary "request-log" "Matched log has null/empty request_id"
+            return
+        }
+
+        # 5c. Validate required fields
+        $fieldErrors = @()
+
+        if ($matchedLog.status -ne 'success') {
+            $fieldErrors += "status=$($matchedLog.status), expected success"
+        }
+        if (-not $matchedLog.model -or $matchedLog.model.ToString().Trim() -eq '') {
+            $fieldErrors += "model is blank or null"
+        }
+        if (-not $matchedLog.provider_name -or $matchedLog.provider_name.ToString().Trim() -eq '') {
+            $fieldErrors += "provider_name is blank or null"
+        }
+        if ($matchedLog.latency_ms -eq $null -or $matchedLog.latency_ms -isnot [long] -and $matchedLog.latency_ms -isnot [int]) {
+            $fieldErrors += "latency_ms is null or non-numeric"
+        }
+        elseif ([long]$matchedLog.latency_ms -lt 0) {
+            $fieldErrors += "latency_ms=$($matchedLog.latency_ms) is negative"
+        }
+        if (-not $matchedLog.question_summary -or $matchedLog.question_summary.ToString().Trim() -eq '') {
+            $fieldErrors += "question_summary is blank or null"
+        }
+        if (-not $matchedLog.hit_chunk_ids -or $matchedLog.hit_chunk_ids.Count -eq 0) {
+            $fieldErrors += "hit_chunk_ids is empty or null"
+        }
+        else {
+            foreach ($hitChunkId in $matchedLog.hit_chunk_ids) {
+                if ($hitChunkId -eq $null -or ($hitChunkId -isnot [long] -and $hitChunkId -isnot [int])) {
+                    $fieldErrors += "hit_chunk_ids contains non-numeric value"
+                    break
+                }
+            }
+        }
+
+        if ($fieldErrors.Count -gt 0) {
+            foreach ($err in $fieldErrors) {
+                Write-FailBoundary "request-log" $err
+            }
+            return
+        }
+
+        # 5d. Print safe evidence
+        Write-Pass "request_id=$logId"
+        Write-Host "         model: $($matchedLog.model)" -ForegroundColor Gray
+        Write-Host "         provider_name: $($matchedLog.provider_name)" -ForegroundColor Gray
+        Write-Host "         latency_ms: $($matchedLog.latency_ms)" -ForegroundColor Gray
+        Write-Host "         hit_chunk_ids: [$($matchedLog.hit_chunk_ids -join ', ')] (count=$($matchedLog.hit_chunk_ids.Count))" -ForegroundColor Gray
+
+        # 5e. Query hit-chunk summaries (safe evidence only)
+        $chunkUrl = "$FrontendBaseUrl/api/admin/apps/$AppId/request-logs/$logId/hit-chunks"
+        $chunkResp = Invoke-CurlCapture -Url $chunkUrl -Headers $listHeaders -MaxTimeSeconds 30
+
+        if ($chunkResp.CurlExit -ne 0) {
+            Write-FailBoundary "request-log" "curl exit code $($chunkResp.CurlExit) on hit-chunks endpoint"
+            return
+        }
+        if ($chunkResp.StatusCode -ne 200) {
+            $safePreview = $chunkResp.Body
+            if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
+            Write-FailBoundary "request-log" "HTTP $($chunkResp.StatusCode) on hit-chunks endpoint. Body: $safePreview"
+            return
+        }
+
+        $chunkJson = $null
+        try {
+            $chunkJson = $chunkResp.Body | ConvertFrom-Json -ErrorAction Stop
+        }
+        catch {
+            $safePreview = $chunkResp.Body
+            if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
+            Write-FailBoundary "request-log" "Hit-chunks response is not valid JSON: $safePreview"
+            return
+        }
+
+        if ($chunkJson.code -ne 'OK') {
+            Write-FailBoundary "request-log" "Hit-chunks envelope code=$($chunkJson.code)"
+            return
+        }
+
+        if (-not $chunkJson.data -or $chunkJson.data.Count -eq 0) {
+            Write-FailBoundary "request-log" "Hit-chunks returned empty list but hit_chunk_ids was non-empty"
+            return
+        }
+
+        $chunkSummaryCount = $chunkJson.data.Count
+        $chunkErrors = @()
+        foreach ($chunk in $chunkJson.data) {
+            if ($chunk.chunk_id -eq $null -or ($chunk.chunk_id -isnot [long] -and $chunk.chunk_id -isnot [int])) {
+                $chunkErrors += "hit-chunk summary has null/non-numeric chunk_id"
+            }
+            if ($chunk.document_id -eq $null -or ($chunk.document_id -isnot [long] -and $chunk.document_id -isnot [int])) {
+                $chunkErrors += "hit-chunk summary has null/non-numeric document_id"
+            }
+            if ($chunk.knowledge_base_id -eq $null -or ($chunk.knowledge_base_id -isnot [long] -and $chunk.knowledge_base_id -isnot [int])) {
+                $chunkErrors += "hit-chunk summary has null/non-numeric knowledge_base_id"
+            }
+            if ($chunk.chunk_index -eq $null -or ($chunk.chunk_index -isnot [long] -and $chunk.chunk_index -isnot [int])) {
+                $chunkErrors += "hit-chunk summary has null/non-numeric chunk_index"
+            }
+            if (-not ($chunk.PSObject.Properties.Name -contains 'source_filename')) {
+                $chunkErrors += "hit-chunk summary is missing source_filename"
+            }
+        }
+
+        if ($chunkErrors.Count -gt 0) {
+            foreach ($err in ($chunkErrors | Select-Object -Unique)) {
+                Write-FailBoundary "request-log" $err
+            }
+            return
+        }
+
+        Write-Pass "hit-chunk summaries count=$chunkSummaryCount"
+        foreach ($chunk in $chunkJson.data) {
+            Write-Host "         chunk_id=$($chunk.chunk_id) document_id=$($chunk.document_id) kb_id=$($chunk.knowledge_base_id) file=$($chunk.source_filename) chunk_idx=$($chunk.chunk_index)" -ForegroundColor Gray
+        }
+    }
+    catch {
+        Write-FailBoundary "request-log" "Exception: $_"
+    }
 }
 
 if ($script:exitCode -eq 0) {
