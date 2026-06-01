@@ -1132,3 +1132,48 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: RAG demo hardening acceptance cleanup
+
+**Date**: 2026-06-01
+**Task**: RAG demo hardening acceptance cleanup
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Result | Completed RAG demo hardening and acceptance cleanup. Manual acceptance passed after binding app 3 to model config 2 and knowledge base 2. |
+| Main commit | bc910af chore:??RAG????????? |
+| Main modules | README demo acceptance flow, PowerShell smoke script, Trellis task context, manual artifact hygiene. |
+| Updated files | README.md; scripts/demo-smoke.ps1; .trellis/tasks/06-01-rag-demo-hardening-acceptance-cleanup/*; removed tracked manual-kb*.md and manual-v1*.json artifacts. |
+| Automated validation | git diff --check passed with only Windows CRLF warnings; secret scan for sk-sangui long keys passed; PSParser syntax check for scripts/demo-smoke.ps1 passed; frontend npm run typecheck passed; frontend npm run build passed with existing Vite chunk-size warning. |
+| Smoke validation | Manual PowerShell 5.1 run passed: backend health PASS; frontend proxy health PASS; non-streaming /v1 chat HTTP 200 PASS; streaming SSE received 127 data chunks and [DONE] PASS. |
+| Runtime setup | App 3 used API key id 5, default_model_config_id 2 (DeepSeek-V4-Pro via https://api.sanguicode.com), default_knowledge_base_id 2 (TestBase2, text-embedding-v4, dimension 1024). |
+| Boundary findings | Initial create-key failed with PowerShell 5.1 curl -d JSON quoting; fixed by using UTF-8 no BOM temp body plus --data-binary. Initial smoke failures correctly identified retrieval boundary for missing model config and missing knowledge base binding. |
+| Scope | No backend Java, frontend TypeScript, API contract, database schema, RAG retrieval semantics, Docker, Redis, or MQ behavior changed. |
+| Follow-up | After demo, revoke generated demo API key id 5 when no longer needed and verify 401 invalid_api_key. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bc910af` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
