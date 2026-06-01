@@ -1,0 +1,24 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary and API key one-time/hash-only security model"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend page/domain component/API client placement"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Admin tables, modals, one-time API key component, explicit states"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Local-only secret state and no persistent API key storage"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "ApiKeyVO vs ApiKeyCreateVO and status unions"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Secret safety, API key lifecycle UX, frontend validation expectations"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Existing Admin API key error matrix and public invalid_api_key behavior"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Do not log complete keys or authorization headers"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Existing API key status and storage contracts"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend regression tests only if backend API key code changes"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret-safe response/log/evidence boundaries"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API key and frontend secret flow checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Reuse existing page/component/API client patterns"}
+{"file": "frontend\\src\\pages\\api-keys\\ApiKeyPage.tsx", "reason": "Existing API key list/create/disable/revoke workflow"}
+{"file": "frontend\\src\\components\\domain\\ApiKeyOneTimeSecret.tsx", "reason": "Existing one-time key display and copy behavior"}
+{"file": "frontend\\src\\pages\\smoke\\SmokeTestPage.tsx", "reason": "Existing temporary pasted key smoke flow"}
+{"file": "frontend\\src\\api\\api-keys.ts", "reason": "Typed API key Admin API client"}
+{"file": "frontend\\src\\api\\openai.ts", "reason": "Smoke request Authorization handling and OpenAI error normalization"}
+{"file": "frontend\\src\\types\\api-key.ts", "reason": "ApiKey status and create-only plaintext type"}
+{"file": "frontend\\src\\components\\domain\\StatusTag.tsx", "reason": "Central status color mapping"}
+{"file": "README.md", "reason": "Admin runbook and key rotation/leakage handling documentation target"}

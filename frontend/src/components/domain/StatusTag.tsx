@@ -9,7 +9,7 @@ export type StatusType = ModelConfigStatus | AppStatus | KnowledgeBaseStatus | D
 
 const STATUS_COLORS: Record<string, string> = {
   ENABLED: 'green',
-  DISABLED: 'default',
+  DISABLED: 'warning',
   ACTIVE: 'green',
   REVOKED: 'red',
   EXPIRED: 'orange',

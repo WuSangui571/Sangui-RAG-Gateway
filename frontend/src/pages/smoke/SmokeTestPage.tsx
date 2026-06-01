@@ -150,14 +150,23 @@ export default function SmokeTestPage() {
           </div>
         </Space>
 
-        <Card size="small" title="Enter the API key plaintext (from key creation)">
-          <Input.Password
-            value={selectedKeyValue ?? ''}
-            onChange={(e) => setSelectedKeyValue(e.target.value || null)}
-            placeholder="sk-sangui-..."
-          />
+        <Card size="small" title="Temporary API Key (not stored)">
+          <Space.Compact style={{ width: '100%' }}>
+            <Input.Password
+              value={selectedKeyValue ?? ''}
+              onChange={(e) => setSelectedKeyValue(e.target.value || null)}
+              placeholder="sk-sangui-..."
+              style={{ flex: 1 }}
+            />
+            <Button
+              onClick={() => { setSelectedKeyValue(null); setResult(null); setSmokeError(null) }}
+              disabled={selectedKeyValue === null}
+            >
+              Clear
+            </Button>
+          </Space.Compact>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Paste the full plaintext key generated from the API Keys page.
+            Paste the full plaintext key from the API Keys creation dialog. This value is only held in memory for this session and is cleared when you switch apps, clear manually, or reload the page.
           </Typography.Text>
         </Card>
 

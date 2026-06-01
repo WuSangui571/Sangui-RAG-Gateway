@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Button, Input, Modal, Space, Typography } from 'antd'
+import { Alert, Button, Divider, Input, Modal, Space, Typography } from 'antd'
 
 const { Text, Paragraph } = Typography
 
@@ -7,15 +7,20 @@ interface ApiKeyOneTimeSecretProps {
   open: boolean
   plaintextKey: string | null
   onClose: () => void
+  onGoToSmokeTest?: () => void
 }
 
-export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose }: ApiKeyOneTimeSecretProps) {
+export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoToSmokeTest }: ApiKeyOneTimeSecretProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'failed'>('idle')
+  const [baseUrlCopyStatus, setBaseUrlCopyStatus] = useState<'idle' | 'success' | 'failed'>('idle')
+
+  const gatewayBaseUrl = typeof window !== 'undefined' ? window.location.origin : ''
 
   useEffect(() => {
     if (!open) {
       setCopyStatus('idle')
+      setBaseUrlCopyStatus('idle')
       return
     }
     window.setTimeout(() => {
@@ -46,6 +51,26 @@ export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose }: Api
     }
   }
 
+  async function handleCopyBaseUrl() {
+    if (!gatewayBaseUrl) return
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(gatewayBaseUrl)
+      } else {
+        throw new Error('clipboard not available')
+      }
+      setBaseUrlCopyStatus('success')
+    } catch {
+      setBaseUrlCopyStatus('failed')
+    }
+  }
+
+  function handleGoToSmokeTest() {
+    onClose()
+    onGoToSmokeTest?.()
+  }
+
   return (
     <Modal
       title="API Key Created"
@@ -59,6 +84,11 @@ export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose }: Api
           <Button onClick={handleCopy} type="primary">
             Copy Key
           </Button>
+          {onGoToSmokeTest && (
+            <Button onClick={handleGoToSmokeTest} type="default">
+              Go to Smoke Test
+            </Button>
+          )}
           <Button onClick={onClose}>
             I have saved this key
           </Button>
@@ -87,6 +117,33 @@ export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose }: Api
           message="Browser clipboard access failed. The key is selected above; press Ctrl+C to copy it manually."
         />
       ) : null}
+
+      <Divider style={{ margin: '16px 0 12px' }} />
+
+      <Paragraph style={{ marginBottom: 8 }}>
+        <Text strong>Next step:</Text>{' '}
+        <Text type="secondary">
+          Use this key as <Text code>Authorization: Bearer &lt;key&gt;</Text> with the gateway base URL.
+        </Text>
+      </Paragraph>
+      <Space style={{ marginBottom: 8 }}>
+        <Text code style={{ fontSize: 13 }}>{gatewayBaseUrl}</Text>
+        <Button size="small" onClick={handleCopyBaseUrl}>
+          {baseUrlCopyStatus === 'success' ? 'Copied' : 'Copy Base URL'}
+        </Button>
+      </Space>
+      {baseUrlCopyStatus === 'failed' && (
+        <Paragraph>
+          <Text type="warning" style={{ fontSize: 12 }}>Failed to copy base URL. Please copy it manually.</Text>
+        </Paragraph>
+      )}
+      {onGoToSmokeTest && (
+        <Paragraph style={{ marginBottom: 0 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            You can also click "Go to Smoke Test" to validate this key immediately.
+          </Text>
+        </Paragraph>
+      )}
     </Modal>
   )
 }

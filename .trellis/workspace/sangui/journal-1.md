@@ -1343,3 +1343,76 @@ Closed the demo credential rotation and acceptance cleanup task after manual run
 ### Next Steps
 
 - None - task complete
+
+
+## Session 24: RAG demo acceptance runtime evidence stabilization
+
+**Date**: 2026-06-01
+**Task**: RAG demo acceptance runtime evidence stabilization
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Summary |
+|---|---|
+| RAG demo acceptance | Stabilized and recorded the end-to-end runtime evidence for the V0.2 beta RAG demo acceptance path. |
+| Runtime evidence | Added a redacted task-local evidence record covering backend health, frontend proxy, split-provider runtime config, KB READY, non-streaming chat, streaming SSE, request-log detail, hit-chunk metadata, revoked-key 401, and secret-safety checks. |
+| Quality check | Codex ran `$check` / `$finish-work`, verified the Qwen handoff against Trellis PRD and backend/frontend/gateway/rag/security specs, and fixed a small runtime-evidence encoding issue. |
+| API key UX | Fixed the API key one-time display modal so new keys are selected, copy feedback is explicit, clipboard failure falls back to manual Ctrl+C, and accidental close through overlay/Esc/close icon is prevented. |
+| Manual acceptance | Human revoked exposed active keys, created fresh keys, verified basic smoke, verified full smoke with request-log and revoked-key checks, and confirmed all enabled smoke checks passed. |
+
+**Commits**:
+- `dc6dc52` docs:??RAG??????
+- `4d86b5a` fix:??API?????????
+
+**Updated Files**:
+- `.trellis/tasks/06-01-rag-demo-acceptance-runtime-evidence-stabilization/prd.md`
+- `.trellis/tasks/06-01-rag-demo-acceptance-runtime-evidence-stabilization/check.jsonl`
+- `.trellis/tasks/06-01-rag-demo-acceptance-runtime-evidence-stabilization/debug.jsonl`
+- `.trellis/tasks/06-01-rag-demo-acceptance-runtime-evidence-stabilization/implement.jsonl`
+- `.trellis/tasks/06-01-rag-demo-acceptance-runtime-evidence-stabilization/runtime-evidence.md`
+- `frontend/src/components/domain/ApiKeyOneTimeSecret.tsx`
+
+**Validation Commands and Results**:
+- `git diff --check` PASS, only Windows CRLF warnings on task-local Trellis files during review.
+- PowerShell 5.1 PSParser syntax check for `scripts/demo-smoke.ps1` PASS.
+- Secret/static scans PASS; no real app keys or upstream secrets were committed.
+- `mvn -q -DskipTests compile` PASS.
+- `mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test` PASS.
+- `mvn -q "-Dtest=GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test` PASS.
+- `mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest,OpenAiCompatibleEmbeddingClientTest,DocumentAdminControllerTest,ModelConfigServiceTest,AppAdminControllerTest" test` PASS.
+- `cmd /c npm run typecheck` PASS.
+- `cmd /c npm run build` PASS, with existing Vite large chunk warning only.
+- Human basic smoke PASS: backend health, frontend proxy, non-streaming chat, streaming SSE; request-log and revoked-key skipped as expected.
+- Human full smoke PASS: backend health, frontend proxy, non-streaming chat, streaming SSE, request-log fields, hit-chunk metadata, revoked-key `401 invalid_api_key`.
+
+**Result and Boundaries**:
+- The current RAG demo acceptance loop is complete and archived.
+- Runtime acceptance evidence is redacted and task-local.
+- No backend Java, DB schema, RAG retrieval semantics, prompt behavior, gateway API contract, Docker, Redis, or MQ behavior was changed.
+- Existing lost API keys remain unrecoverable by design because plaintext is shown only once and only hashes are persisted.
+- Exposed active keys from manual testing were revoked before session recording.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `dc6dc52` | (see git log) |
+| `4d86b5a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

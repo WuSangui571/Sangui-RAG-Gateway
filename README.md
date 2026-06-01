@@ -584,6 +584,48 @@ After a demo session completes, run these steps to revoke the demo key and clean
 
 4. **Remove uploaded knowledge files** from `backend/data/` if they contain proprietary content. The directory is git-ignored but not auto-cleaned.
 
+## Lost or Leaked API Key Runbook
+
+### If the plaintext key is lost
+
+The full plaintext key is shown only once at creation time and is never stored or recoverable from the backend (only a hash is stored). If the plaintext is lost:
+
+1. **Create a new API key** for the affected app through the Admin UI or API:
+   ```powershell
+   $utf8 = New-Object System.Text.UTF8Encoding($false)
+   $createBodyPath = [System.IO.Path]::GetTempFileName()
+   [System.IO.File]::WriteAllText($createBodyPath, '{"name":"replacement-key","expires_at":null}', $utf8)
+   curl.exe -s -X POST "$BackendBaseUrl/api/admin/apps/<app-id>/api-keys" `
+     -H "X-Admin-User-Id: $AdminUserId" `
+     -H "Content-Type: application/json" `
+     --data-binary "@$createBodyPath"
+   Remove-Item -LiteralPath $createBodyPath -Force
+   ```
+2. **Copy the new key immediately** from the creation response.
+3. **Update all clients** that were using the old key to use the new key.
+4. **Optionally revoke the old key** if you are certain no client still needs it. The old key cannot be used without the plaintext, but revoking it removes the hash from the database as a precaution.
+
+### If the plaintext key is leaked
+
+If you suspect the plaintext key has been exposed (e.g., committed to a repository, shared in logs, or visible in a screenshot):
+
+1. **Revoke the leaked key immediately** through the Admin UI or API:
+   ```powershell
+   curl.exe -s -X POST "$BackendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
+     -H "X-Admin-User-Id: $AdminUserId"
+   ```
+2. **Verify the revoked key is rejected** by calling the gateway with the leaked key:
+   ```powershell
+   curl.exe -s -X POST "$BackendBaseUrl/v1/chat/completions" `
+     -H "Content-Type: application/json" `
+     -H "Authorization: Bearer <leaked-key>" `
+     -d '{"messages":[{"role":"user","content":"test"}]}'
+   ```
+   Expected: HTTP `401` with `error.code=invalid_api_key`.
+3. **Create a fresh API key** for the affected app and copy it immediately.
+4. **Update all clients** to use the new key.
+5. **Remove all plaintext artifacts**: clear clipboard, delete scratch files, remove the key from terminal history, and scrub any repositories or logs where the key appeared. Never commit plaintext API keys.
+
 ## Automated Smoke Script (Optional)
 
 A PowerShell 5.1 smoke script is available at `scripts/demo-smoke.ps1`:

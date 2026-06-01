@@ -13,7 +13,7 @@ import StatusTag from '../../components/domain/StatusTag'
 import ApiKeyOneTimeSecret from '../../components/domain/ApiKeyOneTimeSecret'
 
 export default function ApiKeyPage() {
-  const { adminUserId, selectedAppId } = useShell()
+  const { adminUserId, selectedAppId, navigateTo } = useShell()
 
   const [apps, setApps] = useState<AppVO[]>([])
   const [activeAppId, setActiveAppId] = useState<number | null>(selectedAppId)
@@ -28,6 +28,9 @@ export default function ApiKeyPage() {
 
   const [secretOpen, setSecretOpen] = useState(false)
   const [plaintextKey, setPlaintextKey] = useState<string | null>(null)
+
+  const [disableConfirmId, setDisableConfirmId] = useState<number | null>(null)
+  const [revokeConfirmId, setRevokeConfirmId] = useState<number | null>(null)
 
   const fetchApps = useCallback(async () => {
     if (adminUserId === null) return
@@ -117,6 +120,8 @@ export default function ApiKeyPage() {
       else fetchKeys()
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+    } finally {
+      setDisableConfirmId(null)
     }
   }
 
@@ -128,12 +133,18 @@ export default function ApiKeyPage() {
       else fetchKeys()
     } catch (e: unknown) {
       setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+    } finally {
+      setRevokeConfirmId(null)
     }
   }
 
   function handleSecretClose() {
     setSecretOpen(false)
     setPlaintextKey(null)
+  }
+
+  function handleGoToSmokeTest() {
+    navigateTo('smoke')
   }
 
   const columns: ColumnsType<ApiKeyVO> = [
@@ -145,29 +156,41 @@ export default function ApiKeyPage() {
       render: (s: ApiKeyStatus) => <StatusTag status={s} />,
     },
     {
-      title: 'Expires', dataIndex: 'expires_at', key: 'expires_at', width: 180,
-      render: (v: string | null) => v ?? 'Never',
-    },
-    {
-      title: 'Last Used', dataIndex: 'last_used_at', key: 'last_used_at', width: 180,
+      title: 'Created', dataIndex: 'created_at', key: 'created_at', width: 170,
       render: (v: string | null) => v ?? '-',
     },
     {
+      title: 'Expires', dataIndex: 'expires_at', key: 'expires_at', width: 170,
+      render: (v: string | null) => v ?? 'Never',
+    },
+    {
+      title: 'Last Used', dataIndex: 'last_used_at', key: 'last_used_at', width: 170,
+      render: (v: string | null) => v ?? 'Never',
+    },
+    {
+      title: 'Revoked', dataIndex: 'revoked_at', key: 'revoked_at', width: 170,
+      render: (v: string | null, record: ApiKeyVO) => {
+        if (record.status !== 'REVOKED') return '-'
+        return v ?? '-'
+      },
+    },
+    {
       title: 'Actions', key: 'actions', width: 180,
-      render: (_: unknown, record: ApiKeyVO) => (
-        <Space>
-          {record.status === 'ACTIVE' || record.status === 'DISABLED' ? (
-            <Button size="small" danger onClick={() => handleDisable(record.id)}>
-              Disable
-            </Button>
-          ) : null}
-          {record.status !== 'REVOKED' ? (
-            <Button size="small" danger onClick={() => handleRevoke(record.id)}>
+      render: (_: unknown, record: ApiKeyVO) => {
+        if (record.status === 'REVOKED') return null
+        return (
+          <Space>
+            {record.status === 'ACTIVE' ? (
+              <Button size="small" onClick={() => setDisableConfirmId(record.id)}>
+                Disable
+              </Button>
+            ) : null}
+            <Button size="small" danger onClick={() => setRevokeConfirmId(record.id)}>
               Revoke
             </Button>
-          ) : null}
-        </Space>
-      ),
+          </Space>
+        )
+      },
     },
   ]
 
@@ -205,7 +228,7 @@ export default function ApiKeyPage() {
         loading={loading}
         locale={{ emptyText: activeAppId === null ? 'Select an app to view keys' : 'No API keys found' }}
         pagination={false}
-        scroll={{ x: 900 }}
+        scroll={{ x: 1200 }}
       />
 
       <Modal
@@ -239,7 +262,50 @@ export default function ApiKeyPage() {
         open={secretOpen}
         plaintextKey={plaintextKey}
         onClose={handleSecretClose}
+        onGoToSmokeTest={handleGoToSmokeTest}
       />
+
+      <Modal
+        title="Disable API Key"
+        open={disableConfirmId !== null}
+        onCancel={() => setDisableConfirmId(null)}
+        onOk={() => disableConfirmId !== null && handleDisable(disableConfirmId)}
+        okText="Disable"
+        okButtonProps={{ danger: false }}
+        cancelText="Cancel"
+      >
+        <Alert
+          type="warning"
+          showIcon
+          message="This key will stop authenticating public /v1/* requests immediately."
+          description="Use this for a key that should stop working now but is not known to be leaked. If the key has been leaked, revoke it permanently instead."
+          style={{ marginBottom: 12 }}
+        />
+        <Typography.Text type="secondary">
+          The key prefix will remain visible in the list. Revocation is the terminal action for leaked keys.
+        </Typography.Text>
+      </Modal>
+
+      <Modal
+        title="Revoke API Key"
+        open={revokeConfirmId !== null}
+        onCancel={() => setRevokeConfirmId(null)}
+        onOk={() => revokeConfirmId !== null && handleRevoke(revokeConfirmId)}
+        okText="Revoke"
+        okButtonProps={{ danger: true }}
+        cancelText="Cancel"
+      >
+        <Alert
+          type="error"
+          showIcon
+          message="This operation is irreversible."
+          description="The key will be permanently revoked and must fail all public /v1/* calls with 401 invalid_api_key. You will need to create a new key and update any clients that were using this key."
+          style={{ marginBottom: 12 }}
+        />
+        <Typography.Text type="secondary">
+          After revocation, verify the old key is rejected, then create a fresh key and update your clients.
+        </Typography.Text>
+      </Modal>
     </div>
   )
 }

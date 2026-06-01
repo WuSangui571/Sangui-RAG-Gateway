@@ -1,7 +1,7 @@
 {
-  "id": "rag-demo-acceptance-runtime-evidence-stabilization",
-  "name": "rag-demo-acceptance-runtime-evidence-stabilization",
-  "title": "RAG Demo Acceptance End-to-End Runtime Evidence Stabilization",
+  "id": "api-key-lifecycle-ux-hardening",
+  "name": "api-key-lifecycle-ux-hardening",
+  "title": "API Key Lifecycle UX Hardening",
   "description": "",
   "status": "planning",
   "dev_type": "fullstack",
