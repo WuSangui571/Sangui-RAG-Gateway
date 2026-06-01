@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 18
-- **Last Active**: 2026-05-31
+- **Total Sessions**: 19
+- **Last Active**: 2026-06-01
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1051 | Active |
+| `journal-1.md` | ~1134 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 19 | 2026-06-01 | Full-stack Docker Compose deployment and CI baseline | `59253fa`, `9de317b` | `main` |
 | 18 | 2026-05-31 | Admin console configuration workflow | `c66c186` | `main` |
 | 17 | 2026-05-31 | Admin 请求日志观测前端收尾 | `bc6382b` | `main` |
 | 16 | 2026-05-31 | 完成RAG请求日志观测Admin API | `1edaf77` | `main` |

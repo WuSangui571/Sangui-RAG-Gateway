@@ -119,6 +119,121 @@ After starting the full stack, configure the gateway through the admin console f
 
 6. **Verify**: check the Request Logs page under the app. The log should show status `success`, resolved model/provider, latency, token usage, question summary, and hit chunk IDs.
 
+## Demo Acceptance Flow (PowerShell 5.1)
+
+After completing the admin setup above, run these steps from Windows PowerShell 5.1 to validate the full acceptance flow. All commands use `curl.exe` (Windows system curl), not the PowerShell `curl` alias which maps to `Invoke-WebRequest`.
+
+Set variables used throughout:
+
+```powershell
+$BackendBaseUrl = "http://localhost:8080"
+$FrontendBaseUrl = "http://localhost:3000"
+$ApiKey = "sk-sangui-<your-key>"
+```
+
+### 1. Backend health
+
+```powershell
+curl.exe -s "$BackendBaseUrl/api/health"
+```
+
+Expected: JSON with `"code":"OK"` and `"data":{"status":"UP"}`.
+
+### 2. Frontend proxy health
+
+```powershell
+curl.exe -s "$FrontendBaseUrl/api/health"
+```
+
+Expected: JSON (starts with `{`), NOT SPA HTML. Same `code=OK` and `data.status=UP` as backend.
+
+### 3. Non-streaming chat (via frontend /v1 proxy)
+
+```powershell
+$body = '{"model":"ignored","messages":[{"role":"user","content":"What integration style does Sangui RAG Gateway provide?"}]}'
+curl.exe -s -X POST "$FrontendBaseUrl/v1/chat/completions" `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer $ApiKey" `
+  -d $body
+```
+
+Expected: HTTP 200 with JSON `choices[0].message.content` containing an answer grounded in the uploaded knowledge base.
+
+### 4. Streaming chat (via frontend /v1 proxy)
+
+```powershell
+$body = '{"model":"ignored","messages":[{"role":"user","content":"What integration style does Sangui RAG Gateway provide?"}],"stream":true}'
+curl.exe -s -N -X POST "$FrontendBaseUrl/v1/chat/completions" `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer $ApiKey" `
+  -d $body
+```
+
+The `-N` flag disables output buffering. Expected: visible `data:` SSE chunks and a final `data: [DONE]` at stream end.
+
+### 5. Verify request logs
+
+Open the admin console Request Logs page for the app. The log should show:
+- `status`: `success`
+- Resolved `model` and `provider_name`
+- `latency_ms`, `token` usage where available
+- `question_summary` and `hit_chunk_ids` for RAG retrieval
+
+### Notes
+
+- Do not use `curl` (PowerShell alias) — always use `curl.exe`.
+- Do not write JSON request bodies to temporary files with default PowerShell encoding to avoid UTF-8 BOM issues. Use inline `$body` variables as shown above.
+- If backend or frontend is not running, `curl.exe` will exit non-zero or return empty output. No fake success should be accepted.
+
+## Key Rotation and Revocation
+
+### Revoke an old API key
+
+```
+POST /api/admin/api-keys/{id}/revoke
+X-Admin-User-Id: <your-user-id>
+```
+
+```powershell
+curl.exe -s -X POST "$FrontendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
+  -H "X-Admin-User-Id: 1"
+```
+
+After revocation, the key must fail public `/v1/*` calls with HTTP 401 `invalid_api_key`.
+
+### Create a fresh API key
+
+```
+POST /api/admin/apps/{appId}/api-keys
+X-Admin-User-Id: <your-user-id>
+Content-Type: application/json
+{"name":"demo-acceptance-YYYYMMDD","expires_at":null}
+```
+
+```powershell
+$createBody = '{"name":"demo-acceptance-20260601","expires_at":null}'
+curl.exe -s -X POST "$FrontendBaseUrl/api/admin/apps/<app-id>/api-keys" `
+  -H "X-Admin-User-Id: 1" `
+  -H "Content-Type: application/json" `
+  -d $createBody
+```
+
+Copy the full `key` field from the create response immediately — it will not be shown again. Never commit the plaintext key to source code or documentation.
+
+## Automated Smoke Script (Optional)
+
+A minimal PowerShell 5.1 smoke script is available at `scripts/demo-smoke.ps1`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
+  -ApiKey "sk-sangui-<your-key>" `
+  -BackendBaseUrl "http://localhost:8080" `
+  -FrontendBaseUrl "http://localhost:3000" `
+  -Message "What integration style does Sangui RAG Gateway provide?"
+```
+
+The script checks backend health, frontend proxy health, non-streaming chat, and streaming chat. It requires `-ApiKey` (never reads from repo files) and exits non-zero on any failure.
+
 ## Development (Local, Without Docker Images)
 
 ### Start infrastructure only

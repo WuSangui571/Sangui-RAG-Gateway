@@ -1049,3 +1049,86 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: Full-stack Docker Compose deployment and CI baseline
+
+**Date**: 2026-06-01
+**Task**: Full-stack Docker Compose deployment and CI baseline
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| Deployment baseline | Added full-stack Docker Compose baseline for PostgreSQL/pgvector, Redis, backend, and frontend with persistent backend upload volume. |
+| Backend image | Added Java 21 multi-stage backend Dockerfile and backend Docker ignore rules. |
+| Frontend image/proxy | Added Node/Vite build plus Nginx runtime image, `/api` and `/v1` proxying to backend, SSE-friendly proxy settings, and configurable `BACKEND_UPSTREAM`. |
+| CI | Added GitHub Actions checks for backend compile/tests, frontend typecheck/build, and backend/frontend Docker image buildability without registry push. |
+| Docs/env/spec | Updated `.env.example`, README deployment instructions, and executable project spec for full-stack Compose, env, proxy, CI, secret safety, and validation matrix. |
+| Codex fix | Fixed model config text normalization so whitespace in `embedding_model`, `base_url`, `chat_model`, provider/name fields cannot break embedding config lookup. |
+| Manual acceptance | User verified Admin smoke, backend `/v1/chat/completions`, frontend `/v1` proxy, streaming SSE ending with `[DONE]`, request log SUCCESS with hit chunk ID, and document persistence after backend restart. |
+
+**Updated Files**:
+- `.env.example`
+- `.github/workflows/ci.yml`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `README.md`
+- `backend/.dockerignore`
+- `backend/Dockerfile`
+- `backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java`
+- `backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java`
+- `deploy/docker-compose.yml`
+- `frontend/.dockerignore`
+- `frontend/Dockerfile`
+- `frontend/nginx.conf`
+- `frontend/vite.config.ts`
+
+**Verification**:
+- `mvn -q -DskipTests compile` passed.
+- `mvn test` passed: 408 tests, 0 failures, 0 errors, 0 skipped.
+- `mvn -q "-Dtest=ModelConfigServiceTest" test` passed.
+- `mvn -q "-Dtest=ModelConfigAdminControllerTest,DocumentServiceTest,DocumentAdminControllerTest" test` passed.
+- `cmd /c npm run typecheck` passed.
+- `cmd /c npm run build` passed, with the existing Vite chunk-size warning only.
+- `docker compose --env-file .env.example -f deploy/docker-compose.yml config` passed.
+- `git diff --check` passed.
+- Pattern scan found no `any`, `console.log`, `debugger`, `TODO`, or non-null assertions in changed frontend source areas.
+
+**Manual Smoke Evidence**:
+- Admin Smoke Test returned OpenAI-compatible success with model `deepseek-v4-pro`.
+- Request Log detail showed `SUCCESS`, provider `openai-compatible`, token usage, latency, question summary, and hit chunk ID `1`.
+- Direct backend call `http://localhost:8080/v1/chat/completions` succeeded.
+- Frontend proxy call `http://localhost:3000/v1/chat/completions` succeeded.
+- Streaming call emitted multiple `data:` chunks and ended with `data:[DONE]`.
+- Backend restart preserved uploaded document and `READY` status.
+
+**Boundaries**:
+- No automatic commit or push was performed by Codex for application code.
+- Docker image build commands timed out in the local environment during Codex validation, but manual Compose acceptance later confirmed runtime behavior.
+- Local manual smoke artifacts are not part of the delivery and should not be staged blindly.
+- A pasted local `sk-sangui-*` key was exposed during manual reporting; revoke it after acceptance and generate a fresh key for future testing.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `59253fa` | (see git log) |
+| `9de317b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
