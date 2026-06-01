@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 24
+- **Total Sessions**: 25
 - **Last Active**: 2026-06-01
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1418 | Active |
+| `journal-1.md` | ~1468 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 25 | 2026-06-01 | API Key lifecycle UX hardening | `ca88271`, `5d40ace` | `main` |
 | 24 | 2026-06-01 | RAG demo acceptance runtime evidence stabilization | `dc6dc52`, `4d86b5a` | `main` |
 | 23 | 2026-06-01 | Admin runbook endpoint contract cleanup | `6b15a4d` | `main` |
 | 22 | 2026-06-01 | Demo credential rotation acceptance cleanup | `843f09f` | `main` |

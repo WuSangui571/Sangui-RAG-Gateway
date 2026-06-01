@@ -1416,3 +1416,53 @@ Closed the demo credential rotation and acceptance cleanup task after manual run
 ### Next Steps
 
 - None - task complete
+
+
+## Session 25: API Key lifecycle UX hardening
+
+**Date**: 2026-06-01
+**Task**: API Key lifecycle UX hardening
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Task | API Key Lifecycle UX Hardening |
+| Commits | ca88271 fix:??API????????; 5d40ace fix:??API?????????? |
+| Main Modules | Frontend API key lifecycle UX; one-time secret dialog; Smoke Test temporary key flow; API key lost/leaked runbook |
+| Updated Files | README.md; frontend/src/components/domain/ApiKeyOneTimeSecret.tsx; frontend/src/components/domain/StatusTag.tsx; frontend/src/pages/api-keys/ApiKeyPage.tsx; frontend/src/pages/smoke/SmokeTestPage.tsx |
+| Validation | npm run typecheck passed; npm run build passed; git diff --check passed with only CRLF warnings; secret/debug scan passed; manual UI smoke passed after selected-app sync fix |
+| Result | API key creation now preserves one-time plaintext safety while guiding users to Smoke Test and base URL usage; disable/revoke actions have confirmation boundaries; Smoke Test keeps pasted keys in memory only and supports explicit clear; README documents lost/leaked key operations. |
+| Boundary | No backend API, database schema, gateway auth, RAG, infra, or persistent secret storage behavior changed. |
+
+Manual acceptance notes:
+- One-time key dialog cannot be closed by Esc or mask click, copy feedback is visible, and plaintext cannot be recovered after closing.
+- Go to Smoke Test now carries the selected App into Smoke Test automatically.
+- Smoke request succeeds with a fresh key.
+- Disabled key fails public /v1/* calls as expected.
+- Model Config / Apps disabled-state switching remains a separate future UX concern; current pages mostly show ENABLED because no UI disable/enable workflow was exercised in this task.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ca88271` | (see git log) |
+| `5d40ace` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
