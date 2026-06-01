@@ -16,3 +16,6 @@
 {"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "Default model config and knowledge-base binding endpoint contract"}
 {"file": "scripts\\demo-smoke.ps1", "reason": "Current PowerShell smoke implementation to harden without changing business code"}
 {"file": "README.md", "reason": "Existing runbook, provider setup, smoke command, revocation checklist"}
+{"file": ".trellis\\tasks\\06-01-rag-demo-acceptance-runtime-evidence-stabilization\\prd.md", "reason": "Task PRD with split-role execution mode, evidence capture rules, acceptance matrix, and forbidden scope"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend request-log and hit-chunk VO field contracts if docs/types are touched"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigService.java", "reason": "Embedding config resolution for split-provider demo setup"}

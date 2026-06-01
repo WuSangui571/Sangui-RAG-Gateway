@@ -6,6 +6,15 @@ Complex Task.
 
 This task crosses runtime documentation, smoke automation, public gateway behavior, Admin API evidence, frontend proxy behavior, and secret-safe RAG observability. It should be treated as acceptance-loop stabilization, not new feature development.
 
+## Execution Mode
+
+This task is currently in split-role planning mode:
+
+- Codex prepares scope, PRD, Trellis context, spec research, code research, and the validation plan only.
+- Qwen performs any implementation or runtime evidence capture after this handoff.
+- Business implementation files must not be changed during the Codex planning pass.
+- Runtime evidence capture should prefer redacted task-local records over committing terminal transcripts.
+
 ## Goal
 
 Stabilize the end-to-end RAG demo acceptance loop so a fresh operator can repeatedly validate the MVP path with concrete runtime evidence:
@@ -23,7 +32,7 @@ hit-chunks evidence
 revoked-key 401 invalid_api_key
 ```
 
-The expected result is a clearer runbook, a hardened `scripts/demo-smoke.ps1` contract where needed, and synchronized README/spec executable acceptance rules. Do not expand RAG capability or change business behavior unless a verified script/docs mismatch requires a minimal correction.
+The expected result is a clearer runbook, a hardened `scripts/demo-smoke.ps1` contract where needed, synchronized README/spec executable acceptance rules, and a reusable redacted runtime acceptance record. Do not expand RAG capability or change business behavior unless a verified script/docs mismatch requires a minimal correction.
 
 ## Current Project State From Journal
 
@@ -66,6 +75,10 @@ The expected result is a clearer runbook, a hardened `scripts/demo-smoke.ps1` co
   - hit-chunks safe metadata
   - revoked-key HTTP 401 with OpenAI-compatible `invalid_api_key`
 - Sync README and `.trellis/spec/` executable contract only when smoke script behavior or runtime acceptance instructions differ from the current source of truth.
+- Capture reusable redacted runtime evidence in a task-local record, recommended path:
+  - `.trellis/tasks/06-01-rag-demo-acceptance-runtime-evidence-stabilization/runtime-evidence.md`
+  - The record may include timestamps, HTTP status codes, boundary names, request IDs, model/provider names, latency numbers, chunk IDs/counts, and hit chunk metadata.
+  - The record must not include real app keys, upstream provider keys, full prompt text, model answer text beyond a bounded non-sensitive preview, chunk summary text, full chunk content, provider raw bodies, embeddings, key hashes, encrypted keys, stack traces, or local upload file contents.
 - Keep the task focused on acceptance evidence. Do not implement new provider routing, fallback, retrieval algorithms, frontend UI, database schema, auth model, or RAG prompt behavior.
 
 ## API / Command / Payload Fields
@@ -167,6 +180,7 @@ Public chat payload:
 - [ ] Smoke script parameter docs, failure boundaries, and safe output fields are aligned across script, README, and spec.
 - [ ] Evidence checklist covers backend health, frontend proxy, model config, KB ready, chat success, stream success, request-log detail, hit-chunks, and revoked-key 401.
 - [ ] README and `.trellis/spec/sangui-rag-gateway.md` remain synchronized for executable acceptance contracts.
+- [ ] A reusable redacted runtime evidence record is produced under the task directory if a real environment run is performed.
 - [ ] PowerShell 5.1 syntax check instructions are preserved.
 - [ ] No real API keys, generated `sk-sangui-*` keys, upstream keys, upload artifacts, prompt bodies, chunk contents, or provider bodies are committed.
 - [ ] No backend Java, frontend TypeScript, database schema, API contract, RAG retrieval semantics, prompt behavior, Docker, Redis, or MQ behavior is changed unless a concrete runtime acceptance mismatch is discovered and documented before the change.
