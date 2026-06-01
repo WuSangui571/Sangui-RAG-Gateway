@@ -22,10 +22,28 @@ function Write-Pass {
     Write-Host "  PASS: $Text" -ForegroundColor Green
 }
 
-function Write-Fail {
-    param([string]$Text)
-    Write-Host "  FAIL: $Text" -ForegroundColor Red
+function Write-FailBoundary {
+    param([string]$Boundary, [string]$Text)
+    Write-Host "  FAIL [$Boundary]: $Text" -ForegroundColor Red
     $script:exitCode = 1
+}
+
+function Classify-GatewayError {
+    param([int]$StatusCode, [string]$ErrorCode)
+    switch ($ErrorCode) {
+        'invalid_api_key'     { return 'auth' }
+        'upstream_error'      { return 'upstream' }
+        'upstream_timeout'    { return 'upstream' }
+        'embedding_failed'    { return 'embedding' }
+        'knowledge_base_not_ready' { return 'retrieval' }
+        'model_config_not_ready'   { return 'retrieval' }
+        default {
+            if ($StatusCode -eq 401) { return 'auth' }
+            if ($StatusCode -ge 502 -and $StatusCode -le 504) { return 'upstream' }
+            if ($StatusCode -eq 409) { return 'retrieval' }
+            return 'unknown'
+        }
+    }
 }
 
 function Get-JsonBody {
@@ -57,6 +75,7 @@ function Invoke-CurlCapture {
     }
 
     $outputPath = [System.IO.Path]::GetTempFileName()
+    $bodyPath = $null
     try {
         $curlArgs = @("-s", "-o", $outputPath, "-w", "%{http_code}", "--connect-timeout", "10", "--max-time", "$MaxTimeSeconds")
         if ($NoBuffer) {
@@ -68,8 +87,11 @@ function Invoke-CurlCapture {
         foreach ($header in $Headers) {
             $curlArgs += @("-H", $header)
         }
-        if ($null -ne $Body) {
-            $curlArgs += @("-d", $Body)
+        if (-not [string]::IsNullOrEmpty($Body)) {
+            $bodyPath = [System.IO.Path]::GetTempFileName()
+            $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText($bodyPath, $Body, $utf8NoBom)
+            $curlArgs += @("--data-binary", "@$bodyPath")
         }
         $curlArgs += @("--", $Url)
 
@@ -91,6 +113,9 @@ function Invoke-CurlCapture {
         if (Test-Path $outputPath) {
             Remove-Item -LiteralPath $outputPath -Force
         }
+        if ($bodyPath -and (Test-Path $bodyPath)) {
+            Remove-Item -LiteralPath $bodyPath -Force
+        }
     }
 }
 
@@ -110,10 +135,10 @@ try {
     $response = Invoke-CurlCapture -Url "$BackendBaseUrl/api/health"
     $result = $response.Body
     if ($response.CurlExit -ne 0) {
-        Write-Fail "curl exit code $($response.CurlExit); is backend running?"
+        Write-FailBoundary "health" "curl exit code $($response.CurlExit); is backend running?"
     }
     elseif ($response.StatusCode -ne 200) {
-        Write-Fail "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+        Write-FailBoundary "health" "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
     }
     else {
         $json = $result | ConvertFrom-Json
@@ -121,12 +146,12 @@ try {
             Write-Pass "code=OK, status=UP"
         }
         else {
-            Write-Fail "Unexpected response: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+            Write-FailBoundary "health" "Unexpected response: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
         }
     }
 }
 catch {
-    Write-Fail "Exception: $_"
+    Write-FailBoundary "health" "Exception: $_"
 }
 
 Write-Step "2. Frontend proxy health"
@@ -134,13 +159,13 @@ try {
     $response = Invoke-CurlCapture -Url "$FrontendBaseUrl/api/health"
     $result = $response.Body
     if ($response.CurlExit -ne 0) {
-        Write-Fail "curl exit code $($response.CurlExit); is frontend running?"
+        Write-FailBoundary "proxy" "curl exit code $($response.CurlExit); is frontend running?"
     }
     elseif ($response.StatusCode -ne 200) {
-        Write-Fail "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+        Write-FailBoundary "proxy" "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
     }
     elseif ($result.TrimStart().StartsWith('<')) {
-        Write-Fail "Response is HTML (SPA fallback), not JSON; proxy may be misrouted"
+        Write-FailBoundary "proxy" "Response is HTML (SPA fallback), not JSON; proxy may be misrouted"
     }
     else {
         $json = $result | ConvertFrom-Json
@@ -148,12 +173,12 @@ try {
             Write-Pass "code=OK (JSON, not HTML)"
         }
         else {
-            Write-Fail "Unexpected response: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+            Write-FailBoundary "proxy" "Unexpected response: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
         }
     }
 }
 catch {
-    Write-Fail "Exception (likely not valid JSON): $_"
+    Write-FailBoundary "proxy" "Exception (likely not valid JSON): $_"
 }
 
 Write-Step "3. Non-streaming chat"
@@ -163,20 +188,21 @@ try {
     $response = Invoke-CurlCapture -Url "$FrontendBaseUrl/v1/chat/completions" -Method "POST" -Headers $headers -Body $body -MaxTimeSeconds 60
     $result = $response.Body
     if ($response.CurlExit -ne 0) {
-        Write-Fail "curl exit code $($response.CurlExit)"
+        Write-FailBoundary "proxy" "curl exit code $($response.CurlExit)"
     }
     elseif ($response.StatusCode -ne 200) {
         try {
             $json = $result | ConvertFrom-Json
             if ($json.error) {
-                Write-Fail "HTTP $($response.StatusCode), gateway error code=$($json.error.code), message=$($json.error.message)"
+                $boundary = Classify-GatewayError -StatusCode $response.StatusCode -ErrorCode $json.error.code
+                Write-FailBoundary $boundary "HTTP $($response.StatusCode), gateway error code=$($json.error.code), message=$($json.error.message)"
             }
             else {
-                Write-Fail "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+                Write-FailBoundary "proxy" "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
             }
         }
         catch {
-            Write-Fail "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+            Write-FailBoundary "proxy" "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
         }
     }
     else {
@@ -188,16 +214,16 @@ try {
                 Write-Pass "HTTP 200, content: $preview"
             }
             else {
-                Write-Fail "No content in choices[0].message.content"
+                Write-FailBoundary "proxy" "No content in choices[0].message.content"
             }
         }
         catch {
-            Write-Fail "HTTP 200 but response is not valid JSON: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+            Write-FailBoundary "proxy" "HTTP 200 but response is not valid JSON: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
         }
     }
 }
 catch {
-    Write-Fail "Exception: $_"
+    Write-FailBoundary "proxy" "Exception: $_"
 }
 
 Write-Step "4. Streaming chat"
@@ -207,27 +233,29 @@ try {
     $response = Invoke-CurlCapture -Url "$FrontendBaseUrl/v1/chat/completions" -Method "POST" -Headers $headers -Body $body -MaxTimeSeconds 60 -NoBuffer
     $result = $response.Body
     if ($response.CurlExit -ne 0) {
-        Write-Fail "curl exit code $($response.CurlExit)"
+        Write-FailBoundary "proxy" "curl exit code $($response.CurlExit)"
     }
     elseif ($response.StatusCode -ne 200) {
         try {
             $err = $result | ConvertFrom-Json
             if ($err.error) {
-                Write-Fail "HTTP $($response.StatusCode), stream returned gateway error code=$($err.error.code), message=$($err.error.message)"
+                $boundary = Classify-GatewayError -StatusCode $response.StatusCode -ErrorCode $err.error.code
+                Write-FailBoundary $boundary "HTTP $($response.StatusCode), stream returned gateway error code=$($err.error.code), message=$($err.error.message)"
             }
             else {
-                Write-Fail "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+                Write-FailBoundary "proxy" "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
             }
         }
         catch {
-            Write-Fail "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+            Write-FailBoundary "proxy" "HTTP $($response.StatusCode), expected 200. Body: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
         }
     }
     else {
         try {
             $err = $result | ConvertFrom-Json -ErrorAction Stop
             if ($err.error) {
-                Write-Fail "Stream returned JSON error instead of SSE: code=$($err.error.code), message=$($err.error.message)"
+                $boundary = Classify-GatewayError -StatusCode $response.StatusCode -ErrorCode $err.error.code
+                Write-FailBoundary $boundary "Stream returned JSON error instead of SSE: code=$($err.error.code), message=$($err.error.message)"
                 return
             }
         }
@@ -239,15 +267,15 @@ try {
             Write-Pass "SSE stream received, $chunkCount data chunk(s), [DONE] present"
         }
         elseif ($result -match 'data:') {
-            Write-Fail "SSE chunks received but [DONE] missing; stream may have been truncated"
+            Write-FailBoundary "upstream" "SSE chunks received but [DONE] missing; stream may have been truncated"
         }
         else {
-            Write-Fail "No SSE data: chunks or [DONE] marker found. First 200 chars: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
+            Write-FailBoundary "proxy" "No SSE data: chunks or [DONE] marker found. First 200 chars: $($result.Substring(0, [Math]::Min(200, $result.Length)))"
         }
     }
 }
 catch {
-    Write-Fail "Exception: $_"
+    Write-FailBoundary "proxy" "Exception: $_"
 }
 
 if ($script:exitCode -eq 0) {

@@ -1,23 +1,32 @@
 {"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
 {"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
 {"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
-{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product/API/security/deployment source of truth for RAG gateway demo acceptance."}
-{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API key, /v1 proxy, streaming, Docker/demo boundary checklist."}
-{"file": ".trellis/spec/backend/error-handling.md", "reason": "Existing admin key revoke and public gateway invalid_api_key/error behavior."}
-{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-safe logging/request-log constraints for demo and smoke failures."}
-{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend validation expectations for API key, gateway, streaming, RAG smoke behavior."}
-{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "API key status/storage and tenant-safe persistence contracts."}
-{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend OpenAI/API key/request-log types and secret field boundaries."}
-{"file": ".trellis/spec/frontend/state-management.md", "reason": "One-time key/secret state clearing and local state boundaries."}
-{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend smoke/admin UX, secret safety, and build/typecheck expectations."}
-{"file": "README.md", "reason": "Existing manual demo and deployment smoke documentation to harden."}
-{"file": ".gitignore", "reason": "Manual artifact and local data ignore policy location."}
-{"file": "frontend/nginx.conf", "reason": "Production /api and /v1 proxy plus streaming buffering contract."}
-{"file": "frontend/src/api/openai.ts", "reason": "Existing frontend non-streaming smoke client and safe error surfacing pattern."}
-{"file": "frontend/src/pages/smoke/SmokeTestPage.tsx", "reason": "Existing Admin Smoke Test page and API key plaintext handling pattern."}
-{"file": "frontend/src/api/api-keys.ts", "reason": "Typed admin API key create/list/disable/revoke client functions."}
-{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyService.java", "reason": "Existing create/disable/revoke status and plaintext/hash storage behavior."}
-{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyAdminController.java", "reason": "Existing admin revoke endpoint and response shape."}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project product/API/security/deployment source of truth for demo acceptance and key hygiene."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer checklist for /v1, admin APIs, request logs, streaming, secrets, and proxy boundaries."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin key revoke/create and public invalid_api_key/error matrix."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Request log observability and secret-safe logging constraints."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend validation expectations for API key, gateway, streaming, RAG, and request logs."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "API key status/storage and request-log tenant-safe persistence contracts."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend API key/request-log/OpenAI types and forbidden secret fields."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "One-time API key state and secret clearing boundaries."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Admin console smoke/request-log UX and secret safety checks."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Admin table/drawer/status component patterns for request logs and key workflows."}
+{"file": "README.md", "reason": "Existing manual demo, key rotation, and smoke guidance to harden."}
+{"file": ".gitignore", "reason": "Manual artifact and local data ignore policy."}
+{"file": "scripts/demo-smoke.ps1", "reason": "Existing PowerShell 5.1 smoke script and current WIP file to improve later."}
+{"file": "frontend/nginx.conf", "reason": "Production /api and /v1 proxy plus SSE buffering contract."}
+{"file": "frontend/src/api/openai.ts", "reason": "Existing frontend smoke OpenAI client and safe error surfacing pattern."}
+{"file": "frontend/src/pages/smoke/SmokeTestPage.tsx", "reason": "Admin smoke page and API key plaintext handling pattern."}
+{"file": "frontend/src/api/api-keys.ts", "reason": "Typed API key create/list/disable/revoke client functions."}
+{"file": "frontend/src/api/request-logs.ts", "reason": "Typed request-log list/detail/hit-chunk client functions."}
+{"file": "frontend/src/pages/request-logs/RequestLogListPage.tsx", "reason": "Request-log list fields and filter UX pattern."}
+{"file": "frontend/src/components/domain/RequestLogDetailDrawer.tsx", "reason": "Request-log detail and hit-chunk evidence pattern."}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyService.java", "reason": "Existing create/revoke status and plaintext/hash storage behavior."}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyAdminController.java", "reason": "Existing admin revoke endpoint and safe response shape."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java", "reason": "Read-only request-log Admin API contract."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Request-log list/detail/hit-chunk parsing and safe summary behavior."}
 {"file": "backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyServiceTest.java", "reason": "Targeted API key service regression tests if backend key behavior changes."}
-{"file": "backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyAdminControllerTest.java", "reason": "Targeted admin revoke/create response regression tests if backend key behavior changes."}
-{"file": "backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java", "reason": "Verifies revoked/invalid keys fail public /v1 auth safely."}
+{"file": "backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyAdminControllerTest.java", "reason": "Targeted admin key create/revoke response regression tests if backend changes."}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java", "reason": "Revoked/invalid key public /v1 auth regression tests."}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogAdminControllerTest.java", "reason": "Request-log Admin API safety and validation regression tests."}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java", "reason": "Request-log persistence and field assertion regression tests."}

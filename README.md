@@ -123,6 +123,19 @@ After starting the full stack, configure the gateway through the admin console f
 
 After completing the admin setup above, run these steps from Windows PowerShell 5.1 to validate the full acceptance flow. All commands use `curl.exe` (Windows system curl), not the PowerShell `curl` alias which maps to `Invoke-WebRequest`.
 
+### Failure Boundary Classification
+
+Failures are classified by boundary so the tester knows where to investigate:
+
+| Boundary | Meaning |
+|---|---|
+| `health` | Backend `/api/health` is down or returns an unexpected envelope. |
+| `proxy` | Frontend `/api` or `/v1` proxy returns HTML, non-JSON, buffered/missing SSE, or wrong status. |
+| `auth` | Public `/v1/*` returns `401 invalid_api_key` (key is missing, invalid, disabled, revoked, or expired). |
+| `upstream` | Gateway returns `upstream_error`, `upstream_timeout`, or a post-start SSE error event. |
+| `embedding` | Gateway returns `embedding_failed` (query embedding provider is unreachable or returned an error). |
+| `retrieval` | Gateway returns `knowledge_base_not_ready`, `model_config_not_ready`, or RAG retrieval produced no hits. |
+
 Set variables used throughout:
 
 ```powershell
@@ -131,21 +144,21 @@ $FrontendBaseUrl = "http://localhost:3000"
 $ApiKey = "sk-sangui-<your-key>"
 ```
 
-### 1. Backend health
+### 1. Backend health (boundary: `health`)
 
 ```powershell
 curl.exe -s "$BackendBaseUrl/api/health"
 ```
 
-Expected: JSON with `"code":"OK"` and `"data":{"status":"UP"}`.
+Expected: JSON with `"code":"OK"` and `"data":{"status":"UP"}`. If unreachable or returns unexpected content, the boundary is `health`.
 
-### 2. Frontend proxy health
+### 2. Frontend proxy health (boundary: `proxy`)
 
 ```powershell
 curl.exe -s "$FrontendBaseUrl/api/health"
 ```
 
-Expected: JSON (starts with `{`), NOT SPA HTML. Same `code=OK` and `data.status=UP` as backend.
+Expected: JSON (starts with `{`), NOT SPA HTML. Same `code=OK` and `data.status=UP` as backend. If the response is HTML or curl fails with connection errors, the boundary is `proxy`.
 
 ### 3. Non-streaming chat (via frontend /v1 proxy)
 
@@ -159,6 +172,13 @@ curl.exe -s -X POST "$FrontendBaseUrl/v1/chat/completions" `
 
 Expected: HTTP 200 with JSON `choices[0].message.content` containing an answer grounded in the uploaded knowledge base.
 
+Failure boundary by error code:
+- `401 invalid_api_key` -> boundary `auth`
+- `502 upstream_error` / `504 upstream_timeout` -> boundary `upstream`
+- `502 embedding_failed` -> boundary `embedding`
+- `409 knowledge_base_not_ready` / `409 model_config_not_ready` -> boundary `retrieval`
+- Other non-200 or JSON parse failure -> boundary `proxy`
+
 ### 4. Streaming chat (via frontend /v1 proxy)
 
 ```powershell
@@ -169,21 +189,27 @@ curl.exe -s -N -X POST "$FrontendBaseUrl/v1/chat/completions" `
   -d $body
 ```
 
-The `-N` flag disables output buffering. Expected: visible `data:` SSE chunks and a final `data: [DONE]` at stream end.
+The `-N` flag disables output buffering. Expected: visible `data:` SSE chunks and a final `data: [DONE]` at stream end. Same boundary rules apply as non-streaming.
 
 ### 5. Verify request logs
 
-Open the admin console Request Logs page for the app. The log should show:
+Open the admin console Request Logs page for the app. After a successful non-streaming RAG chat, the log entry must show:
+
 - `status`: `success`
 - Resolved `model` and `provider_name`
-- `latency_ms`, `token` usage where available
-- `question_summary` and `hit_chunk_ids` for RAG retrieval
+- `latency_ms`
+- `usage` (prompt_tokens, completion_tokens, total_tokens) where the upstream provider supplies them; nullable for streaming
+- `question_summary` matching the demo prompt prefix (up to 512 chars)
+- Non-empty `hit_chunk_ids` (e.g. `[8, 9, 10]`) for a retrieval-hit demo
+
+Optionally, click the Detail button and inspect "Hit Chunks" for chunk summary evidence. The summary is bounded to 200 characters per chunk and does not expose full chunk content or embeddings.
 
 ### Notes
 
 - Do not use `curl` (PowerShell alias) — always use `curl.exe`.
 - Do not write JSON request bodies to temporary files with default PowerShell encoding to avoid UTF-8 BOM issues. Use inline `$body` variables as shown above.
 - If backend or frontend is not running, `curl.exe` will exit non-zero or return empty output. No fake success should be accepted.
+- Never commit the full plaintext API key, upstream provider keys, or `backend/data/` to git.
 
 ## Key Rotation and Revocation
 
@@ -219,6 +245,28 @@ curl.exe -s -X POST "$FrontendBaseUrl/api/admin/apps/<app-id>/api-keys" `
 ```
 
 Copy the full `key` field from the create response immediately — it will not be shown again. Never commit the plaintext key to source code or documentation.
+
+### After Demo - Revocation Checklist
+
+After a demo session completes, run these steps to revoke the demo key and clean up:
+
+1. **Revoke the demo API key** through Admin UI or API:
+   ```powershell
+   curl.exe -s -X POST "$FrontendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
+     -H "X-Admin-User-Id: 1"
+   ```
+2. **Verify the key is rejected** (boundary: `auth`):
+   ```powershell
+   curl.exe -s -X POST "$FrontendBaseUrl/v1/chat/completions" `
+     -H "Content-Type: application/json" `
+     -H "Authorization: Bearer <revoked-key>" `
+     -d '{"messages":[{"role":"user","content":"test"}]}'
+   ```
+   Expected: HTTP 401 with `{"error":{"code":"invalid_api_key"}}`.
+
+3. **Delete any local plaintext key copy-paste artifacts** from your terminal clipboard, scratch files, or notes. Do not save the full key to disk.
+
+4. **Remove uploaded knowledge files** from `backend/data/` if they contain proprietary content. The directory is git-ignored but not auto-cleaned.
 
 ## Automated Smoke Script (Optional)
 
