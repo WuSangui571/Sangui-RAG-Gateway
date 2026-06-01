@@ -1281,3 +1281,65 @@ Closed the demo credential rotation and acceptance cleanup task after manual run
 ### Next Steps
 
 - None - task complete
+
+
+## Session 23: Admin runbook endpoint contract cleanup
+
+**Date**: 2026-06-01
+**Task**: Admin runbook endpoint contract cleanup
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Task | Admin Runbook and README Endpoint Contract Cleanup |
+| Commit | 6b15a4d docs:??Admin???????? |
+| Main modules | README Admin API endpoint contract, PowerShell 5.1 formal runbook, request-log verification docs, API key lifecycle docs |
+| Updated files | README.md; Trellis task archived under .trellis/tasks/archive/2026-06/06-01-admin-runbook-readme-endpoint-contract-cleanup |
+| Outcome | Manual acceptance was completed by the user, the implementation was committed, and the active Trellis task was archived. |
+
+**Change Summary**
+- Added an Admin API Endpoint Reference documenting 17 admin endpoints with the temporary `X-Admin-User-Id` identity contract and `ApiResponse<T>` envelope.
+- Added PowerShell 5.1-safe formal Admin API setup commands using UTF-8 no-BOM temp files and `curl.exe --data-binary`.
+- Documented correct app default model config binding route: `PUT /api/admin/apps/{appId}/default-model-config` with `model_config_id`.
+- Documented default knowledge base binding, model config creation, API key create/disable/revoke, request-log list/detail, and hit-chunk summary verification.
+- Codex follow-up fixed minor README punctuation in newly added text to avoid console encoding artifacts.
+
+**Verification**
+- `git diff --check`: passed; only Git LF-to-CRLF working-copy warning was shown.
+- Stale route scan for `/api/admin/apps/{appId}/model-config`: no active README/code/spec hits.
+- Secret/evidence scan for long `sk-sangui-*`, `api_key_encrypted`, `key_hash`, `provider_response_body`, `stack_trace`: no real secret leakage; matches were forbidden-field documentation only.
+- `mvn -q -DskipTests compile`: passed after sandbox network restriction was resolved with approved elevated run.
+- `mvn -q "-Dtest=AppAdminControllerTest,ModelConfigAdminControllerTest,ApiKeyAdminControllerTest,ApiRequestLogAdminControllerTest" test`: passed within the 60-second backend unit-test timeout.
+- `cmd /c npm run typecheck`: passed.
+- `cmd /c npm run build`: passed with the existing Vite chunk-size warning only.
+- User manually tested and committed the result before record-session.
+
+**Boundaries**
+- No backend Java, frontend TypeScript, database migration, infrastructure, RAG runtime, auth, or smoke-script behavior was changed.
+- No automatic push was performed.
+- Specs were reviewed and did not need updates because this was README/runbook cleanup against existing executable contracts.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6b15a4d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
