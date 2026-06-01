@@ -1,0 +1,22 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project API key, gateway auth, demo acceptance, and PowerShell runbook contracts"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin revoke API and public invalid_api_key error shape"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "API key status, tenant ownership, request log, and local data boundaries"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe evidence fields and forbidden key/prompt/chunk logging"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required validation commands and backend boundary checklist"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Gateway public error normalization and request-log boundaries"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "API key, request-log, hit chunk, prompt, and secret safety boundaries"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Request-log hit_chunk_ids and retained demo KB evidence boundaries"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Prompt/context secrecy and no full prompt exposure in docs/scripts"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Uploaded demo document and local storage cleanup boundaries"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend API-key/request-log field contracts if UI docs are touched"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Admin API key revoke/disable and secret-safe workflow expectations"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer flow for auth, admin API, docs, storage, and request logs"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Reuse existing PowerShell Invoke-CurlCapture/body handling instead of duplicate patterns"}
+{"file": "README.md", "reason": "Existing manual acceptance, key rotation, cleanup, and curl examples to revise"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Existing PowerShell 5.1 curl/no-BOM helper pattern to reuse"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyService.java", "reason": "Existing revoke/idempotency/status behavior reference only"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminController.java", "reason": "Existing admin revoke endpoint reference only"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Existing invalid_api_key public auth boundary reference only"}

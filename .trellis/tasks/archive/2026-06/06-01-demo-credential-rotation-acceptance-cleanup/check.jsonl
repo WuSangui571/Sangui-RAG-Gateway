@@ -1,0 +1,21 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Check README/script changes against executable demo acceptance and secret-safety contracts"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Verify 401 invalid_api_key and admin revoke error matrix remain aligned"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Check no unsafe DB/schema assumptions or tenant-boundary regressions"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Check scripts/docs do not print secrets or unsafe evidence"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Check test selection and forbidden backend patterns"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Check no fake success, hidden fallback, or unsafe provider/body exposure"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Check cleanup/runbook keeps tenant and secret boundaries explicit"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Check no retrieval behavior or hit evidence regression"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Check docs/scripts avoid exposing augmented prompts or hidden rules"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Check local upload cleanup is explicit and not broad/destructive"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Check docs do not imply forbidden key/log fields"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Check admin workflow documentation stays operational and secret-safe"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Check command/API/payload/error matrix and acceptance coverage"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Check helper extraction avoids duplicated JSON body handling"}
+{"file": "README.md", "reason": "Check JSON POST/PUT examples and cleanup steps are PowerShell 5.1 safe"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Check script remains safe if changed"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyService.java", "reason": "Check backend behavior is not changed unless explicitly justified"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminController.java", "reason": "Check revoke response stays safe and tenant-scoped"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Check revoked key verification targets correct boundary"}

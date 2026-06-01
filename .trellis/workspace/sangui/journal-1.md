@@ -1228,3 +1228,56 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 22: Demo credential rotation acceptance cleanup
+
+**Date**: 2026-06-01
+**Task**: Demo credential rotation acceptance cleanup
+**Branch**: `main`
+
+### Summary
+
+Closed the demo credential rotation and acceptance cleanup task after manual runtime validation. The committed README update documents PowerShell 5.1-safe formal JSON acceptance commands using UTF-8 no-BOM temp files and `curl.exe --data-binary`, while keeping inline `-d` only for non-formal quick checks.
+
+### Main Changes
+
+| Area | Record |
+|------|--------|
+| Task | Demo credential rotation and acceptance data cleanup |
+| Commit | `843f09f` docs: fix demo credential rotation acceptance docs |
+| Main modules | README acceptance runbook, PowerShell 5.1 manual validation commands, Trellis task metadata |
+| Updated files | `README.md`; `.trellis/tasks/archive/2026-06/06-01-demo-credential-rotation-acceptance-cleanup/*` |
+| Result | Formal JSON POST examples now use UTF-8 no-BOM temp files plus `curl.exe --data-binary`, avoiding PowerShell 5.1 `curl.exe -d $variable` JSON encoding problems. Quick inline `-d` examples remain only as non-formal manual checks. |
+
+**Validation Commands and Results**:
+- `git diff --check`: passed, with only README LF/CRLF warning.
+- `rg -n 'curl\.exe.*-d\s+\$body|curl\.exe.*-d\s+\$createBody' README.md scripts`: no matches.
+- `rg -n 'sk-sangui-[A-Za-z0-9_-]{20,}' README.md scripts .trellis/tasks/06-01-demo-credential-rotation-acceptance-cleanup`: no matches.
+- PowerShell PSParser tokenize check for `scripts/demo-smoke.ps1`: passed.
+- Manual runtime validation: created fresh app/key/model config/KB, uploaded English test document, corrected the runtime bind endpoint to `/api/admin/apps/{appId}/default-model-config`, then non-streaming and streaming RAG chat passed. Streaming emitted SSE chunks and ended with `data:[DONE]`.
+
+**Boundaries and Risks**:
+- No backend/frontend business code, DB migration, infra, or `scripts/demo-smoke.ps1` changes were made.
+- `backend/data/uploads/**` was not deleted; ignored local upload artifacts should be retained or cleaned manually based on evidence needs.
+- Manual testing exposed provider keys and an app key in pasted terminal text. Treat those keys as leaked: revoke the Sangui app key and rotate provider keys at the provider side before updating model configs.
+- The README change scope was limited to credential-rotation acceptance command safety; app default model config binding runbook coverage remains a possible follow-up.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `843f09f` | (see git log) |
+
+### Testing
+
+- [OK] Static validation and manual runtime acceptance passed.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
