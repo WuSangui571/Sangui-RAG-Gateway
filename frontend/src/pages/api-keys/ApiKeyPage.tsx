@@ -13,7 +13,7 @@ import StatusTag from '../../components/domain/StatusTag'
 import ApiKeyOneTimeSecret from '../../components/domain/ApiKeyOneTimeSecret'
 
 export default function ApiKeyPage() {
-  const { adminUserId, selectedAppId, navigateTo } = useShell()
+  const { adminUserId, selectedAppId, setSelectedAppId, navigateTo } = useShell()
 
   const [apps, setApps] = useState<AppVO[]>([])
   const [activeAppId, setActiveAppId] = useState<number | null>(selectedAppId)
@@ -144,6 +144,7 @@ export default function ApiKeyPage() {
   }
 
   function handleGoToSmokeTest() {
+    setSelectedAppId(activeAppId)
     navigateTo('smoke')
   }
 
