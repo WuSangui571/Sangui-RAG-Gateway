@@ -1177,3 +1177,54 @@ Result: task acceptance criteria are met and the task was archived after code co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 21: RAG request-log acceptance automation and runbook
+
+**Date**: 2026-06-01
+**Task**: RAG request-log acceptance automation and runbook
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Module | Result |
+|--------|--------|
+| Demo smoke automation | Extended `scripts/demo-smoke.ps1` with optional `-AppId` and `-AdminUserId`, request-log list validation, hit-chunk safe evidence validation, and secret-safe output. |
+| Documentation | Updated `README.md` with PowerShell 5.1-compatible automated/manual request-log verification and revoked-key validation using UTF-8 no-BOM `--data-binary`. |
+| Project spec | Added executable demo acceptance automation rule to `.trellis/spec/sangui-rag-gateway.md` with required assertions, forbidden fields, tests, and Good/Base/Bad cases. |
+| Codex check fixes | Corrected request-log skip semantics in README, stopped printing full smoke message, and added numeric/field validation for hit chunk evidence. |
+| Validation | Passed PowerShell parser check, `git diff --check`, targeted backend tests `ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest`, targeted backend tests `GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest`, `cmd /c npm run typecheck`, and `cmd /c npm run build`. |
+| Manual acceptance | Human ran full local Docker acceptance: health/proxy passed, non-streaming chat returned RAG answer, streaming SSE returned `[DONE]`, request-log validation found latest success log with `deepseek-v4-pro`, `sanguicode`, latency, hit chunk id, and safe chunk metadata. |
+| Boundaries | No backend Java, frontend TS, DB migration, API contract, RAG retrieval, auth, or streaming behavior changes were made. Runtime JSON POST/PUT testing required UTF-8 no-BOM temp body via `--data-binary`; PowerShell 5.1 `curl.exe -d $body` corrupts JSON. |
+
+**Updated Files**:
+- `scripts/demo-smoke.ps1`
+- `README.md`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/tasks/archive/2026-06/06-01-rag-request-log-acceptance-automation-demo-runbook/`
+
+**Commit**:
+- `6566f42 chore:??RAG???????`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6566f42` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
