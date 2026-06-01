@@ -40,15 +40,20 @@ public class ModelConfigService {
     public ModelConfigEntity create(Long userId, String name, String providerName,
                                     String baseUrl, String chatModel,
                                     String embeddingModel, Integer embeddingDimension) {
-        validateEmbeddingConfig(embeddingModel, embeddingDimension);
+        String normalizedName = normalizeRequiredText(name);
+        String normalizedProviderName = normalizeRequiredText(providerName);
+        String normalizedBaseUrl = normalizeRequiredText(baseUrl);
+        String normalizedChatModel = normalizeRequiredText(chatModel);
+        String normalizedEmbeddingModel = normalizeOptionalText(embeddingModel);
+        validateEmbeddingConfig(normalizedEmbeddingModel, embeddingDimension);
 
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setUserId(userId);
-        entity.setName(name);
-        entity.setProviderName(providerName);
-        entity.setBaseUrl(baseUrl);
-        entity.setChatModel(chatModel);
-        entity.setEmbeddingModel(embeddingModel);
+        entity.setName(normalizedName);
+        entity.setProviderName(normalizedProviderName);
+        entity.setBaseUrl(normalizedBaseUrl);
+        entity.setChatModel(normalizedChatModel);
+        entity.setEmbeddingModel(normalizedEmbeddingModel);
         entity.setEmbeddingDimension(embeddingDimension);
         entity.setStatus(ModelConfigStatus.ENABLED.name());
         entity.setCreatedAt(LocalDateTime.now());
@@ -59,21 +64,26 @@ public class ModelConfigService {
 
     @Transactional
     public ModelConfigVO createAdminConfig(Long userId, CreateModelConfigDTO dto) {
-        validateRequiredFields(dto.getName(), dto.getProviderName(), dto.getBaseUrl(), dto.getChatModel(), dto.getApiKey());
-        validateEmbeddingConfig(dto.getEmbeddingModel(), dto.getEmbeddingDimension());
+        String normalizedName = normalizeRequiredText(dto.getName());
+        String normalizedProviderName = normalizeRequiredText(dto.getProviderName());
+        String normalizedBaseUrl = normalizeRequiredText(dto.getBaseUrl());
+        String normalizedChatModel = normalizeRequiredText(dto.getChatModel());
+        String normalizedEmbeddingModel = normalizeOptionalText(dto.getEmbeddingModel());
+        validateRequiredFields(normalizedName, normalizedProviderName, normalizedBaseUrl, normalizedChatModel, dto.getApiKey());
+        validateEmbeddingConfig(normalizedEmbeddingModel, dto.getEmbeddingDimension());
 
         String encrypted = encryptor.encrypt(dto.getApiKey());
         String masked = masker.mask(dto.getApiKey());
 
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setUserId(userId);
-        entity.setName(dto.getName());
-        entity.setProviderName(dto.getProviderName());
-        entity.setBaseUrl(dto.getBaseUrl());
+        entity.setName(normalizedName);
+        entity.setProviderName(normalizedProviderName);
+        entity.setBaseUrl(normalizedBaseUrl);
         entity.setApiKeyEncrypted(encrypted);
         entity.setApiKeyMasked(masked);
-        entity.setChatModel(dto.getChatModel());
-        entity.setEmbeddingModel(dto.getEmbeddingModel());
+        entity.setChatModel(normalizedChatModel);
+        entity.setEmbeddingModel(normalizedEmbeddingModel);
         entity.setEmbeddingDimension(dto.getEmbeddingDimension());
         entity.setStatus(ModelConfigStatus.ENABLED.name());
         entity.setCreatedAt(LocalDateTime.now());
@@ -87,16 +97,16 @@ public class ModelConfigService {
         ModelConfigEntity entity = findByIdAndUserId(id, userId);
 
         if (hasText(dto.getName())) {
-            entity.setName(dto.getName());
+            entity.setName(normalizeRequiredText(dto.getName()));
         }
         if (hasText(dto.getProviderName())) {
-            entity.setProviderName(dto.getProviderName());
+            entity.setProviderName(normalizeRequiredText(dto.getProviderName()));
         }
         if (hasText(dto.getBaseUrl())) {
-            entity.setBaseUrl(dto.getBaseUrl());
+            entity.setBaseUrl(normalizeRequiredText(dto.getBaseUrl()));
         }
         if (hasText(dto.getChatModel())) {
-            entity.setChatModel(dto.getChatModel());
+            entity.setChatModel(normalizeRequiredText(dto.getChatModel()));
         }
 
         if (dto.getApiKey() != null) {
@@ -109,9 +119,10 @@ public class ModelConfigService {
             entity.setApiKeyMasked(masked);
         }
 
-        validateEmbeddingConfig(dto.getEmbeddingModel(), dto.getEmbeddingDimension());
+        String normalizedEmbeddingModel = normalizeOptionalText(dto.getEmbeddingModel());
+        validateEmbeddingConfig(normalizedEmbeddingModel, dto.getEmbeddingDimension());
         if (dto.getEmbeddingModel() != null) {
-            entity.setEmbeddingModel(dto.getEmbeddingModel());
+            entity.setEmbeddingModel(normalizedEmbeddingModel);
             entity.setEmbeddingDimension(dto.getEmbeddingDimension());
         }
 
@@ -169,7 +180,8 @@ public class ModelConfigService {
     }
 
     public ModelConfigEntity findEnabledEmbeddingConfig(Long userId, String embeddingModel, Integer embeddingDimension) {
-        if (embeddingModel == null || embeddingModel.isBlank()) {
+        String normalizedEmbeddingModel = normalizeOptionalText(embeddingModel);
+        if (normalizedEmbeddingModel == null) {
             return null;
         }
         if (embeddingDimension == null || embeddingDimension <= 0) {
@@ -177,7 +189,7 @@ public class ModelConfigService {
         }
         LambdaQueryWrapper<ModelConfigEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ModelConfigEntity::getUserId, userId)
-                .eq(ModelConfigEntity::getEmbeddingModel, embeddingModel)
+                .eq(ModelConfigEntity::getEmbeddingModel, normalizedEmbeddingModel)
                 .eq(ModelConfigEntity::getEmbeddingDimension, embeddingDimension)
                 .eq(ModelConfigEntity::getStatus, ModelConfigStatus.ENABLED.name())
                 .orderByDesc(ModelConfigEntity::getUpdatedAt)
@@ -220,6 +232,9 @@ public class ModelConfigService {
         if (embeddingDimension != null && embeddingDimension <= 0) {
             throw new IllegalArgumentException("embeddingDimension must be positive when provided");
         }
+        if (!hasText(embeddingModel) && embeddingDimension != null) {
+            throw new IllegalArgumentException("embeddingModel is required when embeddingDimension is provided");
+        }
         if (hasText(embeddingModel) && embeddingDimension == null) {
             throw new IllegalArgumentException("embeddingDimension is required when embeddingModel is provided");
         }
@@ -227,5 +242,17 @@ public class ModelConfigService {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private String normalizeRequiredText(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private String normalizeOptionalText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

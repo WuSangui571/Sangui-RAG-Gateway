@@ -92,6 +92,27 @@ class ModelConfigServiceTest {
     }
 
     @Test
+    void shouldTrimTextFieldsOnCreation() {
+        modelConfigService.create(
+                100L,
+                " test-config ",
+                " openai ",
+                " https://api.openai.com/v1 ",
+                " gpt-4o-mini ",
+                " text-embedding-3-small ",
+                1536
+        );
+
+        verify(modelConfigMapper).insert(entityCaptor.capture());
+        ModelConfigEntity persisted = entityCaptor.getValue();
+        assertThat(persisted.getName()).isEqualTo("test-config");
+        assertThat(persisted.getProviderName()).isEqualTo("openai");
+        assertThat(persisted.getBaseUrl()).isEqualTo("https://api.openai.com/v1");
+        assertThat(persisted.getChatModel()).isEqualTo("gpt-4o-mini");
+        assertThat(persisted.getEmbeddingModel()).isEqualTo("text-embedding-3-small");
+    }
+
+    @Test
     void shouldRejectNonPositiveEmbeddingDimension() {
         assertThatThrownBy(() -> modelConfigService.create(
                 100L,
@@ -117,6 +138,20 @@ class ModelConfigServiceTest {
                 null
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("embeddingDimension is required");
+    }
+
+    @Test
+    void shouldRejectEmbeddingDimensionWithoutModel() {
+        assertThatThrownBy(() -> modelConfigService.create(
+                100L,
+                "test-config",
+                "openai",
+                "https://api.openai.com/v1",
+                "gpt-4o-mini",
+                " ",
+                1536
+        )).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("embeddingModel is required");
     }
 
     @Test
@@ -219,6 +254,32 @@ class ModelConfigServiceTest {
     }
 
     @Test
+    void shouldTrimTextFieldsOnAdminCreate() {
+        when(encryptor.encrypt("sk-upstream-secret")).thenReturn("v1:iv:ciphertext");
+        when(masker.mask("sk-upstream-secret")).thenReturn("sk-...cret");
+
+        CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setName(" Text Embedding ");
+        dto.setProviderName(" openai-compatible ");
+        dto.setBaseUrl(" https://dashscope.aliyuncs.com/compatible-mode/v1 ");
+        dto.setApiKey("sk-upstream-secret");
+        dto.setChatModel(" unused-for-embedding ");
+        dto.setEmbeddingModel(" text-embedding-v4 ");
+        dto.setEmbeddingDimension(1024);
+
+        modelConfigService.createAdminConfig(100L, dto);
+
+        verify(modelConfigMapper).insert(entityCaptor.capture());
+        ModelConfigEntity persisted = entityCaptor.getValue();
+        assertThat(persisted.getName()).isEqualTo("Text Embedding");
+        assertThat(persisted.getProviderName()).isEqualTo("openai-compatible");
+        assertThat(persisted.getBaseUrl()).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
+        assertThat(persisted.getChatModel()).isEqualTo("unused-for-embedding");
+        assertThat(persisted.getEmbeddingModel()).isEqualTo("text-embedding-v4");
+        assertThat(persisted.getEmbeddingDimension()).isEqualTo(1024);
+    }
+
+    @Test
     void shouldRejectCreateAdminConfigWithoutRequiredFields() {
         CreateModelConfigDTO dto = new CreateModelConfigDTO();
         dto.setName("");
@@ -271,6 +332,23 @@ class ModelConfigServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("embeddingDimension is required");
     }
+
+    @Test
+    void shouldRejectCreateAdminConfigWithEmbeddingDimensionWithoutModel() {
+        CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setName("Config");
+        dto.setProviderName("openai");
+        dto.setBaseUrl("https://api.openai.com/v1");
+        dto.setApiKey("sk-secret");
+        dto.setChatModel("gpt-4o-mini");
+        dto.setEmbeddingModel(" ");
+        dto.setEmbeddingDimension(1536);
+
+        assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("embeddingModel is required");
+    }
+
 
     @Test
     void shouldUpdateWithoutApiKeyPreserveExistingEncryptedKey() {
@@ -330,6 +408,43 @@ class ModelConfigServiceTest {
         ModelConfigEntity updated = entityCaptor.getValue();
         assertThat(updated.getApiKeyEncrypted()).isEqualTo("v1:new:encrypted");
         assertThat(updated.getApiKeyMasked()).isEqualTo("sk-***new");
+    }
+
+    @Test
+    void shouldTrimTextFieldsOnAdminUpdate() {
+        ModelConfigEntity existing = new ModelConfigEntity();
+        existing.setId(10L);
+        existing.setUserId(100L);
+        existing.setName("Old Name");
+        existing.setProviderName("openai");
+        existing.setBaseUrl("https://api.openai.com/v1");
+        existing.setChatModel("gpt-4o-mini");
+        existing.setApiKeyEncrypted("v1:old:encrypted");
+        existing.setApiKeyMasked("sk-***old");
+        existing.setStatus("ENABLED");
+        existing.setCreatedAt(LocalDateTime.now());
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        when(modelConfigMapper.selectOne(any())).thenReturn(existing);
+
+        UpdateModelConfigDTO dto = new UpdateModelConfigDTO();
+        dto.setName(" New Name ");
+        dto.setProviderName(" openai-compatible ");
+        dto.setBaseUrl(" https://dashscope.aliyuncs.com/compatible-mode/v1 ");
+        dto.setChatModel(" unused-for-embedding ");
+        dto.setEmbeddingModel(" text-embedding-v4 ");
+        dto.setEmbeddingDimension(1024);
+
+        modelConfigService.updateAdminConfig(10L, 100L, dto);
+
+        verify(modelConfigMapper).updateById(entityCaptor.capture());
+        ModelConfigEntity updated = entityCaptor.getValue();
+        assertThat(updated.getName()).isEqualTo("New Name");
+        assertThat(updated.getProviderName()).isEqualTo("openai-compatible");
+        assertThat(updated.getBaseUrl()).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
+        assertThat(updated.getChatModel()).isEqualTo("unused-for-embedding");
+        assertThat(updated.getEmbeddingModel()).isEqualTo("text-embedding-v4");
+        assertThat(updated.getEmbeddingDimension()).isEqualTo(1024);
     }
 
     @Test
@@ -435,6 +550,23 @@ class ModelConfigServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(result.getEmbeddingDimension()).isEqualTo(1536);
+        verify(modelConfigMapper).selectList(wrapperCaptor.capture());
+    }
+
+    @Test
+    void shouldTrimEmbeddingModelForEnabledEmbeddingLookup() {
+        ModelConfigEntity entity = new ModelConfigEntity();
+        entity.setId(10L);
+        entity.setUserId(100L);
+        entity.setEmbeddingModel("text-embedding-v4");
+        entity.setEmbeddingDimension(1024);
+        entity.setStatus("ENABLED");
+        when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(entity));
+
+        ModelConfigEntity result = modelConfigService.findEnabledEmbeddingConfig(
+                100L, " text-embedding-v4 ", 1024);
+
+        assertThat(result).isSameAs(entity);
         verify(modelConfigMapper).selectList(wrapperCaptor.capture());
     }
 
