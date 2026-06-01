@@ -23,6 +23,11 @@ Then read the relevant backend guideline files:
 | [Error Handling](./error-handling.md) | OpenAI-compatible errors and internal exception rules | Active |
 | [Logging Guidelines](./logging-guidelines.md) | Safe structured logging and request observability | Active |
 | [Quality Guidelines](./quality-guidelines.md) | Testing, security, RAG pipeline, streaming, and code review standards | Active |
+| [RAG Retrieval Quality](../rag/retrieval-quality.md) | Retrieval boundaries, no-hit behavior, hit chunk logging, and recall roadmap | Active |
+| [RAG Prompt Context Policy](../rag/prompt-context-policy.md) | Prompt augmentation, context budgets, no-fabrication rules, and structured-output boundaries | Active |
+| [RAG Document Ingestion](../rag/document-ingestion.md) | Chunking, parser limits, document status, and large-ingestion boundaries | Active |
+| [Gateway Resilience](../gateway/resilience.md) | Upstream timeout, error normalization, safe logging, and fallback roadmap | Active |
+| [RAG Security](../security/rag-security.md) | Tenant isolation, safe evidence exposure, prompt/context secrecy, and request-log limits | Active |
 
 ## Pre-Development Checklist
 
@@ -33,6 +38,11 @@ Then read the relevant backend guideline files:
 - [ ] Read [Error Handling](./error-handling.md) before adding public API errors or upstream error mapping.
 - [ ] Read [Logging Guidelines](./logging-guidelines.md) before logging request, prompt, key, provider, or document data.
 - [ ] Read [Quality Guidelines](./quality-guidelines.md) before declaring work complete.
+- [ ] Read [RAG Retrieval Quality](../rag/retrieval-quality.md) before changing retrieval SQL, thresholds, topK, no-hit policy, or hit chunk logging.
+- [ ] Read [RAG Prompt Context Policy](../rag/prompt-context-policy.md) before changing prompt augmentation, context assembly, or structured-output behavior.
+- [ ] Read [RAG Document Ingestion](../rag/document-ingestion.md) before changing parsing, chunking, embedding, document status, or large-document handling.
+- [ ] Read [Gateway Resilience](../gateway/resilience.md) before changing upstream calls, timeouts, streaming failure behavior, retries, or fallback behavior.
+- [ ] Read [RAG Security](../security/rag-security.md) before exposing context, chunks, logs, prompts, document content, or tenant-scoped data.
 - [ ] For cross-layer changes, read [Cross-Layer Thinking Guide](../guides/cross-layer-thinking-guide.md).
 
 ## Backend Stack Target

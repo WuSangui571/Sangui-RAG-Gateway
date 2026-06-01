@@ -9,6 +9,11 @@
 | [Project Specification](../sangui-rag-gateway.md) | Product boundary, architecture, API scope, RAG/security rules, roadmap | Always before new backend/frontend feature work |
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When repeated patterns or shared helpers appear |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning API, service, DB, frontend, deployment, or RAG pipeline |
+| [RAG Retrieval Quality](../rag/retrieval-quality.md) | Retrieval contracts, no-hit behavior, recall limits, and future retrieval strategy boundaries | Before retrieval or request-log hit chunk changes |
+| [RAG Prompt Context Policy](../rag/prompt-context-policy.md) | Prompt augmentation, context budgets, no-fabrication rules, and structured-output boundaries | Before prompt or context changes |
+| [RAG Document Ingestion](../rag/document-ingestion.md) | Chunking, parser limits, document status, and async ingestion boundaries | Before ingestion, parser, chunking, or embedding changes |
+| [Gateway Resilience](../gateway/resilience.md) | Upstream timeout, error normalization, safe logging, and fallback roadmap | Before upstream call, streaming, retry, or fallback changes |
+| [RAG Security](../security/rag-security.md) | Tenant boundaries, prompt secrecy, safe evidence exposure, and request-log limits | Before RAG security or observability changes |
 
 ## Sangui-RAG-Gateway Thinking Triggers
 
@@ -24,6 +29,8 @@ Read the project specification and cross-layer guide when a task touches any of:
 - Database schema or pgvector queries.
 - Request logs, metrics, or sensitive data handling.
 - Frontend workflows that reveal secrets or display processing status.
+
+When a trigger matches, read the matching detailed spec in `rag/`, `gateway/`, or `security/` in addition to this thinking guide. Those files define executable contracts and validation matrices; this guide only defines what to think about.
 
 ## Product Boundary Questions
 
