@@ -1,0 +1,18 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Check README endpoint cleanup against project-level implemented Admin API and acceptance rules."}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Verify documented commands preserve the implemented Admin API response and error contract."}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Check README examples do not print keys, full prompts, chunk content, provider bodies, or stack traces."}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Confirm any doc/spec changes stay aligned with frontend API client payload fields."}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Check docs do not imply cross-user binding or unsafe tenant behavior."}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Check final validation coverage and security/API compatibility before handoff completion."}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Check API/DTO/docs/test alignment and no missed stale route references."}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Check README examples omit forbidden secrets and private context fields."}
+{"file": "README.md", "reason": "Review final runbook commands for stale endpoints, unsafe JSON submission, and secret exposure."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "Check documented app endpoint paths and payload fields against controller annotations."}
+{"file": "frontend\\src\\api\\apps.ts", "reason": "Check docs remain aligned with frontend client paths and DTO payload names."}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Check README smoke/runbook text does not diverge from current script contract."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminController.java", "reason": "Check model config runbook routes against controller annotations."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminController.java", "reason": "Check API key lifecycle docs against implemented disable/revoke routes."}
+{"file": "frontend\\src\\types\\app.ts", "reason": "Check README payload field names against frontend type contract."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminController.java", "reason": "Check request-log runbook commands against controller route annotations."}

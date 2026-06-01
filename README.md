@@ -119,6 +119,141 @@ After starting the full stack, configure the gateway through the admin console f
 
 6. **Verify**: check the Request Logs page under the app. The log should show status `success`, resolved model/provider, latency, token usage, question summary, and hit chunk IDs.
 
+## Admin API Endpoint Reference
+
+All admin APIs require the temporary identity header `X-Admin-User-Id: <positive-long>` and return the `ApiResponse<T>` envelope (`code`, `message`, `data`).
+
+| Operation | Method | Route |
+|---|---|---|
+| Create app | `POST` | `/api/admin/apps` |
+| List apps | `GET` | `/api/admin/apps` |
+| Get app detail | `GET` | `/api/admin/apps/{id}` |
+| Create model config | `POST` | `/api/admin/model-configs` |
+| Update model config | `PUT` | `/api/admin/model-configs/{id}` |
+| Get model config detail | `GET` | `/api/admin/model-configs/{id}` |
+| List model configs | `GET` | `/api/admin/model-configs` |
+| Disable model config | `POST` | `/api/admin/model-configs/{id}/disable` |
+| Bind app default model config | `PUT` | `/api/admin/apps/{appId}/default-model-config` |
+| Bind app default knowledge base | `PUT` | `/api/admin/apps/{appId}/knowledge-base` |
+| Create API key | `POST` | `/api/admin/apps/{appId}/api-keys` |
+| List API keys | `GET` | `/api/admin/apps/{appId}/api-keys` |
+| Disable API key | `POST` | `/api/admin/api-keys/{id}/disable` |
+| Revoke API key | `POST` | `/api/admin/api-keys/{id}/revoke` |
+| List request logs | `GET` | `/api/admin/apps/{appId}/request-logs` |
+| Get request log detail | `GET` | `/api/admin/apps/{appId}/request-logs/{requestId}` |
+| Get hit chunk summaries | `GET` | `/api/admin/apps/{appId}/request-logs/{requestId}/hit-chunks` |
+
+## Admin API Setup Runbook (Formal Commands)
+
+These commands set up the gateway through the Admin API from PowerShell 5.1. All formal commands use UTF-8 no-BOM temp files and `curl.exe --data-binary` to avoid PowerShell 5.1 encoding issues. Set common variables first:
+
+```powershell
+$BackendBaseUrl = "http://localhost:8080"
+$AdminUserId = "1"
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+```
+
+### Create a model config
+
+```powershell
+$modelConfigBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($modelConfigBodyPath, '{"name":"demo-chat","provider_name":"openai-compatible","base_url":"https://example.com/v1","api_key":"<upstream-provider-key>","chat_model":"deepseek-v4-pro","embedding_model":"text-embedding-v4","embedding_dimension":1024,"status":"ENABLED"}', $utf8)
+curl.exe -s -X POST "$BackendBaseUrl/api/admin/model-configs" `
+  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Content-Type: application/json" `
+  --data-binary "@$modelConfigBodyPath"
+Remove-Item -LiteralPath $modelConfigBodyPath -Force
+```
+
+Expected: `code=OK`, `data` contains `id`, `name`, `api_key_masked` (masked, never plaintext or encrypted). Replace `<upstream-provider-key>` with the actual provider key; it is encrypted at rest and never returned in responses.
+
+### Bind app default model config
+
+```powershell
+$bindModelBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($bindModelBodyPath, '{"model_config_id":<model-config-id>}', $utf8)
+curl.exe -s -X PUT "$BackendBaseUrl/api/admin/apps/<app-id>/default-model-config" `
+  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Content-Type: application/json" `
+  --data-binary "@$bindModelBodyPath"
+Remove-Item -LiteralPath $bindModelBodyPath -Force
+```
+
+Expected: `code=OK`, `data` contains `app_id`, `user_id`, `default_model_config_id`. The model config must belong to the same user and be `ENABLED`.
+
+### Bind app default knowledge base
+
+```powershell
+$bindKbBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($bindKbBodyPath, '{"knowledge_base_id":<kb-id>}', $utf8)
+curl.exe -s -X PUT "$BackendBaseUrl/api/admin/apps/<app-id>/knowledge-base" `
+  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Content-Type: application/json" `
+  --data-binary "@$bindKbBodyPath"
+Remove-Item -LiteralPath $bindKbBodyPath -Force
+```
+
+Expected: `code=OK`, `data` contains `app_id`, `user_id`, `default_knowledge_base_id`. The knowledge base must belong to the same user and have status `READY`.
+
+### Create an API key
+
+```powershell
+$createKeyBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($createKeyBodyPath, '{"name":"demo-acceptance-YYYYMMDD","expires_at":null}', $utf8)
+curl.exe -s -X POST "$BackendBaseUrl/api/admin/apps/<app-id>/api-keys" `
+  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Content-Type: application/json" `
+  --data-binary "@$createKeyBodyPath"
+Remove-Item -LiteralPath $createKeyBodyPath -Force
+```
+
+Expected: `code=OK`, `data` contains `key` (full plaintext, shown **only once**), `key_prefix`, `id`, `app_id`, `status=ACTIVE`. Copy the `key` immediately; it will never be returned again. Never commit the plaintext key.
+
+### Disable an API key
+
+```powershell
+curl.exe -s -X POST "$BackendBaseUrl/api/admin/api-keys/<key-id>/disable" `
+  -H "X-Admin-User-Id: $AdminUserId"
+```
+
+Expected: `code=OK`, `data` contains `status=DISABLED`. The response does not include `key` or `key_hash`. After disabling, the key must fail public `/v1/*` calls with `401 invalid_api_key`.
+
+### Revoke an API key
+
+```powershell
+curl.exe -s -X POST "$BackendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
+  -H "X-Admin-User-Id: $AdminUserId"
+```
+
+Expected: `code=OK`, `data` contains `status=REVOKED` and `revoked_at`. The response does not include `key` or `key_hash`. After revocation, the key must fail public `/v1/*` calls with `401 invalid_api_key`.
+
+### Request log list
+
+```powershell
+curl.exe -s "$BackendBaseUrl/api/admin/apps/<app-id>/request-logs?page=1&page_size=5&status=success" `
+  -H "X-Admin-User-Id: $AdminUserId"
+```
+
+Expected: `code=OK`, `data.items` contains request logs with safe fields: `request_id`, `model`, `provider_name`, `status`, `error_code`, `latency_ms`, `question_summary`, `hit_chunk_ids`.
+
+### Request log detail
+
+```powershell
+curl.exe -s "$BackendBaseUrl/api/admin/apps/<app-id>/request-logs/<request-id>" `
+  -H "X-Admin-User-Id: $AdminUserId"
+```
+
+Expected: `code=OK`, `data` contains the full log detail with `user_id`, `updated_at`, and all list fields.
+
+### Hit chunk summaries
+
+```powershell
+curl.exe -s "$BackendBaseUrl/api/admin/apps/<app-id>/request-logs/<request-id>/hit-chunks" `
+  -H "X-Admin-User-Id: $AdminUserId"
+```
+
+Expected: `code=OK`, `data` contains chunk summaries with `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`, `summary` (bounded to 200 characters). Full chunk content, embeddings, and provider bodies are never returned.
+
 ## Demo Acceptance Flow (PowerShell 5.1)
 
 After completing the admin setup above, run these steps from Windows PowerShell 5.1 to validate the full acceptance flow. All commands use `curl.exe` (Windows system curl), not the PowerShell `curl` alias which maps to `Invoke-WebRequest`.
@@ -257,6 +392,15 @@ curl.exe -s "$FrontendBaseUrl/api/admin/apps/<app-id>/request-logs?page=1&page_s
 
 Expected: JSON response with `code=OK`, `data.items` containing the latest success log with the fields listed above.
 
+To query a specific request log detail:
+
+```powershell
+curl.exe -s "$FrontendBaseUrl/api/admin/apps/<app-id>/request-logs/<request-id>" `
+  -H "X-Admin-User-Id: <admin-user-id>"
+```
+
+Expected: `code=OK`, `data` contains the full detail including `user_id`, `updated_at`, and all list fields. No full prompts, messages, API keys, or provider bodies are returned.
+
 To query hit-chunk summaries:
 
 ```powershell
@@ -272,7 +416,7 @@ Open the admin console Request Logs page for the app. After a successful non-str
 
 ### Notes
 
-- Do not use `curl` (PowerShell alias) — always use `curl.exe`.
+- Do not use `curl` (PowerShell alias); always use `curl.exe`.
 - For **formal acceptance and regression tests**, write JSON request bodies to temp files using `New-Object System.Text.UTF8Encoding($false)` and submit with `curl.exe --data-binary "@<path>"`. This avoids PowerShell 5.1 `curl.exe -d $variable` encoding corruptions. Quick one-liners using literal inline `-d '{"key":"value"}'` (single-quoted JSON, not variable-based) are acceptable only for non-formal manual checks.
 - If backend or frontend is not running, `curl.exe` will exit non-zero or return empty output. No fake success should be accepted.
 - Never commit the full plaintext API key, upstream provider keys, or `backend/data/` to git.
@@ -292,6 +436,20 @@ curl.exe -s -X POST "$FrontendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
 ```
 
 After revocation, the key must fail public `/v1/*` calls with HTTP 401 `invalid_api_key`.
+
+### Disable an API key
+
+```
+POST /api/admin/api-keys/{id}/disable
+X-Admin-User-Id: <your-user-id>
+```
+
+```powershell
+curl.exe -s -X POST "$FrontendBaseUrl/api/admin/api-keys/<key-id>/disable" `
+  -H "X-Admin-User-Id: 1"
+```
+
+Expected: `code=OK`, `data` contains `status=DISABLED`. The response does not include `key` or `key_hash`. After disabling, the key must fail public `/v1/*` calls with `401 invalid_api_key`. Disabling an already-disabled key is idempotent. Disabling a revoked key returns `400 INVALID_REQUEST`.
 
 ### Create a fresh API key
 
@@ -313,7 +471,7 @@ curl.exe -s -X POST "$FrontendBaseUrl/api/admin/apps/<app-id>/api-keys" `
 Remove-Item -LiteralPath $createBodyPath -Force
 ```
 
-Copy the full `key` field from the create response immediately — it will not be shown again. Never commit the plaintext key to source code or documentation.
+Copy the full `key` field from the create response immediately; it will not be shown again. Never commit the plaintext key to source code or documentation.
 
 ### After Demo - Revocation Checklist
 

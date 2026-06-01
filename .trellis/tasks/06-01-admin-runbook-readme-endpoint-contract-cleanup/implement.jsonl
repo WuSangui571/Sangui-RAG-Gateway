@@ -1,0 +1,19 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project source of truth for Admin API endpoints, README acceptance rules, request-log contract, and API key safety."}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin API envelope, HTTP status, and error-code matrix for app/model config/API key/request-log endpoints."}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend route/type alignment for App binding DTO/VO and request-log VO fields."}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe request-log evidence fields and forbidden sensitive fields for README examples."}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Tenant ownership and app/model/KB/request-log persistence contracts behind documented Admin commands."}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Validation order and backend test expectations if route contract code/tests are touched."}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer route/payload/docs/frontend/test consistency checklist."}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret and safe-evidence boundaries for request-log/hit-chunk examples."}
+{"file": "README.md", "reason": "Primary file expected to receive runbook endpoint cleanup and formal/quick command distinction."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "Actual app Admin API route source for default model config, KB binding, and app API key create/list."}
+{"file": "frontend\\src\\api\\apps.ts", "reason": "Frontend typed client evidence for app default model and KB binding route paths."}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Existing smoke script behavior for request-log validation and safe output boundaries."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminController.java", "reason": "Actual model config Admin API route source for README model config commands."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminController.java", "reason": "Actual API key disable/revoke Admin API route source."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminController.java", "reason": "Actual request-log Admin API route source for list/detail/hit-chunk commands."}
+{"file": "frontend\\src\\types\\app.ts", "reason": "Frontend DTO/VO field names for model config and KB binding examples."}
