@@ -1466,3 +1466,93 @@ Manual acceptance notes:
 ### Next Steps
 
 - None - task complete
+
+
+## Session 26: Admin status lifecycle actions
+
+**Date**: 2026-06-02
+**Task**: Admin status lifecycle actions
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## Summary
+
+Completed and accepted the Admin status lifecycle actions task. Commit `6680526` implements App disable/enable and Model Config enable lifecycle operations across backend Admin APIs, frontend typed clients/pages, tests, and README runbook documentation.
+
+## Commit
+
+- `6680526 feat: admin status lifecycle actions`
+
+## Main Modules
+
+| Module | Result |
+|---|---|
+| Backend App Admin API | Added `POST /api/admin/apps/{id}/disable` and `POST /api/admin/apps/{id}/enable` with same-user ownership checks and idempotent status updates. |
+| Backend Model Config Admin API | Added `POST /api/admin/model-configs/{id}/enable`; enable preserves encrypted upstream key and rejects configs without a stored upstream key. |
+| Gateway behavior | Existing auth/readiness boundaries remain the source of truth: disabled App returns public `401 invalid_api_key`; disabled default Model Config returns `409 model_config_not_ready`. |
+| Frontend Admin Console | Added App disable confirmation, App enable action, Model Config disable confirmation, and Model Config enable action with server-state refresh. |
+| Documentation | README documents App / Model Config / API Key disable impact and Model Config preserve-key boundary. |
+
+## Updated Files
+
+- `README.md`
+- `backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java`
+- `backend/src/main/java/com/sangui/raggateway/app/AppService.java`
+- `backend/src/main/java/com/sangui/raggateway/model/ModelConfigAdminController.java`
+- `backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java`
+- `backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java`
+- `backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/model/ModelConfigAdminControllerTest.java`
+- `backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java`
+- `frontend/src/api/apps.ts`
+- `frontend/src/api/model-configs.ts`
+- `frontend/src/pages/apps/AppConfigPage.tsx`
+- `frontend/src/pages/model-configs/ModelConfigPage.tsx`
+
+## Automated Verification
+
+| Command | Result |
+|---|---|
+| `mvn -q "-Dtest=AppAdminControllerTest,AppServiceTest,GatewayAuthFilterTest" test` from `backend/` | Passed |
+| `mvn -q "-Dtest=ModelConfigAdminControllerTest,ModelConfigServiceTest,OpenAiModelsControllerTest,ChatCompletionGatewayServiceTest" test` from `backend/` | Passed |
+| `cmd /c npm run typecheck` from `frontend/` | Passed |
+| `cmd /c npm run build` from `frontend/` | Passed; Vite large chunk warning only |
+| `git diff --check` | Passed; only LF/CRLF warnings |
+| `mvn test` from `backend/` | Passed: 435 tests, 0 failures, 0 errors |
+
+## Manual Acceptance Evidence
+
+- Disabled App API key smoke returned HTTP `401`, error code `invalid_api_key`, message `Invalid API key.`
+- Re-enabled App restored successful chat completion with model `deepseek-v4-pro` and RAG-grounded response.
+- Disabled bound Model Config returned HTTP `409`, error code `model_config_not_ready`, message `Default model config is not configured for this app.`
+- Re-enabled Model Config restored successful chat completion with model `deepseek-v4-pro` and RAG-grounded response.
+- App API key list appeared unchanged after App disable/enable.
+- App disable and Model Config disable copy, error display, and list refresh behavior matched expectations.
+
+## Result And Boundaries
+
+The task is complete and archived. No database migration, API key storage change, upstream key rotation, RAG retrieval change, prompt construction change, request log schema change, infra change, or smoke script change was introduced. Model Config upstream API-key editing remains an existing page limitation for future work rather than a blocker for this lifecycle task.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6680526` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -1,0 +1,23 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-02-model-config-edit-key-rotation-ux\\prd.md", "reason": "task PRD with payload, secret UX, acceptance criteria, and test plan"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "project source of truth for ModelConfig admin API and upstream key contract"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "frontend page/API/type organization for Model Config workflow"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "admin form/modal and secret field UX rules"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "local state and secret clearing rules"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "UpdateModelConfigDTO and secret type boundaries"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "frontend validation, secret safety, and build expectations"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "admin ApiResponse error matrix and secret-safe errors"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "no upstream key logging or response exposure"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "backend model config test and review requirements"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "upstream key and sensitive response boundary"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "frontend form to backend DTO to encrypted persistence flow"}
+{"file": "frontend\\src\\pages\\model-configs\\ModelConfigPage.tsx", "reason": "current page has create/list/enable/disable but no edit action"}
+{"file": "frontend\\src\\api\\model-configs.ts", "reason": "typed updateModelConfig API client already exists"}
+{"file": "frontend\\src\\types\\model-config.ts", "reason": "ModelConfigVO/CreateModelConfigDTO/UpdateModelConfigDTO frontend types"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\dto\\UpdateModelConfigDTO.java", "reason": "backend update payload supports optional api_key"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigService.java", "reason": "existing preserve-key, rotate-key, blank-key validation behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminController.java", "reason": "PUT endpoint and ownership/error boundary"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigServiceTest.java", "reason": "existing preserve/rotate/blank update tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminControllerTest.java", "reason": "controller ownership and safe response tests"}
