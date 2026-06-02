@@ -508,10 +508,56 @@ After completing the admin setup and running the smoke flow, verify that each it
 | 4 | KB status `READY` | App has bound knowledge base with status `READY` | `retrieval` |
 | 5 | Non-streaming chat success | HTTP 200, `choices[0].message.content` present | `upstream` |
 | 6 | Streaming SSE success | `data:` chunks received, `data: [DONE]` present | `upstream` |
-| 7 | Request-log list/detail | `status=success`, non-blank `model`/`provider_name`, numeric `latency_ms`, non-empty `hit_chunk_ids` | `request-log` |
+| 7 | Request-log list/detail | `status=success`, non-blank `model`/`provider_name`, numeric `latency_ms`, non-empty `hit_chunk_ids`; detail returns `user_id`, `updated_at`, and all list fields; no forbidden fields in list, detail, or hit-chunk responses | `request-log` |
 | 8 | Hit-chunks safe metadata | `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index` present; no full chunk content | `request-log` |
 | 9 | Revoked-key 401 | HTTP 401 with `error.code=invalid_api_key` after key revocation | `auth` |
 | 10 | No secrets in output | No API keys, key hashes, encrypted keys, provider bodies, stack traces, or embedding vectors in script output or committed files | — |
+
+### Safe Evidence Fields (Allowed in Script Output)
+
+The smoke script and manual commands may print only these fields:
+
+```text
+request_id
+model
+provider_name
+latency_ms
+messages_count
+hit_chunk_ids (count and numeric IDs)
+chunk_id
+document_id
+knowledge_base_id
+source_filename
+chunk_index
+HTTP status
+boundary label
+SSE data line count
+content length only (non-streaming chat)
+```
+
+### Forbidden Output Fields (Never Printed or Committed)
+
+The smoke script, README examples, and committed evidence must never contain:
+
+```text
+plaintext app API key
+key_hash
+Authorization header value
+upstream API key
+api_key_encrypted
+chunk content
+chunk_content response field
+chunk summary text
+full assistant answer content
+full prompt
+messages content beyond the configured smoke Message label/length
+provider raw body
+embedding vectors
+stack trace
+storage_path
+real .env secrets
+backend/data upload artifacts
+```
 
 ## Key Rotation and Revocation
 
@@ -601,6 +647,49 @@ After a demo session completes, run these steps to revoke the demo key and clean
 
 4. **Remove uploaded knowledge files** from `backend/data/` if they contain proprietary content. The directory is git-ignored but not auto-cleaned.
 
+## Model Config Key Rotation
+
+After updating an upstream provider API key via `PUT /api/admin/model-configs/{id}`, validate that the new key is active and the old key is no longer used.
+
+### Rotate the upstream key
+
+```powershell
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$updateBodyPath = [System.IO.Path]::GetTempFileName()
+[System.IO.File]::WriteAllText($updateBodyPath, '{"name":"demo-sanguicode-chat","provider_name":"openai-compatible","base_url":"https://api.sanguicode.com","api_key":"<new-provider-key>","chat_model":"deepseek-v4-pro"}', $utf8)
+curl.exe -s -X PUT "$BackendBaseUrl/api/admin/model-configs/<config-id>" `
+  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Content-Type: application/json" `
+  --data-binary "@$updateBodyPath"
+Remove-Item -LiteralPath $updateBodyPath -Force
+```
+
+Expected: `code=OK`, `data` contains `api_key_masked` reflecting the new key (masked). The response never includes `api_key_encrypted` or plaintext. Omitting `api_key` from the PUT body preserves the existing encrypted key unchanged.
+
+### Validate after rotation
+
+1. **Verify detail returns masked key**: `GET /api/admin/model-configs/<config-id>` should return the updated `api_key_masked` value.
+2. **Run a non-streaming chat**: call `POST /v1/chat/completions` with a valid app API key. A successful HTTP 200 response confirms the new upstream key is decrypted and used correctly.
+3. **Run the smoke script**: the full acceptance script validates chat success and request-log persistence after rotation.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
+  -ApiKey "sk-sangui-<fresh-demo-key>" `
+  -AppId <app-id> `
+  -AdminUserId <admin-user-id> `
+  -BackendBaseUrl "http://localhost:8080" `
+  -FrontendBaseUrl "http://localhost:3000" `
+  -Message "What integration style does Sangui RAG Gateway provide?"
+```
+
+### Key rotation rules
+
+- `PUT /api/admin/model-configs/{id}` without `api_key` preserves the existing encrypted upstream key.
+- Blank `api_key` (empty string) is rejected with `400 INVALID_REQUEST`.
+- Non-blank `api_key` rotates the encrypted value (new ciphertext, new mask).
+- Model config disable/enable never rotates or clears the upstream key.
+- The upstream key is encrypted at rest with AES-256-GCM and never returned in admin responses.
+
 ## Lost or Leaked API Key Runbook
 
 ### If the plaintext key is lost
@@ -670,7 +759,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
 | `RevokedApiKey` | no | none | Plaintext revoked key used only for one negative auth call. Never echoed. Required when `-VerifyRevokedKey` is supplied. |
 | `VerifyRevokedKey` | no | off | Switch to enable revoked-key 401 verification (step 6). |
 
-The script checks backend health, frontend proxy health, non-streaming chat, streaming chat, and optionally request-log persistence and revoked-key rejection. When `-AppId` and `-AdminUserId` are both supplied, it additionally queries the Admin request-log API to validate persistence, field integrity, and hit-chunk evidence. When `-VerifyRevokedKey` is supplied with `-RevokedApiKey`, it verifies that the revoked key is rejected with HTTP 401 and `error.code=invalid_api_key`. The script requires `-ApiKey` (never reads from repo files) and exits non-zero on any failure.
+The script checks backend health, frontend proxy health, non-streaming chat, streaming chat, and optionally request-log persistence and revoked-key rejection. When `-AppId` and `-AdminUserId` are both supplied, it additionally queries the Admin request-log API to validate list, detail, and hit-chunk evidence. Specifically:
+
+- **List**: finds the latest success log matching the smoke `-Message` prefix, validates safe fields (`status`, `model`, `provider_name`, `latency_ms`, `question_summary`, `hit_chunk_ids`), and scans for forbidden fields.
+- **Detail**: fetches `GET /api/admin/apps/{appId}/request-logs/{requestId}`, validates that safe detail fields (`user_id`, `app_id`, `api_key_id`, `model`, `provider_name`, `status`, `latency_ms`, `messages_count`, `question_summary`, `hit_chunk_ids`, `created_at`, `updated_at`) are present, `request_id` matches the list row, and no forbidden fields appear.
+- **Hit-chunks**: fetches chunk summaries, validates safe metadata (`chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`), and scans each item for forbidden fields.
+- **Non-streaming chat**: prints only content length, never the assistant answer text.
+
+When `-VerifyRevokedKey` is supplied with `-RevokedApiKey`, it verifies that the revoked key is rejected with HTTP 401 and `error.code=invalid_api_key`. The script requires `-ApiKey` (never reads from repo files) and exits non-zero on any failure.
 
 Request-log automation is skipped with a neutral message when both `-AppId` and `-AdminUserId` are missing. Supplying only one of the two is an error. Revoked-key verification is skipped unless `-VerifyRevokedKey` is explicitly supplied.
 

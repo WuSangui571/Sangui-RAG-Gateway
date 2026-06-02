@@ -36,6 +36,11 @@ function Write-FailBoundary {
     $script:exitCode = 1
 }
 
+function Stop-AfterFailure {
+    Write-Host "`nOne or more checks FAILED." -ForegroundColor Red
+    exit $script:exitCode
+}
+
 function Classify-GatewayError {
     param([int]$StatusCode, [string]$ErrorCode)
     switch ($ErrorCode) {
@@ -52,6 +57,23 @@ function Classify-GatewayError {
             return 'unknown'
         }
     }
+}
+
+function Test-ForbiddenFields {
+    param([PSObject]$JsonObj)
+    $forbidden = @(
+        'key_hash', 'api_key', 'api_key_encrypted', 'provider_response_body',
+        'stack_trace', 'embedding', 'prompt', 'messages', 'full_messages',
+        'augmented_prompt', 'authorization', 'upstream_api_key', 'storage_path',
+        'content', 'chunk_content'
+    )
+    $found = @()
+    foreach ($prop in $JsonObj.PSObject.Properties) {
+        if ($forbidden -contains $prop.Name) {
+            $found += $prop.Name
+        }
+    }
+    return $found
 }
 
 function Get-JsonBody {
@@ -221,9 +243,8 @@ try {
         try {
             $json = $result | ConvertFrom-Json
             if ($json.choices -and $json.choices[0].message.content) {
-                $preview = $json.choices[0].message.content
-                if ($preview.Length -gt 100) { $preview = $preview.Substring(0, 100) + "..." }
-                Write-Pass "HTTP 200, content: $preview"
+                $contentLength = $json.choices[0].message.content.Length
+                Write-Pass "HTTP 200, choices[0].message.content present (length=$contentLength)"
             }
             else {
                 Write-FailBoundary "proxy" "No content in choices[0].message.content"
@@ -305,13 +326,13 @@ else {
 
         if ($listResp.CurlExit -ne 0) {
             Write-FailBoundary "request-log" "curl exit code $($listResp.CurlExit) on request-log list"
-            return
+            Stop-AfterFailure
         }
         if ($listResp.StatusCode -ne 200) {
             $safePreview = $listResp.Body
             if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
             Write-FailBoundary "request-log" "HTTP $($listResp.StatusCode) on request-log list. Body: $safePreview"
-            return
+            Stop-AfterFailure
         }
 
         $listJson = $null
@@ -322,17 +343,17 @@ else {
             $safePreview = $listResp.Body
             if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
             Write-FailBoundary "request-log" "Request-log list response is not valid JSON: $safePreview"
-            return
+            Stop-AfterFailure
         }
 
         if ($listJson.code -ne 'OK') {
             Write-FailBoundary "request-log" "Request-log list envelope code=$($listJson.code)"
-            return
+            Stop-AfterFailure
         }
 
         if (-not $listJson.data -or -not $listJson.data.items -or $listJson.data.items.Count -eq 0) {
             Write-FailBoundary "request-log" "No success request log found for app $AppId"
-            return
+            Stop-AfterFailure
         }
 
         # 5b. Find the log matching this smoke run's Message
@@ -347,13 +368,20 @@ else {
 
         if (-not $matchedLog) {
             Write-FailBoundary "request-log" "No recent success log found with question_summary matching '$matchPrefix'"
-            return
+            Stop-AfterFailure
         }
 
         $logId = $matchedLog.request_id
         if (-not $logId) {
             Write-FailBoundary "request-log" "Matched log has null/empty request_id"
-            return
+            Stop-AfterFailure
+        }
+
+        # 5b2. Forbidden-field scan on list item
+        $listForbidden = Test-ForbiddenFields -JsonObj $matchedLog
+        if ($listForbidden.Count -gt 0) {
+            Write-FailBoundary "request-log" "Forbidden field(s) found in list item: $($listForbidden -join ', ')"
+            Stop-AfterFailure
         }
 
         # 5c. Validate required fields
@@ -393,7 +421,7 @@ else {
             foreach ($err in $fieldErrors) {
                 Write-FailBoundary "request-log" $err
             }
-            return
+            Stop-AfterFailure
         }
 
         # 5d. Print safe evidence
@@ -403,19 +431,83 @@ else {
         Write-Host "         latency_ms: $($matchedLog.latency_ms)" -ForegroundColor Gray
         Write-Host "         hit_chunk_ids: [$($matchedLog.hit_chunk_ids -join ', ')] (count=$($matchedLog.hit_chunk_ids.Count))" -ForegroundColor Gray
 
+        # 5d2. Validate request-log detail
+        $detailUrl = "$FrontendBaseUrl/api/admin/apps/$AppId/request-logs/$logId"
+        $detailResp = Invoke-CurlCapture -Url $detailUrl -Headers $listHeaders -MaxTimeSeconds 30
+
+        if ($detailResp.CurlExit -ne 0) {
+            Write-FailBoundary "request-log" "curl exit code $($detailResp.CurlExit) on request-log detail"
+            Stop-AfterFailure
+        }
+        if ($detailResp.StatusCode -ne 200) {
+            $safePreview = $detailResp.Body
+            if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
+            Write-FailBoundary "request-log" "HTTP $($detailResp.StatusCode) on request-log detail. Body: $safePreview"
+            Stop-AfterFailure
+        }
+
+        $detailJson = $null
+        try {
+            $detailJson = $detailResp.Body | ConvertFrom-Json -ErrorAction Stop
+        }
+        catch {
+            $safePreview = $detailResp.Body
+            if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
+            Write-FailBoundary "request-log" "Request-log detail response is not valid JSON: $safePreview"
+            Stop-AfterFailure
+        }
+
+        if ($detailJson.code -ne 'OK') {
+            Write-FailBoundary "request-log" "Request-log detail envelope code=$($detailJson.code)"
+            Stop-AfterFailure
+        }
+
+        $detail = $detailJson.data
+        if (-not $detail) {
+            Write-FailBoundary "request-log" "Request-log detail data is null"
+            Stop-AfterFailure
+        }
+
+        # 5d3. Forbidden-field scan on detail
+        $detailForbidden = Test-ForbiddenFields -JsonObj $detail
+        if ($detailForbidden.Count -gt 0) {
+            Write-FailBoundary "request-log" "Forbidden field(s) found in detail: $($detailForbidden -join ', ')"
+            Stop-AfterFailure
+        }
+
+        $detailErrors = @()
+        if ($detail.request_id -ne $logId) {
+            $detailErrors += "detail request_id=$($detail.request_id) does not match list row $logId"
+        }
+        $detailSafeFields = @('user_id', 'app_id', 'api_key_id', 'model', 'provider_name', 'status', 'latency_ms', 'messages_count', 'question_summary', 'hit_chunk_ids', 'created_at', 'updated_at')
+        foreach ($fieldName in $detailSafeFields) {
+            if (-not ($detail.PSObject.Properties.Name -contains $fieldName)) {
+                $detailErrors += "detail is missing safe field: $fieldName"
+            }
+        }
+
+        if ($detailErrors.Count -gt 0) {
+            foreach ($err in $detailErrors) {
+                Write-FailBoundary "request-log" $err
+            }
+            Stop-AfterFailure
+        }
+
+        Write-Pass "request-log detail: request_id=$logId, user_id=$($detail.user_id), messages_count=$($detail.messages_count)"
+
         # 5e. Query hit-chunk summaries (safe evidence only)
         $chunkUrl = "$FrontendBaseUrl/api/admin/apps/$AppId/request-logs/$logId/hit-chunks"
         $chunkResp = Invoke-CurlCapture -Url $chunkUrl -Headers $listHeaders -MaxTimeSeconds 30
 
         if ($chunkResp.CurlExit -ne 0) {
             Write-FailBoundary "request-log" "curl exit code $($chunkResp.CurlExit) on hit-chunks endpoint"
-            return
+            Stop-AfterFailure
         }
         if ($chunkResp.StatusCode -ne 200) {
             $safePreview = $chunkResp.Body
             if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
             Write-FailBoundary "request-log" "HTTP $($chunkResp.StatusCode) on hit-chunks endpoint. Body: $safePreview"
-            return
+            Stop-AfterFailure
         }
 
         $chunkJson = $null
@@ -426,17 +518,17 @@ else {
             $safePreview = $chunkResp.Body
             if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
             Write-FailBoundary "request-log" "Hit-chunks response is not valid JSON: $safePreview"
-            return
+            Stop-AfterFailure
         }
 
         if ($chunkJson.code -ne 'OK') {
             Write-FailBoundary "request-log" "Hit-chunks envelope code=$($chunkJson.code)"
-            return
+            Stop-AfterFailure
         }
 
         if (-not $chunkJson.data -or $chunkJson.data.Count -eq 0) {
             Write-FailBoundary "request-log" "Hit-chunks returned empty list but hit_chunk_ids was non-empty"
-            return
+            Stop-AfterFailure
         }
 
         $chunkSummaryCount = $chunkJson.data.Count
@@ -463,7 +555,22 @@ else {
             foreach ($err in ($chunkErrors | Select-Object -Unique)) {
                 Write-FailBoundary "request-log" $err
             }
-            return
+            Stop-AfterFailure
+        }
+
+        # 5e2. Forbidden-field scan on hit-chunk items
+        $chunkForbiddenErrors = @()
+        foreach ($chunk in $chunkJson.data) {
+            $chunkForbidden = Test-ForbiddenFields -JsonObj $chunk
+            if ($chunkForbidden.Count -gt 0) {
+                $chunkForbiddenErrors += "hit-chunk chunk_id=$($chunk.chunk_id) has forbidden field(s): $($chunkForbidden -join ', ')"
+            }
+        }
+        if ($chunkForbiddenErrors.Count -gt 0) {
+            foreach ($err in $chunkForbiddenErrors) {
+                Write-FailBoundary "request-log" $err
+            }
+            Stop-AfterFailure
         }
 
         Write-Pass "hit-chunk summaries count=$chunkSummaryCount"

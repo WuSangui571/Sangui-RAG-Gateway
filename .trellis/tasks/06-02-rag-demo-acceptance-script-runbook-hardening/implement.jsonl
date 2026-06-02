@@ -1,0 +1,30 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project-level API, demo acceptance, deployment, proxy, gateway, RAG, request-log, and safe evidence contract"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer command/API/security/streaming/request-log planning checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Reuse existing demo-smoke helper patterns instead of duplicating logic"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Gateway/admin error shapes, invalid_api_key, request-log API, and streaming error boundary"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe request-log and script output fields; forbidden prompt/key/chunk/provider body exposure"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required targeted tests for gateway, auth, request logs, streaming, and RAG quality"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Request-log, API-key, model-config, KB, tenant, and hit-chunk persistence contracts"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Request-log DTO/VO field names and forbidden fields for frontend/admin API contracts"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Admin UX and secret-safety completion rules if README/UI/proxy docs are touched"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Secret state boundaries for API keys and upstream keys"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Upstream timeout/error normalization and streaming pre/post-commit behavior"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "hit_chunk_ids, no-hit, tenant-safe retrieval, and request-log retrieval evidence"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Prompt/context secrecy and no full prompt or hidden rule exposure"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "KB READY/document ingestion status boundaries for demo setup"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Safe evidence fields and forbidden fields for request logs and hit chunks"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Existing PowerShell 5.1 smoke script to harden; preserve helper style and curl/temp-file behavior"}
+{"file": "README.md", "reason": "Existing runbook sections for split-provider setup, demo acceptance, request logs, and key rotation"}
+{"file": "frontend\\nginx.conf", "reason": "Production /api and /v1 proxy contract; streaming buffering disabled"}
+{"file": "frontend\\vite.config.ts", "reason": "Local dev /api and /v1 proxy contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminController.java", "reason": "Request-log list/detail/hit-chunks endpoint contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Safe hit-chunk summary and request-log field behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\vo\\ApiRequestLogVO.java", "reason": "Request-log list VO field shape and hit_chunk_ids parsing"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\vo\\ApiRequestLogDetailVO.java", "reason": "Request-log detail VO safe fields"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\vo\\HitChunkSummaryVO.java", "reason": "Hit-chunk summary response includes bounded summary that script must not print"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminControllerTest.java", "reason": "Existing forbidden-field and request-log endpoint assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsControllerTest.java", "reason": "Non-streaming/streaming request-log persistence and gateway response assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilterTest.java", "reason": "Revoked/disabled/expired keys map to 401 invalid_api_key"}
