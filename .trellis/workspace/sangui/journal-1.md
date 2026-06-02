@@ -1619,3 +1619,75 @@ The task is complete and archived. No database migration, API key storage change
 ### Next Steps
 
 - None - task complete
+
+
+## Session 28: RAG demo acceptance script and runbook hardening
+
+**Date**: 2026-06-02
+**Task**: RAG demo acceptance script and runbook hardening
+**Branch**: `main`
+
+### Summary
+
+Completed the RAG demo full-chain acceptance script and runbook hardening task. The implementation was committed as `f77bffd chore:收尾RAG演示验收脚本和运行手册`, manually accepted with a real prepared demo environment, and then archived under `.trellis/tasks/archive/2026-06/`.
+
+### Main Changes
+
+| Area | Description |
+|---|---|
+| Smoke script | `scripts/demo-smoke.ps1` now validates request-log list/detail/hit-chunks, scans forbidden response fields, prints non-streaming content length only, and exits non-zero on request-log assertion failures. |
+| Runbook | `README.md` documents safe evidence fields, forbidden output fields, Model Config key rotation validation, and the hardened automated smoke script contract. |
+| Spec sync | `.trellis/spec/sangui-rag-gateway.md` records the executable demo acceptance automation rule, safe/forbidden fields, validation matrix, and good/base/bad cases. |
+| Task archive | `06-02-rag-demo-acceptance-script-runbook-hardening` was archived after code commit and human acceptance. |
+
+**Updated Files**:
+- `scripts/demo-smoke.ps1`
+- `README.md`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/tasks/archive/2026-06/06-02-rag-demo-acceptance-script-runbook-hardening/`
+
+**Automated Validation**:
+- PowerShell PSParser syntax check: PASS
+- `git diff --check`: PASS, only Windows CRLF warnings
+- Secret/evidence scan over README, scripts, and `.trellis/spec`: PASS, only placeholders/field names/runtime variables
+- `mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test`: PASS after approved non-sandbox dependency resolution
+- `mvn -q "-Dtest=GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test`: PASS after approved non-sandbox dependency resolution
+- `mvn -q "-Dtest=ModelConfigServiceTest,ModelConfigAdminControllerTest" test`: PASS after approved non-sandbox dependency resolution
+- `cmd /c npm run typecheck`: PASS
+- `cmd /c npm run build`: PASS, Vite chunk-size warning only
+
+**Manual Acceptance**:
+- Full smoke script with prepared backend/frontend/demo app/READY KB/fresh key/revoked key: PASS
+- Backend health: PASS
+- Frontend `/api` proxy health: PASS
+- Non-streaming `/v1/chat/completions`: PASS, content length only
+- Streaming `/v1/chat/completions`: PASS, SSE data chunks and `data: [DONE]`
+- Request-log list/detail/hit-chunks: PASS, request_id matched, safe fields present, hit chunk metadata safe
+- Revoked-key check: PASS, HTTP 401 with `error.code=invalid_api_key`
+- Manual smoke keys were destroyed by the human and are not recorded here.
+
+**Boundaries**:
+- No backend Java, frontend React, DB migration, Docker, Redis, or MQ behavior changed.
+- Task scope remained acceptance script/runbook/spec hardening.
+- Acceptance output is safe-evidence only and avoids assistant answer text, chunk summary text, API keys, provider bodies, embeddings, stack traces, and storage paths.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f77bffd` | (see git log) |
+
+### Testing
+
+- [OK] Automated targeted checks passed.
+- [OK] Frontend typecheck and build passed.
+- [OK] Human full-stack smoke acceptance passed with live backend/frontend/demo app/READY KB/fresh key/revoked key.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
