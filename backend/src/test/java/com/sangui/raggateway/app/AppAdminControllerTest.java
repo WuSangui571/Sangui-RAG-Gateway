@@ -575,6 +575,88 @@ class AppAdminControllerTest {
         verify(appService, never()).bindDefaultKnowledgeBase(anyLong(), anyLong(), anyLong());
     }
 
+    // ---- Disable App ----
+
+    @Test
+    void shouldDisableEnabledApp() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        AppEntity disabled = createApp(1L, 100L);
+        disabled.setStatus("DISABLED");
+        when(appService.disableApp(1L, 100L)).thenReturn(disabled);
+
+        mockMvc.perform(post("/api/admin/apps/1/disable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("DISABLED"));
+
+        verify(appService).disableApp(1L, 100L);
+    }
+
+    @Test
+    void shouldReturn404WhenDisableNonExistentApp() throws Exception {
+        when(appService.disableApp(999L, 100L)).thenReturn(null);
+        when(appService.findById(999L)).thenReturn(null);
+
+        mockMvc.perform(post("/api/admin/apps/999/disable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldReturn403WhenDisableCrossUserApp() throws Exception {
+        AppEntity otherUserApp = createApp(1L, 200L);
+        when(appService.disableApp(1L, 100L)).thenReturn(null);
+        when(appService.findById(1L)).thenReturn(otherUserApp);
+
+        mockMvc.perform(post("/api/admin/apps/1/disable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    // ---- Enable App ----
+
+    @Test
+    void shouldEnableDisabledApp() throws Exception {
+        AppEntity enabled = createApp(1L, 100L);
+        when(appService.enableApp(1L, 100L)).thenReturn(enabled);
+
+        mockMvc.perform(post("/api/admin/apps/1/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.status").value("ENABLED"));
+
+        verify(appService).enableApp(1L, 100L);
+    }
+
+    @Test
+    void shouldReturn404WhenEnableNonExistentApp() throws Exception {
+        when(appService.enableApp(999L, 100L)).thenReturn(null);
+        when(appService.findById(999L)).thenReturn(null);
+
+        mockMvc.perform(post("/api/admin/apps/999/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldReturn403WhenEnableCrossUserApp() throws Exception {
+        AppEntity otherUserApp = createApp(1L, 200L);
+        when(appService.enableApp(1L, 100L)).thenReturn(null);
+        when(appService.findById(1L)).thenReturn(otherUserApp);
+
+        mockMvc.perform(post("/api/admin/apps/1/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
     // ---- Secret safety ----
 
     @Test

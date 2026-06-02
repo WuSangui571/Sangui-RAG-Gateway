@@ -44,3 +44,17 @@ export function bindDefaultKnowledgeBase(
 ): Promise<ApiResponse<BindAppDefaultKnowledgeBaseVO>> {
   return apiPut<BindAppDefaultKnowledgeBaseVO>(`/admin/apps/${appId}/knowledge-base`, dto, adminUserId)
 }
+
+export function disableApp(
+  id: number,
+  adminUserId: number,
+): Promise<ApiResponse<AppVO>> {
+  return apiPost<AppVO>(`/admin/apps/${id}/disable`, undefined, adminUserId)
+}
+
+export function enableApp(
+  id: number,
+  adminUserId: number,
+): Promise<ApiResponse<AppVO>> {
+  return apiPost<AppVO>(`/admin/apps/${id}/enable`, undefined, adminUserId)
+}

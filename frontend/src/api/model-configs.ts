@@ -39,3 +39,10 @@ export function disableModelConfig(
 ): Promise<ApiResponse<ModelConfigVO>> {
   return apiPost<ModelConfigVO>(`/admin/model-configs/${id}/disable`, undefined, adminUserId)
 }
+
+export function enableModelConfig(
+  id: number,
+  adminUserId: number,
+): Promise<ApiResponse<ModelConfigVO>> {
+  return apiPost<ModelConfigVO>(`/admin/model-configs/${id}/enable`, undefined, adminUserId)
+}

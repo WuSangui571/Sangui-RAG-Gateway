@@ -1,0 +1,24 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify status lifecycle stays within lightweight RAG gateway contracts"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Check no unnecessary migration and status persistence remains tenant-safe"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify admin ApiResponse vs public OpenAI-compatible errors"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Check lifecycle changes do not log keys or prompt data"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Check required backend tests and status contracts"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify frontend API clients avoid stringly typed lifecycle responses"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check UX states and status tag behavior"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Check server state refresh after lifecycle mutations"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check frontend build/typecheck and UX boundaries"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Check disabled config does not become hidden fallback"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Check no secret or cross-tenant status leakage"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Check API/frontend/backend/docs alignment"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java", "reason": "Verify App lifecycle endpoint error matrix and tenant checks"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Verify idempotent enable/disable and gateway auth uses isEnabled"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigAdminController.java", "reason": "Verify model config lifecycle ownership and error handling"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java", "reason": "Verify enable preserves encrypted key and disabled lookup exclusion"}
+{"file": "frontend/src/pages/apps/AppConfigPage.tsx", "reason": "Verify confirmation UX, refresh and no unsupported actions"}
+{"file": "frontend/src/pages/model-configs/ModelConfigPage.tsx", "reason": "Verify disable/enable UX and server-state refresh"}
+{"file": "frontend/src/components/domain/StatusTag.tsx", "reason": "Verify shared status mapping remains appropriate or split is justified"}
+{"file": "frontend/src/api/apps.ts", "reason": "Verify endpoints and response types match backend"}
+{"file": "frontend/src/api/model-configs.ts", "reason": "Verify enable/disable calls are typed and safe"}
+{"file": "README.md", "reason": "Verify lifecycle docs are accurate and secret-safe"}

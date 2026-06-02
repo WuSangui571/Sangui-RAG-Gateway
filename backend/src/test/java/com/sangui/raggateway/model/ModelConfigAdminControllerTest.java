@@ -255,6 +255,47 @@ class ModelConfigAdminControllerTest {
     }
 
     @Test
+    void shouldEnableConfigForSameUser() throws Exception {
+        ModelConfigEntity entity = createTestEntity(10L, 100L);
+        entity.setStatus("DISABLED");
+        when(modelConfigService.findById(10L)).thenReturn(entity);
+        when(modelConfigService.enableAdminConfig(10L, 100L))
+                .thenReturn(createTestVO(10L, 100L, "sk-...cret", "ENABLED"));
+
+        mockMvc.perform(post("/api/admin/model-configs/10/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.status").value("ENABLED"));
+    }
+
+    @Test
+    void shouldReturn403ForEnableOfDifferentUserConfig() throws Exception {
+        ModelConfigEntity otherUserEntity = createTestEntity(10L, 200L);
+        when(modelConfigService.findById(10L)).thenReturn(otherUserEntity);
+
+        mockMvc.perform(post("/api/admin/model-configs/10/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void shouldReturn400WhenEnableConfigWithoutKey() throws Exception {
+        ModelConfigEntity entity = createTestEntity(10L, 100L);
+        entity.setStatus("DISABLED");
+        entity.setApiKeyEncrypted(null);
+        when(modelConfigService.findById(10L)).thenReturn(entity);
+        when(modelConfigService.enableAdminConfig(10L, 100L))
+                .thenThrow(new IllegalArgumentException("Cannot enable model config without an upstream API key"));
+
+        mockMvc.perform(post("/api/admin/model-configs/10/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
     void shouldNotContainPlaintextOrEncryptedKeyInAnyResponse() throws Exception {
         when(modelConfigService.listAdminConfigs(100L, null))
                 .thenReturn(List.of(createTestVO(10L, 100L, "sk-...cret", "ENABLED")));

@@ -19,9 +19,9 @@ Let existing business systems gain private-document RAG capability with low modi
 - `GET /v1/models` — OpenAI-compatible model list for authenticated apps
 - `POST /v1/chat/completions` — non-streaming and streaming (`stream=true`) pass-through with RAG retrieval
 - Admin console:
-  - App management (create, list, detail)
+  - App management (create, list, detail, disable, enable)
   - API key management (create, list, disable, revoke, one-time display)
-  - Model config management (create, update, detail, list, disable, encrypted upstream key storage)
+  - Model config management (create, update, detail, list, disable, enable, encrypted upstream key storage)
   - App-to-model-config binding
   - Knowledge base management (create, list, detail)
   - Document upload (txt, md, markdown) with sync parsing, chunking, embedding, and status tracking
@@ -132,7 +132,10 @@ All admin APIs require the temporary identity header `X-Admin-User-Id: <positive
 | Update model config | `PUT` | `/api/admin/model-configs/{id}` |
 | Get model config detail | `GET` | `/api/admin/model-configs/{id}` |
 | List model configs | `GET` | `/api/admin/model-configs` |
+| Disable app | `POST` | `/api/admin/apps/{id}/disable` |
+| Enable app | `POST` | `/api/admin/apps/{id}/enable` |
 | Disable model config | `POST` | `/api/admin/model-configs/{id}/disable` |
+| Enable model config | `POST` | `/api/admin/model-configs/{id}/enable` |
 | Bind app default model config | `PUT` | `/api/admin/apps/{appId}/default-model-config` |
 | Bind app default knowledge base | `PUT` | `/api/admin/apps/{appId}/knowledge-base` |
 | Create API key | `POST` | `/api/admin/apps/{appId}/api-keys` |
@@ -142,6 +145,20 @@ All admin APIs require the temporary identity header `X-Admin-User-Id: <positive
 | List request logs | `GET` | `/api/admin/apps/{appId}/request-logs` |
 | Get request log detail | `GET` | `/api/admin/apps/{appId}/request-logs/{requestId}` |
 | Get hit chunk summaries | `GET` | `/api/admin/apps/{appId}/request-logs/{requestId}/hit-chunks` |
+
+### Disable and Gateway Impact
+
+Disabling different resources has distinct effects on public `/v1/*` gateway calls:
+
+| Disabled resource | Gateway effect | Error response |
+|---|---|---|
+| **App** | All API keys under the app fail `/v1/*` auth. | `401` `invalid_api_key` |
+| **Model Config** | App key may authenticate, but default model resolution fails for `/v1/models` and `/v1/chat/completions`. | `409` `model_config_not_ready` |
+| **API Key** | Only that specific key fails `/v1/*` auth; other keys under the same app remain valid. | `401` `invalid_api_key` |
+
+Disabling is idempotent: disabling an already-disabled resource returns success. Re-enabling restores normal gateway readiness behavior without creating, rotating, or clearing any bindings or keys.
+
+Model config key handling is separate from status lifecycle actions: `PUT /api/admin/model-configs/{id}` without `api_key` preserves the existing encrypted upstream key, blank `api_key` is invalid, and model config disable/enable never rotates or clears the upstream key.
 
 ## Split-Provider Runtime Setup
 

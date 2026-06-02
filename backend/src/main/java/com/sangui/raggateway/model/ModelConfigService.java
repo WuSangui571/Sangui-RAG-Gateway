@@ -160,6 +160,18 @@ public class ModelConfigService {
         return ModelConfigVO.from(entity);
     }
 
+    @Transactional
+    public ModelConfigVO enableAdminConfig(Long id, Long userId) {
+        ModelConfigEntity entity = findByIdAndUserId(id, userId);
+        if (entity.getApiKeyEncrypted() == null || entity.getApiKeyEncrypted().isBlank()) {
+            throw new IllegalArgumentException("Cannot enable model config without an upstream API key");
+        }
+        entity.setStatus(ModelConfigStatus.ENABLED.name());
+        entity.setUpdatedAt(LocalDateTime.now());
+        modelConfigMapper.updateById(entity);
+        return ModelConfigVO.from(entity);
+    }
+
     public ModelConfigEntity findById(Long id) {
         return modelConfigMapper.selectById(id);
     }

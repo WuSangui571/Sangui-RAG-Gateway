@@ -325,6 +325,142 @@ class AppServiceTest {
         assertThat(result).isNull();
     }
 
+    @Test
+    void shouldDisableEnabledApp() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        app.setStatus("ENABLED");
+        app.setDefaultModelConfigId(10L);
+        app.setDefaultKnowledgeBaseId(20L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.3);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRICT_RAG");
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        AppEntity result = appService.disableApp(1L, 100L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo("DISABLED");
+        ArgumentCaptor<AppEntity> captor = ArgumentCaptor.forClass(AppEntity.class);
+        verify(appMapper).updateById(captor.capture());
+        AppEntity updated = captor.getValue();
+        assertThat(updated.getDefaultModelConfigId()).isEqualTo(10L);
+        assertThat(updated.getDefaultKnowledgeBaseId()).isEqualTo(20L);
+        assertThat(updated.getRetrievalTopK()).isEqualTo(5);
+        assertThat(updated.getRetrievalSimilarityThreshold()).isEqualTo(0.3);
+        assertThat(updated.getRetrievalMaxContextChunks()).isEqualTo(5);
+        assertThat(updated.getRetrievalMaxContextChars()).isEqualTo(12000);
+        assertThat(updated.getRetrievalMaxSingleChunkChars()).isEqualTo(3000);
+        assertThat(updated.getNoHitPolicy()).isEqualTo("STRICT_RAG");
+    }
+
+    @Test
+    void shouldDisableAlreadyDisabledAppIdempotently() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        app.setStatus("DISABLED");
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        AppEntity result = appService.disableApp(1L, 100L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo("DISABLED");
+        verify(appMapper).updateById(any(AppEntity.class));
+    }
+
+    @Test
+    void shouldReturnNullWhenDisableAppNotFound() {
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        AppEntity result = appService.disableApp(999L, 100L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldReturnNullWhenDisableAppBelongsToAnotherUser() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(200L);
+        app.setStatus("ENABLED");
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        AppEntity result = appService.disableApp(1L, 100L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldEnableDisabledApp() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        app.setStatus("DISABLED");
+        app.setDefaultModelConfigId(10L);
+        app.setDefaultKnowledgeBaseId(20L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.3);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRICT_RAG");
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        AppEntity result = appService.enableApp(1L, 100L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo("ENABLED");
+        ArgumentCaptor<AppEntity> captor = ArgumentCaptor.forClass(AppEntity.class);
+        verify(appMapper).updateById(captor.capture());
+        AppEntity updated = captor.getValue();
+        assertThat(updated.getDefaultModelConfigId()).isEqualTo(10L);
+        assertThat(updated.getDefaultKnowledgeBaseId()).isEqualTo(20L);
+        assertThat(updated.getRetrievalTopK()).isEqualTo(5);
+        assertThat(updated.getRetrievalSimilarityThreshold()).isEqualTo(0.3);
+        assertThat(updated.getRetrievalMaxContextChunks()).isEqualTo(5);
+        assertThat(updated.getRetrievalMaxContextChars()).isEqualTo(12000);
+        assertThat(updated.getRetrievalMaxSingleChunkChars()).isEqualTo(3000);
+        assertThat(updated.getNoHitPolicy()).isEqualTo("STRICT_RAG");
+    }
+
+    @Test
+    void shouldEnableAlreadyEnabledAppIdempotently() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        app.setStatus("ENABLED");
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        AppEntity result = appService.enableApp(1L, 100L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo("ENABLED");
+        verify(appMapper).updateById(any(AppEntity.class));
+    }
+
+    @Test
+    void shouldReturnNullWhenEnableAppNotFound() {
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        AppEntity result = appService.enableApp(999L, 100L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldReturnNullWhenEnableAppBelongsToAnotherUser() {
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        AppEntity result = appService.enableApp(1L, 100L);
+
+        assertThat(result).isNull();
+    }
+
     private KnowledgeBaseEntity createKnowledgeBase(Long id, Long userId, String status) {
         KnowledgeBaseEntity kb = new KnowledgeBaseEntity();
         kb.setId(id);

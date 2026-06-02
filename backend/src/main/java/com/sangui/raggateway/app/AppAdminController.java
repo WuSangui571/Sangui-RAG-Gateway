@@ -179,6 +179,40 @@ public class AppAdminController {
         return ApiResponse.success(vo);
     }
 
+    @PostMapping("/{id}/disable")
+    public ApiResponse<AppVO> disableApp(
+            @RequestHeader("X-Admin-User-Id") Long userId,
+            @PathVariable Long id) {
+        validateUserId(userId);
+
+        AppEntity app = appService.disableApp(id, userId);
+        if (app == null) {
+            AppEntity anyApp = appService.findById(id);
+            if (anyApp != null) {
+                throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+            }
+            throw new BusinessException("NOT_FOUND", "App not found", HttpStatus.NOT_FOUND);
+        }
+        return ApiResponse.success(AppVO.from(app));
+    }
+
+    @PostMapping("/{id}/enable")
+    public ApiResponse<AppVO> enableApp(
+            @RequestHeader("X-Admin-User-Id") Long userId,
+            @PathVariable Long id) {
+        validateUserId(userId);
+
+        AppEntity app = appService.enableApp(id, userId);
+        if (app == null) {
+            AppEntity anyApp = appService.findById(id);
+            if (anyApp != null) {
+                throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+            }
+            throw new BusinessException("NOT_FOUND", "App not found", HttpStatus.NOT_FOUND);
+        }
+        return ApiResponse.success(AppVO.from(app));
+    }
+
     @PutMapping("/{appId}/knowledge-base")
     public ApiResponse<BindAppDefaultKnowledgeBaseVO> bindDefaultKnowledgeBase(
             @RequestHeader("X-Admin-User-Id") Long userId,

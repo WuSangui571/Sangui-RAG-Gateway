@@ -1,0 +1,25 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary plus implemented App, API key, Model Config, gateway status contracts"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Status enum, tenant, App/API key/Model Config schema and enabled lookup rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin lifecycle error matrix and public gateway error shapes"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-safe lifecycle and gateway logging boundaries"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend targeted test expectations for App, Model Config and gateway behavior"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Typed status unions and API payload/response contracts"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Admin table actions, confirmation modals, explicit disabled states"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Refresh-after-mutation and no optimistic security-sensitive updates"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend validation, status visibility and secret safety"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Model config not ready behavior and gateway failure boundaries"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Tenant, secret and public gateway response boundaries"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer flow and Good/Base/Bad case discipline"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java", "reason": "Existing App admin API lacks lifecycle endpoints; follow ownership/error pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Existing status creation/isEnabled/default config resolution patterns"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigAdminController.java", "reason": "Existing disable endpoint pattern and place for enable endpoint"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java", "reason": "Existing disable, enabled lookup, preserve-key update behavior"}
+{"file": "frontend/src/pages/apps/AppConfigPage.tsx", "reason": "App status table and bind actions; target page for lifecycle UI"}
+{"file": "frontend/src/pages/model-configs/ModelConfigPage.tsx", "reason": "Existing disable button without confirmation; target page for lifecycle UI"}
+{"file": "frontend/src/components/domain/StatusTag.tsx", "reason": "Shared status colors including DISABLED warning"}
+{"file": "frontend/src/api/apps.ts", "reason": "Typed App admin API client location for lifecycle calls"}
+{"file": "frontend/src/api/model-configs.ts", "reason": "Typed Model Config API client location for enable/disable calls"}
+{"file": "README.md", "reason": "Admin runbook endpoint and gateway-impact documentation"}

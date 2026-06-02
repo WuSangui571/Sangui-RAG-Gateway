@@ -81,6 +81,19 @@ public class ModelConfigAdminController {
         return ApiResponse.success(vo);
     }
 
+    @PostMapping("/{id}/enable")
+    public ApiResponse<ModelConfigVO> enable(@RequestHeader("X-Admin-User-Id") Long userId,
+                                               @PathVariable Long id) {
+        validateAdminUserId(userId);
+        requireOwnedConfig(id, userId);
+        try {
+            ModelConfigVO vo = modelConfigService.enableAdminConfig(id, userId);
+            return ApiResponse.success(vo);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("INVALID_REQUEST", e.getMessage());
+        }
+    }
+
     private ModelConfigEntity requireOwnedConfig(Long id, Long userId) {
         ModelConfigEntity entity = modelConfigService.findById(id);
         if (entity == null) {

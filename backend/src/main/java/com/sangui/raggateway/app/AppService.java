@@ -118,6 +118,30 @@ public class AppService {
         return app;
     }
 
+    @Transactional
+    public AppEntity disableApp(Long id, Long userId) {
+        AppEntity app = findByIdAndUserId(id, userId);
+        if (app == null) {
+            return null;
+        }
+        app.setStatus(AppStatus.DISABLED.name());
+        app.setUpdatedAt(LocalDateTime.now());
+        appMapper.updateById(app);
+        return app;
+    }
+
+    @Transactional
+    public AppEntity enableApp(Long id, Long userId) {
+        AppEntity app = findByIdAndUserId(id, userId);
+        if (app == null) {
+            return null;
+        }
+        app.setStatus(AppStatus.ENABLED.name());
+        app.setUpdatedAt(LocalDateTime.now());
+        appMapper.updateById(app);
+        return app;
+    }
+
     public KnowledgeBaseEntity resolveDefaultKnowledgeBase(AppEntity app) {
         if (app == null || app.getDefaultKnowledgeBaseId() == null) {
             return null;

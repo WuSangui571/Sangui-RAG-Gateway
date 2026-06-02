@@ -492,6 +492,81 @@ class ModelConfigServiceTest {
     }
 
     @Test
+    void shouldEnableDisabledConfigWithEncryptedKey() {
+        ModelConfigEntity existing = new ModelConfigEntity();
+        existing.setId(10L);
+        existing.setUserId(100L);
+        existing.setStatus("DISABLED");
+        existing.setApiKeyEncrypted("v1:iv:ciphertext");
+        existing.setApiKeyMasked("sk-...cret");
+        existing.setCreatedAt(LocalDateTime.now());
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        when(modelConfigMapper.selectOne(any())).thenReturn(existing);
+
+        ModelConfigVO vo = modelConfigService.enableAdminConfig(10L, 100L);
+
+        verify(modelConfigMapper).updateById(entityCaptor.capture());
+        ModelConfigEntity updated = entityCaptor.getValue();
+        assertThat(updated.getStatus()).isEqualTo("ENABLED");
+        assertThat(updated.getApiKeyEncrypted()).isEqualTo("v1:iv:ciphertext");
+        assertThat(vo.getStatus()).isEqualTo("ENABLED");
+    }
+
+    @Test
+    void shouldEnableAlreadyEnabledConfigIdempotently() {
+        ModelConfigEntity existing = new ModelConfigEntity();
+        existing.setId(10L);
+        existing.setUserId(100L);
+        existing.setStatus("ENABLED");
+        existing.setApiKeyEncrypted("v1:iv:ciphertext");
+        existing.setApiKeyMasked("sk-...cret");
+        existing.setCreatedAt(LocalDateTime.now());
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        when(modelConfigMapper.selectOne(any())).thenReturn(existing);
+
+        ModelConfigVO vo = modelConfigService.enableAdminConfig(10L, 100L);
+
+        assertThat(vo.getStatus()).isEqualTo("ENABLED");
+        verify(modelConfigMapper).updateById(any(ModelConfigEntity.class));
+    }
+
+    @Test
+    void shouldRejectEnableConfigWithoutEncryptedKey() {
+        ModelConfigEntity existing = new ModelConfigEntity();
+        existing.setId(10L);
+        existing.setUserId(100L);
+        existing.setStatus("DISABLED");
+        existing.setApiKeyEncrypted(null);
+        existing.setCreatedAt(LocalDateTime.now());
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        when(modelConfigMapper.selectOne(any())).thenReturn(existing);
+
+        assertThatThrownBy(() -> modelConfigService.enableAdminConfig(10L, 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot enable model config without an upstream API key");
+    }
+
+    @Test
+    void shouldRejectEnableConfigWithBlankEncryptedKey() {
+        ModelConfigEntity existing = new ModelConfigEntity();
+        existing.setId(10L);
+        existing.setUserId(100L);
+        existing.setStatus("DISABLED");
+        existing.setApiKeyEncrypted("  ");
+        existing.setCreatedAt(LocalDateTime.now());
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        when(modelConfigMapper.selectOne(any())).thenReturn(existing);
+
+        assertThatThrownBy(() -> modelConfigService.enableAdminConfig(10L, 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot enable model config without an upstream API key");
+    }
+
+    @Test
     void shouldListConfigsByUserId() {
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setId(10L);

@@ -7,7 +7,7 @@ import type { AppVO, AppStatus, CreateAppDTO } from '../../types/app'
 import type { ModelConfigVO } from '../../types/model-config'
 import type { KnowledgeBaseVO } from '../../types/knowledge'
 import { ApiError } from '../../api/http'
-import { listApps, createApp, bindDefaultModelConfig, bindDefaultKnowledgeBase } from '../../api/apps'
+import { listApps, createApp, bindDefaultModelConfig, bindDefaultKnowledgeBase, disableApp, enableApp } from '../../api/apps'
 import { listModelConfigs } from '../../api/model-configs'
 import { listKnowledgeBases } from '../../api/knowledge'
 import { useShell } from '../../components/layout/AdminShell'
@@ -146,6 +146,42 @@ export default function AppConfigPage() {
     }
   }
 
+  function confirmDisableApp(app: AppVO) {
+    if (adminUserId === null) return
+    Modal.confirm({
+      title: 'Disable App',
+      content: `Disable "${app.name}"? All API keys under this app will fail /v1/* calls with 401 invalid_api_key until re-enabled.`,
+      okText: 'Disable',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          const res = await disableApp(app.id, adminUserId)
+          if (res.code !== 'OK') {
+            setError(res.message)
+          } else {
+            fetchApps()
+          }
+        } catch (e: unknown) {
+          setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+        }
+      },
+    })
+  }
+
+  async function handleEnableApp(app: AppVO) {
+    if (adminUserId === null) return
+    try {
+      const res = await enableApp(app.id, adminUserId)
+      if (res.code !== 'OK') {
+        setError(res.message)
+      } else {
+        fetchApps()
+      }
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+    }
+  }
+
   const columns: ColumnsType<AppVO> = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
     { title: 'Name', dataIndex: 'name', key: 'name', width: 180 },
@@ -162,7 +198,7 @@ export default function AppConfigPage() {
       render: (_: unknown, record: AppVO) => record.default_knowledge_base_id ?? '-',
     },
     {
-      title: 'Actions', key: 'actions', width: 280,
+      title: 'Actions', key: 'actions', width: 380,
       render: (_: unknown, record: AppVO) => (
         <Space>
           <Button size="small" onClick={() => { setSelectedAppId(record.id) }}>
@@ -177,6 +213,15 @@ export default function AppConfigPage() {
           >
             Bind KB
           </Button>
+          {record.status === 'ENABLED' ? (
+            <Button size="small" danger onClick={() => confirmDisableApp(record)}>
+              Disable
+            </Button>
+          ) : (
+            <Button size="small" onClick={() => handleEnableApp(record)}>
+              Enable
+            </Button>
+          )}
         </Space>
       ),
     },

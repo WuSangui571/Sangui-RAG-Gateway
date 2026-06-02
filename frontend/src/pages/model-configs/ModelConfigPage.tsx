@@ -5,7 +5,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import type { ModelConfigVO, CreateModelConfigDTO, ModelConfigStatus } from '../../types/model-config'
 import { ApiError } from '../../api/http'
-import { listModelConfigs, createModelConfig, disableModelConfig } from '../../api/model-configs'
+import { listModelConfigs, createModelConfig, disableModelConfig, enableModelConfig } from '../../api/model-configs'
 import { useShell } from '../../components/layout/AdminShell'
 import StatusTag from '../../components/domain/StatusTag'
 
@@ -80,10 +80,29 @@ export default function ModelConfigPage() {
     }
   }
 
-  async function handleDisable(id: number) {
+  function handleDisable(record: ModelConfigVO) {
+    if (adminUserId === null) return
+    Modal.confirm({
+      title: 'Disable Model Config',
+      content: `Disable "${record.name}"? Apps bound to this config will fail /v1/models and /v1/chat/completions with 409 model_config_not_ready until re-enabled.`,
+      okText: 'Disable',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          const res = await disableModelConfig(record.id, adminUserId)
+          if (res.code !== 'OK') setError(res.message)
+          else fetchConfigs()
+        } catch (e: unknown) {
+          setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+        }
+      },
+    })
+  }
+
+  async function handleEnable(id: number) {
     if (adminUserId === null) return
     try {
-      const res = await disableModelConfig(id, adminUserId)
+      const res = await enableModelConfig(id, adminUserId)
       if (res.code !== 'OK') setError(res.message)
       else fetchConfigs()
     } catch (e: unknown) {
@@ -130,10 +149,14 @@ export default function ModelConfigPage() {
       width: 100,
       render: (_: unknown, record: ModelConfigVO) => (
         record.status === 'ENABLED' ? (
-          <Button size="small" danger onClick={() => handleDisable(record.id)}>
+          <Button size="small" danger onClick={() => handleDisable(record)}>
             Disable
           </Button>
-        ) : null
+        ) : (
+          <Button size="small" onClick={() => handleEnable(record.id)}>
+            Enable
+          </Button>
+        )
       ),
     },
   ]
