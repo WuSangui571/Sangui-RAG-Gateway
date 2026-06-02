@@ -3,11 +3,31 @@ import {
   Table, Button, Modal, Form, Input, Select, Space, Alert, InputNumber,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import type { ModelConfigVO, CreateModelConfigDTO, ModelConfigStatus } from '../../types/model-config'
+import type { ModelConfigVO, CreateModelConfigDTO, UpdateModelConfigDTO, ModelConfigStatus } from '../../types/model-config'
 import { ApiError } from '../../api/http'
-import { listModelConfigs, createModelConfig, disableModelConfig, enableModelConfig } from '../../api/model-configs'
+import { listModelConfigs, createModelConfig, updateModelConfig, disableModelConfig, enableModelConfig } from '../../api/model-configs'
 import { useShell } from '../../components/layout/AdminShell'
 import StatusTag from '../../components/domain/StatusTag'
+
+type EditModelConfigFormValues = Omit<UpdateModelConfigDTO, 'api_key'> & {
+  api_key?: string
+}
+
+function validateEmbeddingFields(embeddingModel: string | null | undefined, embeddingDimension: number | null | undefined): string | null {
+  const hasEmbeddingModel = typeof embeddingModel === 'string' && embeddingModel.trim().length > 0
+  const hasEmbeddingDimension = embeddingDimension !== null && embeddingDimension !== undefined
+
+  if (hasEmbeddingDimension && embeddingDimension <= 0) {
+    return 'Embedding dimension must be a positive integer when provided'
+  }
+  if (hasEmbeddingModel && !hasEmbeddingDimension) {
+    return 'Embedding dimension must be a positive integer when embedding model is set'
+  }
+  if (!hasEmbeddingModel && hasEmbeddingDimension) {
+    return 'Embedding model is required when embedding dimension is set'
+  }
+  return null
+}
 
 export default function ModelConfigPage() {
   const { adminUserId } = useShell()
@@ -20,6 +40,11 @@ export default function ModelConfigPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm<CreateModelConfigDTO>()
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editForm] = Form.useForm<EditModelConfigFormValues>()
 
   const fetchConfigs = useCallback(async () => {
     if (adminUserId === null) return
@@ -49,8 +74,9 @@ export default function ModelConfigPage() {
     if (adminUserId === null) return
     try {
       const values = await form.validateFields()
-      if (values.embedding_model && (!values.embedding_dimension || values.embedding_dimension <= 0)) {
-        setError('Embedding dimension must be a positive integer when embedding model is set')
+      const embeddingError = validateEmbeddingFields(values.embedding_model, values.embedding_dimension)
+      if (embeddingError) {
+        setError(embeddingError)
         return
       }
       setSubmitting(true)
@@ -110,6 +136,65 @@ export default function ModelConfigPage() {
     }
   }
 
+  function handleEdit(record: ModelConfigVO) {
+    setEditingId(record.id)
+    editForm.setFieldsValue({
+      name: record.name,
+      provider_name: record.provider_name,
+      base_url: record.base_url,
+      chat_model: record.chat_model,
+      embedding_model: record.embedding_model ?? '',
+      embedding_dimension: record.embedding_dimension ?? null,
+      api_key: '',
+    })
+    setEditOpen(true)
+    setError(null)
+  }
+
+  async function handleEditSubmit() {
+    if (adminUserId === null || editingId === null) return
+    try {
+      const values = await editForm.validateFields()
+      const apiKeyRaw: string = values.api_key ?? ''
+      const apiKeyTrimmed = apiKeyRaw.trim()
+
+      const embeddingError = validateEmbeddingFields(values.embedding_model, values.embedding_dimension)
+      if (embeddingError) {
+        setError(embeddingError)
+        return
+      }
+
+      const dto: UpdateModelConfigDTO = {
+        name: values.name,
+        provider_name: values.provider_name,
+        base_url: values.base_url,
+        chat_model: values.chat_model,
+        embedding_model: values.embedding_model || null,
+        embedding_dimension: values.embedding_dimension || null,
+      }
+      if (apiKeyTrimmed.length > 0) {
+        dto.api_key = apiKeyTrimmed
+      }
+
+      setEditSubmitting(true)
+      setError(null)
+      const res = await updateModelConfig(editingId, dto, adminUserId)
+      if (res.code !== 'OK') {
+        setError(res.message)
+      } else {
+        setEditOpen(false)
+        editForm.resetFields()
+        setEditingId(null)
+        fetchConfigs()
+      }
+    } catch (e: unknown) {
+      if (e instanceof ApiError) setError(e.message)
+      else if (e instanceof Error) setError(e.message)
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
   const columns: ColumnsType<ModelConfigVO> = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
     { title: 'Name', dataIndex: 'name', key: 'name', width: 160 },
@@ -146,17 +231,22 @@ export default function ModelConfigPage() {
     {
       title: 'Action',
       key: 'action',
-      width: 100,
+      width: 160,
       render: (_: unknown, record: ModelConfigVO) => (
-        record.status === 'ENABLED' ? (
-          <Button size="small" danger onClick={() => handleDisable(record)}>
-            Disable
+        <Space size="small">
+          <Button size="small" onClick={() => handleEdit(record)}>
+            Edit
           </Button>
-        ) : (
-          <Button size="small" onClick={() => handleEnable(record.id)}>
-            Enable
-          </Button>
-        )
+          {record.status === 'ENABLED' ? (
+            <Button size="small" danger onClick={() => handleDisable(record)}>
+              Disable
+            </Button>
+          ) : (
+            <Button size="small" onClick={() => handleEnable(record.id)}>
+              Enable
+            </Button>
+          )}
+        </Space>
       ),
     },
   ]
@@ -219,6 +309,39 @@ export default function ModelConfigPage() {
           </Form.Item>
           <Form.Item name="api_key" label="Upstream API Key" rules={[{ required: true, message: 'API key is required' }]}>
             <Input.Password placeholder="sk-..." />
+          </Form.Item>
+          <Form.Item name="chat_model" label="Chat Model" rules={[{ required: true, message: 'Chat model is required' }]}>
+            <Input placeholder="deepseek-v4-pro" />
+          </Form.Item>
+          <Form.Item name="embedding_model" label="Embedding Model">
+            <Input placeholder="text-embedding-v4" />
+          </Form.Item>
+          <Form.Item name="embedding_dimension" label="Embedding Dimension">
+            <InputNumber min={1} placeholder="1024" style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Edit Model Config"
+        open={editOpen}
+        onCancel={() => { setEditOpen(false); editForm.resetFields(); setEditingId(null) }}
+        onOk={handleEditSubmit}
+        confirmLoading={editSubmitting}
+        destroyOnClose
+      >
+        <Form form={editForm} layout="vertical">
+          <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Name is required' }]}>
+            <Input placeholder="Display name" />
+          </Form.Item>
+          <Form.Item name="provider_name" label="Provider" rules={[{ required: true }]}>
+            <Input placeholder="openai-compatible" />
+          </Form.Item>
+          <Form.Item name="base_url" label="Base URL" rules={[{ required: true, message: 'Base URL is required' }]}>
+            <Input placeholder="https://api.example.com" />
+          </Form.Item>
+          <Form.Item name="api_key" label="Upstream API Key" extra="Leave blank to preserve the existing upstream key">
+            <Input.Password placeholder="Leave blank to keep current key" />
           </Form.Item>
           <Form.Item name="chat_model" label="Chat Model" rules={[{ required: true, message: 'Chat model is required' }]}>
             <Input placeholder="deepseek-v4-pro" />
