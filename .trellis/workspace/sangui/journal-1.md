@@ -1691,3 +1691,52 @@ Completed the RAG demo full-chain acceptance script and runbook hardening task. 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 29: Frontend Smoke Streaming Request-Log Acceptance
+
+**Date**: 2026-06-03
+**Task**: Frontend Smoke Streaming Request-Log Acceptance
+**Branch**: `main`
+
+### Summary
+
+Frontend Smoke Test page now covers the browser acceptance path for non-streaming chat, streaming SSE, request-log evidence, and revoked-key auth. The task was manually accepted, committed, and archived.
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Commit | `a68a382 feat:frontend-smoke-streaming-acceptance` |
+| Task | `06-02-frontend-smoke-streaming-request-log-acceptance-ux` archived after manual acceptance despite task status still being planning before archive. |
+| Main modules | Frontend Smoke Test page, frontend OpenAI smoke client/types, request-log acceptance UX, README runbook. |
+| Updated files | `frontend/src/pages/smoke/SmokeTestPage.tsx`, `frontend/src/api/openai.ts`, `frontend/src/types/openai.ts`, `README.md`, `.trellis/tasks/archive/2026-06/06-02-frontend-smoke-streaming-request-log-acceptance-ux/`. |
+| Codex check fixes | Hardened smoke OpenAI error parsing with explicit `unknown` narrowing and reset stale smoke/request-log evidence when API key or user message changes; request-log validation now requires a passing non-streaming smoke run. |
+| Automated validation | `cmd /c npm run typecheck` PASS; `cmd /c npm run build` PASS with existing Vite large chunk warning; `mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test` PASS; `mvn -q "-Dtest=GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test` PASS; `git diff --check` PASS. |
+| Manual acceptance | Step 1 non-streaming PASS with content length only; Step 2 streaming PASS with HTTP 200, 519 data lines, 518 chunks, `[DONE]`; Step 3 request-log list/detail/hit-chunks PASS with request `132d3246-d9a5-4d76-b360-6b48d23d6854`, model `deepseek-v4-pro`, provider `sanguicode`, hit chunk `[5]`; Step 4 revoked-key PASS with HTTP 401 and `invalid_api_key`. |
+| Runtime boundary | Correct Compose command is `docker compose --env-file .env -f deploy/docker-compose.yml up -d --build`; prior `docker-compose.prod.yml` path/config was not the validated repo entrypoint and caused backend dependency failure. |
+| Safety boundary | Smoke UI shows safe evidence only: request IDs, model/provider, latency, message count, hit chunk IDs/metadata, streaming counts, content length; it does not render assistant body, chunk summary text, plaintext keys, prompts, provider bodies, embeddings, storage paths, or stack traces. |
+| Result | Frontend smoke streaming and request-log acceptance UX task completed, manually accepted, committed, and archived. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a68a382` | (see git log) |
+
+### Testing
+
+- [OK] `cmd /c npm run typecheck`
+- [OK] `cmd /c npm run build`
+- [OK] `mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test`
+- [OK] `mvn -q "-Dtest=GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test`
+- [OK] Manual browser smoke: non-streaming, streaming, request-log evidence, and revoked-key auth all passed.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
