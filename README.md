@@ -770,6 +770,29 @@ When `-VerifyRevokedKey` is supplied with `-RevokedApiKey`, it verifies that the
 
 Request-log automation is skipped with a neutral message when both `-AppId` and `-AdminUserId` are missing. Supplying only one of the two is an error. Revoked-key verification is skipped unless `-VerifyRevokedKey` is explicitly supplied.
 
+## Frontend Smoke Test Page
+
+The admin console Smoke Test page (`/smoke`) performs the same demo acceptance checks as the PowerShell script through a browser UI. It is an acceptance/operations surface, not a chat playground.
+
+### Steps
+
+| Step | Action | PASS condition | Evidence shown |
+|---|---|---|---|
+| 1. Non-Streaming | `POST /v1/chat/completions` with `stream=false` | HTTP 200 with valid completion | id, object, model, finish_reason, content length only, token counts |
+| 2. Streaming | `POST /v1/chat/completions` with `stream=true` | SSE data chunks received and `[DONE]` present | HTTP status, data line count, chunk count, `[DONE]` present/absent |
+| 3. Request-Log | Query Admin request-log list/detail/hit-chunks | Matching success row found with all safe fields | request_id, model, provider_name, latency_ms, messages_count, hit_chunk_ids, detail user_id/updated_at, chunk metadata |
+| 4. Revoked-Key | `POST /v1/chat/completions` with revoked key | HTTP 401 with `error.code=invalid_api_key` | Status and error code only |
+
+### Rules
+
+- The plaintext API key is held only in transient in-memory state and is clearable. It is never persisted or logged.
+- Non-streaming success shows content length only; the assistant answer body is never rendered.
+- Streaming evidence shows chunk count and `[DONE]` status; raw SSE content is not displayed.
+- Request-log validation shows only safe metadata; chunk summary text is never rendered in the smoke UI.
+- The revoked-key value is never printed or persisted.
+- Each step has an explicit PASS/FAIL/SKIP status tag.
+- The PowerShell smoke script (`scripts/demo-smoke.ps1`) remains the CLI/CI-style repeatable validation path.
+
 ## Development (Local, Without Docker Images)
 
 ### Start infrastructure only

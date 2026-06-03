@@ -9,6 +9,12 @@ export interface SmokeChatCompletionRequest {
   stream: false
 }
 
+export interface SmokeStreamingChatRequest {
+  model: string
+  messages: SmokeChatMessage[]
+  stream: true
+}
+
 export interface SmokeChatChoiceMessage {
   role: string
   content: string
@@ -33,6 +39,13 @@ export interface SmokeChatCompletionResponse {
   model: string
   choices: SmokeChatChoice[]
   usage: SmokeChatUsage
+}
+
+export interface SmokeStreamingEvidence {
+  httpStatus: number
+  dataLineCount: number
+  chunkCount: number
+  donePresent: boolean
 }
 
 export interface SmokeOpenAiError {
