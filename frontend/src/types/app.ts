@@ -1,5 +1,7 @@
 export type AppStatus = 'ENABLED' | 'DISABLED'
 
+export type ReadinessStatus = 'READY' | 'MISSING' | 'DISABLED' | 'NOT_READY'
+
 export interface AppVO {
   id: number
   user_id: number
@@ -9,6 +11,21 @@ export interface AppVO {
   default_knowledge_base_id: number | null
   created_at: string
   updated_at: string
+}
+
+export interface AppReadinessCheckVO {
+  key: string
+  label: string
+  status: ReadinessStatus
+  message: string
+  metadata: Record<string, unknown> | null
+}
+
+export interface AppReadinessVO {
+  app_id: number
+  user_id: number
+  overall_status: ReadinessStatus
+  checks: AppReadinessCheckVO[]
 }
 
 export interface CreateAppDTO {

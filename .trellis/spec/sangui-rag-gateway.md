@@ -1759,6 +1759,116 @@ mvn -q "-Dtest=AppAdminControllerTest,DocumentAdminControllerTest,RetrievalServi
 mvn test
 ```
 
+### Implemented App Readiness Preflight Baseline
+
+The app readiness preflight baseline provides a single admin endpoint that diagnoses configuration prerequisites before Smoke acceptance testing. All responses expose only safe metadata (IDs, statuses, provider/model names, counts) and never return secrets, prompts, chunk content, provider bodies, or stack traces.
+
+#### Admin API Endpoint
+
+```http
+GET /api/admin/apps/{appId}/readiness
+X-Admin-User-Id: <userId>
+```
+
+Response: `ApiResponse<AppReadinessVO>` with `app_id`, `user_id`, `overall_status`, and `checks[]`.
+
+#### Readiness Status Union
+
+| Status | Meaning |
+|---|---|
+| `READY` | Prerequisite is fully satisfied. |
+| `MISSING` | Required resource does not exist. |
+| `DISABLED` | Resource exists but is disabled. |
+| `NOT_READY` | Resource exists but is not operational yet (e.g., KB PROCESSING, missing upstream key). |
+
+#### Readiness Checks
+
+| Check key | Conditions |
+|---|---|
+| `app` | App exists and `status=ENABLED`. Missing app uses 404, not a check row. Disabled app → `DISABLED`. |
+| `default_model_config` | Bound config exists, same user, `ENABLED`, chat model present. Missing → `MISSING`. Disabled → `DISABLED`. Incomplete chat fields → `NOT_READY`. |
+| `default_knowledge_base` | App has bound KB same user. Missing → `MISSING`. |
+| `knowledge_base_status` | Bound KB status is `READY`. Non-READY → `NOT_READY` with current status in metadata. |
+| `active_api_key` | At least one active (not expired) app API key exists. No keys → `MISSING`. Only disabled/revoked/expired → `DISABLED`. |
+| `embedding_config` | Enabled model config exists matching KB's `embedding_model` + `embedding_dimension` with usable encrypted upstream key. Missing match → `MISSING`. Disabled-only match → `DISABLED`. Incomplete/key absent enabled match → `NOT_READY`. When multiple configs match, enabled configs are preferred before disabled configs so readiness aligns with the operational embedding lookup. |
+
+#### Overall Status Computation
+
+- `READY` only when all checks are `READY`.
+- `MISSING` if any check is `MISSING` (highest priority).
+- `DISABLED` if any check is `DISABLED` and no checks are `MISSING`.
+- `NOT_READY` if any check is `NOT_READY` and no checks are `MISSING` or `DISABLED`.
+
+#### Safe Metadata (Exposed)
+
+```text
+app_status, default_model_config_id, provider_name, chat_model,
+default_knowledge_base_id, knowledge_base_status, embedding_model,
+embedding_dimension, active_key_count, embedding_config_id,
+embedding_provider_name
+```
+
+#### Forbidden Fields (Never Exposed)
+
+```text
+api_key, key_hash, api_key_encrypted, upstream_api_key, authorization,
+prompt, messages, full_messages, augmented_prompt, chunk_content,
+content, embedding, provider_response_body, stack_trace, storage_path
+```
+
+#### Validation / Error Matrix
+
+| Scenario | HTTP | Code |
+|---|---|---|
+| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` |
+| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` |
+| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` |
+| App does not exist | 404 | `NOT_FOUND` |
+| App belongs to another user | 403 | `FORBIDDEN` |
+| App disabled | 200 | app check `DISABLED` |
+| Fully prepared app | 200 | all checks `READY` |
+
+#### Implemented Files (New)
+
+```text
+backend/src/main/java/com/sangui/raggateway/app/AppReadinessStatus.java
+backend/src/main/java/com/sangui/raggateway/app/vo/AppReadinessVO.java
+backend/src/main/java/com/sangui/raggateway/app/vo/AppReadinessCheckVO.java
+```
+
+#### Updated Files
+
+```text
+backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java
+backend/src/main/java/com/sangui/raggateway/app/AppService.java
+backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java
+backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java
+backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java
+```
+
+#### Frontend Files
+
+```text
+frontend/src/types/app.ts
+frontend/src/api/apps.ts
+frontend/src/pages/smoke/SmokeTestPage.tsx
+```
+
+#### Frontend Contract
+
+`AppReadinessVO` and `AppReadinessCheckVO` are typed with explicit `ReadinessStatus` union (`'READY' | 'MISSING' | 'DISABLED' | 'NOT_READY'`). The Smoke Test page loads readiness on app selection and shows a compact diagnostic panel with status tags and actionable guidance. Readiness is reset when the app changes. Existing non-streaming, streaming, request-log, and revoked-key smoke steps are unchanged.
+
+Run after changes:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test
+cd ../frontend
+cmd /c npm run typecheck
+cmd /c npm run build
+```
+
 ### Implemented Demo Acceptance Automation Rule
 
 The demo acceptance flow includes an executable rule for automated request-log verification via `scripts/demo-smoke.ps1`.

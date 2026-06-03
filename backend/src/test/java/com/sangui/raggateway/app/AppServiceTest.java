@@ -1,10 +1,15 @@
 package com.sangui.raggateway.app;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sangui.raggateway.apikey.ApiKeyEntity;
+import com.sangui.raggateway.apikey.ApiKeyService;
+import com.sangui.raggateway.app.vo.AppReadinessCheckVO;
+import com.sangui.raggateway.app.vo.AppReadinessVO;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.knowledge.KnowledgeBaseService;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import com.sangui.raggateway.model.ModelConfigService;
+import com.sangui.raggateway.model.ModelConfigStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +17,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,11 +39,14 @@ class AppServiceTest {
     @Mock
     private KnowledgeBaseService knowledgeBaseService;
 
+    @Mock
+    private ApiKeyService apiKeyService;
+
     private AppService appService;
 
     @BeforeEach
     void setUp() {
-        appService = new AppService(appMapper, modelConfigService, knowledgeBaseService);
+        appService = new AppService(appMapper, modelConfigService, knowledgeBaseService, apiKeyService);
     }
 
     @Test
@@ -459,6 +468,347 @@ class AppServiceTest {
         AppEntity result = appService.enableApp(1L, 100L);
 
         assertThat(result).isNull();
+    }
+
+    // ---- Readiness ----
+
+    @Test
+    void shouldReturnAllReadyForFullyPreparedApp() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", 10L, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        ModelConfigEntity embeddingConfig = createEmbeddingConfig(30L, 100L, "ENABLED", "text-embedding-v4", 1536);
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(embeddingConfig);
+
+        ApiKeyEntity activeKey = createApiKey(1L, 1L, 100L, "ACTIVE");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(activeKey));
+        when(apiKeyService.isValid(activeKey)).thenReturn(true);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        assertThat(result.getOverallStatus()).isEqualTo("READY");
+        assertThat(result.getChecks()).hasSize(6);
+        assertThat(result.getChecks()).allMatch(c -> "READY".equals(c.getStatus()));
+        assertThat(result.getAppId()).isEqualTo(1L);
+        assertThat(result.getUserId()).isEqualTo(100L);
+    }
+
+    @Test
+    void shouldReportMissingDefaultModelConfig() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", null, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        ModelConfigEntity embeddingConfig = createEmbeddingConfig(30L, 100L, "ENABLED", "text-embedding-v4", 1536);
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(embeddingConfig);
+
+        ApiKeyEntity activeKey = createApiKey(1L, 1L, 100L, "ACTIVE");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(activeKey));
+        when(apiKeyService.isValid(activeKey)).thenReturn(true);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        assertThat(result.getOverallStatus()).isEqualTo("MISSING");
+        AppReadinessCheckVO modelCheck = findCheck(result, "default_model_config");
+        assertThat(modelCheck.getStatus()).isEqualTo("MISSING");
+    }
+
+    @Test
+    void shouldReportDisabledApp() {
+        AppEntity app = createAppFull(1L, 100L, "DISABLED", 10L, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        ModelConfigEntity embeddingConfig = createEmbeddingConfig(30L, 100L, "ENABLED", "text-embedding-v4", 1536);
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(embeddingConfig);
+
+        ApiKeyEntity activeKey = createApiKey(1L, 1L, 100L, "ACTIVE");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(activeKey));
+        when(apiKeyService.isValid(activeKey)).thenReturn(true);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        AppReadinessCheckVO appCheck = findCheck(result, "app");
+        assertThat(appCheck.getStatus()).isEqualTo("DISABLED");
+        assertThat(result.getOverallStatus()).isEqualTo("DISABLED");
+    }
+
+    @Test
+    void shouldReportMissingDefaultKnowledgeBase() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", 10L, null);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        ApiKeyEntity activeKey = createApiKey(1L, 1L, 100L, "ACTIVE");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(activeKey));
+        when(apiKeyService.isValid(activeKey)).thenReturn(true);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        AppReadinessCheckVO kbCheck = findCheck(result, "default_knowledge_base");
+        assertThat(kbCheck.getStatus()).isEqualTo("MISSING");
+        AppReadinessCheckVO kbStatusCheck = findCheck(result, "knowledge_base_status");
+        assertThat(kbStatusCheck.getStatus()).isEqualTo("MISSING");
+        AppReadinessCheckVO embeddingCheck = findCheck(result, "embedding_config");
+        assertThat(embeddingCheck.getStatus()).isEqualTo("MISSING");
+    }
+
+    @Test
+    void shouldReportNotReadyKnowledgeBase() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", 10L, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "PROCESSING");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        ModelConfigEntity embeddingConfig = createEmbeddingConfig(30L, 100L, "ENABLED", "text-embedding-v4", 1536);
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(embeddingConfig);
+
+        ApiKeyEntity activeKey = createApiKey(1L, 1L, 100L, "ACTIVE");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(activeKey));
+        when(apiKeyService.isValid(activeKey)).thenReturn(true);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        AppReadinessCheckVO kbStatusCheck = findCheck(result, "knowledge_base_status");
+        assertThat(kbStatusCheck.getStatus()).isEqualTo("NOT_READY");
+        assertThat(result.getOverallStatus()).isEqualTo("NOT_READY");
+    }
+
+    @Test
+    void shouldReportNoActiveApiKey() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", 10L, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        ModelConfigEntity embeddingConfig = createEmbeddingConfig(30L, 100L, "ENABLED", "text-embedding-v4", 1536);
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(embeddingConfig);
+
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(new ArrayList<>());
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        AppReadinessCheckVO keyCheck = findCheck(result, "active_api_key");
+        assertThat(keyCheck.getStatus()).isEqualTo("MISSING");
+        assertThat(result.getOverallStatus()).isEqualTo("MISSING");
+    }
+
+    @Test
+    void shouldReportDisabledApiKeyAsDisabled() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", 10L, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        ModelConfigEntity embeddingConfig = createEmbeddingConfig(30L, 100L, "ENABLED", "text-embedding-v4", 1536);
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(embeddingConfig);
+
+        ApiKeyEntity disabledKey = createApiKey(1L, 1L, 100L, "DISABLED");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(disabledKey));
+        when(apiKeyService.isValid(disabledKey)).thenReturn(false);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        AppReadinessCheckVO keyCheck = findCheck(result, "active_api_key");
+        assertThat(keyCheck.getStatus()).isEqualTo("DISABLED");
+    }
+
+    @Test
+    void shouldReportMissingEmbeddingConfig() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", 10L, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(null);
+
+        ApiKeyEntity activeKey = createApiKey(1L, 1L, 100L, "ACTIVE");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(activeKey));
+        when(apiKeyService.isValid(activeKey)).thenReturn(true);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        AppReadinessCheckVO embeddingCheck = findCheck(result, "embedding_config");
+        assertThat(embeddingCheck.getStatus()).isEqualTo("MISSING");
+        assertThat(result.getOverallStatus()).isEqualTo("MISSING");
+    }
+
+    @Test
+    void shouldReportDisabledDefaultModelConfig() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", 10L, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "DISABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        ModelConfigEntity embeddingConfig = createEmbeddingConfig(30L, 100L, "ENABLED", "text-embedding-v4", 1536);
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(embeddingConfig);
+
+        ApiKeyEntity activeKey = createApiKey(1L, 1L, 100L, "ACTIVE");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(activeKey));
+        when(apiKeyService.isValid(activeKey)).thenReturn(true);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        AppReadinessCheckVO modelCheck = findCheck(result, "default_model_config");
+        assertThat(modelCheck.getStatus()).isEqualTo("DISABLED");
+    }
+
+    @Test
+    void shouldReportDisabledEmbeddingConfig() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", 10L, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        ModelConfigEntity embeddingConfig = createEmbeddingConfig(30L, 100L, "DISABLED", "text-embedding-v4", 1536);
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(embeddingConfig);
+
+        ApiKeyEntity activeKey = createApiKey(1L, 1L, 100L, "ACTIVE");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(activeKey));
+        when(apiKeyService.isValid(activeKey)).thenReturn(true);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        AppReadinessCheckVO embeddingCheck = findCheck(result, "embedding_config");
+        assertThat(embeddingCheck.getStatus()).isEqualTo("DISABLED");
+    }
+
+    @Test
+    void shouldNotContainForbiddenFieldsInReadinessResponse() {
+        AppEntity app = createAppFull(1L, 100L, "ENABLED", 10L, 20L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
+        when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+
+        KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "FAILED");
+        when(knowledgeBaseService.findById(20L)).thenReturn(kb);
+
+        when(modelConfigService.findMatchingEmbeddingConfig(100L, "text-embedding-v4", 1536))
+                .thenReturn(null);
+
+        ApiKeyEntity activeKey = createApiKey(1L, 1L, 100L, "ACTIVE");
+        when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(activeKey));
+        when(apiKeyService.isValid(activeKey)).thenReturn(true);
+
+        AppReadinessVO result = appService.assembleReadiness(1L, 100L);
+
+        for (AppReadinessCheckVO check : result.getChecks()) {
+            if (check.getMetadata() != null) {
+                assertThat(check.getMetadata()).doesNotContainKey("api_key");
+                assertThat(check.getMetadata()).doesNotContainKey("key_hash");
+                assertThat(check.getMetadata()).doesNotContainKey("api_key_encrypted");
+                assertThat(check.getMetadata()).doesNotContainKey("upstream_api_key");
+                assertThat(check.getMetadata()).doesNotContainKey("authorization");
+                assertThat(check.getMetadata()).doesNotContainKey("storage_path");
+                assertThat(check.getMetadata()).doesNotContainKey("stack_trace");
+            }
+        }
+    }
+
+    private AppReadinessCheckVO findCheck(AppReadinessVO vo, String key) {
+        return vo.getChecks().stream()
+                .filter(c -> key.equals(c.getKey()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Check not found: " + key));
+    }
+
+    private AppEntity createAppFull(Long id, Long userId, String status, Long modelConfigId, Long kbId) {
+        AppEntity app = new AppEntity();
+        app.setId(id);
+        app.setUserId(userId);
+        app.setName("Test App");
+        app.setStatus(status);
+        app.setDefaultModelConfigId(modelConfigId);
+        app.setDefaultKnowledgeBaseId(kbId);
+        return app;
+    }
+
+    private ModelConfigEntity createModelConfig(Long id, Long userId, String status, String providerName, String chatModel) {
+        ModelConfigEntity config = new ModelConfigEntity();
+        config.setId(id);
+        config.setUserId(userId);
+        config.setName("Test Config");
+        config.setProviderName(providerName);
+        config.setBaseUrl("https://api.example.com");
+        config.setChatModel(chatModel);
+        config.setStatus(status);
+        return config;
+    }
+
+    private ModelConfigEntity createEmbeddingConfig(Long id, Long userId, String status, String embeddingModel, Integer embeddingDimension) {
+        ModelConfigEntity config = new ModelConfigEntity();
+        config.setId(id);
+        config.setUserId(userId);
+        config.setName("Embedding Config");
+        config.setProviderName("openai");
+        config.setBaseUrl("https://api.example.com");
+        config.setChatModel("gpt-4o-mini");
+        config.setEmbeddingModel(embeddingModel);
+        config.setEmbeddingDimension(embeddingDimension);
+        config.setApiKeyEncrypted("encrypted-key-data");
+        config.setStatus(status);
+        return config;
+    }
+
+    private ApiKeyEntity createApiKey(Long id, Long appId, Long userId, String status) {
+        ApiKeyEntity key = new ApiKeyEntity();
+        key.setId(id);
+        key.setAppId(appId);
+        key.setUserId(userId);
+        key.setName("Test Key");
+        key.setKeyHash("hash");
+        key.setKeyPrefix("sk-sangui-test");
+        key.setStatus(status);
+        return key;
     }
 
     private KnowledgeBaseEntity createKnowledgeBase(Long id, Long userId, String status) {

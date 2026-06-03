@@ -4,6 +4,8 @@ import com.sangui.raggateway.apikey.ApiKeyEntity;
 import com.sangui.raggateway.apikey.ApiKeyService;
 import com.sangui.raggateway.apikey.dto.CreateApiKeyDTO;
 import com.sangui.raggateway.apikey.dto.CreateApiKeyResult;
+import com.sangui.raggateway.app.vo.AppReadinessCheckVO;
+import com.sangui.raggateway.app.vo.AppReadinessVO;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.model.ModelConfigEntity;
@@ -655,6 +657,85 @@ class AppAdminControllerTest {
                         .header("X-Admin-User-Id", "100"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    // ---- Readiness ----
+
+    @Test
+    void shouldReturnReadinessForOwnApp() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        AppReadinessVO readiness = new AppReadinessVO(1L, 100L, AppReadinessStatus.READY,
+                List.of(new AppReadinessCheckVO("app", "App", AppReadinessStatus.READY, "App is enabled.", null)));
+        when(appService.assembleReadiness(1L, 100L)).thenReturn(readiness);
+
+        mockMvc.perform(get("/api/admin/apps/1/readiness")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.app_id").value(1))
+                .andExpect(jsonPath("$.data.user_id").value(100))
+                .andExpect(jsonPath("$.data.overall_status").value("READY"))
+                .andExpect(jsonPath("$.data.checks").isArray())
+                .andExpect(jsonPath("$.data.checks[0].key").value("app"))
+                .andExpect(jsonPath("$.data.checks[0].status").value("READY"));
+    }
+
+    @Test
+    void shouldReturn403ForCrossUserReadiness() throws Exception {
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(null);
+        when(appService.findById(1L)).thenReturn(createApp(1L, 200L));
+
+        mockMvc.perform(get("/api/admin/apps/1/readiness")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void shouldReturn404ForMissingAppReadiness() throws Exception {
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(null);
+        when(appService.findById(1L)).thenReturn(null);
+
+        mockMvc.perform(get("/api/admin/apps/1/readiness")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldRejectReadinessWithMissingUserId() throws Exception {
+        mockMvc.perform(get("/api/admin/apps/1/readiness"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldRejectReadinessWithNegativeUserId() throws Exception {
+        mockMvc.perform(get("/api/admin/apps/1/readiness")
+                        .header("X-Admin-User-Id", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldNotContainForbiddenFieldsInReadinessResponse() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        AppReadinessVO readiness = new AppReadinessVO(1L, 100L, AppReadinessStatus.READY,
+                List.of(new AppReadinessCheckVO("app", "App", AppReadinessStatus.READY, "App is enabled.", null)));
+        when(appService.assembleReadiness(1L, 100L)).thenReturn(readiness);
+
+        mockMvc.perform(get("/api/admin/apps/1/readiness")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("\"api_key\""))))
+                .andExpect(content().string(not(containsString("\"key_hash\""))))
+                .andExpect(content().string(not(containsString("\"api_key_encrypted\""))))
+                .andExpect(content().string(not(containsString("\"upstream_api_key\""))))
+                .andExpect(content().string(not(containsString("\"stack_trace\""))));
     }
 
     // ---- Secret safety ----

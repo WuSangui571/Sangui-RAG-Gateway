@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   Button, Select, Space, Typography, Card, Spin, Descriptions, Tag, Input, Divider,
 } from 'antd'
-import type { AppVO } from '../../types/app'
+import type { AppVO, AppReadinessVO, ReadinessStatus } from '../../types/app'
 import type { ApiKeyVO } from '../../types/api-key'
 import type { SmokeChatCompletionResponse, SmokeStreamingEvidence } from '../../types/openai'
 import type { ApiRequestLogVO, ApiRequestLogDetailVO, HitChunkSummaryVO } from '../../types/request-log'
-import { listApps } from '../../api/apps'
+import { listApps, getAppReadiness } from '../../api/apps'
 import { listApiKeys } from '../../api/api-keys'
 import { ApiError } from '../../api/http'
 import { smokeChatCompletions, smokeStreamingChatCompletions, SmokeApiError } from '../../api/openai'
@@ -63,6 +63,14 @@ function StepStatusTag({ status }: { status: StepStatus }) {
   return null
 }
 
+function ReadinessStatusTag({ status }: { status: ReadinessStatus | string }) {
+  if (status === 'READY') return <Tag color="success">READY</Tag>
+  if (status === 'MISSING') return <Tag color="error">MISSING</Tag>
+  if (status === 'DISABLED') return <Tag color="warning">DISABLED</Tag>
+  if (status === 'NOT_READY') return <Tag color="default">NOT READY</Tag>
+  return <Tag color="default">{status || 'UNKNOWN'}</Tag>
+}
+
 export default function SmokeTestPage() {
   const { adminUserId, selectedAppId, setSelectedAppId } = useShell()
 
@@ -86,6 +94,10 @@ export default function SmokeTestPage() {
   const [revokedKey, setRevokedKey] = useState<RevokedKeyStepState>({
     status: 'idle', error: null, enabled: false, keyValue: null,
   })
+
+  const [readiness, setReadiness] = useState<AppReadinessVO | null>(null)
+  const [readinessLoading, setReadinessLoading] = useState(false)
+  const [readinessError, setReadinessError] = useState<string | null>(null)
 
   const fetchApps = useCallback(async () => {
     if (adminUserId === null) return
@@ -132,12 +144,39 @@ export default function SmokeTestPage() {
     }
   }, [activeAppId, adminUserId])
 
+  const fetchReadiness = useCallback(async () => {
+    if (activeAppId === null || adminUserId === null) {
+      setReadiness(null)
+      setReadinessError(null)
+      return
+    }
+    setReadinessLoading(true)
+    setReadinessError(null)
+    try {
+      const res = await getAppReadiness(activeAppId, adminUserId)
+      if (res.code === 'OK') {
+        setReadiness(res.data)
+      } else {
+        setReadiness(null)
+        setReadinessError(res.message)
+      }
+    } catch (e: unknown) {
+      setReadiness(null)
+      setReadinessError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Failed to load readiness'))
+    } finally {
+      setReadinessLoading(false)
+    }
+  }, [activeAppId, adminUserId])
+
   useEffect(() => {
     setSelectedKeyPrefix(null)
     setSelectedKeyValue(null)
     resetAllSteps()
+    setReadiness(null)
+    setReadinessError(null)
     fetchKeys()
-  }, [activeAppId, fetchKeys])
+    fetchReadiness()
+  }, [activeAppId, fetchKeys, fetchReadiness])
 
   function resetAllSteps() {
     setNonStreaming({ status: 'idle', evidence: null, error: null })
@@ -152,6 +191,8 @@ export default function SmokeTestPage() {
     setSelectedKeyPrefix(null)
     setSelectedKeyValue(null)
     resetAllSteps()
+    setReadiness(null)
+    setReadinessError(null)
   }
 
   function handleApiKeyChange(value: string) {
@@ -421,6 +462,60 @@ export default function SmokeTestPage() {
             />
           </div>
         </Space>
+
+        {activeAppId !== null && (
+          <Card size="small" title={
+            <Space>
+              <span>Preflight Readiness</span>
+              {readinessLoading && <Spin size="small" />}
+              {readiness && (
+                <ReadinessStatusTag status={readiness.overall_status} />
+              )}
+            </Space>
+          }>
+            {readinessLoading && !readiness && (
+              <Spin tip="Checking app readiness..." style={{ display: 'block', margin: '16px 0' }}>
+                <div style={{ height: 40 }} />
+              </Spin>
+            )}
+            {readinessError && (
+              <Text type="danger">Failed to load readiness: {readinessError}</Text>
+            )}
+            {readiness && readiness.checks.length > 0 && (
+              <Descriptions column={1} size="small" bordered>
+                {readiness.checks.map(check => (
+                  <Descriptions.Item key={check.key} label={
+                    <Space size={4}>
+                      <span>{check.label}</span>
+                      <ReadinessStatusTag status={check.status} />
+                    </Space>
+                  }>
+                    <Space direction="vertical" size={2}>
+                      <Text>{check.message}</Text>
+                      {check.metadata && Object.keys(check.metadata).length > 0 && (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {Object.entries(check.metadata)
+                            .map(([k, v]) => `${k}: ${v}`)
+                            .join(', ')}
+                        </Text>
+                      )}
+                    </Space>
+                  </Descriptions.Item>
+                ))}
+              </Descriptions>
+            )}
+            {readiness && readiness.overall_status !== 'READY' && (
+              <Text type="warning" style={{ display: 'block', marginTop: 8 }}>
+                Fix the issues above before running Smoke tests.
+              </Text>
+            )}
+            {readiness && readiness.overall_status === 'READY' && (
+              <Text type="success" style={{ display: 'block', marginTop: 8 }}>
+                All prerequisites are ready. You can proceed with Smoke tests.
+              </Text>
+            )}
+          </Card>
+        )}
 
         <Card size="small" title="Temporary API Key (not stored)">
           <Space.Compact style={{ width: '100%' }}>

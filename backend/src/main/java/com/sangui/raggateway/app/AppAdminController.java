@@ -3,6 +3,7 @@ package com.sangui.raggateway.app;
 import com.sangui.raggateway.app.dto.BindAppDefaultModelConfigDTO;
 import com.sangui.raggateway.app.dto.BindAppDefaultKnowledgeBaseDTO;
 import com.sangui.raggateway.app.dto.CreateAppDTO;
+import com.sangui.raggateway.app.vo.AppReadinessVO;
 import com.sangui.raggateway.app.vo.AppVO;
 import com.sangui.raggateway.app.vo.BindAppDefaultModelConfigVO;
 import com.sangui.raggateway.app.vo.BindAppDefaultKnowledgeBaseVO;
@@ -93,6 +94,25 @@ public class AppAdminController {
             throw new BusinessException("NOT_FOUND", "App not found", HttpStatus.NOT_FOUND);
         }
         return ApiResponse.success(AppVO.from(app));
+    }
+
+    @GetMapping("/{appId}/readiness")
+    public ApiResponse<AppReadinessVO> getReadiness(
+            @RequestHeader("X-Admin-User-Id") Long userId,
+            @PathVariable Long appId) {
+        validateUserId(userId);
+
+        AppEntity app = appService.findByIdAndUserId(appId, userId);
+        if (app == null) {
+            AppEntity anyApp = appService.findById(appId);
+            if (anyApp != null) {
+                throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+            }
+            throw new BusinessException("NOT_FOUND", "App not found", HttpStatus.NOT_FOUND);
+        }
+
+        AppReadinessVO readiness = appService.assembleReadiness(appId, userId);
+        return ApiResponse.success(readiness);
     }
 
     @PostMapping("/{appId}/api-keys")

@@ -1,0 +1,21 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-03-app-readiness-preflight-acceptance-guidance-ux\\prd.md", "reason": "Primary requirements, API contract, validation matrix, Good/Base/Bad cases, tests, and non-scope for implementation"}
+{"file": ".trellis\\tasks\\06-03-app-readiness-preflight-acceptance-guidance-ux\\research.md", "reason": "Focused code research with relevant code patterns and likely modification files"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product boundary, admin/gateway contracts, app/model/KB/key readiness prerequisites, safe smoke evidence"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API/frontend/service/type/secret boundary planning"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend API/types/page/component placement rules"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Readiness status UI, loading/error states, safe admin components"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Keep readiness as page/server state and avoid broad global cache"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Typed readiness DTO/VO unions and snake_case API fields"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend validation, safe UX, typecheck/build expectations"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend app/admin service/controller/VO placement rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin ApiResponse and BusinessException 400/403/404 matrix"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe metadata only; no keys/prompts/chunks/provider bodies"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Tenant-scoped app/key/model/KB lookups; no expected migration"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend targeted test requirements and security review checklist"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Safe readiness evidence and tenant/secret boundaries"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "KB status meanings and document readiness boundaries"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Ensure readiness does not change retrieval behavior or hit logging"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Avoid adding fallback/retry/provider health behavior"}

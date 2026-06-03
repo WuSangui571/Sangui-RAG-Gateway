@@ -191,6 +191,26 @@ public class ModelConfigService {
         return modelConfigMapper.selectOne(wrapper);
     }
 
+    public ModelConfigEntity findMatchingEmbeddingConfig(Long userId, String embeddingModel, Integer embeddingDimension) {
+        String normalizedEmbeddingModel = normalizeOptionalText(embeddingModel);
+        if (normalizedEmbeddingModel == null) {
+            return null;
+        }
+        if (embeddingDimension == null || embeddingDimension <= 0) {
+            return null;
+        }
+        LambdaQueryWrapper<ModelConfigEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ModelConfigEntity::getUserId, userId)
+                .eq(ModelConfigEntity::getEmbeddingModel, normalizedEmbeddingModel)
+                .eq(ModelConfigEntity::getEmbeddingDimension, embeddingDimension)
+                .orderByDesc(ModelConfigEntity::getStatus)
+                .orderByDesc(ModelConfigEntity::getUpdatedAt)
+                .orderByDesc(ModelConfigEntity::getId)
+                .last("LIMIT 1");
+        List<ModelConfigEntity> matches = modelConfigMapper.selectList(wrapper);
+        return matches.isEmpty() ? null : matches.get(0);
+    }
+
     public ModelConfigEntity findEnabledEmbeddingConfig(Long userId, String embeddingModel, Integer embeddingDimension) {
         String normalizedEmbeddingModel = normalizeOptionalText(embeddingModel);
         if (normalizedEmbeddingModel == null) {

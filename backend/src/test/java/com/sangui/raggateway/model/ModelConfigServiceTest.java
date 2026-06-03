@@ -672,6 +672,24 @@ class ModelConfigServiceTest {
     }
 
     @Test
+    void shouldPreferEnabledEmbeddingConfigForReadinessWhenDisabledConfigIsNewer() {
+        ModelConfigEntity enabled = new ModelConfigEntity();
+        enabled.setId(12L);
+        enabled.setStatus(ModelConfigStatus.ENABLED.name());
+        ModelConfigEntity disabled = new ModelConfigEntity();
+        disabled.setId(13L);
+        disabled.setStatus(ModelConfigStatus.DISABLED.name());
+        when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(enabled, disabled));
+
+        ModelConfigEntity result = modelConfigService.findMatchingEmbeddingConfig(
+                100L, "text-embedding-3-small", 1536);
+
+        assertThat(result).isSameAs(enabled);
+        verify(modelConfigMapper).selectList(wrapperCaptor.capture());
+        assertThat(wrapperCaptor.getValue()).isNotNull();
+    }
+
+    @Test
     void shouldReturnNullWhenEmbeddingModelIsNull() {
         ModelConfigEntity result = modelConfigService.findEnabledEmbeddingConfig(100L, null, 1536);
         assertThat(result).isNull();

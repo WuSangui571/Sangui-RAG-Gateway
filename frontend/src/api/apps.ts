@@ -1,6 +1,6 @@
 import type { ApiResponse } from '../types/common'
 import type {
-  AppVO, CreateAppDTO,
+  AppVO, CreateAppDTO, AppReadinessVO,
   BindAppDefaultModelConfigDTO, BindAppDefaultModelConfigVO,
   BindAppDefaultKnowledgeBaseDTO, BindAppDefaultKnowledgeBaseVO,
 } from '../types/app'
@@ -20,6 +20,13 @@ export function getAppDetail(
   adminUserId: number,
 ): Promise<ApiResponse<AppVO>> {
   return apiGet<AppVO>(`/admin/apps/${id}`, undefined, adminUserId)
+}
+
+export function getAppReadiness(
+  appId: number,
+  adminUserId: number,
+): Promise<ApiResponse<AppReadinessVO>> {
+  return apiGet<AppReadinessVO>(`/admin/apps/${appId}/readiness`, undefined, adminUserId)
 }
 
 export function createApp(

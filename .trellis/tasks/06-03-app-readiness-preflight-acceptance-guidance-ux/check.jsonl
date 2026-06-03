@@ -1,0 +1,20 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-03-app-readiness-preflight-acceptance-guidance-ux\\prd.md", "reason": "Acceptance criteria, prohibited scope, validation matrix, and planning self-check for review"}
+{"file": ".trellis\\tasks\\06-03-app-readiness-preflight-acceptance-guidance-ux\\research.md", "reason": "Review expected patterns, risks, boundaries, and required tests"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify implementation stays within lightweight RAG gateway and safe evidence contracts"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Review API DTO alignment, tenant/secret boundaries, and test coverage"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Check frontend file placement and import boundaries"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Check compact admin UX and no unsafe rendering"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Review state reset and secret-state handling"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Check no any, explicit statuses, backend/frontend alignment"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Review loading/error/success states and secret safety"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Check backend package layering and responsibilities"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Review status codes, safe errors, and admin/gateway shape separation"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Review response/log secret safety"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Review tenant boundaries and no unnecessary schema changes"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Check required backend tests and failure coverage"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Review forbidden fields and cross-user protections"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Review KB status display without content exposure"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Check retrieval/prompt non-scope remains untouched"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Review no hidden fallback or smoke-success masking"}
