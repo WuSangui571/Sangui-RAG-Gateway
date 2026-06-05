@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 34
+- **Total Sessions**: 35
 - **Last Active**: 2026-06-05
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~74 | Active |
+| `journal-2.md` | ~117 | Active |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 35 | 2026-06-05 | Frontend Admin visual smoke CI acceptance | `598a9c4` | `main` |
 | 34 | 2026-06-05 | Frontend Admin visual smoke CI gate | `ace21d3` | `main` |
 | 33 | 2026-06-05 | Frontend Admin visual smoke automation baseline | `3cb2016` | `main` |
 | 32 | 2026-06-05 | Admin login dark background consistency | `282c5cb` | `main` |

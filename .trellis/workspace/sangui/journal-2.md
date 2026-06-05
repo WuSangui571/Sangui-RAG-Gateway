@@ -15,7 +15,7 @@
 
 ### Summary
 
-(Add summary)
+Recorded and accepted the frontend Admin visual smoke CI first-run evidence. The task confirmed the GitHub Actions frontend job command order, Playwright browser cache miss/hit behavior, explicit Chromium install, visual smoke execution, and success-run artifact absence.
 
 ### Main Changes
 
@@ -64,6 +64,53 @@
 ### Testing
 
 - [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 35: Frontend Admin visual smoke CI acceptance
+
+**Date**: 2026-06-05
+**Task**: Frontend Admin visual smoke CI acceptance
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | 598a9c4 chore: record frontend Admin visual smoke CI acceptance |
+| Main module | Trellis task evidence for frontend Admin visual smoke CI first-run acceptance |
+| Updated files | .trellis/tasks/06-05-frontend-admin-visual-smoke-ci-first-run-acceptance/acceptance-evidence.md; check.jsonl; debug.jsonl; implement.jsonl; prd.md; task.json |
+| Acceptance result | Success-path GitHub Actions evidence recorded for frontend job command order, Playwright browser cache miss/hit behavior, explicit Chromium install, visual smoke execution, and success artifact absence. |
+| Validation | Codex finish check passed: git diff --check; cd frontend && cmd /c npm run typecheck; cd frontend && cmd /c npm run build; cd frontend && cmd /c npm run test:visual:ci with 3 Chromium tests passed. |
+| Manual acceptance | User confirmed manual testing and committed the work before record-session. |
+| Boundaries | No source code, CI workflow, backend, API, DB, RAG, Docker, or spec files changed in this acceptance task. Controlled failure artifact verification remains a documented BASE/manual gap because gh CLI/write credentials were unavailable and no temporary failure branch was pushed. |
+| Archive | Archived task frontend-admin-visual-smoke-ci-first-run-acceptance to .trellis/tasks/archive/2026-06/. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `598a9c4` | chore:记录前端 Admin 视觉冒烟 CI 验收 |
+
+### Testing
+
+- [OK] User confirmed manual testing before record-session.
+- [OK] `git diff --check`
+- [OK] `cd frontend; cmd /c npm run typecheck`
+- [OK] `cd frontend; cmd /c npm run build`
+- [OK] `cd frontend; cmd /c npm run test:visual:ci` (3 Chromium tests passed)
 
 ### Status
 
