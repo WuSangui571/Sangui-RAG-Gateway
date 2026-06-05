@@ -12,6 +12,8 @@ import { ApiError } from '../../api/http'
 import { smokeChatCompletions, smokeStreamingChatCompletions, SmokeApiError } from '../../api/openai'
 import { listRequestLogs, getRequestLogDetail, getHitChunks } from '../../api/request-logs'
 import { useShell } from '../../components/layout/AdminShell'
+import { useI18n } from '../../app/i18n'
+import type { I18nKey } from '../../app/i18n/dict'
 
 const { Text } = Typography
 
@@ -54,25 +56,32 @@ interface RevokedKeyStepState {
   keyValue: string | null
 }
 
-function StepStatusTag({ status }: { status: StepStatus }) {
-  if (status === 'idle') return <Tag>IDLE</Tag>
-  if (status === 'running') return <Tag color="processing">RUNNING</Tag>
-  if (status === 'pass') return <Tag color="success">PASS</Tag>
-  if (status === 'fail') return <Tag color="error">FAIL</Tag>
-  if (status === 'skip') return <Tag color="default">SKIP</Tag>
+function StepStatusTagLocalized({ status }: { status: StepStatus }) {
+  const { t } = useI18n()
+  const upper = status.toUpperCase()
+  const label = t(`status.smoke.${upper}` as I18nKey)
+  if (status === 'idle') return <Tag>{label}</Tag>
+  if (status === 'running') return <Tag color="processing">{label}</Tag>
+  if (status === 'pass') return <Tag color="success">{label}</Tag>
+  if (status === 'fail') return <Tag color="error">{label}</Tag>
+  if (status === 'skip') return <Tag color="default">{label}</Tag>
   return null
 }
 
-function ReadinessStatusTag({ status }: { status: ReadinessStatus | string }) {
-  if (status === 'READY') return <Tag color="success">READY</Tag>
-  if (status === 'MISSING') return <Tag color="error">MISSING</Tag>
-  if (status === 'DISABLED') return <Tag color="warning">DISABLED</Tag>
-  if (status === 'NOT_READY') return <Tag color="default">NOT READY</Tag>
-  return <Tag color="default">{status || 'UNKNOWN'}</Tag>
+function ReadinessStatusTagLocalized({ status }: { status: ReadinessStatus | string }) {
+  const { t } = useI18n()
+  const upper = status.toUpperCase()
+  if (status === 'READY') return <Tag color="success">{t('status.readiness.READY')}</Tag>
+  if (status === 'MISSING') return <Tag color="error">{t('status.readiness.MISSING')}</Tag>
+  if (status === 'DISABLED') return <Tag color="warning">{t('status.readiness.DISABLED')}</Tag>
+  if (status === 'NOT_READY') return <Tag color="default">{t('status.readiness.NOT_READY')}</Tag>
+  if (!status) return <Tag color="default">{t('status.readiness.UNKNOWN')}</Tag>
+  return <Tag color="default">{upper}</Tag>
 }
 
 export default function SmokeTestPage() {
   const { adminUserId, selectedAppId, setSelectedAppId } = useShell()
+  const { t, tCommon } = useI18n()
 
   const [apps, setApps] = useState<AppVO[]>([])
   const [keys, setKeys] = useState<ApiKeyVO[]>([])
@@ -112,9 +121,9 @@ export default function SmokeTestPage() {
       }
     } catch (e: unknown) {
       setApps([])
-      setLoadError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Failed to load apps'))
+      setLoadError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : tCommon('Failed to load apps')))
     }
-  }, [adminUserId])
+  }, [adminUserId, tCommon])
 
   useEffect(() => {
     fetchApps()
@@ -140,9 +149,9 @@ export default function SmokeTestPage() {
       }
     } catch (e: unknown) {
       setKeys([])
-      setLoadError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Failed to load API keys'))
+      setLoadError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : tCommon('Failed to load API keys')))
     }
-  }, [activeAppId, adminUserId])
+  }, [activeAppId, adminUserId, tCommon])
 
   const fetchReadiness = useCallback(async () => {
     if (activeAppId === null || adminUserId === null) {
@@ -162,11 +171,11 @@ export default function SmokeTestPage() {
       }
     } catch (e: unknown) {
       setReadiness(null)
-      setReadinessError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Failed to load readiness'))
+      setReadinessError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : tCommon('Failed to load readiness')))
     } finally {
       setReadinessLoading(false)
     }
-  }, [activeAppId, adminUserId])
+  }, [activeAppId, adminUserId, tCommon])
 
   useEffect(() => {
     setSelectedKeyPrefix(null)
@@ -240,7 +249,7 @@ export default function SmokeTestPage() {
         setNonStreaming({
           status: 'fail',
           evidence: null,
-          error: { status: 0, message: e instanceof Error ? e.message : 'Unknown error', code: null },
+          error: { status: 0, message: e instanceof Error ? e.message : tCommon('Unknown error'), code: null },
         })
       }
     }
@@ -275,7 +284,7 @@ export default function SmokeTestPage() {
         setStreaming({
           status: 'fail',
           evidence: null,
-          error: { status: 0, message: e instanceof Error ? e.message : 'Unknown error', code: null },
+          error: { status: 0, message: e instanceof Error ? e.message : tCommon('Unknown error'), code: null },
         })
       }
     }
@@ -421,7 +430,7 @@ export default function SmokeTestPage() {
         setRevokedKey(prev => ({
           ...prev,
           status: 'fail',
-          error: { status: 0, message: e instanceof Error ? e.message : 'Unknown error', code: null },
+          error: { status: 0, message: e instanceof Error ? e.message : tCommon('Unknown error'), code: null },
         }))
       }
     }
@@ -439,21 +448,21 @@ export default function SmokeTestPage() {
 
         <Space>
           <div>
-            <Text type="secondary">App:</Text>
+            <Text type="secondary">{t('smoke.app')}</Text>
             <Select
               value={activeAppId}
               onChange={(v) => handleAppSelect(v)}
-              placeholder="Select app"
+              placeholder={t('smoke.appPlaceholder')}
               style={{ width: 240, marginLeft: 8 }}
               options={apps.map(a => ({ value: a.id, label: `#${a.id} ${a.name}` }))}
             />
           </div>
           <div>
-            <Text type="secondary">Active Key:</Text>
+            <Text type="secondary">{t('smoke.activeKey')}</Text>
             <Select
               value={selectedKeyPrefix}
               onChange={(v) => setSelectedKeyPrefix(v)}
-              placeholder="Select active key (for reference)"
+              placeholder={t('smoke.keyPlaceholder')}
               style={{ width: 260, marginLeft: 8 }}
               options={keys.map(k => ({
                 value: `${k.name} (${k.key_prefix})`,
@@ -466,20 +475,20 @@ export default function SmokeTestPage() {
         {activeAppId !== null && (
           <Card size="small" title={
             <Space>
-              <span>Preflight Readiness</span>
+              <span>{t('smoke.preflightTitle')}</span>
               {readinessLoading && <Spin size="small" />}
               {readiness && (
-                <ReadinessStatusTag status={readiness.overall_status} />
+                <ReadinessStatusTagLocalized status={readiness.overall_status} />
               )}
             </Space>
           }>
             {readinessLoading && !readiness && (
-              <Spin tip="Checking app readiness..." style={{ display: 'block', margin: '16px 0' }}>
+              <Spin tip={t('smoke.preflightLoading')} style={{ display: 'block', margin: '16px 0' }}>
                 <div style={{ height: 40 }} />
               </Spin>
             )}
             {readinessError && (
-              <Text type="danger">Failed to load readiness: {readinessError}</Text>
+              <Text type="danger">{t('smoke.preflightError')} {readinessError}</Text>
             )}
             {readiness && readiness.checks.length > 0 && (
               <Descriptions column={1} size="small" bordered>
@@ -487,7 +496,7 @@ export default function SmokeTestPage() {
                   <Descriptions.Item key={check.key} label={
                     <Space size={4}>
                       <span>{check.label}</span>
-                      <ReadinessStatusTag status={check.status} />
+                      <ReadinessStatusTagLocalized status={check.status} />
                     </Space>
                   }>
                     <Space direction="vertical" size={2}>
@@ -506,18 +515,18 @@ export default function SmokeTestPage() {
             )}
             {readiness && readiness.overall_status !== 'READY' && (
               <Text type="warning" style={{ display: 'block', marginTop: 8 }}>
-                Fix the issues above before running Smoke tests.
+                {t('smoke.preflightWarning')}
               </Text>
             )}
             {readiness && readiness.overall_status === 'READY' && (
               <Text type="success" style={{ display: 'block', marginTop: 8 }}>
-                All prerequisites are ready. You can proceed with Smoke tests.
+                {t('smoke.preflightReady')}
               </Text>
             )}
           </Card>
         )}
 
-        <Card size="small" title="Temporary API Key (not stored)">
+        <Card size="small" title={t('smoke.keyCardTitle')}>
           <Space.Compact style={{ width: '100%' }}>
             <Input.Password
               value={selectedKeyValue ?? ''}
@@ -529,24 +538,24 @@ export default function SmokeTestPage() {
               onClick={() => { setSelectedKeyValue(null); resetAllSteps() }}
               disabled={selectedKeyValue === null}
             >
-              Clear
+              {t('smoke.clear')}
             </Button>
           </Space.Compact>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Paste the full plaintext key from the API Keys creation dialog. This value is only held in memory for this session and is cleared when you switch apps, clear manually, or reload the page.
+            {t('smoke.keyHint')}
           </Text>
         </Card>
 
-        <Card size="small" title="User Message">
+        <Card size="small" title={t('smoke.userMessageTitle')}>
           <Input.TextArea
             value={userInput}
             onChange={(e) => handleUserInputChange(e.target.value)}
             rows={2}
-            placeholder="Enter the user message for the chat completion..."
+            placeholder={t('smoke.userMessagePlaceholder')}
           />
         </Card>
 
-        <Divider orientation="left" plain>Step 1: Non-Streaming Smoke</Divider>
+        <Divider orientation="left" plain>{t('smoke.step1')}</Divider>
 
         <Space>
           <Button
@@ -555,45 +564,49 @@ export default function SmokeTestPage() {
             loading={nonStreaming.status === 'running'}
             disabled={!canRun}
           >
-            Send Non-Streaming Request
+            {t('smoke.step1Send')}
           </Button>
-          <StepStatusTag status={nonStreaming.status} />
+          <StepStatusTagLocalized status={nonStreaming.status} />
         </Space>
 
         {nonStreaming.status === 'running' && (
-          <Spin tip="Waiting for gateway response..." style={{ display: 'block', margin: '16px 0' }}>
+          <Spin tip={t('smoke.step1Waiting')} style={{ display: 'block', margin: '16px 0' }}>
             <div style={{ height: 40 }} />
           </Spin>
         )}
 
         {nonStreaming.evidence && (
-          <Card size="small" title="Non-Streaming Evidence" style={{ borderColor: '#52c41a' }}>
+          <Card size="small" title={t('smoke.step1Evidence')} style={{ borderColor: '#52c41a' }}>
             <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="ID">{nonStreaming.evidence.id}</Descriptions.Item>
-              <Descriptions.Item label="Object">{nonStreaming.evidence.object}</Descriptions.Item>
-              <Descriptions.Item label="Model">{nonStreaming.evidence.model}</Descriptions.Item>
-              <Descriptions.Item label="Finish Reason">{nonStreaming.evidence.finishReason}</Descriptions.Item>
-              <Descriptions.Item label="Content Length">{nonStreaming.evidence.contentLength} chars</Descriptions.Item>
-              <Descriptions.Item label="Tokens">
-                {nonStreaming.evidence.promptTokens} prompt / {nonStreaming.evidence.completionTokens} completion / {nonStreaming.evidence.totalTokens} total
+              <Descriptions.Item label={t('evidence.id')}>{nonStreaming.evidence.id}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.object')}>{nonStreaming.evidence.object}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.model')}>{nonStreaming.evidence.model}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.finishReason')}>{nonStreaming.evidence.finishReason}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.contentLength')}>{nonStreaming.evidence.contentLength} {t('evidence.chars')}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.tokens')}>
+                {t('evidence.tokenSummary', {
+                  prompt: nonStreaming.evidence.promptTokens,
+                  completion: nonStreaming.evidence.completionTokens,
+                  total: nonStreaming.evidence.totalTokens,
+                })}
               </Descriptions.Item>
             </Descriptions>
           </Card>
         )}
 
         {nonStreaming.error && (
-          <Card size="small" title="Non-Streaming Error" style={{ borderColor: '#ff4d4f' }}>
+          <Card size="small" title={t('smoke.step1Error')} style={{ borderColor: '#ff4d4f' }}>
             <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="HTTP Status">{nonStreaming.error.status || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Error Code">
+              <Descriptions.Item label={t('evidence.httpStatus')}>{nonStreaming.error.status || 'N/A'}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.errorCode')}>
                 <Tag color="red">{nonStreaming.error.code || 'N/A'}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Message">{nonStreaming.error.message}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.message')}>{nonStreaming.error.message}</Descriptions.Item>
             </Descriptions>
           </Card>
         )}
 
-        <Divider orientation="left" plain>Step 2: Streaming Smoke</Divider>
+        <Divider orientation="left" plain>{t('smoke.step2')}</Divider>
 
         <Space>
           <Button
@@ -601,26 +614,26 @@ export default function SmokeTestPage() {
             loading={streaming.status === 'running'}
             disabled={!canRun}
           >
-            Send Streaming Request
+            {t('smoke.step2Send')}
           </Button>
-          <StepStatusTag status={streaming.status} />
+          <StepStatusTagLocalized status={streaming.status} />
         </Space>
 
         {streaming.status === 'running' && (
-          <Spin tip="Reading SSE stream..." style={{ display: 'block', margin: '16px 0' }}>
+          <Spin tip={t('smoke.step2Waiting')} style={{ display: 'block', margin: '16px 0' }}>
             <div style={{ height: 40 }} />
           </Spin>
         )}
 
         {streaming.evidence && (
-          <Card size="small" title="Streaming Evidence" style={{ borderColor: streaming.status === 'pass' ? '#52c41a' : '#ff4d4f' }}>
+          <Card size="small" title={t('smoke.step2Evidence')} style={{ borderColor: streaming.status === 'pass' ? '#52c41a' : '#ff4d4f' }}>
             <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="HTTP Status">{streaming.evidence.httpStatus}</Descriptions.Item>
-              <Descriptions.Item label="Data Lines">{streaming.evidence.dataLineCount}</Descriptions.Item>
-              <Descriptions.Item label="Chunk Count">{streaming.evidence.chunkCount}</Descriptions.Item>
-              <Descriptions.Item label="[DONE] Present">
+              <Descriptions.Item label={t('evidence.httpStatus')}>{streaming.evidence.httpStatus}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.dataLines')}>{streaming.evidence.dataLineCount}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.chunkCount')}>{streaming.evidence.chunkCount}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.donePresent')}>
                 <Tag color={streaming.evidence.donePresent ? 'success' : 'error'}>
-                  {streaming.evidence.donePresent ? 'YES' : 'NO'}
+                  {streaming.evidence.donePresent ? t('evidence.yes') : t('evidence.no')}
                 </Tag>
               </Descriptions.Item>
             </Descriptions>
@@ -628,18 +641,18 @@ export default function SmokeTestPage() {
         )}
 
         {streaming.error && (
-          <Card size="small" title="Streaming Error" style={{ borderColor: '#ff4d4f' }}>
+          <Card size="small" title={t('smoke.step2Error')} style={{ borderColor: '#ff4d4f' }}>
             <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="HTTP Status">{streaming.error.status || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Error Code">
+              <Descriptions.Item label={t('evidence.httpStatus')}>{streaming.error.status || 'N/A'}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.errorCode')}>
                 <Tag color="red">{streaming.error.code || 'N/A'}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Message">{streaming.error.message}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.message')}>{streaming.error.message}</Descriptions.Item>
             </Descriptions>
           </Card>
         )}
 
-        <Divider orientation="left" plain>Step 3: Request-Log Validation</Divider>
+        <Divider orientation="left" plain>{t('smoke.step3')}</Divider>
 
         <Space>
           <Button
@@ -647,52 +660,55 @@ export default function SmokeTestPage() {
             loading={requestLog.status === 'running'}
             disabled={!canRunRequestLog}
           >
-            Validate Request Logs
+            {t('smoke.step3Validate')}
           </Button>
-          <StepStatusTag status={requestLog.status} />
+          <StepStatusTagLocalized status={requestLog.status} />
           {!canRunRequestLog && (
-            <Text type="secondary">Requires app selection, admin user ID, and a passing non-streaming smoke run</Text>
+            <Text type="secondary">{t('smoke.step3Hint')}</Text>
           )}
         </Space>
 
         {requestLog.status === 'running' && (
-          <Spin tip={`Validating request logs (${requestLog.subStep})...`} style={{ display: 'block', margin: '16px 0' }}>
+          <Spin tip={t('smoke.step3Validating', { step: requestLog.subStep })} style={{ display: 'block', margin: '16px 0' }}>
             <div style={{ height: 40 }} />
           </Spin>
         )}
 
         {requestLog.listRow && (
-          <Card size="small" title="Request-Log List Evidence" style={{ borderColor: requestLog.status === 'pass' ? '#52c41a' : requestLog.status === 'fail' ? '#ff4d4f' : undefined }}>
+          <Card size="small" title={t('smoke.step3ListEvidence')} style={{ borderColor: requestLog.status === 'pass' ? '#52c41a' : requestLog.status === 'fail' ? '#ff4d4f' : undefined }}>
             <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="Request ID">{requestLog.listRow.request_id}</Descriptions.Item>
-              <Descriptions.Item label="Model">{requestLog.listRow.model ?? '-'}</Descriptions.Item>
-              <Descriptions.Item label="Provider">{requestLog.listRow.provider_name ?? '-'}</Descriptions.Item>
-              <Descriptions.Item label="Status">{requestLog.listRow.status}</Descriptions.Item>
-              <Descriptions.Item label="Latency">{requestLog.listRow.latency_ms !== null ? `${requestLog.listRow.latency_ms}ms` : '-'}</Descriptions.Item>
-              <Descriptions.Item label="Messages Count">{requestLog.listRow.messages_count ?? '-'}</Descriptions.Item>
-              <Descriptions.Item label="Hit Chunk IDs">
-                [{requestLog.listRow.hit_chunk_ids.join(', ')}] (count={requestLog.listRow.hit_chunk_ids.length})
+              <Descriptions.Item label={t('evidence.requestId')}>{requestLog.listRow.request_id}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.model')}>{requestLog.listRow.model ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.provider')}>{requestLog.listRow.provider_name ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.status')}>{requestLog.listRow.status}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.latency')}>{requestLog.listRow.latency_ms !== null ? `${requestLog.listRow.latency_ms}ms` : '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.messagesCount')}>{requestLog.listRow.messages_count ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.hitChunkIds')}>
+                {t('evidence.hitChunkIdSummary', {
+                  ids: requestLog.listRow.hit_chunk_ids.join(', '),
+                  count: requestLog.listRow.hit_chunk_ids.length,
+                })}
               </Descriptions.Item>
             </Descriptions>
           </Card>
         )}
 
         {requestLog.detail && (
-          <Card size="small" title="Request-Log Detail Evidence">
+          <Card size="small" title={t('smoke.step3DetailEvidence')}>
             <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="Request ID">{requestLog.detail.request_id}</Descriptions.Item>
-              <Descriptions.Item label="User ID">{requestLog.detail.user_id}</Descriptions.Item>
-              <Descriptions.Item label="Updated At">{requestLog.detail.updated_at}</Descriptions.Item>
-              <Descriptions.Item label="Messages Count">{requestLog.detail.messages_count ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.requestId')}>{requestLog.detail.request_id}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.userId')}>{requestLog.detail.user_id}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.updatedAt')}>{requestLog.detail.updated_at}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.messagesCount')}>{requestLog.detail.messages_count ?? '-'}</Descriptions.Item>
             </Descriptions>
           </Card>
         )}
 
         {requestLog.hitChunks && requestLog.hitChunks.length > 0 && (
-          <Card size="small" title={`Hit-Chunk Metadata (count=${requestLog.hitChunks.length})`}>
+          <Card size="small" title={t('smoke.step3ChunkTitle', { count: requestLog.hitChunks.length })}>
             <Descriptions column={1} size="small" bordered>
               {requestLog.hitChunks.map((chunk, idx) => (
-                <Descriptions.Item key={idx} label={`Chunk #${idx + 1}`}>
+                <Descriptions.Item key={idx} label={t('evidence.chunkNumber', { number: idx + 1 })}>
                   chunk_id={chunk.chunk_id}, document_id={chunk.document_id}, kb_id={chunk.knowledge_base_id}, file={chunk.source_filename ?? '-'}, chunk_idx={chunk.chunk_index}
                 </Descriptions.Item>
               ))}
@@ -701,12 +717,12 @@ export default function SmokeTestPage() {
         )}
 
         {requestLog.error && (
-          <Card size="small" title="Request-Log Error" style={{ borderColor: '#ff4d4f' }}>
+          <Card size="small" title={t('smoke.step3Error')} style={{ borderColor: '#ff4d4f' }}>
             <Text type="danger">{requestLog.error}</Text>
           </Card>
         )}
 
-        <Divider orientation="left" plain>Step 4: Revoked-Key Auth (Optional)</Divider>
+        <Divider orientation="left" plain>{t('smoke.step4')}</Divider>
 
         <Space direction="vertical" style={{ width: '100%' }}>
           <Space>
@@ -715,9 +731,9 @@ export default function SmokeTestPage() {
               type={revokedKey.enabled ? 'primary' : 'default'}
               onClick={() => setRevokedKey(prev => ({ ...prev, enabled: !prev.enabled, status: 'idle', error: null, keyValue: null }))}
             >
-              {revokedKey.enabled ? 'Enabled' : 'Disabled'}
+              {revokedKey.enabled ? t('smoke.step4Enabled') : t('smoke.step4Disabled')}
             </Button>
-            <Text type="secondary">Enable to verify revoked key returns 401 invalid_api_key</Text>
+            <Text type="secondary">{t('smoke.step4Hint')}</Text>
           </Space>
 
           {revokedKey.enabled && (
@@ -725,7 +741,7 @@ export default function SmokeTestPage() {
               <Input.Password
                 value={revokedKey.keyValue ?? ''}
                 onChange={(e) => setRevokedKey(prev => ({ ...prev, keyValue: e.target.value || null, status: 'idle', error: null }))}
-                placeholder="Paste revoked sk-sangui-... key"
+                placeholder={t('smoke.step4Placeholder')}
                 style={{ flex: 1 }}
               />
             </Space.Compact>
@@ -738,32 +754,32 @@ export default function SmokeTestPage() {
                 loading={revokedKey.status === 'running'}
                 disabled={!revokedKey.keyValue}
               >
-                Verify Revoked Key
+                {t('smoke.step4Verify')}
               </Button>
-              <StepStatusTag status={revokedKey.status} />
+              <StepStatusTagLocalized status={revokedKey.status} />
             </Space>
           )}
 
           {!revokedKey.enabled && revokedKey.status === 'skip' && (
-            <Text type="secondary">Revoked-key check disabled.</Text>
+            <Text type="secondary">{t('smoke.step4DisabledHint')}</Text>
           )}
         </Space>
 
         {revokedKey.error && (
-          <Card size="small" title="Revoked-Key Error" style={{ borderColor: '#ff4d4f' }}>
+          <Card size="small" title={t('smoke.step4Error')} style={{ borderColor: '#ff4d4f' }}>
             <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label="HTTP Status">{revokedKey.error.status || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Error Code">
+              <Descriptions.Item label={t('evidence.httpStatus')}>{revokedKey.error.status || 'N/A'}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.errorCode')}>
                 <Tag color="red">{revokedKey.error.code || 'N/A'}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Message">{revokedKey.error.message}</Descriptions.Item>
+              <Descriptions.Item label={t('evidence.message')}>{revokedKey.error.message}</Descriptions.Item>
             </Descriptions>
           </Card>
         )}
 
         {revokedKey.status === 'pass' && (
-          <Card size="small" title="Revoked-Key Evidence" style={{ borderColor: '#52c41a' }}>
-            <Text>HTTP 401, error.code=invalid_api_key</Text>
+          <Card size="small" title={t('smoke.step4Evidence')} style={{ borderColor: '#52c41a' }}>
+            <Text>{t('smoke.step4EvidenceText')}</Text>
           </Card>
         )}
       </Space>

@@ -1,19 +1,23 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import { Layout, Menu, Input, Button, Space, Typography } from 'antd'
+import { Layout, Menu, Input, Button, Space, Typography, Select, theme } from 'antd'
+import { SunOutlined, MoonOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
+import { useI18n } from '../../app/i18n'
+import { UIPreferenceContext } from '../../app/providers/UIPreferenceProvider'
+import type { I18nKey } from '../../app/i18n/dict'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
 
 export type PageKey = 'model-configs' | 'knowledge' | 'apps' | 'api-keys' | 'smoke' | 'request-logs'
 
-const PAGE_LABELS: Record<PageKey, string> = {
-  'model-configs': 'Model Configs',
-  'knowledge': 'Knowledge Bases',
-  'apps': 'Apps',
-  'api-keys': 'API Keys',
-  'smoke': 'Smoke Test',
-  'request-logs': 'Request Logs',
+const PAGE_KEY_TO_I18N: Record<PageKey, I18nKey> = {
+  'model-configs': 'nav.model-configs',
+  'knowledge': 'nav.knowledge',
+  'apps': 'nav.apps',
+  'api-keys': 'nav.api-keys',
+  'smoke': 'nav.smoke',
+  'request-logs': 'nav.request-logs',
 }
 
 export interface ShellContextValue {
@@ -39,6 +43,10 @@ interface AdminShellProps {
 }
 
 export default function AdminShell({ children }: AdminShellProps) {
+  const { t, locale } = useI18n()
+  const { themeMode, setThemeMode, setLocale } = useContext(UIPreferenceContext)
+  const { token } = theme.useToken()
+
   const [adminUserIdInput, setAdminUserIdInput] = useState('')
   const [adminUserId, setAdminUserId] = useState<number | null>(null)
   const [connectError, setConnectError] = useState<string | null>(null)
@@ -48,7 +56,7 @@ export default function AdminShell({ children }: AdminShellProps) {
   function handleConnect() {
     const num = Number(adminUserIdInput)
     if (!adminUserIdInput || !Number.isFinite(num) || num <= 0) {
-      setConnectError('Enter a positive number')
+      setConnectError(t('app.errorUserId'))
       return
     }
     setConnectError(null)
@@ -56,12 +64,12 @@ export default function AdminShell({ children }: AdminShellProps) {
   }
 
   const menuItems: MenuProps['items'] = useMemo(() => {
-    const entries = Object.entries(PAGE_LABELS) as [PageKey, string][]
-    return entries.map(([key, label]) => ({
+    const entries = Object.entries(PAGE_KEY_TO_I18N) as [PageKey, I18nKey][]
+    return entries.map(([key, labelKey]) => ({
       key,
-      label,
+      label: t(labelKey),
     }))
-  }, [])
+  }, [t])
 
   function handleMenuClick(info: { key: string }) {
     setCurrentPage(info.key as PageKey)
@@ -74,18 +82,20 @@ export default function AdminShell({ children }: AdminShellProps) {
     navigateTo: (page) => setCurrentPage(page),
   }), [adminUserId, selectedAppId])
 
+  const shellTitle = t('app.title')
+
   if (adminUserId === null) {
     return (
       <div style={{ maxWidth: 400, margin: '120px auto', padding: 24 }}>
         <Typography.Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          Sangui RAG Gateway Admin
+          {shellTitle}
         </Typography.Title>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Text>Enter Admin User ID to continue</Text>
+          <Text>{t('app.enterUserId')}</Text>
           <Input
             value={adminUserIdInput}
             onChange={(e) => { setAdminUserIdInput(e.target.value); setConnectError(null) }}
-            placeholder="Positive integer"
+            placeholder={t('app.placeholderUserId')}
             type="number"
             status={connectError ? 'error' : undefined}
             onPressEnter={handleConnect}
@@ -97,7 +107,7 @@ export default function AdminShell({ children }: AdminShellProps) {
             onClick={handleConnect}
             disabled={!adminUserIdInput || !Number.isFinite(Number(adminUserIdInput)) || Number(adminUserIdInput) <= 0}
           >
-            Connect
+            {t('app.connect')}
           </Button>
         </Space>
       </div>
@@ -107,7 +117,7 @@ export default function AdminShell({ children }: AdminShellProps) {
   return (
     <ShellContext.Provider value={shellValue}>
       <Layout style={{ minHeight: '100vh' }}>
-        <Sider width={220} theme="light" breakpoint="lg" collapsedWidth={0}>
+        <Sider width={220} theme={themeMode} breakpoint="lg" collapsedWidth={0}>
           <div style={{ padding: '16px 16px 8px', fontWeight: 600, fontSize: 16 }}>
             RAG Gateway Admin
           </div>
@@ -124,18 +134,35 @@ export default function AdminShell({ children }: AdminShellProps) {
           />
         </Sider>
         <Layout>
-          <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text strong>{PAGE_LABELS[currentPage]}</Text>
+          <Header style={{ background: token.colorBgContainer, padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text strong>{t(PAGE_KEY_TO_I18N[currentPage])}</Text>
             <Space>
+              <Select
+                size="small"
+                value={locale}
+                onChange={(v) => setLocale(v)}
+                style={{ width: 100 }}
+                options={[
+                  { value: 'zh-CN', label: t('lang.zhCN') },
+                  { value: 'en-US', label: t('lang.enUS') },
+                ]}
+              />
+              <Button
+                size="small"
+                icon={themeMode === 'dark' ? <SunOutlined /> : <MoonOutlined />}
+                onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+              >
+                {themeMode === 'dark' ? t('theme.light') : t('theme.dark')}
+              </Button>
               {selectedAppId !== null && (
                 <Text type="secondary">App #{selectedAppId}</Text>
               )}
               <Button size="small" onClick={() => setAdminUserId(null)}>
-                Switch User
+                {t('app.switchUser')}
               </Button>
             </Space>
           </Header>
-          <Content style={{ margin: 16, padding: 24, background: '#fff', borderRadius: 8, minHeight: 360 }}>
+          <Content style={{ margin: 16, padding: 24, background: token.colorBgContainer, borderRadius: 8, minHeight: 360 }}>
             {children({ ...shellValue, currentPage })}
           </Content>
         </Layout>

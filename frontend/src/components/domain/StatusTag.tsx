@@ -4,6 +4,8 @@ import type { AppStatus } from '../../types/app'
 import type { KnowledgeBaseStatus } from '../../types/knowledge'
 import type { DocumentStatus } from '../../types/document'
 import type { ApiKeyStatus } from '../../types/api-key'
+import { useI18n } from '../../app/i18n'
+import type { I18nKey } from '../../app/i18n/dict'
 
 export type StatusType = ModelConfigStatus | AppStatus | KnowledgeBaseStatus | DocumentStatus | ApiKeyStatus | 'success' | 'failure'
 
@@ -30,6 +32,9 @@ interface StatusTagProps {
 }
 
 export default function StatusTag({ status }: StatusTagProps) {
+  const { t } = useI18n()
+  const i18nKey = `status.${status}` as I18nKey
+  const label = t(i18nKey)
   const color = STATUS_COLORS[status] || 'default'
-  return <Tag color={color}>{status}</Tag>
+  return <Tag color={color}>{label}</Tag>
 }

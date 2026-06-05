@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 29
-- **Last Active**: 2026-06-03
+- **Total Sessions**: 30
+- **Last Active**: 2026-06-05
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1738 | Active |
+| `journal-1.md` | ~1785 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 30 | 2026-06-05 | App就绪预检验收收尾 | `eae2d6e` | `main` |
 | 29 | 2026-06-03 | Frontend Smoke Streaming Request-Log Acceptance | `a68a382` | `main` |
 | 28 | 2026-06-02 | RAG demo acceptance script and runbook hardening | `f77bffd` | `main` |
 | 27 | 2026-06-02 | Model Config edit and upstream key rotation UX | `396d4f8` | `main` |

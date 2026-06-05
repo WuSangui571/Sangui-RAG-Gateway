@@ -12,9 +12,11 @@ import { listModelConfigs } from '../../api/model-configs'
 import { listKnowledgeBases } from '../../api/knowledge'
 import { useShell } from '../../components/layout/AdminShell'
 import StatusTag from '../../components/domain/StatusTag'
+import { useI18n } from '../../app/i18n'
 
 export default function AppConfigPage() {
   const { adminUserId, setSelectedAppId } = useShell()
+  const { t } = useI18n()
 
   const [apps, setApps] = useState<AppVO[]>([])
   const [loading, setLoading] = useState(false)
@@ -47,12 +49,12 @@ export default function AppConfigPage() {
         setApps(res.data)
       }
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('apps.networkError')))
       setApps([])
     } finally {
       setLoading(false)
     }
-  }, [adminUserId])
+  }, [adminUserId, t])
 
   useEffect(() => {
     fetchApps()
@@ -93,7 +95,7 @@ export default function AppConfigPage() {
       }
     } catch (e: unknown) {
       setModelConfigs([])
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Failed to load model configs'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('apps.failedLoadModel')))
     }
     setBindModelOpen(true)
   }
@@ -109,7 +111,7 @@ export default function AppConfigPage() {
         fetchApps()
       }
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('apps.networkError')))
     }
   }
 
@@ -126,7 +128,7 @@ export default function AppConfigPage() {
       }
     } catch (e: unknown) {
       setKbList([])
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Failed to load knowledge bases'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('apps.failedLoadKb')))
     }
     setBindKbOpen(true)
   }
@@ -142,16 +144,16 @@ export default function AppConfigPage() {
         fetchApps()
       }
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('apps.networkError')))
     }
   }
 
   function confirmDisableApp(app: AppVO) {
     if (adminUserId === null) return
     Modal.confirm({
-      title: 'Disable App',
-      content: `Disable "${app.name}"? All API keys under this app will fail /v1/* calls with 401 invalid_api_key until re-enabled.`,
-      okText: 'Disable',
+      title: t('apps.disableTitle'),
+      content: t('apps.disableContent', { name: app.name }),
+      okText: t('apps.disableOk'),
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
@@ -162,7 +164,7 @@ export default function AppConfigPage() {
             fetchApps()
           }
         } catch (e: unknown) {
-          setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+          setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('apps.networkError')))
         }
       },
     })
@@ -178,48 +180,48 @@ export default function AppConfigPage() {
         fetchApps()
       }
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('apps.networkError')))
     }
   }
 
   const columns: ColumnsType<AppVO> = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-    { title: 'Name', dataIndex: 'name', key: 'name', width: 180 },
+    { title: t('apps.column.id'), dataIndex: 'id', key: 'id', width: 60 },
+    { title: t('apps.column.name'), dataIndex: 'name', key: 'name', width: 180 },
     {
-      title: 'Status', dataIndex: 'status', key: 'status', width: 100,
+      title: t('apps.column.status'), dataIndex: 'status', key: 'status', width: 100,
       render: (s: AppStatus) => <StatusTag status={s} />,
     },
     {
-      title: 'Default Model Config', key: 'model_config', width: 140,
+      title: t('apps.column.defaultModel'), key: 'model_config', width: 140,
       render: (_: unknown, record: AppVO) => record.default_model_config_id ?? '-',
     },
     {
-      title: 'Default KB', key: 'kb', width: 140,
+      title: t('apps.column.defaultKb'), key: 'kb', width: 140,
       render: (_: unknown, record: AppVO) => record.default_knowledge_base_id ?? '-',
     },
     {
-      title: 'Actions', key: 'actions', width: 380,
+      title: t('apps.column.actions'), key: 'actions', width: 380,
       render: (_: unknown, record: AppVO) => (
         <Space>
           <Button size="small" onClick={() => { setSelectedAppId(record.id) }}>
-            Select App
+            {t('apps.selectApp')}
           </Button>
           <Button size="small" onClick={() => loadModelConfigsForBind(record.id)}>
-            Bind Model
+            {t('apps.bindModel')}
           </Button>
           <Button
             size="small"
             onClick={() => loadKbsForBind(record.id)}
           >
-            Bind KB
+            {t('apps.bindKb')}
           </Button>
           {record.status === 'ENABLED' ? (
             <Button size="small" danger onClick={() => confirmDisableApp(record)}>
-              Disable
+              {t('apps.disable')}
             </Button>
           ) : (
             <Button size="small" onClick={() => handleEnableApp(record)}>
-              Enable
+              {t('apps.enable')}
             </Button>
           )}
         </Space>
@@ -231,13 +233,13 @@ export default function AppConfigPage() {
     <div>
       <Space style={{ marginBottom: 16 }}>
         <Button type="primary" onClick={() => { setCreateOpen(true); setError(null) }}>
-          Create App
+          {t('apps.create')}
         </Button>
-        <Button onClick={fetchApps}>Refresh</Button>
+        <Button onClick={fetchApps}>{t('apps.refresh')}</Button>
       </Space>
 
       {error && (
-        <Alert type="error" message="Error" description={error} closable onClose={() => setError(null)} style={{ marginBottom: 16 }} />
+        <Alert type="error" message={t('apps.error')} description={error} closable onClose={() => setError(null)} style={{ marginBottom: 16 }} />
       )}
 
       <Table
@@ -245,13 +247,13 @@ export default function AppConfigPage() {
         columns={columns}
         dataSource={apps}
         loading={loading}
-        locale={{ emptyText: 'No apps found' }}
+        locale={{ emptyText: t('apps.empty') }}
         pagination={false}
         scroll={{ x: 900 }}
       />
 
       <Modal
-        title="Create App"
+        title={t('apps.createTitle')}
         open={createOpen}
         onCancel={() => { setCreateOpen(false); form.resetFields() }}
         onOk={handleCreate}
@@ -259,26 +261,26 @@ export default function AppConfigPage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Name is required' }]}>
-            <Input placeholder="App name" />
+          <Form.Item name="name" label={t('apps.column.name')} rules={[{ required: true, message: t('apps.nameRequired') }]}>
+            <Input placeholder={t('apps.namePlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>
 
       <Modal
-        title="Bind Default Model Config"
+        title={t('apps.bindModelTitle')}
         open={bindModelOpen}
         onCancel={() => { setBindModelOpen(false); setSelectedModelConfigId(null) }}
         onOk={handleBindModel}
         okButtonProps={{ disabled: selectedModelConfigId === null }}
       >
         <Typography.Paragraph type="secondary">
-          Only enabled model configs are shown.
+          {t('apps.bindModelHint')}
         </Typography.Paragraph>
         <Select
           value={selectedModelConfigId}
           onChange={(v) => setSelectedModelConfigId(v)}
-          placeholder="Select a model config"
+          placeholder={t('apps.bindModelPlaceholder')}
           style={{ width: '100%' }}
           options={modelConfigs.map(mc => ({
             value: mc.id,
@@ -288,19 +290,19 @@ export default function AppConfigPage() {
       </Modal>
 
       <Modal
-        title="Bind Default Knowledge Base"
+        title={t('apps.bindKbTitle')}
         open={bindKbOpen}
         onCancel={() => { setBindKbOpen(false); setSelectedKbId(null) }}
         onOk={handleBindKb}
         okButtonProps={{ disabled: selectedKbId === null }}
       >
         <Typography.Paragraph type="secondary">
-          Only READY knowledge bases are shown.
+          {t('apps.bindKbHint')}
         </Typography.Paragraph>
         <Select
           value={selectedKbId}
           onChange={(v) => setSelectedKbId(v)}
-          placeholder="Select a knowledge base"
+          placeholder={t('apps.bindKbPlaceholder')}
           style={{ width: '100%' }}
           options={kbList.map(kb => ({
             value: kb.id,

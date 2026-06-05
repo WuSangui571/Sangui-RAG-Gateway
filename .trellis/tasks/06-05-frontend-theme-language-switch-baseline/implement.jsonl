@@ -1,0 +1,27 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-05-frontend-theme-language-switch-baseline\\prd.md", "reason": "Authoritative requirements, boundaries, acceptance criteria, and validation contract"}
+{"file": ".trellis\\tasks\\06-05-frontend-theme-language-switch-baseline\\research.md", "reason": "Focused code research and implementation handoff notes"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product boundary, admin console scope, secret safety, safe evidence contracts"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Placement rules for providers, hooks, components, pages, types, and styles"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Admin component composition, explicit states, accessibility, modal/table/status rules"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Local/global/server state and localStorage/secret-state boundaries"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Typed frontend contracts, status unions, and API model constraints"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Hook/provider responsibilities and side-effect boundaries"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend validation, secret safety, accessibility, dark-mode readability checklist"}
+{"file": ".trellis\\spec\\guides\\index.md", "reason": "Shared thinking guide index and boundary triggers"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Avoid duplicated i18n/theme/status logic"}
+{"file": "frontend\\src\\main.tsx", "reason": "Current app root without ConfigProvider or preference provider"}
+{"file": "frontend\\src\\App.tsx", "reason": "Current page composition under AdminShell"}
+{"file": "frontend\\src\\components\\layout\\AdminShell.tsx", "reason": "Current shell state, navigation labels, light-only layout styling"}
+{"file": "frontend\\src\\styles\\index.css", "reason": "Current hardcoded light body background"}
+{"file": "frontend\\src\\components\\domain\\ApiKeyOneTimeSecret.tsx", "reason": "Secret one-time modal behavior that must remain memory-only"}
+{"file": "frontend\\src\\components\\domain\\StatusTag.tsx", "reason": "Shared status tag display and status enum boundary"}
+{"file": "frontend\\src\\components\\domain\\RequestLogDetailDrawer.tsx", "reason": "Request-log safe detail drawer labels and dark-mode surface"}
+{"file": "frontend\\src\\components\\domain\\HitChunksPanel.tsx", "reason": "Hit chunk summary safe display and i18n target"}
+{"file": "frontend\\src\\pages\\smoke\\SmokeTestPage.tsx", "reason": "Smoke/readiness copy and safe-evidence UI surface"}
+{"file": "frontend\\src\\pages\\apps\\AppConfigPage.tsx", "reason": "Apps page labels, modals, actions, status display"}
+{"file": "frontend\\src\\pages\\model-configs\\ModelConfigPage.tsx", "reason": "Model Config page labels, forms, modals, validation copy"}
+{"file": "frontend\\src\\pages\\knowledge\\KnowledgeBasePage.tsx", "reason": "Knowledge page labels, upload controls, table states"}
+{"file": "frontend\\src\\pages\\api-keys\\ApiKeyPage.tsx", "reason": "API Keys page labels and secret lifecycle UI"}
+{"file": "frontend\\src\\pages\\request-logs\\RequestLogListPage.tsx", "reason": "Request Logs list labels, filters, detail drawer integration"}

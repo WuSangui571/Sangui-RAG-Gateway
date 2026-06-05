@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Divider, Input, Modal, Space, Typography } from 'antd'
+import { useI18n } from '../../app/i18n'
 
 const { Text, Paragraph } = Typography
 
@@ -11,6 +12,7 @@ interface ApiKeyOneTimeSecretProps {
 }
 
 export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoToSmokeTest }: ApiKeyOneTimeSecretProps) {
+  const { t } = useI18n()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'failed'>('idle')
   const [baseUrlCopyStatus, setBaseUrlCopyStatus] = useState<'idle' | 'success' | 'failed'>('idle')
@@ -73,7 +75,7 @@ export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoT
 
   return (
     <Modal
-      title="API Key Created"
+      title={t('secret.title')}
       open={open}
       onCancel={onClose}
       closable={false}
@@ -82,22 +84,22 @@ export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoT
       footer={
         <Space>
           <Button onClick={handleCopy} type="primary">
-            Copy Key
+            {t('secret.copy')}
           </Button>
           {onGoToSmokeTest && (
             <Button onClick={handleGoToSmokeTest} type="default">
-              Go to Smoke Test
+              {t('secret.goToSmoke')}
             </Button>
           )}
           <Button onClick={onClose}>
-            I have saved this key
+            {t('secret.saved')}
           </Button>
         </Space>
       }
       destroyOnClose
     >
       <Paragraph style={{ marginBottom: 12 }}>
-        <Text type="warning">This key will only be shown once. Copy it now.</Text>
+        <Text type="warning">{t('secret.warning')}</Text>
       </Paragraph>
       <Input.TextArea
         ref={inputRef}
@@ -108,39 +110,37 @@ export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoT
         style={{ fontFamily: 'monospace', wordBreak: 'break-all', marginBottom: 12 }}
       />
       {copyStatus === 'success' ? (
-        <Alert type="success" showIcon message="Copied. Save it somewhere secure before closing this dialog." />
+        <Alert type="success" showIcon message={t('secret.copied')} />
       ) : null}
       {copyStatus === 'failed' ? (
-        <Alert
-          type="warning"
-          showIcon
-          message="Browser clipboard access failed. The key is selected above; press Ctrl+C to copy it manually."
-        />
+        <Alert type="warning" showIcon message={t('secret.copyFailed')} />
       ) : null}
 
       <Divider style={{ margin: '16px 0 12px' }} />
 
       <Paragraph style={{ marginBottom: 8 }}>
-        <Text strong>Next step:</Text>{' '}
+        <Text strong>{t('secret.nextStep')}</Text>{' '}
         <Text type="secondary">
-          Use this key as <Text code>Authorization: Bearer &lt;key&gt;</Text> with the gateway base URL.
+          {t('secret.usage')}{' '}
+          <Text code>Authorization: Bearer {'<key>'}</Text>{' '}
+          {t('secret.usageAuth')}
         </Text>
       </Paragraph>
       <Space style={{ marginBottom: 8 }}>
         <Text code style={{ fontSize: 13 }}>{gatewayBaseUrl}</Text>
         <Button size="small" onClick={handleCopyBaseUrl}>
-          {baseUrlCopyStatus === 'success' ? 'Copied' : 'Copy Base URL'}
+          {baseUrlCopyStatus === 'success' ? t('secret.copiedUrl') : t('secret.copyBaseUrl')}
         </Button>
       </Space>
       {baseUrlCopyStatus === 'failed' && (
         <Paragraph>
-          <Text type="warning" style={{ fontSize: 12 }}>Failed to copy base URL. Please copy it manually.</Text>
+          <Text type="warning" style={{ fontSize: 12 }}>{t('secret.copyUrlFailed')}</Text>
         </Paragraph>
       )}
       {onGoToSmokeTest && (
         <Paragraph style={{ marginBottom: 0 }}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            You can also click "Go to Smoke Test" to validate this key immediately.
+            {t('secret.smokeHint')}
           </Text>
         </Paragraph>
       )}

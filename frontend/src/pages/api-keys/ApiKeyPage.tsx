@@ -11,9 +11,11 @@ import { listApiKeys, createApiKey, disableApiKey, revokeApiKey } from '../../ap
 import { useShell } from '../../components/layout/AdminShell'
 import StatusTag from '../../components/domain/StatusTag'
 import ApiKeyOneTimeSecret from '../../components/domain/ApiKeyOneTimeSecret'
+import { useI18n } from '../../app/i18n'
 
 export default function ApiKeyPage() {
   const { adminUserId, selectedAppId, setSelectedAppId, navigateTo } = useShell()
+  const { t } = useI18n()
 
   const [apps, setApps] = useState<AppVO[]>([])
   const [activeAppId, setActiveAppId] = useState<number | null>(selectedAppId)
@@ -43,9 +45,9 @@ export default function ApiKeyPage() {
         setError(res.message)
       }
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Failed to load apps'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('api-keys.failedLoadApps')))
     }
-  }, [adminUserId])
+  }, [adminUserId, t])
 
   useEffect(() => {
     fetchApps()
@@ -71,12 +73,12 @@ export default function ApiKeyPage() {
         setKeys(res.data)
       }
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('api-keys.networkError')))
       setKeys([])
     } finally {
       setLoading(false)
     }
-  }, [activeAppId, adminUserId])
+  }, [activeAppId, adminUserId, t])
 
   useEffect(() => {
     fetchKeys()
@@ -119,7 +121,7 @@ export default function ApiKeyPage() {
       if (res.code !== 'OK') setError(res.message)
       else fetchKeys()
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('api-keys.networkError')))
     } finally {
       setDisableConfirmId(null)
     }
@@ -132,7 +134,7 @@ export default function ApiKeyPage() {
       if (res.code !== 'OK') setError(res.message)
       else fetchKeys()
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('api-keys.networkError')))
     } finally {
       setRevokeConfirmId(null)
     }
@@ -149,45 +151,45 @@ export default function ApiKeyPage() {
   }
 
   const columns: ColumnsType<ApiKeyVO> = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-    { title: 'Name', dataIndex: 'name', key: 'name', width: 140 },
-    { title: 'Prefix', dataIndex: 'key_prefix', key: 'key_prefix', width: 180 },
+    { title: t('api-keys.column.id'), dataIndex: 'id', key: 'id', width: 60 },
+    { title: t('api-keys.column.name'), dataIndex: 'name', key: 'name', width: 140 },
+    { title: t('api-keys.column.prefix'), dataIndex: 'key_prefix', key: 'key_prefix', width: 180 },
     {
-      title: 'Status', dataIndex: 'status', key: 'status', width: 100,
+      title: t('api-keys.column.status'), dataIndex: 'status', key: 'status', width: 100,
       render: (s: ApiKeyStatus) => <StatusTag status={s} />,
     },
     {
-      title: 'Created', dataIndex: 'created_at', key: 'created_at', width: 170,
+      title: t('api-keys.column.created'), dataIndex: 'created_at', key: 'created_at', width: 170,
       render: (v: string | null) => v ?? '-',
     },
     {
-      title: 'Expires', dataIndex: 'expires_at', key: 'expires_at', width: 170,
-      render: (v: string | null) => v ?? 'Never',
+      title: t('api-keys.column.expires'), dataIndex: 'expires_at', key: 'expires_at', width: 170,
+      render: (v: string | null) => v ?? t('api-keys.never'),
     },
     {
-      title: 'Last Used', dataIndex: 'last_used_at', key: 'last_used_at', width: 170,
-      render: (v: string | null) => v ?? 'Never',
+      title: t('api-keys.column.lastUsed'), dataIndex: 'last_used_at', key: 'last_used_at', width: 170,
+      render: (v: string | null) => v ?? t('api-keys.never'),
     },
     {
-      title: 'Revoked', dataIndex: 'revoked_at', key: 'revoked_at', width: 170,
+      title: t('api-keys.column.revoked'), dataIndex: 'revoked_at', key: 'revoked_at', width: 170,
       render: (v: string | null, record: ApiKeyVO) => {
         if (record.status !== 'REVOKED') return '-'
         return v ?? '-'
       },
     },
     {
-      title: 'Actions', key: 'actions', width: 180,
+      title: t('api-keys.column.actions'), key: 'actions', width: 180,
       render: (_: unknown, record: ApiKeyVO) => {
         if (record.status === 'REVOKED') return null
         return (
           <Space>
             {record.status === 'ACTIVE' ? (
               <Button size="small" onClick={() => setDisableConfirmId(record.id)}>
-                Disable
+                {t('api-keys.disable')}
               </Button>
             ) : null}
             <Button size="small" danger onClick={() => setRevokeConfirmId(record.id)}>
-              Revoke
+              {t('api-keys.revoke')}
             </Button>
           </Space>
         )
@@ -199,11 +201,11 @@ export default function ApiKeyPage() {
     <div>
       <Space style={{ marginBottom: 16 }} align="start">
         <div>
-          <Typography.Text type="secondary">Select App:</Typography.Text>
+          <Typography.Text type="secondary">{t('api-keys.selectApp')}</Typography.Text>
           <Select
             value={activeAppId}
             onChange={(v) => handleAppSelect(v)}
-            placeholder="Select an app"
+            placeholder={t('api-keys.selectPlaceholder')}
             style={{ width: 240, marginLeft: 8 }}
             options={apps.map(app => ({ value: app.id, label: `#${app.id} ${app.name}` }))}
           />
@@ -213,13 +215,13 @@ export default function ApiKeyPage() {
           disabled={activeAppId === null}
           onClick={() => { setCreateOpen(true); setError(null); setExpiresAtIso(null) }}
         >
-          Create API Key
+          {t('api-keys.create')}
         </Button>
-        <Button onClick={fetchKeys} disabled={activeAppId === null}>Refresh</Button>
+        <Button onClick={fetchKeys} disabled={activeAppId === null}>{t('api-keys.refresh')}</Button>
       </Space>
 
       {error && (
-        <Alert type="error" message="Error" description={error} closable onClose={() => setError(null)} style={{ marginBottom: 16 }} />
+        <Alert type="error" message={t('api-keys.error')} description={error} closable onClose={() => setError(null)} style={{ marginBottom: 16 }} />
       )}
 
       <Table
@@ -227,13 +229,13 @@ export default function ApiKeyPage() {
         columns={columns}
         dataSource={keys}
         loading={loading}
-        locale={{ emptyText: activeAppId === null ? 'Select an app to view keys' : 'No API keys found' }}
+        locale={{ emptyText: activeAppId === null ? t('api-keys.emptyNoApp') : t('api-keys.empty') }}
         pagination={false}
         scroll={{ x: 1200 }}
       />
 
       <Modal
-        title="Create API Key"
+        title={t('api-keys.createTitle')}
         open={createOpen}
         onCancel={() => { setCreateOpen(false); form.resetFields(); setExpiresAtIso(null) }}
         onOk={handleCreate}
@@ -241,15 +243,15 @@ export default function ApiKeyPage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Name is required' }]}>
-            <Input placeholder="Key name" />
+          <Form.Item name="name" label={t('api-keys.column.name')} rules={[{ required: true, message: t('api-keys.nameRequired') }]}>
+            <Input placeholder={t('api-keys.namePlaceholder')} />
           </Form.Item>
-          <Form.Item name="expires_at" label="Expires At">
+          <Form.Item name="expires_at" label={t('api-keys.expiresLabel')}>
             <DatePicker
               showTime
               format="YYYY-MM-DDTHH:mm:ss"
               style={{ width: '100%' }}
-              placeholder="Optional expiry"
+              placeholder={t('api-keys.expiresPlaceholder')}
               onChange={(_date, dateStr) => {
                 const str = typeof dateStr === 'string' ? dateStr.trim() : ''
                 setExpiresAtIso(str.length > 0 ? str : null)
@@ -267,44 +269,44 @@ export default function ApiKeyPage() {
       />
 
       <Modal
-        title="Disable API Key"
+        title={t('api-keys.disableTitle')}
         open={disableConfirmId !== null}
         onCancel={() => setDisableConfirmId(null)}
         onOk={() => disableConfirmId !== null && handleDisable(disableConfirmId)}
-        okText="Disable"
+        okText={t('api-keys.disableOk')}
         okButtonProps={{ danger: false }}
-        cancelText="Cancel"
+        cancelText={t('api-keys.cancel')}
       >
         <Alert
           type="warning"
           showIcon
-          message="This key will stop authenticating public /v1/* requests immediately."
-          description="Use this for a key that should stop working now but is not known to be leaked. If the key has been leaked, revoke it permanently instead."
+          message={t('api-keys.disableWarning')}
+          description={t('api-keys.disableDesc')}
           style={{ marginBottom: 12 }}
         />
         <Typography.Text type="secondary">
-          The key prefix will remain visible in the list. Revocation is the terminal action for leaked keys.
+          {t('api-keys.disableHint')}
         </Typography.Text>
       </Modal>
 
       <Modal
-        title="Revoke API Key"
+        title={t('api-keys.revokeTitle')}
         open={revokeConfirmId !== null}
         onCancel={() => setRevokeConfirmId(null)}
         onOk={() => revokeConfirmId !== null && handleRevoke(revokeConfirmId)}
-        okText="Revoke"
+        okText={t('api-keys.revokeOk')}
         okButtonProps={{ danger: true }}
-        cancelText="Cancel"
+        cancelText={t('api-keys.cancel')}
       >
         <Alert
           type="error"
           showIcon
-          message="This operation is irreversible."
-          description="The key will be permanently revoked and must fail all public /v1/* calls with 401 invalid_api_key. You will need to create a new key and update any clients that were using this key."
+          message={t('api-keys.revokeWarning')}
+          description={t('api-keys.revokeDesc')}
           style={{ marginBottom: 12 }}
         />
         <Typography.Text type="secondary">
-          After revocation, verify the old key is rejected, then create a fresh key and update your clients.
+          {t('api-keys.revokeHint')}
         </Typography.Text>
       </Modal>
     </div>

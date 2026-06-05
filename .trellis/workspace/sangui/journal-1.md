@@ -81,7 +81,7 @@ Implemented and verified the backend knowledge base and document upload baseline
 
 ### Summary
 
-(Add summary)
+App readiness preflight was manually accepted and committed. The task was archived and the session records the new admin readiness endpoint, Smoke page readiness panel, safe metadata contract, and targeted validation results.
 
 ### Main Changes
 
@@ -1732,6 +1732,49 @@ Frontend Smoke Test page now covers the browser acceptance path for non-streamin
 - [OK] `mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test`
 - [OK] `mvn -q "-Dtest=GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test`
 - [OK] Manual browser smoke: non-streaming, streaming, request-log evidence, and revoked-key auth all passed.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 30: App就绪预检验收收尾
+
+**Date**: 2026-06-05
+**Task**: App就绪预检验收收尾
+**Branch**: `main`
+
+### Summary
+
+App readiness preflight was manually accepted and committed. The task was archived and the session records the new admin readiness endpoint, Smoke page readiness panel, safe metadata contract, and targeted validation results.
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Commit | `eae2d6e feat:app-readiness-preflight` |
+| Task | Archived `06-03-app-readiness-preflight-acceptance-guidance-ux` after manual acceptance and commit. |
+| Backend | Added admin app readiness endpoint `GET /api/admin/apps/{appId}/readiness`, readiness VO/status types, readiness assembly in `AppService`, and embedding-config matching helper in `ModelConfigService`. |
+| Frontend | Added typed readiness API/types and Smoke page preflight readiness panel with loading/error/status states. |
+| Spec | Updated `.trellis/spec/sangui-rag-gateway.md` with endpoint contract, status rules, safe/forbidden metadata, error matrix, Good/Base/Bad cases, and validation commands. |
+| Validation | Passed `cd backend; mvn -q -DskipTests compile`; `cd backend; mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest,ModelConfigServiceTest" test`; `cd backend; mvn -q "-Dtest=ModelConfigServiceTest,ApiKeyServiceTest,KnowledgeBaseServiceTest" test`; `cd frontend; cmd /c npm run typecheck`; `cd frontend; cmd /c npm run build`; `git diff --check`. |
+| Result | Manual acceptance completed by user; task archived. Readiness exposes only safe metadata and does not change public `/v1/*`, retrieval SQL, prompt construction, Docker/infra, or database schema. |
+| Boundary | Full backend `mvn test` was not part of this closeout because project full-suite execution may require PostgreSQL/Redis infrastructure; targeted PRD tests and frontend checks passed. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `eae2d6e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
 
 ### Status
 

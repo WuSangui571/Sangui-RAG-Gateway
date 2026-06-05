@@ -36,6 +36,33 @@ current layout/navigation preferences
 rare cross-page UI flags
 ```
 
+## UI Preference Baseline
+
+The admin console has a frontend-only UI preference provider:
+
+```text
+frontend/src/app/providers/UIPreferenceProvider.tsx
+frontend/src/app/i18n/dict.ts
+frontend/src/app/i18n/useI18n.ts
+```
+
+Allowed persisted keys:
+
+```text
+sangui-admin-theme  -> "dark" | "light"
+sangui-admin-locale -> "zh-CN" | "en-US"
+```
+
+Rules:
+
+- Default theme is `dark`; default locale is `zh-CN`.
+- Invalid stored values must reset to defaults explicitly.
+- Ant Design theme must be applied through `ConfigProvider`.
+- Frontend-owned display text should use the typed dictionary and `useI18n()`.
+- Backend enum values, backend error codes, API payload fields, and DTO names must not be translated or remapped at the contract layer.
+- The UI preference provider must never store server data, generated app API keys, upstream keys, prompts, request bodies, request logs, hit chunk data, admin API responses, or runtime evidence.
+- Full generated API keys remain page/modal memory state only and must be cleared when the one-time display lifecycle ends.
+
 ## Global Store Rules
 
 If using Vue, Pinia is preferred. If using React, use the selected lightweight store or context sparingly.

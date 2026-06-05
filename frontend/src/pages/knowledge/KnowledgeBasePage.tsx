@@ -12,6 +12,7 @@ import { listKnowledgeBases, createKnowledgeBase } from '../../api/knowledge'
 import { uploadDocument, listDocuments } from '../../api/documents'
 import { useShell } from '../../components/layout/AdminShell'
 import StatusTag from '../../components/domain/StatusTag'
+import { useI18n } from '../../app/i18n'
 
 const ALLOWED_EXTENSIONS = ['.txt', '.md', '.markdown']
 
@@ -21,6 +22,7 @@ function isNonTerminal(status: DocumentStatus): boolean {
 
 export default function KnowledgeBasePage() {
   const { adminUserId } = useShell()
+  const { t } = useI18n()
 
   const [kbs, setKbs] = useState<KnowledgeBaseVO[]>([])
   const [loading, setLoading] = useState(false)
@@ -49,12 +51,12 @@ export default function KnowledgeBasePage() {
         setKbs(res.data)
       }
     } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('knowledge.networkError')))
       setKbs([])
     } finally {
       setLoading(false)
     }
-  }, [adminUserId])
+  }, [adminUserId, t])
 
   useEffect(() => {
     fetchKbs()
@@ -73,12 +75,12 @@ export default function KnowledgeBasePage() {
         setDocuments(res.data)
       }
     } catch (e: unknown) {
-      setDocsError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setDocsError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('knowledge.networkError')))
       setDocuments([])
     } finally {
       setDocsLoading(false)
     }
-  }, [selectedKbId, adminUserId])
+  }, [selectedKbId, adminUserId, t])
 
   useEffect(() => {
     if (pollTimerRef.current !== null) {
@@ -146,7 +148,7 @@ export default function KnowledgeBasePage() {
     try {
       const res = await uploadDocument(selectedKbId, file, adminUserId)
       if (res.code !== 'OK') {
-        setDocsError(`Upload failed: ${res.message}`)
+        setDocsError(t('knowledge.uploadFailed', { message: res.message }))
       } else {
         fetchDocuments()
         fetchKbs()
@@ -162,32 +164,32 @@ export default function KnowledgeBasePage() {
   }
 
   const kbColumns: ColumnsType<KnowledgeBaseVO> = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-    { title: 'Name', dataIndex: 'name', key: 'name', width: 180, render: (name: string, record: KnowledgeBaseVO) => (
+    { title: t('knowledge.column.id'), dataIndex: 'id', key: 'id', width: 60 },
+    { title: t('knowledge.column.name'), dataIndex: 'name', key: 'name', width: 180, render: (name: string, record: KnowledgeBaseVO) => (
       <Button type="link" size="small" onClick={() => selectKb(record)}>{name}</Button>
     )},
-    { title: 'Embedding Model', dataIndex: 'embedding_model', key: 'embedding_model', width: 160 },
-    { title: 'Dim', dataIndex: 'embedding_dimension', key: 'embedding_dimension', width: 80 },
+    { title: t('knowledge.column.embeddingModel'), dataIndex: 'embedding_model', key: 'embedding_model', width: 160 },
+    { title: t('knowledge.column.dim'), dataIndex: 'embedding_dimension', key: 'embedding_dimension', width: 80 },
     {
-      title: 'Status', dataIndex: 'status', key: 'status', width: 120,
+      title: t('knowledge.column.status'), dataIndex: 'status', key: 'status', width: 120,
       render: (s: KnowledgeBaseStatus) => <StatusTag status={s} />,
     },
   ]
 
   const docColumns: ColumnsType<DocumentVO> = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
+    { title: t('knowledge.column.id'), dataIndex: 'id', key: 'id', width: 60 },
     {
-      title: 'Filename',
+      title: t('knowledge.column.filename'),
       dataIndex: 'original_filename',
       key: 'original_filename',
       width: 220,
       ellipsis: true,
     },
-    { title: 'Size', dataIndex: 'file_size', key: 'file_size', width: 90, render: (v: number) => `${(v / 1024).toFixed(1)}KB` },
-    { title: 'Status', dataIndex: 'status', key: 'status', width: 110, render: (s: DocumentStatus) => <StatusTag status={s} /> },
-    { title: 'Chunks', dataIndex: 'chunk_count', key: 'chunk_count', width: 80 },
+    { title: t('knowledge.column.size'), dataIndex: 'file_size', key: 'file_size', width: 90, render: (v: number) => `${(v / 1024).toFixed(1)}KB` },
+    { title: t('knowledge.column.status'), dataIndex: 'status', key: 'status', width: 110, render: (s: DocumentStatus) => <StatusTag status={s} /> },
+    { title: t('knowledge.column.chunks'), dataIndex: 'chunk_count', key: 'chunk_count', width: 80 },
     {
-      title: 'Error',
+      title: t('knowledge.column.error'),
       dataIndex: 'error_message',
       key: 'error_message',
       ellipsis: true,
@@ -198,7 +200,8 @@ export default function KnowledgeBasePage() {
   function beforeUpload(file: File): boolean {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase()
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      setDocsError(`Unsupported file type: ${ext}. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`)
+      const exts = ALLOWED_EXTENSIONS.join(', ')
+      setDocsError(t('knowledge.unsupportedFile', { ext: ext || '', allowed: exts }))
       return false
     }
     handleUpload(file)
@@ -208,14 +211,14 @@ export default function KnowledgeBasePage() {
   return (
     <div>
       {error && (
-        <Alert type="error" message="Error" description={error} closable onClose={() => setError(null)} style={{ marginBottom: 16 }} />
+        <Alert type="error" message={t('knowledge.error')} description={error} closable onClose={() => setError(null)} style={{ marginBottom: 16 }} />
       )}
 
       <Space style={{ marginBottom: 16 }}>
         <Button type="primary" onClick={() => { setCreateOpen(true); setError(null) }}>
-          Create Knowledge Base
+          {t('knowledge.create')}
         </Button>
-        <Button onClick={fetchKbs}>Refresh</Button>
+        <Button onClick={fetchKbs}>{t('knowledge.refresh')}</Button>
       </Space>
 
       <Table
@@ -223,27 +226,27 @@ export default function KnowledgeBasePage() {
         columns={kbColumns}
         dataSource={kbs}
         loading={loading}
-        locale={{ emptyText: 'No knowledge bases found' }}
+        locale={{ emptyText: t('knowledge.empty') }}
         pagination={false}
       />
 
       {selectedKbId !== null && (
         <div style={{ marginTop: 24 }}>
           <Typography.Title level={5}>
-            Documents in KB #{selectedKbId}
+            {t('knowledge.documentsIn', { id: selectedKbId })}
           </Typography.Title>
 
           {docsError && (
-            <Alert type="error" message="Document Error" description={docsError} closable onClose={() => setDocsError(null)} style={{ marginBottom: 8 }} />
+            <Alert type="error" message={t('knowledge.docError')} description={docsError} closable onClose={() => setDocsError(null)} style={{ marginBottom: 8 }} />
           )}
 
           <Space style={{ marginBottom: 12 }}>
             <Upload beforeUpload={beforeUpload} showUploadList={false} accept=".txt,.md,.markdown">
               <Button icon={<UploadOutlined />} disabled={selectedKbId === null}>
-                Upload Document
+                {t('knowledge.upload')}
               </Button>
             </Upload>
-            <Button onClick={fetchDocuments} disabled={selectedKbId === null}>Refresh Docs</Button>
+            <Button onClick={fetchDocuments} disabled={selectedKbId === null}>{t('knowledge.refreshDocs')}</Button>
           </Space>
 
           <Table
@@ -251,14 +254,14 @@ export default function KnowledgeBasePage() {
             columns={docColumns}
             dataSource={documents}
             loading={docsLoading}
-            locale={{ emptyText: 'No documents uploaded' }}
+            locale={{ emptyText: t('knowledge.docEmpty') }}
             pagination={false}
           />
         </div>
       )}
 
       <Modal
-        title="Create Knowledge Base"
+        title={t('knowledge.createTitle')}
         open={createOpen}
         onCancel={() => { setCreateOpen(false); form.resetFields() }}
         onOk={handleCreate}
@@ -266,13 +269,13 @@ export default function KnowledgeBasePage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Name is required' }]}>
-            <Input placeholder="Knowledge base name" />
+          <Form.Item name="name" label={t('knowledge.column.name')} rules={[{ required: true, message: t('knowledge.nameRequired') }]}>
+            <Input placeholder={t('knowledge.namePlaceholder')} />
           </Form.Item>
-          <Form.Item name="embedding_model" label="Embedding Model" rules={[{ required: true, message: 'Embedding model is required' }]}>
+          <Form.Item name="embedding_model" label={t('knowledge.column.embeddingModel')} rules={[{ required: true, message: t('knowledge.embeddingModelRequired') }]}>
             <Input placeholder="text-embedding-v4" />
           </Form.Item>
-          <Form.Item name="embedding_dimension" label="Embedding Dimension" rules={[{ required: true, message: 'Dimension is required', type: 'number', min: 1 }]}>
+          <Form.Item name="embedding_dimension" label={t('knowledge.column.dim')} rules={[{ required: true, message: t('knowledge.dimRequired'), type: 'number', min: 1 }]}>
             <InputNumber min={1} placeholder="1024" style={{ width: '100%' }} />
           </Form.Item>
         </Form>

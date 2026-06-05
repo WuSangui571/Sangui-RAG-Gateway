@@ -8,6 +8,7 @@ import { listRequestLogs } from '../../api/request-logs'
 import { ApiError } from '../../api/http'
 import RequestLogStatusTag from '../../components/domain/RequestLogStatusTag'
 import RequestLogDetailDrawer from '../../components/domain/RequestLogDetailDrawer'
+import { useI18n } from '../../app/i18n'
 
 const { Title } = Typography
 
@@ -17,6 +18,7 @@ interface RequestLogListPageProps {
 }
 
 export default function RequestLogListPage({ persistentAppId, persistentAdminUserId }: RequestLogListPageProps) {
+  const { t } = useI18n()
   const [appId, setAppId] = useState<string>('')
   const [adminUserId, setAdminUserId] = useState<string>('')
   const [submittedAppId, setSubmittedAppId] = useState<number | null>(null)
@@ -118,48 +120,48 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
 
   const columns: ColumnsType<ApiRequestLogVO> = useMemo(() => [
     {
-      title: 'Created At',
+      title: t('request-log.column.createdAt'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
     },
     {
-      title: 'Status',
+      title: t('request-log.column.status'),
       dataIndex: 'status',
       key: 'status',
       width: 100,
       render: (status: 'success' | 'failure') => <RequestLogStatusTag status={status} />,
     },
     {
-      title: 'Error Code',
+      title: t('request-log.column.errorCode'),
       dataIndex: 'error_code',
       key: 'error_code',
       width: 140,
       render: (v: string | null) => v ?? '-',
     },
     {
-      title: 'Model',
+      title: t('request-log.column.model'),
       dataIndex: 'model',
       key: 'model',
       width: 160,
       render: (v: string | null) => v ?? '-',
     },
     {
-      title: 'Provider',
+      title: t('request-log.column.provider'),
       dataIndex: 'provider_name',
       key: 'provider_name',
       width: 130,
       render: (v: string | null) => v ?? '-',
     },
     {
-      title: 'Latency',
+      title: t('request-log.column.latency'),
       dataIndex: 'latency_ms',
       key: 'latency_ms',
       width: 90,
       render: (v: number | null) => (v !== null && v !== undefined ? `${v}ms` : '-'),
     },
     {
-      title: 'Total Tokens',
+      title: t('request-log.column.totalTokens'),
       key: 'total_tokens',
       width: 110,
       render: (_: unknown, record: ApiRequestLogVO) =>
@@ -168,51 +170,51 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
           : '-',
     },
     {
-      title: 'Question Summary',
+      title: t('request-log.column.questionSummary'),
       dataIndex: 'question_summary',
       key: 'question_summary',
       ellipsis: true,
       render: (v: string | null) => v ?? '-',
     },
     {
-      title: 'Hit Count',
+      title: t('request-log.column.hitCount'),
       key: 'hit_count',
       width: 90,
       render: (_: unknown, record: ApiRequestLogVO) => record.hit_chunk_ids.length,
     },
     {
-      title: 'Action',
+      title: t('request-log.column.action'),
       key: 'action',
       width: 80,
       render: (_: unknown, record: ApiRequestLogVO) => (
         <Button type="link" size="small" onClick={() => openDetail(record.request_id)}>
-          Detail
+          {t('request-log.detail')}
         </Button>
       ),
     },
-  ], [])
+  ], [t])
 
   if (!canQuery) {
     return (
       <div style={{ maxWidth: 480, margin: '80px auto', padding: 24 }}>
         <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          Request Logs
+          {t('request-log.title')}
         </Title>
         <Form layout="vertical">
-          <Form.Item label="App ID" required>
+          <Form.Item label={t('request-log.appId')} required>
             <Input
               value={appId}
               onChange={e => setAppId(e.target.value)}
-              placeholder="Enter app ID"
+              placeholder={t('request-log.enterAppId')}
               type="number"
               onPressEnter={handleConnect}
             />
           </Form.Item>
-          <Form.Item label="Admin User ID" required>
+          <Form.Item label={t('request-log.adminUserId')} required>
             <Input
               value={adminUserId}
               onChange={e => setAdminUserId(e.target.value)}
-              placeholder="Enter admin user ID"
+              placeholder={t('request-log.enterUserId')}
               type="number"
               onPressEnter={handleConnect}
             />
@@ -225,7 +227,7 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
               || !Number.isFinite(Number(appId)) || !Number.isFinite(Number(adminUserId))
               || Number(appId) <= 0 || Number(adminUserId) <= 0}
           >
-            Connect
+            {t('request-log.connect')}
           </Button>
         </Form>
       </div>
@@ -235,7 +237,7 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
   return (
     <div style={{ padding: 24 }}>
       <Title level={3} style={{ marginBottom: 16 }}>
-        Request Logs
+        {t('request-log.title')}
         <Typography.Text type="secondary" style={{ fontSize: 14, marginLeft: 12 }}>
           App #{submittedAppId}
         </Typography.Text>
@@ -245,51 +247,51 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
         <Select
           value={filters.status || undefined}
           onChange={(v) => handleFilterChange('status', v)}
-          placeholder="Status"
+          placeholder={t('request-log.statusFilter')}
           allowClear
           style={{ width: 130 }}
           options={[
-            { value: 'success', label: 'Success' },
-            { value: 'failure', label: 'Failure' },
+            { value: 'success', label: t('request-log.success') },
+            { value: 'failure', label: t('request-log.failure') },
           ]}
         />
         <Input
           value={filters.error_code || ''}
           onChange={(e) => handleFilterChange('error_code', e.target.value || undefined)}
-          placeholder="Error Code"
+          placeholder={t('request-log.errorCode')}
           allowClear
           style={{ width: 160 }}
         />
         <Input
           value={filters.start_time || ''}
           onChange={(e) => handleFilterChange('start_time', e.target.value || undefined)}
-          placeholder="Start Time (ISO)"
+          placeholder={t('request-log.startTime')}
           style={{ width: 220 }}
         />
         <Input
           value={filters.end_time || ''}
           onChange={(e) => handleFilterChange('end_time', e.target.value || undefined)}
-          placeholder="End Time (ISO)"
+          placeholder={t('request-log.endTime')}
           style={{ width: 220 }}
         />
         <Button onClick={() => {
           setFilters({ page: 1, page_size: 20, status: '', error_code: '', start_time: '', end_time: '' })
         }}>
-          Reset Filters
+          {t('request-log.resetFilters')}
         </Button>
       </Space>
 
       {error && (
         <Alert
           type="error"
-          message="Failed to load request logs"
+          message={t('request-log.loadError')}
           description={error}
           closable
           onClose={() => setError(null)}
           style={{ marginBottom: 16 }}
           action={
             <Button size="small" onClick={fetchLogs}>
-              Retry
+              {t('request-log.retry')}
             </Button>
           }
         />
@@ -301,7 +303,7 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
         dataSource={data}
         loading={loading}
         locale={{
-          emptyText: error ? ' ' : 'No request logs found',
+          emptyText: error ? ' ' : t('request-log.empty'),
         }}
         pagination={{
           current: filters.page || 1,
@@ -309,7 +311,7 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
           total,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50', '100'],
-          showTotal: (t) => `Total ${t} logs`,
+          showTotal: (totalCount) => t('request-log.pagination', { total: totalCount }),
           onChange: (page, pageSize) => {
             setFilters(prev => ({ ...prev, page, page_size: pageSize }))
           },
