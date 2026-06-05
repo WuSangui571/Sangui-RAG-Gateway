@@ -104,7 +104,7 @@ export default function UIPreferenceProvider({ children }: UIPreferenceProviderP
     <UIPreferenceContext.Provider value={preferenceValue}>
       <I18nContext.Provider value={i18nValue}>
         <ConfigProvider theme={antdTheme}>
-          <div style={appFrameStyle}>
+          <div style={appFrameStyle} data-testid="app-frame">
             {children}
           </div>
         </ConfigProvider>

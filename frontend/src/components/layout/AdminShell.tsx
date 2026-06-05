@@ -86,7 +86,9 @@ export default function AdminShell({ children }: AdminShellProps) {
 
   if (adminUserId === null) {
     return (
-      <div style={{
+      <div
+        data-testid="login-wrapper"
+        style={{
         minHeight: '100vh',
         display: 'flex',
         justifyContent: 'center',

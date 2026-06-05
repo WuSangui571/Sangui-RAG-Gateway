@@ -1847,3 +1847,72 @@ App readiness preflight was manually accepted and committed. The task was archiv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 32: Admin login dark background consistency
+
+**Date**: 2026-06-05
+**Task**: Admin login dark background consistency
+**Branch**: `main`
+
+### Summary
+
+Admin login page dark-mode background consistency was manually accepted and committed. The task was archived after commit `282c5cb`, and this session records the frontend layout, UI preference background ownership, global style baseline, and frontend spec update.
+
+### Main Changes
+
+**Commit**
+
+- `282c5cb` (`fix: admin login dark background consistency`)
+
+**Main Modules**
+
+- Frontend admin unauthenticated login shell layout.
+- Frontend UI preference provider page-background ownership.
+- Frontend global style root/body background baseline.
+- Frontend state-management spec update for theme-owned page background.
+
+**Updated Files**
+
+- `frontend/src/components/layout/AdminShell.tsx`
+- `frontend/src/app/providers/UIPreferenceProvider.tsx`
+- `frontend/src/styles/index.css`
+- `.trellis/spec/frontend/state-management.md`
+
+**Validation**
+
+- `cd frontend; cmd /c npm run typecheck` passed.
+- `cd frontend; cmd /c npm run build` passed, with only the existing Vite large chunk warning.
+- `git diff --check` passed.
+- Static scan found no `console.log`, `debugger`, `TODO`, `any`, or obvious unnecessary non-null assertion in changed frontend files.
+- Human manual acceptance completed before recording.
+
+**Result and Boundary**
+
+- Fixed Admin login page dark-mode first viewport background consistency by removing the margin-based unauthenticated layout and using a full-height token-driven wrapper.
+- Kept login behavior, validation, i18n keys, persisted UI preference keys, API contracts, backend code, database schema, Docker, Redis, and infrastructure unchanged.
+- Codex narrowed DeepSeek's static body dark background into a provider-owned CSS variable so light and dark modes remain synchronized at `body`, `#root`, and app frame boundaries.
+- Automated browser visual smoke was not available in this environment because the project has no Playwright dependency, bundled browser runtime was not configured, and Chrome/Edge/Chromium were not found on PATH; manual visual acceptance supplied the final evidence.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `282c5cb` | (see git log) |
+
+### Testing
+
+- [OK] `cd frontend; cmd /c npm run typecheck`
+- [OK] `cd frontend; cmd /c npm run build`
+- [OK] `git diff --check`
+- [OK] Static scan for `console.log`, `debugger`, `TODO`, `any`, and unnecessary non-null assertions in changed frontend files
+- [OK] Human manual visual acceptance
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

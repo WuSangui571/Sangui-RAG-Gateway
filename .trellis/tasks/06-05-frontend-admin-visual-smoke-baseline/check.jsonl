@@ -1,0 +1,16 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary and frontend validation command contracts"}
+{"file": ".trellis/spec/guides/index.md", "reason": "Shared guide index and product boundary triggers"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicate test helpers and follow existing patterns"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Where to place Playwright config and frontend test files"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Login wrapper selectors must not force visual redesign"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Theme persistence keys and body/root background ownership"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "TypeScript and config typing expectations"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend validation and visual smoke documentation target"}
+{"file": "frontend/package.json", "reason": "Existing scripts and dependency baseline"}
+{"file": "frontend/vite.config.ts", "reason": "Existing Vite dev server and proxy configuration"}
+{"file": "frontend/src/main.tsx", "reason": "Provider and app root wiring"}
+{"file": "frontend/src/app/providers/UIPreferenceProvider.tsx", "reason": "Theme provider and page background CSS variable owner"}
+{"file": "frontend/src/styles/index.css", "reason": "body and #root background baseline"}
+{"file": "frontend/src/components/layout/AdminShell.tsx", "reason": "Unauthenticated login wrapper and theme toggle UI"}

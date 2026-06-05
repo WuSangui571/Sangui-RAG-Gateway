@@ -4,6 +4,50 @@
 
 ## Testing Expectations
 
+### Visual Smoke (Automated Browser Baseline)
+
+Run the automated visual smoke baseline for the Admin unauthenticated login page:
+
+```bash
+cd frontend
+cmd /c npm run test:visual
+```
+
+One-time Playwright browser setup (required before first run):
+
+```bash
+cd frontend
+npx playwright install chromium
+```
+
+The visual smoke command starts the Vite dev server through `frontend/scripts/run-visual-smoke.mjs`, opens the unauthenticated Admin login page, and verifies:
+
+- Default dark theme: `body`, `#root`, app frame, and login wrapper have dark-compatible computed backgrounds; viewport edges are not white.
+- Light theme after localStorage toggle: all four targets switch to light-compatible backgrounds.
+- Dark theme after second localStorage toggle: all targets return to dark-compatible backgrounds with non-white viewport edges.
+
+The test does not depend on backend services. It uses frontend-only runtime and covers the unauthenticated login screen only.
+
+Assertion contract:
+
+| Target | Selector | Dark expected | Light expected |
+|---|---|---|---|
+| `body` | `body` | `rgb(20, 20, 20)` | `rgb(245, 245, 245)` |
+| `#root` | `#root` | `rgb(20, 20, 20)` | `rgb(245, 245, 245)` |
+| App frame | `[data-testid="app-frame"]` | `rgb(20, 20, 20)` | `rgb(245, 245, 245)` |
+| Login wrapper | `[data-testid="login-wrapper"]` | `rgb(0, 0, 0)` | `rgb(245, 245, 245)` |
+| Viewport edges (dark) | `elementFromPoint` at four corners | Not `rgb(255, 255, 255)` | — |
+
+Note: the unauthenticated login page does not expose a theme toggle button. The visual smoke test uses `localStorage` manipulation and page reload to simulate theme switching, which exercises the same `UIPreferenceProvider` mount path that reads persisted theme and applies CSS variables.
+
+Implementation files:
+
+- `frontend/scripts/run-visual-smoke.mjs`
+- `frontend/playwright.config.ts`
+- `frontend/tests/visual/admin-login-theme-smoke.spec.ts`
+
+---
+
 When frontend implementation starts, cover:
 
 ```text

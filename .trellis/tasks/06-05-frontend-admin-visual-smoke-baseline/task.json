@@ -1,8 +1,8 @@
 {
-  "id": "admin-login-dark-background-consistency",
-  "name": "admin-login-dark-background-consistency",
-  "title": "修复 Admin 登录页暗色模式首屏背景一致性",
-  "description": "Fix dark-mode first-screen background consistency for the unauthenticated Admin login state without changing backend/API/DB or adding new UI preference persistence.",
+  "id": "frontend-admin-visual-smoke-baseline",
+  "name": "frontend-admin-visual-smoke-baseline",
+  "title": "Frontend Admin visual smoke automation baseline",
+  "description": "",
   "status": "planning",
   "dev_type": "frontend",
   "scope": null,
