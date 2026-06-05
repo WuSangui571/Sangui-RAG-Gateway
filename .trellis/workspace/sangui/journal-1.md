@@ -1783,3 +1783,67 @@ App readiness preflight was manually accepted and committed. The task was archiv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 31: Frontend theme and language switch baseline
+
+**Date**: 2026-06-05
+**Task**: Frontend theme and language switch baseline
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Notes |
+|---|---|
+| Commit | eff37fc feat: frontend theme and language switch baseline |
+| Frontend preferences | Added `UIPreferenceProvider` for local-only theme and locale preferences. Defaults are dark mode and `zh-CN`; persisted keys are `sangui-admin-theme` and `sangui-admin-locale` only. |
+| I18n baseline | Added typed lightweight dictionaries under `frontend/src/app/i18n/` and wired `useI18n()` across shell, shared domain components, and all main admin pages. |
+| Theme baseline | Wired Ant Design `ConfigProvider` with dark/default algorithms and made shell surfaces use theme tokens. |
+| Safe evidence | Preserved Smoke and Request Logs safe-evidence behavior; labels are localized while backend error codes and evidence values remain unchanged. |
+| Spec sync | Updated `.trellis/spec/frontend/state-management.md` with executable UI preference persistence boundaries and forbidden secret/runtime-evidence storage. |
+| Validation | `cd frontend; cmd /c npm run typecheck` passed. `cd frontend; cmd /c npm run build` passed with only the existing Vite chunk-size warning. Static scans found no `console.log`, `debugger`, `TODO`, `any`, non-null assertion, or secret persistence outside the allowed UI preference keys. |
+| Manual acceptance | User reported manual testing passed after commit `eff37fc`. |
+| Boundary | No backend Java, `/v1/*`, admin API route/DTO/payload/response, DB, migration, Docker, MQ, or Redis changes. Full API keys and upstream keys remain memory-only or backend-owned per existing flows. |
+| Residual note | User observed that the admin-user login screen still has a bright top area in dark mode. This was not changed during record-session and should be handled as a follow-up UI polish fix if desired. |
+
+**Updated Files**:
+- `frontend/src/app/i18n/dict.ts`
+- `frontend/src/app/i18n/useI18n.ts`
+- `frontend/src/app/providers/UIPreferenceProvider.tsx`
+- `frontend/src/components/layout/AdminShell.tsx`
+- `frontend/src/components/domain/ApiKeyOneTimeSecret.tsx`
+- `frontend/src/components/domain/HitChunksPanel.tsx`
+- `frontend/src/components/domain/RequestLogDetailDrawer.tsx`
+- `frontend/src/components/domain/RequestLogStatusTag.tsx`
+- `frontend/src/components/domain/StatusTag.tsx`
+- `frontend/src/pages/api-keys/ApiKeyPage.tsx`
+- `frontend/src/pages/apps/AppConfigPage.tsx`
+- `frontend/src/pages/knowledge/KnowledgeBasePage.tsx`
+- `frontend/src/pages/model-configs/ModelConfigPage.tsx`
+- `frontend/src/pages/request-logs/RequestLogListPage.tsx`
+- `frontend/src/pages/smoke/SmokeTestPage.tsx`
+- `frontend/src/styles/index.css`
+- `.trellis/spec/frontend/state-management.md`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `eff37fc` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
