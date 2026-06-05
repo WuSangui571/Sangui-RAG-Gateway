@@ -67,8 +67,16 @@ jobs:
           node-version: '20'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
       - name: Install dependencies
         run: npm ci
+        working-directory: frontend
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
         working-directory: frontend
       - name: Typecheck
         run: npm run typecheck
@@ -76,6 +84,18 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: frontend
+      - name: Visual smoke test
+        run: npm run test:visual:ci
+        working-directory: frontend
+      - name: Upload visual smoke results on failure
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-smoke-results
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          if-no-files-found: ignore
 
   docker-backend:
     name: Docker build backend

@@ -601,7 +601,7 @@ Required jobs:
 | Job | Command contract |
 |---|---|
 | Backend check | `mvn -q -DskipTests compile`, then `mvn test` from `backend/` with PostgreSQL and Redis service containers. |
-| Frontend check | `npm ci`, `npm run typecheck`, `npm run build` from `frontend/`. |
+| Frontend check | `npm ci`, `npx playwright install chromium`, `npm run typecheck`, `npm run build`, then `npm run test:visual:ci` from `frontend/`. |
 | Docker build backend | `docker build -t sangui-rag-gateway-backend:ci -f backend/Dockerfile backend`. |
 | Docker build frontend | `docker build -t sangui-rag-gateway-frontend:ci -f frontend/Dockerfile frontend`. |
 

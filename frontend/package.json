@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
-    "test:visual": "node ./scripts/run-visual-smoke.mjs"
+    "test:visual": "node ./scripts/run-visual-smoke.mjs",
+    "test:visual:ci": "npm run test:visual"
   },
   "dependencies": {
     "antd": "^5.22.0",

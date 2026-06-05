@@ -1,0 +1,15 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project CI baseline and product boundary for frontend CI gate"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend visual smoke command and artifact policy to update"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend file and script placement conventions"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Guard against unnecessary frontend type/API contract changes"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Preserve UI preference and login visual smoke boundaries"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "CI/browser runtime and artifact boundary planning"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicate visual smoke scripts or second implementations"}
+{"file": ".github/workflows/ci.yml", "reason": "Existing CI frontend job pattern to extend"}
+{"file": "frontend/package.json", "reason": "Existing npm script contract for visual smoke"}
+{"file": "frontend/playwright.config.ts", "reason": "Current Chromium-only Playwright project and CI retry behavior"}
+{"file": "frontend/scripts/run-visual-smoke.mjs", "reason": "Existing Vite plus Playwright wrapper to reuse"}
+{"file": "frontend/tests/visual/admin-login-theme-smoke.spec.ts", "reason": "Current visual smoke assertions and backend-free scope"}
+{"file": ".gitignore", "reason": "Existing generated artifact ignore rules"}

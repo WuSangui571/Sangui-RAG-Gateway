@@ -1,0 +1,15 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Check CI baseline remains aligned with project specification"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check updated visual smoke CI contract and local command remain accurate"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Check no misplaced frontend files or generated artifacts are added"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Check no unrelated DTO/type/API changes were introduced"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Check no persisted secret/runtime evidence state was added"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Check infra-like CI change has explicit contract and validation"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Check changes reuse existing visual smoke runner"}
+{"file": ".github/workflows/ci.yml", "reason": "Check final CI command order and artifact conditions"}
+{"file": "frontend/package.json", "reason": "Check scripts remain local-friendly and non-duplicative"}
+{"file": "frontend/playwright.config.ts", "reason": "Check CI install matches configured browser project"}
+{"file": "frontend/scripts/run-visual-smoke.mjs", "reason": "Check CI does not duplicate visual smoke runner logic"}
+{"file": "frontend/tests/visual/admin-login-theme-smoke.spec.ts", "reason": "Check task does not broaden page coverage"}
+{"file": ".gitignore", "reason": "Check generated Playwright artifacts remain untracked"}

@@ -46,6 +46,55 @@ Implementation files:
 - `frontend/playwright.config.ts`
 - `frontend/tests/visual/admin-login-theme-smoke.spec.ts`
 
+### CI Visual Smoke Contract
+
+The frontend CI job in `.github/workflows/ci.yml` must run these commands from `frontend/`:
+
+```bash
+npm ci
+npx playwright install chromium
+npm run typecheck
+npm run build
+npm run test:visual:ci
+```
+
+- The Playwright browser cache is keyed by `runner.os` and `hashFiles('frontend/package-lock.json')`.
+- `frontend/package.json` keeps `test:visual:ci` as a direct delegation to `npm run test:visual`; CI must not introduce a second visual smoke runner.
+- `frontend/playwright.config.ts` enables CI retries (`retries: 2`) and disables `only` when `CI` is set.
+- The visual smoke test runs against the Chromium project only, matching the local baseline.
+- No backend services, Docker images, provider keys, or secrets are required.
+
+### CI Artifact Policy
+
+Git-ignored (never committed, never cached):
+
+```text
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+*.tsbuildinfo
+```
+
+CI upload on failure or cancellation only:
+
+```text
+frontend/playwright-report/
+frontend/test-results/
+```
+
+Do not upload on success. Do not upload or cache `.env`, `frontend/dist/`, `frontend/node_modules/`, or secrets.
+
+### Local Command Contract
+
+```bash
+cd frontend
+npx playwright install chromium   # one-time setup
+cmd /c npm run test:visual        # start Vite and run Playwright
+```
+
+The local command is unchanged and remains independent of backend services.
+
 ---
 
 When frontend implementation starts, cover:
