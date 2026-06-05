@@ -1,0 +1,53 @@
+{
+  "id": "admin-login-dark-background-consistency",
+  "name": "admin-login-dark-background-consistency",
+  "title": "修复 Admin 登录页暗色模式首屏背景一致性",
+  "description": "Fix dark-mode first-screen background consistency for the unauthenticated Admin login state without changing backend/API/DB or adding new UI preference persistence.",
+  "status": "planning",
+  "dev_type": "frontend",
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "sangui",
+  "assignee": "sangui",
+  "createdAt": "2026-06-05",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

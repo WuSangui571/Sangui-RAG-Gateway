@@ -58,6 +58,7 @@ Rules:
 - Default theme is `dark`; default locale is `zh-CN`.
 - Invalid stored values must reset to defaults explicitly.
 - Ant Design theme must be applied through `ConfigProvider`.
+- Page-level background must stay owned by `UIPreferenceProvider`: `frontend/src/styles/index.css` defines `--sangui-admin-page-bg` with the default dark value, and `UIPreferenceProvider` updates that CSS variable from `themeMode` so `body`, `#root`, and the app frame do not expose a stale white/dark background during login-page overflow or theme switches.
 - Frontend-owned display text should use the typed dictionary and `useI18n()`.
 - Backend enum values, backend error codes, API payload fields, and DTO names must not be translated or remapped at the contract layer.
 - The UI preference provider must never store server data, generated app API keys, upstream keys, prompts, request bodies, request logs, hit chunk data, admin API responses, or runtime evidence.

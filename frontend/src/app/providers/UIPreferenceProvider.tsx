@@ -1,10 +1,13 @@
-import { createContext, useCallback, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { createContext, useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { ConfigProvider, theme } from 'antd'
 import type { Locale } from '../i18n/dict'
 
 const THEME_KEY = 'sangui-admin-theme'
 const LOCALE_KEY = 'sangui-admin-locale'
 const VALID_THEMES = ['dark', 'light'] as const
+const DARK_APP_BACKGROUND = '#141414'
+const LIGHT_APP_BACKGROUND = '#f5f5f5'
+const APP_BACKGROUND_CSS_VAR = '--sangui-admin-page-bg'
 
 type ThemeMode = typeof VALID_THEMES[number]
 
@@ -74,10 +77,19 @@ export default function UIPreferenceProvider({ children }: UIPreferenceProviderP
     algorithm: themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
   }), [themeMode])
 
+  const appBackground = themeMode === 'dark' ? DARK_APP_BACKGROUND : LIGHT_APP_BACKGROUND
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(APP_BACKGROUND_CSS_VAR, appBackground)
+    return () => {
+      document.documentElement.style.removeProperty(APP_BACKGROUND_CSS_VAR)
+    }
+  }, [appBackground])
+
   const appFrameStyle = useMemo<CSSProperties>(() => ({
     minHeight: '100vh',
-    background: themeMode === 'dark' ? '#141414' : '#f5f5f5',
-  }), [themeMode])
+    background: appBackground,
+  }), [appBackground])
 
   const i18nValue = useMemo<I18nContextValue>(() => ({ locale }), [locale])
 

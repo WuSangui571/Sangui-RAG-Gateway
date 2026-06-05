@@ -1,0 +1,14 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary for lightweight RAG gateway admin console"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend layout/provider file boundaries"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Admin component styling and accessibility rules"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "UI preference provider and allowed persistence keys"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend visual quality and validation expectations"}
+{"file": ".trellis/spec/guides/index.md", "reason": "Shared thinking triggers and cross-layer boundary check"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing theme/provider patterns"}
+{"file": ".trellis/tasks/06-05-admin-login-dark-background-consistency/prd.md", "reason": "Task requirements, scope, acceptance, and handoff plan"}
+{"file": "frontend/src/app/providers/UIPreferenceProvider.tsx", "reason": "Existing theme provider and app frame pattern"}
+{"file": "frontend/src/components/layout/AdminShell.tsx", "reason": "Existing unauthenticated login branch and shell theme usage"}
+{"file": "frontend/src/styles/index.css", "reason": "Global body/root baseline relevant to exposed background"}
+{"file": "frontend/package.json", "reason": "Frontend validation scripts"}

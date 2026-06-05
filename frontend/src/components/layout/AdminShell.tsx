@@ -86,30 +86,40 @@ export default function AdminShell({ children }: AdminShellProps) {
 
   if (adminUserId === null) {
     return (
-      <div style={{ maxWidth: 400, margin: '120px auto', padding: 24 }}>
-        <Typography.Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          {shellTitle}
-        </Typography.Title>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Text>{t('app.enterUserId')}</Text>
-          <Input
-            value={adminUserIdInput}
-            onChange={(e) => { setAdminUserIdInput(e.target.value); setConnectError(null) }}
-            placeholder={t('app.placeholderUserId')}
-            type="number"
-            status={connectError ? 'error' : undefined}
-            onPressEnter={handleConnect}
-          />
-          {connectError && <Text type="danger">{connectError}</Text>}
-          <Button
-            type="primary"
-            block
-            onClick={handleConnect}
-            disabled={!adminUserIdInput || !Number.isFinite(Number(adminUserIdInput)) || Number(adminUserIdInput) <= 0}
-          >
-            {t('app.connect')}
-          </Button>
-        </Space>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        background: token.colorBgLayout,
+        boxSizing: 'border-box',
+        padding: 24,
+      }}>
+        <div style={{ maxWidth: 400, width: '100%' }}>
+          <Typography.Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
+            {shellTitle}
+          </Typography.Title>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Text>{t('app.enterUserId')}</Text>
+            <Input
+              value={adminUserIdInput}
+              onChange={(e) => { setAdminUserIdInput(e.target.value); setConnectError(null) }}
+              placeholder={t('app.placeholderUserId')}
+              type="number"
+              status={connectError ? 'error' : undefined}
+              onPressEnter={handleConnect}
+            />
+            {connectError && <Text type="danger">{connectError}</Text>}
+            <Button
+              type="primary"
+              block
+              onClick={handleConnect}
+              disabled={!adminUserIdInput || !Number.isFinite(Number(adminUserIdInput)) || Number(adminUserIdInput) <= 0}
+            >
+              {t('app.connect')}
+            </Button>
+          </Space>
+        </div>
       </div>
     )
   }
