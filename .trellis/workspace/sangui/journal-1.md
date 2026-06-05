@@ -1916,3 +1916,45 @@ Admin login page dark-mode background consistency was manually accepted and comm
 ### Next Steps
 
 - None - task complete
+
+
+## Session 33: Frontend Admin visual smoke automation baseline
+
+**Date**: 2026-06-05
+**Task**: Frontend Admin visual smoke automation baseline
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | 3cb2016 (`test: add frontend Admin visual smoke baseline`) |
+| Main modules | Frontend Playwright visual smoke baseline; Admin unauthenticated login theme checks; UI preference provider/login wrapper test selectors; frontend quality spec; Playwright artifact ignore rules. |
+| Updated files | `.gitignore`; `.trellis/spec/frontend/quality-guidelines.md`; `frontend/package.json`; `frontend/package-lock.json`; `frontend/playwright.config.ts`; `frontend/scripts/run-visual-smoke.mjs`; `frontend/tests/visual/admin-login-theme-smoke.spec.ts`; `frontend/src/app/providers/UIPreferenceProvider.tsx`; `frontend/src/components/layout/AdminShell.tsx`. |
+| Verification | `cd frontend; cmd /c npm run test:visual` passed with 3 Playwright tests; `cmd /c npm run typecheck` passed; `cmd /c npm run build` passed with only Vite large chunk warning; `git diff --check` passed with only CRLF warnings; `cmd /c npm ci --dry-run` passed; changed-file static scan found no `console.log`, `debugger`, `TODO`, or `any`. |
+| Result | Added a repeatable browser-based visual smoke command for the Admin unauthenticated login page. The smoke covers default dark, light after persisted preference switch, and dark after switch back, asserting `body`, `#root`, app frame, login wrapper, and dark viewport edges. |
+| Boundary | Frontend-only. No backend Java, API contract, database, Docker, Redis, RAG, request-log, login behavior, i18n copy, or persisted UI preference key changes. Playwright browser setup remains a one-time local/CI prerequisite via `npx playwright install chromium`. |
+| Manual acceptance | User manually tested and committed before record-session. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3cb2016` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
