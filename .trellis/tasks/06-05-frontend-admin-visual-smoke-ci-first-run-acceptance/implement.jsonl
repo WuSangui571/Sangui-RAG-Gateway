@@ -1,0 +1,16 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project-level CI baseline and frontend job command contract"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend visual smoke CI command, cache, and artifact policy source of truth"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Generated artifacts and frontend file placement boundaries"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Guard against unrelated frontend API/type/DTO scope changes"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Guard against storing CI evidence, secrets, or runtime data in frontend state"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Infra-like CI/runtime contract depth, validation matrix, and boundary checks"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicate visual smoke runners or parallel implementations"}
+{"file": ".trellis/tasks/archive/2026-06/06-05-frontend-admin-visual-smoke-ci-artifact-policy/prd.md", "reason": "Previous completed CI integration PRD and artifact policy context"}
+{"file": ".github/workflows/ci.yml", "reason": "Current GitHub Actions frontend job to verify or narrowly fix"}
+{"file": "frontend/package.json", "reason": "Current visual smoke npm script contract"}
+{"file": "frontend/playwright.config.ts", "reason": "Current Chromium-only Playwright project and CI retry behavior"}
+{"file": "frontend/scripts/run-visual-smoke.mjs", "reason": "Existing Vite plus Playwright runner to reuse"}
+{"file": "frontend/tests/visual/admin-login-theme-smoke.spec.ts", "reason": "Current visual smoke coverage boundary"}
+{"file": ".gitignore", "reason": "Generated Playwright artifact ignore rules"}
