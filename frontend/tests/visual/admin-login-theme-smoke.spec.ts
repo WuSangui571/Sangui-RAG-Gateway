@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 
-const DARK_BG_RGB = 'rgb(20, 20, 20)'
+const DARK_BG_RGB = 'rgb(30, 20, 20)'
 const DARK_LAYOUT_RGB = 'rgb(0, 0, 0)'
 const LIGHT_BG_RGB = 'rgb(245, 245, 245)'
 

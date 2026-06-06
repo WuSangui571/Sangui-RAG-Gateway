@@ -1,0 +1,14 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project CI, security, and product boundary for frontend visual smoke artifact policy"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Authoritative CI visual smoke command and artifact allowlist policy"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend file ownership and visual smoke file placement conventions"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Secret/request-log forbidden-field guidance relevant to safe evidence boundaries"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "UI preference and secret persistence boundaries for login smoke context"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Safe evidence and forbidden secret/content exposure rules"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "CI/artifact boundary thinking for commands, secrets, and validation matrix"}
+{"file": ".github\\workflows\\ci.yml", "reason": "Existing frontend job command order and upload-artifact path contract"}
+{"file": "frontend\\package.json", "reason": "Existing test:visual and test:visual:ci script contract"}
+{"file": "frontend\\playwright.config.ts", "reason": "Existing Playwright CI retry/report/output behavior"}
+{"file": "frontend\\scripts\\run-visual-smoke.mjs", "reason": "Existing visual smoke runner pattern and Vite boundary"}
+{"file": "frontend\\tests\\visual\\admin-login-theme-smoke.spec.ts", "reason": "Preferred minimal temporary failure trigger location"}
