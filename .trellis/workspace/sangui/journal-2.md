@@ -102,7 +102,7 @@ Completed the controlled frontend Admin visual-smoke failure artifact acceptance
 
 | Hash | Message |
 |------|---------|
-| `598a9c4` | chore:记录前端 Admin 视觉冒烟 CI 验收 |
+| `598a9c4` | chore:璁板綍鍓嶇 Admin 瑙嗚鍐掔儫 CI 楠屾敹 |
 
 ### Testing
 
@@ -285,6 +285,72 @@ Result:
 - [OK] `cmd /c npm run typecheck`
 - [OK] `cmd /c npm run build`
 - [OK] `cmd /c npm run test:visual:ci` (3 Chromium tests)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 39: GitHub CI remote evidence closeout review
+
+**Date**: 2026-06-06
+**Task**: GitHub CI remote evidence closeout review
+**Branch**: `main`
+
+### Summary
+
+Closed and archived the GitHub CI remote evidence closeout review after manual testing and commit.
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| Task closeout | Archived `github-ci-remote-evidence-closeout-review` after manual testing and commit `129d418`. |
+| Remote evidence | Recorded the final GitHub remote metadata addendum for visual-smoke cleanup: branch absent, PR #2 merged, and open PR count 0. |
+| Safety boundary | Evidence remains metadata-only: no artifacts, Playwright reports, screenshots, raw REST payloads, secrets, prompts, provider payloads, log bodies, or private document content. |
+| Scope | No backend, frontend, API, DTO, database, Docker, RAG, provider, auth, or product behavior files changed. |
+| Trellis metadata | Current task was archived under `.trellis/tasks/archive/2026-06/06-06-github-ci-remote-evidence-closeout-review/`; previous visual-smoke cleanup archive evidence now contains the remote closeout addendum. |
+
+**Updated Files**:
+- `.trellis/tasks/archive/2026-06/06-06-github-ci-remote-evidence-closeout-review/`
+- `.trellis/tasks/archive/2026-06/06-06-visual-smoke-temp-branch-pr-cleanup/acceptance-evidence.md`
+- `.trellis/workspace/sangui/index.md`
+- `.trellis/workspace/sangui/journal-2.md`
+
+**Verification**:
+- [OK] `python ./.trellis/scripts/get_context.py --mode record` showed clean working tree before archive and latest commit `129d418`.
+- [OK] `git status --short` was clean before archive; after archive only Trellis task archive metadata changed.
+- [OK] `git log --oneline -5` included latest commit `129d418`.
+- [OK] `python ./.trellis/scripts/task.py list` showed the task active before archive and no active tasks after archive.
+- [OK] `python ./.trellis/scripts/task.py archive github-ci-remote-evidence-closeout-review` archived the completed task.
+
+**Result**:
+- The final GitHub remote evidence gap for the visual-smoke CI acceptance chain is closed.
+- The related Trellis task is archived after manual testing and commit presence.
+- The repository has no active Trellis tasks after this closeout.
+
+**Boundaries**:
+- No application tests were rerun during record-session because the committed change is Trellis/evidence metadata only and business files were not modified.
+- No `$record-session` was performed before manual testing and commit confirmation.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `129d418` | (see git log) |
+
+### Testing
+
+- [OK] `python ./.trellis/scripts/get_context.py --mode record`
+- [OK] `git status --short`
+- [OK] `git log --oneline -5`
+- [OK] `python ./.trellis/scripts/task.py list`
+- [OK] `python ./.trellis/scripts/task.py archive github-ci-remote-evidence-closeout-review`
 
 ### Status
 
