@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 35
-- **Last Active**: 2026-06-05
+- **Total Sessions**: 36
+- **Last Active**: 2026-06-06
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~117 | Active |
+| `journal-2.md` | ~169 | Active |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 36 | 2026-06-06 | Frontend visual smoke failure artifact acceptance | `c0f8e5d` | `visual-smoke-failure-acceptance-test` |
 | 35 | 2026-06-05 | Frontend Admin visual smoke CI acceptance | `598a9c4` | `main` |
 | 34 | 2026-06-05 | Frontend Admin visual smoke CI gate | `ace21d3` | `main` |
 | 33 | 2026-06-05 | Frontend Admin visual smoke automation baseline | `3cb2016` | `main` |

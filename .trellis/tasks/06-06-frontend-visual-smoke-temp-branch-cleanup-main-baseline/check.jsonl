@@ -1,0 +1,9 @@
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Check main remains aligned with project CI baseline and no product/API scope expands."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Validate DARK_BG_RGB baseline, visual smoke command behavior, and safe CI artifact boundaries."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Confirm any frontend edit stays in the existing visual test path and does not broaden structure."}
+{"file": ".github/workflows/ci.yml", "reason": "Confirm no CI workflow changes are needed unless baseline contract is independently broken."}
+{"file": "frontend/tests/visual/admin-login-theme-smoke.spec.ts", "reason": "Check restored main baseline and no weakening of visual smoke assertions."}
+{"file": "frontend/package.json", "reason": "Verify test:visual:ci remains direct delegation to test:visual and validation commands are run from frontend/."}
+{"file": "frontend/scripts/run-visual-smoke.mjs", "reason": "Confirm baseline verification uses existing runner and does not introduce a second visual smoke path."}
+{"file": "frontend/playwright.config.ts", "reason": "Check visual smoke remains Chromium-only baseline with CI retries and forbidOnly behavior."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Check scope stays outside cross-layer/API/RAG/security triggers unless new evidence appears."}

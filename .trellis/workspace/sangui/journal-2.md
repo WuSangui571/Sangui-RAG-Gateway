@@ -82,7 +82,7 @@ Recorded and accepted the frontend Admin visual smoke CI first-run evidence. The
 
 ### Summary
 
-(Add summary)
+Completed the controlled frontend Admin visual-smoke failure artifact acceptance task. The committed work proves the temporary failure trigger path for the CI visual smoke artifact contract and records the Trellis evidence needed for follow-up archive/session tracking.
 
 ### Main Changes
 
@@ -111,6 +111,58 @@ Recorded and accepted the frontend Admin visual smoke CI first-run evidence. The
 - [OK] `cd frontend; cmd /c npm run typecheck`
 - [OK] `cd frontend; cmd /c npm run build`
 - [OK] `cd frontend; cmd /c npm run test:visual:ci` (3 Chromium tests passed)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 36: Frontend visual smoke failure artifact acceptance
+
+**Date**: 2026-06-06
+**Task**: Frontend visual smoke failure artifact acceptance
+**Branch**: `visual-smoke-failure-acceptance-test`
+
+### Summary
+
+Completed the controlled frontend Admin visual-smoke failure artifact acceptance task. The committed work proves the temporary failure trigger path for the CI visual smoke artifact contract and records the Trellis evidence needed for follow-up archive/session tracking.
+
+### Main Changes
+
+| Area | Summary |
+|---|---|
+| Frontend visual smoke | Added a temporary branch-only failing assertion in `frontend/tests/visual/admin-login-theme-smoke.spec.ts` by changing `DARK_BG_RGB` from `rgb(20, 20, 20)` to `rgb(30, 20, 20)` so CI can prove failure artifact upload behavior. |
+| Trellis evidence | Recorded PRD, check context, implementation context, task metadata, and acceptance evidence for the controlled visual-smoke failure artifact acceptance task. |
+| Codex check/fix | Codex reviewed PRD/spec/check context, confirmed the failure boundary is visual smoke only, and cleaned mojibake in `acceptance-evidence.md` before the user committed. |
+| Validation | `cmd /c npm run typecheck` passed; `cmd /c npm run build` passed with existing Vite chunk-size warning; `cmd /c npm run test:visual:ci` failed as expected with 2 dark-theme assertion failures and 1 light-theme pass; `git diff --check` passed; `python ./.trellis/scripts/task.py validate frontend-admin-visual-smoke-failure-artifact-acceptance` passed. |
+| Boundary | No backend/API/DB/RAG/Docker/product behavior changes. The intentional failing assertion is a temporary acceptance trigger and must not be merged to main. |
+
+**Updated Files**:
+- `frontend/tests/visual/admin-login-theme-smoke.spec.ts`
+- `.trellis/tasks/06-05-frontend-admin-visual-smoke-failure-artifact-acceptance/acceptance-evidence.md`
+- `.trellis/tasks/06-05-frontend-admin-visual-smoke-failure-artifact-acceptance/prd.md`
+- `.trellis/tasks/06-05-frontend-admin-visual-smoke-failure-artifact-acceptance/check.jsonl`
+- `.trellis/tasks/06-05-frontend-admin-visual-smoke-failure-artifact-acceptance/implement.jsonl`
+- `.trellis/tasks/06-05-frontend-admin-visual-smoke-failure-artifact-acceptance/task.json`
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c0f8e5d` | (see git log) |
+
+### Testing
+
+- [OK] `cmd /c npm run typecheck` passed.
+- [OK] `cmd /c npm run build` passed with the existing Vite chunk-size warning.
+- [OK] `cmd /c npm run test:visual:ci` failed as expected at the dark-theme visual smoke assertion only: 2 dark-theme failures, 1 light-theme pass.
+- [OK] `git diff --check` passed.
+- [OK] `python ./.trellis/scripts/task.py validate frontend-admin-visual-smoke-failure-artifact-acceptance` passed.
 
 ### Status
 

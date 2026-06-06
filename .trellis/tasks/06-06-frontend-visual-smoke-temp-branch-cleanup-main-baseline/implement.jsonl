@@ -1,0 +1,11 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project CI baseline and product boundary; frontend check command contract."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Defines Admin login visual-smoke expected colors, command contract, CI artifact policy, and frontend validation commands."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend boundary reference; avoid unrelated files and keep visual test work scoped."}
+{"file": ".github/workflows/ci.yml", "reason": "Existing frontend CI command order and failure-only visual-smoke artifact upload policy."}
+{"file": "frontend/tests/visual/admin-login-theme-smoke.spec.ts", "reason": "Primary visual-smoke assertion file; temporary branch has rgb(30, 20, 20), main should have rgb(20, 20, 20)."}
+{"file": "frontend/package.json", "reason": "Defines typecheck, build, test:visual, and test:visual:ci script delegation."}
+{"file": "frontend/scripts/run-visual-smoke.mjs", "reason": "Visual-smoke runner starts Vite and delegates to Playwright; no backend dependency."}
+{"file": "frontend/playwright.config.ts", "reason": "Visual-smoke browser/project/retry settings for local and CI baseline checks."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Shared thinking guide; confirms this task does not trigger cross-layer/API/RAG/security changes."}
