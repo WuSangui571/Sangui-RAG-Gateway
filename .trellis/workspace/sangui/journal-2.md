@@ -237,3 +237,59 @@ Completed the controlled frontend Admin visual-smoke failure artifact acceptance
 ### Next Steps
 
 - None - task complete
+
+
+## Session 38: Visual smoke temp branch cleanup
+
+**Date**: 2026-06-06
+**Task**: Visual smoke temp branch cleanup
+**Branch**: `main`
+
+### Summary
+
+Archived the visual-smoke temporary branch cleanup task after manual acceptance and commit `93dc435`. The closeout recorded safe branch/PR metadata only, confirmed the restored `main` visual-smoke baseline, and documented the remaining Codex-side GitHub network refresh boundary for later follow-up.
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| Task | Closed visual-smoke-temp-branch-pr-cleanup after manual acceptance and commit. |
+| Commit | Recorded 93dc435 chore: cleanup visual smoke temporary branch residue. |
+| Branch cleanup | Evidence records local and remote visual-smoke-failure-acceptance-test cleanup, PR #2 merge metadata, and no local branch residue during Codex check. |
+| Main baseline | Confirmed frontend/tests/visual/admin-login-theme-smoke.spec.ts keeps DARK_BG_RGB = rgb(20, 20, 20). |
+| Validation | Passed python json.tool for task.json, local branch checks, Select-String baseline assertion, frontend npm run typecheck, npm run build, and npm run test:visual:ci with 3 Chromium tests. |
+| Boundary | No backend, API, DB, RAG, Docker, provider, or product behavior changes. GitHub remote/PR refresh could not be independently repeated by Codex because github.com SSH/HTTPS was unavailable in shell; evidence records this boundary. |
+
+Updated files:
+- .trellis/tasks/archive/2026-06/06-06-visual-smoke-temp-branch-pr-cleanup/
+- .trellis/workspace/sangui/index.md
+- .trellis/workspace/sangui/journal-2.md
+
+Result:
+- Temporary visual smoke failure branch cleanup task is archived.
+- Frontend visual smoke success and failure-artifact acceptance sequence is complete through branch cleanup.
+- Safe evidence only; no artifact contents, secrets, logs, screenshots, provider payloads, or private content recorded.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `93dc435` | (see git log) |
+
+### Testing
+
+- [OK] `python -m json.tool .trellis/tasks/archive/2026-06/06-06-visual-smoke-temp-branch-pr-cleanup/task.json`
+- [OK] Local branch checks for `visual-smoke-failure-acceptance-test`
+- [OK] `Select-String` baseline assertion for `DARK_BG_RGB = 'rgb(20, 20, 20)'`
+- [OK] `cmd /c npm run typecheck`
+- [OK] `cmd /c npm run build`
+- [OK] `cmd /c npm run test:visual:ci` (3 Chromium tests)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

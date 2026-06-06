@@ -1,0 +1,16 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, CI baseline, and secret-safe CI expectations"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Visual smoke CI command contract and artifact policy"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Confirms no frontend structure changes are needed"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Confirms no frontend API/type contract changes are needed"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Safe observability and evidence boundary"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe operational metadata and logging boundaries"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Safe error/access-boundary documentation"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality checklist and no sensitive data boundaries"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Boundary and validation checklist"}
+{"file": ".github/workflows/ci.yml", "reason": "Existing visual-smoke CI and artifact upload contract"}
+{"file": "frontend/package.json", "reason": "test:visual:ci command delegation"}
+{"file": "frontend/tests/visual/admin-login-theme-smoke.spec.ts", "reason": "Restored main visual-smoke baseline guard"}
+{"file": ".trellis/tasks/archive/2026-06/06-06-visual-smoke-temp-branch-pr-cleanup/acceptance-evidence.md", "reason": "Existing evidence file with unresolved GitHub remote boundary"}
+{"file": ".trellis/workspace/sangui/journal-2.md", "reason": "Recent sessions 37 and 38 project state"}

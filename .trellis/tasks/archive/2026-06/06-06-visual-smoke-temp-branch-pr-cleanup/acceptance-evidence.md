@@ -50,3 +50,60 @@ Codex did not find local branch residue or a `main` baseline regression. Remote 
 ## Cleanup Result
 
 **Local good case; remote/PR check has a documented Codex-side network boundary.** Local branches are absent and `main` baseline is unchanged. DeepSeek recorded the remote branch deletion and no open PR condition before handoff; Codex could not independently refresh those GitHub checks in this environment. Only branch/PR metadata is recorded — no artifact content, logs, screenshots, secrets, or provider payloads.
+
+---
+
+## GitHub Remote Evidence Refresh — Closeout Addendum
+
+**Executed:** 2026-06-06 19:03 UTC+8  
+**Task:** github-ci-remote-evidence-closeout-review  
+**Purpose:** Independently close the GitHub network boundary gap documented in the Codex Check Follow-Up section above.
+
+### Remote Branch Absence
+
+| Item | Value |
+|---|---|
+| Branch name | `visual-smoke-failure-acceptance-test` |
+| Query method | `git ls-remote --heads origin visual-smoke-failure-acceptance-test` (over SSH to `git@github.com:WuSangui571/Sangui-RAG-Gateway.git`) |
+| Result | Empty (branch absent) |
+
+### PR #2 Merged State
+
+| Field | Value |
+|---|---|
+| Query method | GitHub REST API `GET /repos/WuSangui571/Sangui-RAG-Gateway/pulls/2` |
+| PR number | 2 |
+| State | `closed` |
+| Merged | `true` |
+| Merged at (UTC) | `2026-06-06T07:09:10Z` |
+| Merge commit SHA | `74193d62c40d634546bf59c6eb711c7f2564cfce` |
+| Head branch | `visual-smoke-failure-acceptance-test` |
+| Base branch | `main` |
+
+### Open PR Count (head to main)
+
+| Field | Value |
+|---|---|
+| Query method | GitHub REST API `GET /repos/WuSangui571/Sangui-RAG-Gateway/pulls?state=open&base=main&head=WuSangui571:visual-smoke-failure-acceptance-test` |
+| Result | Empty array `[]` |
+| Open PR count | 0 |
+
+### Evidence Safety Note
+
+Only the safe metadata fields listed above were extracted and recorded. The following were NOT downloaded, stored, or logged:
+
+- No artifacts, Playwright reports, screenshots, or test results
+- No raw full REST API response payloads (only selected metadata fields extracted)
+- No secrets, provider keys, API keys, environment variables, or credentials
+- No prompts, private document content, augmented prompts, or log bodies
+- No stack traces or internal paths
+
+### Boundary Closeout
+
+All three remote conditions confirmed through a GitHub-accessible environment:
+
+1. ✅ Remote branch `visual-smoke-failure-acceptance-test` is absent.
+2. ✅ PR #2 is in `closed` state with `merged: true`.
+3. ✅ No open PR exists from `WuSangui571:visual-smoke-failure-acceptance-test` to `main`.
+
+The Codex-side GitHub network boundary documented in the prior session is now closed by this independent remote refresh.

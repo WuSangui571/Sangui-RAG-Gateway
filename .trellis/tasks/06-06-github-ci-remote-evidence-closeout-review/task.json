@@ -1,9 +1,9 @@
 {
-  "id": "visual-smoke-temp-branch-pr-cleanup",
-  "name": "visual-smoke-temp-branch-pr-cleanup",
-  "title": "清理视觉冒烟临时失败分支与 PR 防误合残留",
+  "id": "github-ci-remote-evidence-closeout-review",
+  "name": "github-ci-remote-evidence-closeout-review",
+  "title": "GitHub CI remote evidence closeout review",
   "description": "",
-  "status": "planning",
+  "status": "check",
   "dev_type": "frontend",
   "scope": null,
   "package": null,
@@ -15,7 +15,7 @@
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
-  "current_phase": 0,
+  "current_phase": 4,
   "next_action": [
     {
       "phase": 1,
