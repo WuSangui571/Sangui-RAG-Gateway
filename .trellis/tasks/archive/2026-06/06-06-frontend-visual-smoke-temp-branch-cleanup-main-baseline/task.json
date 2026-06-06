@@ -1,21 +1,21 @@
 {
-  "id": "frontend-admin-visual-smoke-failure-artifact-acceptance",
-  "name": "frontend-admin-visual-smoke-failure-artifact-acceptance",
-  "title": "Frontend Admin visual smoke failure artifact controlled acceptance",
+  "id": "frontend-visual-smoke-temp-branch-cleanup-main-baseline",
+  "name": "frontend-visual-smoke-temp-branch-cleanup-main-baseline",
+  "title": "Frontend visual smoke temporary branch cleanup and main baseline confirmation",
   "description": "",
-  "status": "implement",
+  "status": "completed",
   "dev_type": "frontend",
   "scope": null,
   "package": null,
   "priority": "P2",
   "creator": "sangui",
   "assignee": "sangui",
-  "createdAt": "2026-06-05",
-  "completedAt": null,
-  "branch": "visual-smoke-failure-acceptance-test",
+  "createdAt": "2026-06-06",
+  "completedAt": "2026-06-06",
+  "branch": null,
   "base_branch": "main",
   "worktree_path": null,
-  "current_phase": 3,
+  "current_phase": 0,
   "next_action": [
     {
       "phase": 1,
@@ -47,10 +47,7 @@
   "subtasks": [],
   "children": [],
   "parent": null,
-  "relatedFiles": [
-    "frontend/tests/visual/admin-login-theme-smoke.spec.ts",
-    ".trellis/tasks/06-05-frontend-admin-visual-smoke-failure-artifact-acceptance/acceptance-evidence.md"
-  ],
+  "relatedFiles": [],
   "notes": "",
   "meta": {}
 }

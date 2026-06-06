@@ -1,0 +1,12 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, CI baseline, and no-secret CI/deployment expectations."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Visual smoke command contract, CI artifact policy, and required baseline assertions."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Confirms no frontend implementation files should be added or reorganized for branch cleanup."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Confirms there are no frontend API/type contract changes in scope."}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Safe evidence boundary for logs, artifacts, secrets, prompts, and private content."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Boundary checklist proving no API, DB, DTO, env, or RAG contract changes are needed."}
+{"file": ".github/workflows/ci.yml", "reason": "Existing frontend CI visual smoke and failure-only artifact upload contract."}
+{"file": "frontend/package.json", "reason": "test:visual:ci delegates directly to test:visual."}
+{"file": "frontend/tests/visual/admin-login-theme-smoke.spec.ts", "reason": "Main baseline assertion file; DARK_BG_RGB must remain rgb(20, 20, 20)."}
+{"file": ".trellis/workspace/sangui/journal-2.md", "reason": "Session 37 records previous acceptance, main restoration, and remaining branch cleanup."}

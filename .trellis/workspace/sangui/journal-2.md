@@ -171,3 +171,69 @@ Completed the controlled frontend Admin visual-smoke failure artifact acceptance
 ### Next Steps
 
 - None - task complete
+
+
+## Session 37: Frontend visual smoke CI artifact and main baseline closeout
+
+**Date**: 2026-06-06
+**Task**: Frontend visual smoke CI artifact and main baseline closeout
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Summary |
+|---|---|
+| Frontend visual smoke evidence | Completed the controlled failure-artifact acceptance path for the Admin visual smoke CI contract. The temporary failure branch proved the failure boundary and artifact behavior, with evidence limited to safe metadata and file-list summaries. |
+| Main baseline recovery | Verified that the temporary branch was accidentally merged into main, then restored `frontend/tests/visual/admin-login-theme-smoke.spec.ts` so `DARK_BG_RGB` is back to `rgb(20, 20, 20)`. |
+| Trellis cleanup | Archived both the failure-artifact acceptance task and the main-baseline cleanup task after manual GitHub confirmation and committed code. |
+| Validation | `cmd /c npm run typecheck` passed; `cmd /c npm run build` passed with the existing Vite chunk-size warning; `cmd /c npm run test:visual:ci` passed with 3 Chromium tests. GitHub Actions was manually confirmed normal after commit `84b3798`. |
+| Boundary | No backend, API, DB, RAG, Docker, provider, or product behavior changes. The remaining work was limited to the visual-smoke test baseline and Trellis task/session metadata. |
+
+**Updated Files**:
+- `frontend/tests/visual/admin-login-theme-smoke.spec.ts`
+- `.trellis/tasks/archive/2026-06/06-05-frontend-admin-visual-smoke-failure-artifact-acceptance/`
+- `.trellis/tasks/archive/2026-06/06-06-frontend-visual-smoke-temp-branch-cleanup-main-baseline/`
+- `.trellis/workspace/sangui/index.md`
+- `.trellis/workspace/sangui/journal-2.md`
+
+**Commits Recorded**:
+- `c0f8e5d` - temporary branch-only failure trigger for visual smoke artifact acceptance.
+- `4cb098f` - Trellis main-baseline validation and task metadata.
+- `84b3798` - restore `main` visual-smoke dark background baseline after accidental merge.
+
+**Verification**:
+- [OK] `cmd /c npm run typecheck` passed.
+- [OK] `cmd /c npm run build` passed with existing Vite chunk-size warning.
+- [OK] `cmd /c npm run test:visual:ci` passed, 3/3 Chromium tests.
+- [OK] GitHub Actions was manually confirmed normal after `84b3798`.
+- [OK] `python ./.trellis/scripts/task.py list` shows no active tasks after archive.
+
+**Result**:
+- Frontend visual-smoke CI success path and failure-artifact path are now both validated.
+- `main` is restored to the passing `rgb(20, 20, 20)` baseline.
+- The temporary failure branch must not be merged again; it can be deleted now that evidence has been captured.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c0f8e5d` | (see git log) |
+| `4cb098f` | (see git log) |
+| `84b3798` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
