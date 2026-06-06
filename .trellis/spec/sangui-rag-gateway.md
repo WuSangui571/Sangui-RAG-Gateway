@@ -1897,41 +1897,44 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
 |---|---:|---|
 | `ApiKey` | yes | Plaintext app API key used only in `Authorization`; never echoed. |
 | `BackendBaseUrl` | no | Base URL for direct backend `/api/health`. |
-| `FrontendBaseUrl` | no | Base URL for frontend `/api` and `/v1` proxy validation. |
+| `FrontendBaseUrl` | no | Base URL for frontend `/api`, `/api/admin`, and `/v1` proxy validation. |
 | `Message` | no | Sent to chat and used for request-log `question_summary` prefix matching. |
-| `AppId` | no | Enables request-log automation only when supplied with `AdminUserId`. |
-| `AdminUserId` | no | Temporary Admin identity header value for request-log APIs. |
+| `AppId` | no | Enables readiness and request-log automation only when supplied with `AdminUserId`. |
+| `AdminUserId` | no | Temporary Admin identity header value for readiness and request-log APIs. |
 | `RevokedApiKey` | no | Plaintext revoked key used only for one negative auth call; never echoed. Required when `-VerifyRevokedKey` is supplied. |
-| `VerifyRevokedKey` | no | Switch to enable negative auth verification (step 6). |
+| `VerifyRevokedKey` | no | Switch to enable negative auth verification (step 7). |
 
 **Required assertions:**
 
 | # | Assertion | Failure boundary |
 |---|---|---|
 | 1 | Script exits `0` only when all enabled checks pass. | — |
-| 2 | `AppId` and `AdminUserId` both missing: request-log automation skipped with neutral message; existing health/chat/stream checks still run. | — |
-| 3 | Only one of `AppId`/`AdminUserId` supplied: fail with `request-log` boundary. | `request-log` |
-| 4 | Request-log list API returns HTTP 200 with envelope `code=OK`. | `request-log` |
-| 5 | At least one recent success log's `question_summary` matches the smoke `-Message` prefix. | `request-log` |
-| 6 | Matched list log: `status = success`, `model` non-blank, `provider_name` non-blank, `latency_ms` non-negative numeric, `hit_chunk_ids` non-empty. No forbidden fields in list item JSON. | `request-log` |
-| 7 | Request-log detail API returns HTTP 200 with envelope `code=OK`. Detail `request_id` matches list row. Safe detail fields present: `user_id`, `app_id`, `api_key_id`, `model`, `provider_name`, `status`, `latency_ms`, `messages_count`, `question_summary`, `hit_chunk_ids`, `created_at`, `updated_at`. No forbidden fields in detail JSON. | `request-log` |
-| 8 | Hit-chunks endpoint returns non-empty list with `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`. No forbidden fields in any hit-chunk item JSON. | `request-log` |
-| 9 | Script output contains only safe evidence: request ID, model, provider_name, latency_ms, messages_count, content length, hit chunk IDs/count, chunk metadata. Non-streaming chat prints content length only, never answer text. | `request-log` |
-| 10 | Script output never prints: chunk summary text, full prompt, API key, key hash, upstream provider body, embedding vectors, storage_path, stack trace. | `request-log` |
-| 11 | `-VerifyRevokedKey` not supplied: revoked-key step skipped with neutral message. | — |
-| 12 | `-VerifyRevokedKey` supplied with blank `-RevokedApiKey`: fail with `auth` boundary. | `auth` |
-| 13 | Revoked key returns HTTP 401 with error `code=invalid_api_key` (boundary: `auth`). | `auth` |
+| 2 | `AppId` and `AdminUserId` both missing: readiness and request-log automation skipped with neutral messages; existing health/chat/stream checks still run. | — |
+| 3 | Only one of `AppId`/`AdminUserId` supplied: readiness fails visibly and request-log automation also fails visibly. | `readiness` / `request-log` |
+| 4 | Readiness API returns HTTP 200 with envelope `code=OK`, `overall_status=READY`, and required checks: app/default_model_config/default_knowledge_base/knowledge_base_status/active_api_key/embedding_config. | `readiness` / `retrieval` / `auth` / `embedding` |
+| 5 | Readiness forbidden-field scan recursively covers `data`, including `checks[]` and nested `metadata`; forbidden fields fail the run. | `readiness` |
+| 6 | Request-log list API returns HTTP 200 with envelope `code=OK`. | `request-log` |
+| 7 | At least one recent success log's `question_summary` matches the smoke `-Message` prefix. | `request-log` |
+| 8 | Matched list log: `status = success`, `model` non-blank, `provider_name` non-blank, `latency_ms` non-negative numeric, `hit_chunk_ids` non-empty. No forbidden fields in list item JSON. | `request-log` |
+| 9 | Request-log detail API returns HTTP 200 with envelope `code=OK`. Detail `request_id` matches list row. Safe detail fields present: `user_id`, `app_id`, `api_key_id`, `model`, `provider_name`, `status`, `latency_ms`, `messages_count`, `question_summary`, `hit_chunk_ids`, `created_at`, `updated_at`. No forbidden fields in detail JSON. | `request-log` |
+| 10 | Hit-chunks endpoint returns non-empty list with `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`. No forbidden fields in any hit-chunk item JSON. | `request-log` |
+| 11 | Script output contains only safe evidence: request ID, model, provider_name, latency_ms, messages_count, readiness status/check counts, content length, hit chunk IDs/count, chunk metadata. Non-streaming chat prints content length only, never answer text. | `request-log` |
+| 12 | Script output never prints: chunk summary text, full prompt, API key, key hash, upstream provider body, embedding vectors, storage_path, stack trace. | `request-log` |
+| 13 | `-VerifyRevokedKey` not supplied: revoked-key step skipped with neutral message. | — |
+| 14 | `-VerifyRevokedKey` supplied with blank `-RevokedApiKey`: fail with `auth` boundary. | `auth` |
+| 15 | Revoked key returns HTTP 401 with error `code=invalid_api_key` (boundary: `auth`). | `auth` |
 
 **Safe evidence fields (allowed in output):**
 
 ```text
 request_id, model, provider_name, latency_ms, messages_count,
+readiness overall_status and check count,
 hit_chunk_ids (array + count), content length (non-streaming),
 chunk_id, document_id, knowledge_base_id, source_filename, chunk_index,
 HTTP status, boundary label, SSE data line count
 ```
 
-**Forbidden fields (never printed by any smoke script or README example, and scanned in list/detail/hit-chunk JSON):**
+**Forbidden fields (never printed by any smoke script or README example, and scanned in readiness/list/detail/hit-chunk JSON):**
 
 ```text
 key_hash, api_key, api_key_encrypted, upstream_api_key, provider_response_body,
@@ -1951,8 +1954,10 @@ summary text content
 
 ```bash
 cd backend
+mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test
 mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test
 mvn -q "-Dtest=GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test
+mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test
 ```
 
 **Manual validation (PowerShell 5.1):**
@@ -1995,19 +2000,20 @@ Current Admin model-config creation requires `chat_model` on every config. Split
 |---|---|---|---|
 | 1 | Backend health | HTTP 200, `code=OK`, `data.status=UP` | `health` |
 | 2 | Frontend `/api` proxy health | JSON response (not SPA HTML), `code=OK` | `proxy` |
-| 3 | Model config presence | App has `ENABLED` Sanguicode chat config bound as default | `retrieval` |
-| 4 | KB status `READY` | App has bound knowledge base with status `READY` | `retrieval` |
-| 5 | Non-streaming chat success | HTTP 200, `choices[0].message.content` present | `upstream` |
-| 6 | Streaming SSE success | `data:` chunks received, `data: [DONE]` present | `upstream` |
-| 7 | Request-log list/detail | `status=success`, non-blank `model`/`provider_name`, numeric `latency_ms`, non-empty `hit_chunk_ids`; detail returns `user_id`, `updated_at`, `messages_count`, and all list fields; no forbidden fields in list, detail, or hit-chunk JSON | `request-log` |
-| 8 | Hit-chunks safe metadata | `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index` present; no full chunk content or forbidden fields | `request-log` |
-| 9 | Revoked-key 401 | HTTP 401 with `error.code=invalid_api_key` after key revocation | `auth` |
-| 10 | No secrets in output | No API keys, key hashes, encrypted keys, provider bodies, stack traces, or embedding vectors in script output or committed files | — |
+| 3 | App readiness | `overall_status=READY`, required checks present, no forbidden fields in readiness metadata | `readiness` / `retrieval` / `auth` / `embedding` |
+| 4 | Model config presence | App has `ENABLED` Sanguicode chat config bound as default | `retrieval` |
+| 5 | KB status `READY` | App has bound knowledge base with status `READY` | `retrieval` |
+| 6 | Non-streaming chat success | HTTP 200, `choices[0].message.content` present | `upstream` |
+| 7 | Streaming SSE success | `data:` chunks received, `data: [DONE]` present | `upstream` |
+| 8 | Request-log list/detail | `status=success`, non-blank `model`/`provider_name`, numeric `latency_ms`, non-empty `hit_chunk_ids`; detail returns `user_id`, `updated_at`, `messages_count`, and all list fields; no forbidden fields in list, detail, or hit-chunk JSON | `request-log` |
+| 9 | Hit-chunks safe metadata | `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index` present; no full chunk content or forbidden fields | `request-log` |
+| 10 | Revoked-key 401 | HTTP 401 with `error.code=invalid_api_key` after key revocation | `auth` |
+| 11 | No secrets in output | No API keys, key hashes, encrypted keys, provider bodies, stack traces, or embedding vectors in script output or committed files | — |
 
 **Good / Base / Bad cases:**
 
 | Case | Expected result |
 |---|---|
-| Good | Backend and frontend running; app has ready KB, enabled Sanguicode chat config, and enabled DashScope embedding config; non-streaming chat succeeds (script prints content length only, not answer text); request-log automation finds latest matching success row with model/provider/latency/question_summary/hit_chunk_ids; detail validation confirms safe fields and request_id match; forbidden-field scan passes on list, detail, and hit-chunk JSON; hit-chunks count matches safe evidence expectations; streaming emits `[DONE]`; revoked-key verification returns HTTP 401 with `error.code=invalid_api_key`. |
-| Base | User runs script without `-AppId`/`-AdminUserId`; existing health/chat/stream checks still work; README provides manual and automated request-log commands. Revoked-key verification skipped unless `-VerifyRevokedKey` is explicitly supplied. |
-| Bad | Script accepts a passing chat run while request-log fields are missing, stale, unsafe, or empty; script prints full key/chunk content/answer text; forbidden fields appear in list/detail/hit-chunk JSON without detection; README uses PowerShell default encoding or `curl` alias; revoked-key verification passes without actually checking HTTP 401 and `error.code`. |
+| Good | Backend and frontend running; app readiness is `READY` with all required checks and recursive forbidden-field scan passing; app has ready KB, enabled Sanguicode chat config, and enabled DashScope embedding config; non-streaming chat succeeds (script prints content length only, not answer text); request-log automation finds latest matching success row with model/provider/latency/question_summary/hit_chunk_ids; detail validation confirms safe fields and request_id match; forbidden-field scan passes on list, detail, and hit-chunk JSON; hit-chunks count matches safe evidence expectations; streaming emits `[DONE]`; revoked-key verification returns HTTP 401 with `error.code=invalid_api_key`. |
+| Base | User runs script without `-AppId`/`-AdminUserId`; existing health/chat/stream checks still work; README provides manual and automated request-log commands. Readiness and revoked-key verification are skipped unless their required inputs are supplied. |
+| Bad | Script accepts a passing chat run while readiness is non-ready, request-log fields are missing, stale, unsafe, or empty; script prints full key/chunk content/answer text; forbidden fields appear in readiness/list/detail/hit-chunk JSON without detection; README uses PowerShell default encoding or `curl` alias; revoked-key verification passes without actually checking HTTP 401 and `error.code`. |

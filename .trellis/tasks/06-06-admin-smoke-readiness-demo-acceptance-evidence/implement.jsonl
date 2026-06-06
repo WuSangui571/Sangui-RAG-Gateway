@@ -1,0 +1,26 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/tasks/06-06-admin-smoke-readiness-demo-acceptance-evidence/prd.md", "reason": "Task PRD with acceptance path, boundaries, validation matrix, and required tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project source of truth for readiness, request-log API, demo smoke automation, and safe evidence checklist"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer flow across admin API, gateway, frontend, request logs, streaming, and secrets"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Gateway OpenAI-compatible errors and admin envelope/error matrix"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe operational logging and request-log forbidden fields"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Tenant-scoped request-log and hit-chunk query contracts"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Targeted backend tests and review checklist"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Upstream failure, timeout, streaming, and request-log persistence boundaries"}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "Retrieval hit_chunk_ids and tenant-safe evidence contract"}
+{"file": ".trellis/spec/rag/prompt-context-policy.md", "reason": "Prompt containment, no-hit, and no prompt leakage rules"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Safe evidence and forbidden response/log fields"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend readiness and request-log DTO/VO typing contracts"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Smoke page local state and secret lifecycle boundaries"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend smoke UX, safety, and validation commands"}
+{"file": "scripts/demo-smoke.ps1", "reason": "Canonical PowerShell 5.1 demo smoke script to verify or adjust only if real gaps are found"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java", "reason": "Readiness admin endpoint and ownership error pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Readiness assembly checks and safe metadata"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java", "reason": "Request-log list/detail/hit-chunks admin API contract"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Request-log VO conversion and hit chunk summary evidence"}
+{"file": "frontend/src/pages/smoke/SmokeTestPage.tsx", "reason": "Frontend operator smoke flow and evidence display"}
+{"file": "frontend/src/api/openai.ts", "reason": "Frontend non-streaming and streaming smoke client evidence parsing"}
+{"file": "frontend/src/api/request-logs.ts", "reason": "Typed request-log API client"}
+{"file": "README.md", "reason": "Existing acceptance runbook and likely documentation target if no implementation gap exists"}

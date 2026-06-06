@@ -68,12 +68,44 @@ function Test-ForbiddenFields {
         'content', 'chunk_content'
     )
     $found = @()
+    if ($null -eq $JsonObj) {
+        return $found
+    }
+    if ($JsonObj -is [System.Array]) {
+        foreach ($item in $JsonObj) {
+            $found += Test-ForbiddenFields -JsonObj $item
+        }
+        return ($found | Select-Object -Unique)
+    }
+    if ($JsonObj -is [string] -or $JsonObj.GetType().IsPrimitive) {
+        return $found
+    }
     foreach ($prop in $JsonObj.PSObject.Properties) {
-        if ($forbidden -contains $prop.Name) {
+        if ($forbidden -contains $prop.Name.ToLowerInvariant()) {
             $found += $prop.Name
         }
+        if ($null -ne $prop.Value -and -not ($prop.Value -is [string])) {
+            $found += Test-ForbiddenFields -JsonObj $prop.Value
+        }
     }
-    return $found
+    return ($found | Select-Object -Unique)
+}
+
+function Get-ReadinessBoundary {
+    param([PSObject[]]$Checks)
+    $failedKeys = @()
+    foreach ($check in $Checks) {
+        if ($check.status -and $check.status -ne 'READY') {
+            $failedKeys += $check.key
+        }
+    }
+
+    if ($failedKeys -contains 'embedding_config') { return 'embedding' }
+    if ($failedKeys -contains 'active_api_key') { return 'auth' }
+    if ($failedKeys -contains 'default_model_config') { return 'retrieval' }
+    if ($failedKeys -contains 'default_knowledge_base') { return 'retrieval' }
+    if ($failedKeys -contains 'knowledge_base_status') { return 'retrieval' }
+    return 'readiness'
 }
 
 function Get-JsonBody {
@@ -211,11 +243,97 @@ try {
         }
     }
 }
-catch {
+    catch {
     Write-FailBoundary "proxy" "Exception (likely not valid JSON): $_"
 }
 
-Write-Step "3. Non-streaming chat"
+Write-Step "3. App readiness"
+if ($AppId -le 0 -and $AdminUserId -le 0) {
+    Write-Host "  SKIP: -AppId and -AdminUserId not supplied; readiness check skipped." -ForegroundColor Yellow
+}
+elseif ($AppId -le 0 -or $AdminUserId -le 0) {
+    Write-FailBoundary "readiness" "Both -AppId and -AdminUserId are required for readiness check."
+}
+else {
+    try {
+        $readinessUrl = "$FrontendBaseUrl/api/admin/apps/$AppId/readiness"
+        $readinessHeaders = @("X-Admin-User-Id: $AdminUserId")
+        $readinessResp = Invoke-CurlCapture -Url $readinessUrl -Headers $readinessHeaders -MaxTimeSeconds 30
+
+        if ($readinessResp.CurlExit -ne 0) {
+            Write-FailBoundary "proxy" "curl exit code $($readinessResp.CurlExit) on readiness endpoint"
+        }
+        elseif ($readinessResp.StatusCode -ne 200) {
+            $safePreview = $readinessResp.Body
+            if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
+            $readinessBoundary = "proxy"
+            try {
+                $readinessError = $readinessResp.Body | ConvertFrom-Json -ErrorAction Stop
+                if ($readinessError.code -or $readinessError.message) {
+                    $readinessBoundary = "readiness"
+                }
+            }
+            catch {
+                # Non-JSON responses through the frontend are treated as proxy failures.
+            }
+            Write-FailBoundary $readinessBoundary "HTTP $($readinessResp.StatusCode) on readiness. Body: $safePreview"
+        }
+        else {
+            $readinessJson = $null
+            try {
+                $readinessJson = $readinessResp.Body | ConvertFrom-Json -ErrorAction Stop
+            }
+            catch {
+                $safePreview = $readinessResp.Body
+                if ($safePreview.Length -gt 200) { $safePreview = $safePreview.Substring(0, 200) }
+                Write-FailBoundary "proxy" "Readiness response is not valid JSON: $safePreview"
+            }
+
+            if ($readinessJson) {
+                if ($readinessJson.code -ne 'OK') {
+                    Write-FailBoundary "readiness" "Readiness envelope code=$($readinessJson.code), message=$($readinessJson.message)"
+                }
+                else {
+                    $readinessForbidden = Test-ForbiddenFields -JsonObj $readinessJson.data
+                    if ($readinessForbidden.Count -gt 0) {
+                        Write-FailBoundary "readiness" "Forbidden field(s) found in readiness: $($readinessForbidden -join ', ')"
+                    }
+                    else {
+                        $overallStatus = $readinessJson.data.overall_status
+                        $checkCount = if ($readinessJson.data.checks) { $readinessJson.data.checks.Count } else { 0 }
+
+                        Write-Host "  overall_status: $overallStatus" -ForegroundColor Gray
+                        $requiredChecks = @('app', 'default_model_config', 'default_knowledge_base', 'knowledge_base_status', 'active_api_key', 'embedding_config')
+                        $missingChecks = @()
+                        foreach ($ck in $requiredChecks) {
+                            $found = $false
+                            foreach ($check in $readinessJson.data.checks) {
+                                if ($check.key -eq $ck) { $found = $true; break }
+                            }
+                            if (-not $found) { $missingChecks += $ck }
+                        }
+
+                        if ($missingChecks.Count -gt 0) {
+                            Write-FailBoundary "readiness" "Missing readiness check(s): $($missingChecks -join ', ')"
+                        }
+                        elseif ($overallStatus -ne 'READY') {
+                            $readinessBoundary = Get-ReadinessBoundary -Checks $readinessJson.data.checks
+                            Write-FailBoundary $readinessBoundary "overall_status=$overallStatus, expected READY"
+                        }
+                        else {
+                            Write-Pass "overall_status=READY, $checkCount checks present (no forbidden fields)"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch {
+        Write-FailBoundary "readiness" "Exception: $_"
+    }
+}
+
+Write-Step "4. Non-streaming chat"
 try {
     $body = Get-JsonBody -Content $Message
     $headers = @("Content-Type: application/json", "Authorization: Bearer $ApiKey")
@@ -259,7 +377,7 @@ catch {
     Write-FailBoundary "proxy" "Exception: $_"
 }
 
-Write-Step "4. Streaming chat"
+Write-Step "5. Streaming chat"
 try {
     $body = Get-JsonBody -Content $Message -Stream $true
     $headers = @("Content-Type: application/json", "Authorization: Bearer $ApiKey")
@@ -310,7 +428,7 @@ catch {
     Write-FailBoundary "proxy" "Exception: $_"
 }
 
-Write-Step "5. Request-log validation"
+Write-Step "6. Request-log validation"
 if ($AppId -le 0 -and $AdminUserId -le 0) {
     Write-Host "  SKIP: -AppId and -AdminUserId not supplied; request-log automation skipped." -ForegroundColor Yellow
 }
@@ -583,7 +701,7 @@ else {
     }
 }
 
-Write-Step "6. Revoked-key 401 verification"
+Write-Step "7. Revoked-key 401 verification"
 if (-not $VerifyRevokedKey) {
     Write-Host "  SKIP: -VerifyRevokedKey not supplied; revoked-key automation skipped." -ForegroundColor Yellow
 }

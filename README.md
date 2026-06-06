@@ -504,14 +504,15 @@ After completing the admin setup and running the smoke flow, verify that each it
 |---|---|---|---|
 | 1 | Backend health | HTTP 200, `code=OK`, `data.status=UP` | `health` |
 | 2 | Frontend `/api` proxy health | JSON response (not SPA HTML), `code=OK` | `proxy` |
-| 3 | Model config presence | App has `ENABLED` Sanguicode chat config bound as default | `retrieval` |
-| 4 | KB status `READY` | App has bound knowledge base with status `READY` | `retrieval` |
-| 5 | Non-streaming chat success | HTTP 200, `choices[0].message.content` present | `upstream` |
-| 6 | Streaming SSE success | `data:` chunks received, `data: [DONE]` present | `upstream` |
-| 7 | Request-log list/detail | `status=success`, non-blank `model`/`provider_name`, numeric `latency_ms`, non-empty `hit_chunk_ids`; detail returns `user_id`, `updated_at`, and all list fields; no forbidden fields in list, detail, or hit-chunk responses | `request-log` |
-| 8 | Hit-chunks safe metadata | `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index` present; no full chunk content | `request-log` |
-| 9 | Revoked-key 401 | HTTP 401 with `error.code=invalid_api_key` after key revocation | `auth` |
-| 10 | No secrets in output | No API keys, key hashes, encrypted keys, provider bodies, stack traces, or embedding vectors in script output or committed files | — |
+| 3 | App readiness | `GET /api/admin/apps/{appId}/readiness` returns `code=OK`, `data.overall_status=READY`, checks include app/default_model_config/default_knowledge_base/knowledge_base_status/active_api_key/embedding_config; no forbidden fields in readiness metadata | `readiness` / `retrieval` / `auth` / `embedding` |
+| 4 | Model config presence | App has `ENABLED` Sanguicode chat config bound as default | `retrieval` |
+| 5 | KB status `READY` | App has bound knowledge base with status `READY` | `retrieval` |
+| 6 | Non-streaming chat success | HTTP 200, `choices[0].message.content` present | `upstream` |
+| 7 | Streaming SSE success | `data:` chunks received, `data: [DONE]` present | `upstream` |
+| 8 | Request-log list/detail | `status=success`, non-blank `model`/`provider_name`, numeric `latency_ms`, non-empty `hit_chunk_ids`; detail returns `user_id`, `updated_at`, and all list fields; no forbidden fields in list, detail, or hit-chunk responses | `request-log` |
+| 9 | Hit-chunks safe metadata | `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index` present; no full chunk content | `request-log` |
+| 10 | Revoked-key 401 | HTTP 401 with `error.code=invalid_api_key` after key revocation | `auth` |
+| 11 | No secrets in output | No API keys, key hashes, encrypted keys, provider bodies, stack traces, or embedding vectors in script output or committed files | — |
 
 ### Safe Evidence Fields (Allowed in Script Output)
 
@@ -759,8 +760,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
 | `RevokedApiKey` | no | none | Plaintext revoked key used only for one negative auth call. Never echoed. Required when `-VerifyRevokedKey` is supplied. |
 | `VerifyRevokedKey` | no | off | Switch to enable revoked-key 401 verification (step 6). |
 
-The script checks backend health, frontend proxy health, non-streaming chat, streaming chat, and optionally request-log persistence and revoked-key rejection. When `-AppId` and `-AdminUserId` are both supplied, it additionally queries the Admin request-log API to validate list, detail, and hit-chunk evidence. Specifically:
+The script checks backend health, frontend proxy health, app readiness, non-streaming chat, streaming chat, and optionally request-log persistence and revoked-key rejection. When `-AppId` and `-AdminUserId` are both supplied, it additionally queries the Admin readiness API and request-log API to validate readiness checks and list/detail/hit-chunk evidence. Specifically:
 
+- **Readiness**: validates the frontend-proxied Admin readiness endpoint, requires `overall_status=READY`, verifies all required checks are present, scans readiness metadata recursively for forbidden fields, and classifies non-ready failures by the failing check when possible.
 - **List**: finds the latest success log matching the smoke `-Message` prefix, validates safe fields (`status`, `model`, `provider_name`, `latency_ms`, `question_summary`, `hit_chunk_ids`), and scans for forbidden fields.
 - **Detail**: fetches `GET /api/admin/apps/{appId}/request-logs/{requestId}`, validates that safe detail fields (`user_id`, `app_id`, `api_key_id`, `model`, `provider_name`, `status`, `latency_ms`, `messages_count`, `question_summary`, `hit_chunk_ids`, `created_at`, `updated_at`) are present, `request_id` matches the list row, and no forbidden fields appear.
 - **Hit-chunks**: fetches chunk summaries, validates safe metadata (`chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`), and scans each item for forbidden fields.
