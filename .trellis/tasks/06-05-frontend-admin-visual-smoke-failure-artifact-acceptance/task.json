@@ -1,0 +1,56 @@
+{
+  "id": "frontend-admin-visual-smoke-failure-artifact-acceptance",
+  "name": "frontend-admin-visual-smoke-failure-artifact-acceptance",
+  "title": "Frontend Admin visual smoke failure artifact controlled acceptance",
+  "description": "",
+  "status": "implement",
+  "dev_type": "frontend",
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "sangui",
+  "assignee": "sangui",
+  "createdAt": "2026-06-05",
+  "completedAt": null,
+  "branch": "visual-smoke-failure-acceptance-test",
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "frontend/tests/visual/admin-login-theme-smoke.spec.ts",
+    ".trellis/tasks/06-05-frontend-admin-visual-smoke-failure-artifact-acceptance/acceptance-evidence.md"
+  ],
+  "notes": "",
+  "meta": {}
+}
