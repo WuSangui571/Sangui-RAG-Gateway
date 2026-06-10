@@ -1,0 +1,18 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-10-v0-2-rc-tagging-reproducible-smoke-runbook\\prd.md", "reason": "Check release runbook against task requirements and forbidden modification scope"}
+{"file": ".trellis\\tasks\\06-10-v0-2-rc-tagging-reproducible-smoke-runbook\\research.md", "reason": "Check implementation against focused research, risks, expected files, and validation commands"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify release record does not overstate product scope or change behavior"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Check API/env/secret boundaries and Good/Base/Bad cases"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Check test selection and no implementation drift"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Check evidence record for secret/logging safety"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check revoked-key 401 and error shape assertions"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Check smoke runbook failure boundaries and no fake success"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Check forbidden fields and metadata-only evidence"}
+{"file": "README.md", "reason": "Check release runbook consistency with user-facing commands and evidence rules"}
+{"file": "docs\\runtime-evidence-checklist.md", "reason": "Check evidence recording fields and static validation expectations"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Check runbook command and assertions match actual script behavior"}
+{"file": "deploy\\docker-compose.yml", "reason": "Check Docker Compose commands and service expectations"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-release-readiness-closeout\\release-readiness.md", "reason": "Check final RC status summary against prior release decision"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-demo-acceptance-evidence-pack-final-run\\evidence-pack.md", "reason": "Check runbook references latest formal smoke evidence accurately"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-fresh-demo-key-cleanup-confirmation\\fresh-demo-key-cleanup-confirmation.md", "reason": "Check blocker closure and revoked-key evidence accuracy"}

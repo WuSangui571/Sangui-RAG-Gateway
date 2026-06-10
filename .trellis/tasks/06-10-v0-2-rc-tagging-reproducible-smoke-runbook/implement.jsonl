@@ -1,0 +1,19 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-10-v0-2-rc-tagging-reproducible-smoke-runbook\\prd.md", "reason": "Task requirements, acceptance criteria, forbidden modification scope, command contracts, validation matrix"}
+{"file": ".trellis\\tasks\\06-10-v0-2-rc-tagging-reproducible-smoke-runbook\\research.md", "reason": "Focused research: relevant specs, evidence paths, current git/tag state, risks, required tests"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, V0.2 deployment/smoke contracts, known limitations, safe release scope"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Docker/env/API/proxy/request-log/key boundaries for release engineering"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend validation expectations and when tests are required"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe log/request evidence fields and forbidden persisted data"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "OpenAI-compatible invalid_api_key and admin/gateway error boundaries"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Smoke failure boundary and upstream/streaming safety contracts"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret-safe evidence, forbidden fields, tenant/log boundaries"}
+{"file": "README.md", "reason": "Canonical Docker, health, smoke, safe/forbidden evidence, and key cleanup runbook"}
+{"file": "docs\\runtime-evidence-checklist.md", "reason": "Durable metadata-only smoke evidence template"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Executable smoke contract for health, proxy, readiness, chat, stream, request logs, revoked-key"}
+{"file": "deploy\\docker-compose.yml", "reason": "Full-stack Compose services, ports, healthcheck, and backend/frontend proxy topology"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-release-readiness-closeout\\release-readiness.md", "reason": "Prior release readiness decision and known limitations"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-demo-acceptance-evidence-pack-final-run\\evidence-pack.md", "reason": "Formal metadata-only smoke pass evidence"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-fresh-demo-key-cleanup-confirmation\\fresh-demo-key-cleanup-confirmation.md", "reason": "Final fresh demo key revoke and invalid_api_key confirmation"}
