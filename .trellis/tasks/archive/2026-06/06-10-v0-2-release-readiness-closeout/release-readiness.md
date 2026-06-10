@@ -1,4 +1,4 @@
-# V0.2 Release Readiness Closeout
+﻿# V0.2 Release Readiness Closeout
 
 Date: 2026-06-10 18:29 UTC+8
 Task: V0.2 Release Readiness Closeout
@@ -8,11 +8,11 @@ Branch: `main`
 
 ## 1. Decision
 
-**READY WITH OPERATOR-ACTION REQUIRED**
+**READY FOR V0.2 RELEASE CANDIDATE**
 
-The V0.2 implementation, demo acceptance evidence, and static safety checks all pass. The sole blocker to unconditional `READY FOR V0.2 RELEASE CANDIDATE` is the fresh demo API key, which remains `PENDING MANUAL CONFIRMATION` — its server-side revocation status could not be verified from committed metadata alone.
+The V0.2 implementation, demo acceptance evidence, static safety checks, and fresh demo key cleanup confirmation all pass. The fresh demo API key (`demo-acceptance-20260610`, ID 28) has been revoked and the 401 `invalid_api_key` rejection has been verified via runtime Admin API and public gateway calls. No blockers remain.
 
-Operator action required: revoke the fresh demo key (or confirm it was already revoked) and verify the 401 rejection. Once confirmed, the release readiness becomes unconditional.
+Confirmation evidence: `.trellis/tasks/06-10-v0-2-fresh-demo-key-cleanup-confirmation/fresh-demo-key-cleanup-confirmation.md`.
 
 ---
 
@@ -20,29 +20,25 @@ Operator action required: revoke the fresh demo key (or confirm it was already r
 
 ### Final State
 
-**UNCONFIRMED**
+**REVOKED** -confirmed 2026-06-10 19:03 UTC+8.
 
 ### Evidence
 
-The latest formal evidence pack records:
+Fresh demo key cleanup confirmation completed:
 
 | Key | Status | Verification |
 |---|---|---|
-| Fresh demo key | `PENDING MANUAL CONFIRMATION` | Server-side revocation status not proven from committed metadata. |
-| Revoked demo key | `REVOKED` | Verified — HTTP 401 with `error.code=invalid_api_key` via `scripts/demo-smoke.ps1 -VerifyRevokedKey`. |
+| Fresh demo key (`demo-acceptance-20260610`, ID 28) | `REVOKED` | Revoked via `POST /api/admin/api-keys/28/revoke`. Verified - HTTP 401 with `error.code=invalid_api_key` via public gateway call. |
+| Revoked demo key | `REVOKED` | Verified - HTTP 401 with `error.code=invalid_api_key` via `scripts/demo-smoke.ps1 -VerifyRevokedKey`. |
 
-Static repository scans found no plaintext `sk-sangui-*` keys, no Authorization header values containing real keys, and no key hashes in committed files. Terminal/runtime artifacts outside the repository were not reviewed and must not be committed.
+Full confirmation evidence recorded in `.trellis/tasks/06-10-v0-2-fresh-demo-key-cleanup-confirmation/fresh-demo-key-cleanup-confirmation.md`. No plaintext key, Authorization header, or raw runtime responses committed.
 
-### Required Operator Action
+### Operator Action Completed
 
-1. Identify the fresh demo key by its creation name (e.g. `demo-acceptance-YYYYMMDD`) via `GET /api/admin/apps/{appId}/api-keys` with `X-Admin-User-Id`.
-2. Revoke the key: `POST /api/admin/api-keys/{id}/revoke`.
-3. Verify rejection: call `POST /v1/chat/completions` with the revoked key and confirm HTTP 401 `invalid_api_key`.
-4. Record the key ID, revocation timestamp, and 401 verification result. Do not commit the plaintext key.
-
-### Risk
-
-If the key is intentionally retained for follow-up manual testing, the operator must document the reason, owner, and expected cleanup deadline. An unrevoked demo key with active upstream provider access is a security risk.
+1. Fresh demo key identified: name `demo-acceptance-20260610`, ID 28, app 5.
+2. Key revoked via Admin API: `code=OK`, `status=REVOKED`, `revoked_at=2026-06-10T11:03:19`.
+3. Revoked key rejected: HTTP 401 with `error.code=invalid_api_key`.
+4. Safe metadata recorded; no plaintext key committed.
 
 ---
 
@@ -66,7 +62,7 @@ If the key is intentionally retained for follow-up manual testing, the operator 
 | Smoke contract consistency | PASS | All sources prescribe the same 7-step smoke flow: health, proxy, readiness, non-streaming, streaming, request-log/hit-chunks, revoked-key 401. |
 | Safe evidence fields | PASS | README Safe Evidence Fields list, spec `rag-security.md` safe fields, checklist template allowed fields, and evidence pack recorded fields are consistent. |
 | Forbidden output fields | PASS | README Forbidden Output Fields list, spec forbidden fields contract, checklist recording rules, and evidence pack recordings agree. No real forbidden values were committed. |
-| Key cleanup checklist | PASS | README "After Demo — Revocation Checklist" and checklist template "Key Cleanup" section prescribe the same revocation/verification flow. |
+| Key cleanup checklist | PASS | README "After Demo -Revocation Checklist" and checklist template "Key Cleanup" section prescribe the same revocation/verification flow. |
 | Evidence pack references | PASS | Evidence pack references `scripts/demo-smoke.ps1` with consistent parameters; records metadata-only results matching the checklist template format. |
 | Durable checklist path | PASS | README links to `docs/runtime-evidence-checklist.md` (durable path). Spec also references the same durable template. No unstable task-only paths remain in primary documentation. |
 
@@ -82,20 +78,19 @@ No mismatches found. README, spec, checklist, and evidence pack agree on smoke c
 
 | # | Check | Command | Result |
 |---|---|---|---|
-| 1 | Working tree status | `git status --short` | PASS — only untracked `06-10-v0-2-release-readiness-closeout/` directory; no modified tracked files. |
-| 2 | Whitespace check | `git diff --check` | PASS — no whitespace errors. |
-| 3 | Secret / forbidden-field scan | `rg -n "sk-sangui-[A-Za-z0-9_-]{12,}|Authorization: Bearer sk-sangui-|api_key_encrypted|key_hash|upstream_api_key|provider_response_body|stack_trace|augmented_prompt|full_messages|chunk_content|raw SSE|raw answer" README.md docs .trellis/spec .trellis/tasks scripts` | REVIEW PASS — all hits are rule text, placeholders, spec contracts, historical task rules, or script scanner arrays. No real generated `sk-sangui-*` keys, plaintext API keys, key hashes, encrypted keys, upstream provider keys, provider bodies, stack traces, chunk content, raw answers, or Authorization header values with concrete keys found. |
-| 4 | Doc link / reference scan | `rg -n "docs/runtime-evidence-checklist.md|runtime-evidence-checklist.md|evidence-pack.md|demo-smoke.ps1|V0.2|V0.2 beta|release candidate" README.md docs .trellis/spec .trellis/tasks` | PASS — README, spec, checklist, task notes, and archived evidence pack reference consistent paths and V0.2 release terminology. |
-
+| 1 | Working tree status | `git status --short` | PASS - changed files are limited to Trellis task/evidence/archive/session files; no backend/frontend/API/DB/infra files changed. |
+| 2 | Whitespace check | `git diff --check` | PASS - no whitespace errors. |
+| 3 | Secret / forbidden-field scan | `rg -n "sk-sangui-[A-Za-z0-9_-]{12,}|Authorization: Bearer sk-sangui-|api_key_encrypted|key_hash|upstream_api_key|provider_response_body|stack_trace|augmented_prompt|full_messages|chunk_content|raw SSE|raw answer" README.md docs .trellis/spec .trellis/tasks scripts` | REVIEW PASS - all hits are rule text, placeholders, spec contracts, historical task rules, or script scanner arrays. No real generated `sk-sangui-*` keys, plaintext API keys, key hashes, encrypted keys, upstream provider keys, provider bodies, stack traces, chunk content, raw answers, or Authorization header values with concrete keys found. |
+| 4 | Doc link / reference scan | `rg -n "docs/runtime-evidence-checklist.md|runtime-evidence-checklist.md|evidence-pack.md|demo-smoke.ps1|V0.2|V0.2 beta|release candidate" README.md docs .trellis/spec .trellis/tasks` | PASS - README, spec, checklist, task notes, and archived evidence pack reference consistent paths and V0.2 release terminology. |
 ### Secret Scan Hit Analysis
 
 The core release surface still has the same 19 reviewed hits across `README.md`, `docs/runtime-evidence-checklist.md`, and `scripts/demo-smoke.ps1`:
 
 | Category | Count | Examples |
 |---|---|---|
-| **Placeholder / template** | 1 | `README.md:116` — `sk-sangui-<your-key>` in curl example |
-| **Rule / documentation text** | 14 | README lines 292, 301, 560-576, 594, 624, 701 — forbidden-field lists, safe/forbidden rules, expected behavior descriptions |
-| **Script scanner array** | 4 | `scripts/demo-smoke.ps1:65-68` — `$forbidden` array used by the script's own `Test-ForbiddenFields` scanner |
+| **Placeholder / template** | 1 | `README.md:116` -`sk-sangui-<your-key>` in curl example |
+| **Rule / documentation text** | 14 | README lines 292, 301, 560-576, 594, 624, 701 -forbidden-field lists, safe/forbidden rules, expected behavior descriptions |
+| **Script scanner array** | 4 | `scripts/demo-smoke.ps1:65-68` - `$forbidden` array used by the script's own `Test-ForbiddenFields` scanner |
 
 No hit represents a real secret, generated key, or concrete provider credential.
 
@@ -108,7 +103,7 @@ The wider PRD-required scan over `README.md`, `docs/`, `.trellis/spec/`, `.trell
 | PSParser syntax check on `scripts/demo-smoke.ps1` | Script was not edited in this task. Last PSParser check passed (evidence pack session). |
 | Backend Maven tests | No backend implementation files changed. |
 | Frontend typecheck / build | No frontend implementation files changed. |
-| Full smoke via `demo-smoke.ps1` | Requires runtime environment with configured providers, KB, and app — not available in committed metadata. Operator must re-run smoke locally. |
+| Full smoke via `demo-smoke.ps1` | Requires runtime environment with configured providers, KB, and app -not available in committed metadata. Operator must re-run smoke locally. |
 
 ---
 
@@ -123,9 +118,9 @@ Summarized from README and evidence pack (all confirmed by metadata-only demo ac
 | Flyway database migrations | App, API key, model config, KB, document, chunk, embedding, request log tables created |
 | App API key authentication (Bearer `sk-sangui-*`) | Non-streaming and streaming chat authenticated successfully; revoked key rejected with 401 |
 | `GET /v1/models` | OpenAI-compatible model list for authenticated apps |
-| `POST /v1/chat/completions` — non-streaming | PASS, HTTP 200, valid completion |
-| `POST /v1/chat/completions` — streaming (`stream=true`) | PASS, SSE data chunks received, `[DONE]` present |
-| Admin console — app, API key, model config, KB, document, request log management | App readiness PASS with 6 checks present |
+| `POST /v1/chat/completions` -non-streaming | PASS, HTTP 200, valid completion |
+| `POST /v1/chat/completions` -streaming (`stream=true`) | PASS, SSE data chunks received, `[DONE]` present |
+| Admin console -app, API key, model config, KB, document, request log management | App readiness PASS with 6 checks present |
 | Upstream API key encryption (AES-256-GCM) | Admin model config responses show `api_key_masked` only |
 | Tenant isolation on admin and retrieval operations | Cross-user access rejected with 403 |
 | Safe structured logging | Request-log list/detail/hit-chunks return only safe metadata; forbidden fields absent |
@@ -141,7 +136,7 @@ Summarized from README and evidence pack (all confirmed by metadata-only demo ac
 
 ## 6. Known Limitations
 
-From README roadmap and project spec — these are acknowledged gaps, not unexpected missing features:
+From README roadmap and project spec -these are acknowledged gaps, not unexpected missing features:
 
 | Limitation | Impact |
 |---|---|
@@ -179,14 +174,14 @@ To reproduce the evidence, the following must be configured:
 
 | Assertion | Status |
 |---|---|
-| No backend implementation files modified | Confirmed — git status shows no changes to `backend/src/`. |
-| No frontend implementation files modified | Confirmed — git status shows no changes to `frontend/src/`. |
-| No API contracts, DTO/VO fields changed | Confirmed — no code changes made. |
-| No database migrations changed | Confirmed — no migration files touched. |
-| No Docker Compose, CI, or smoke script behavior changed | Confirmed — `deploy/`, `.github/`, `scripts/` unchanged. |
-| No new feature behavior added | Confirmed — this is a documentation-only release closeout. |
-| No real secrets committed | Confirmed — static scan found only rule text and placeholders. |
-| Task-local files only | The only new file is this `release-readiness.md` under the task directory. |
+| No backend implementation files modified | Confirmed - git status shows no changes to `backend/src/`. |
+| No frontend implementation files modified | Confirmed - git status shows no changes to `frontend/src/`. |
+| No API contracts, DTO/VO fields changed | Confirmed - no code changes made. |
+| No database migrations changed | Confirmed - no migration files touched. |
+| No Docker Compose, CI, or smoke script behavior changed | Confirmed - `deploy/`, `.github/`, `scripts/` unchanged. |
+| No new feature behavior added | Confirmed - this remains documentation/evidence-only release closeout work. |
+| No real secrets committed | Confirmed - static scan found only rule text and placeholders. |
+| Trellis-only changes | Confirmed - updates are limited to Trellis task/evidence/archive/session files. |
 
 This task is a release closeout, not a feature task. It does not alter the release candidate itself; it evaluates whether the current `main` branch is fit for release.
 
@@ -194,6 +189,6 @@ This task is a release closeout, not a feature task. It does not alter the relea
 
 ## Summary
 
-V0.2 implementation is complete and evidence-backed. All 7 smoke steps pass with metadata-only evidence. Static scans are clean. Documentation is internally consistent.
+V0.2 implementation is complete and evidence-backed. All 7 smoke steps pass with metadata-only evidence. Static scans are clean. Documentation is internally consistent. Fresh demo key has been revoked and verified.
 
-**Single blocker**: fresh demo key server-side revocation status is unconfirmed. Once the operator revokes the key (or confirms it was already revoked) and verifies the 401 rejection, release readiness becomes unconditional.
+**No blockers remain.** Release readiness is unconditional -`READY FOR V0.2 RELEASE CANDIDATE`.

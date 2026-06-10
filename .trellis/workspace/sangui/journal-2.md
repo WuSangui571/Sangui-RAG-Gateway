@@ -512,3 +512,121 @@ This session closes the V0.2 Demo Acceptance Evidence Pack Final Run task. The p
 ### Next Steps
 
 - None - task complete
+
+
+## Session 43: V0.2 Release Readiness Closeout
+
+**Date**: 2026-06-10
+**Task**: V0.2 Release Readiness Closeout
+**Branch**: `main`
+
+### Summary
+
+Recorded the V0.2 release-readiness closeout. The release was ready except for one operator action: confirm the fresh demo key was revoked and rejected by the public gateway with HTTP 401 `invalid_api_key`.
+
+### Main Changes
+
+| Area | Change |
+|---|---|
+| Commit | `8a10655c` |
+| Task | V0.2 Release Readiness Closeout |
+| Evidence | Created Trellis task-local release readiness record |
+| Decision | Recorded V0.2 as `READY WITH OPERATOR-ACTION REQUIRED` until fresh demo key revoke/401 confirmation |
+
+**Updated Files**:
+- `.trellis/tasks/06-10-v0-2-release-readiness-closeout/prd.md`
+- `.trellis/tasks/06-10-v0-2-release-readiness-closeout/research.md`
+- `.trellis/tasks/06-10-v0-2-release-readiness-closeout/release-readiness.md`
+- `.trellis/tasks/06-10-v0-2-release-readiness-closeout/implement.jsonl`
+- `.trellis/tasks/06-10-v0-2-release-readiness-closeout/check.jsonl`
+- `.trellis/tasks/06-10-v0-2-release-readiness-closeout/debug.jsonl`
+- `.trellis/tasks/06-10-v0-2-release-readiness-closeout/task.json`
+
+**Codex Review**:
+- Checked `release-readiness.md` against the PRD and the repository evidence contract across `README.md`, `docs`, `.trellis/spec`, `.trellis/tasks`, and `scripts`.
+- Confirmed no backend, frontend, API, DB, Docker, CI, or smoke script behavior changed.
+- Confirmed the release note did not overstate readiness while the fresh demo key was still awaiting operator revoke/401 confirmation.
+
+**Validation**:
+- `git status --short`: PASS, task-local Trellis changes only.
+- `git diff --check`: PASS, no whitespace errors.
+- `rg -n "sk-sangui-[A-Za-z0-9_-]{12,}|Authorization: Bearer sk-sangui-|api_key_encrypted|key_hash|upstream_api_key|provider_response_body|stack_trace|augmented_prompt|full_messages|chunk_content|raw SSE|raw answer" README.md docs .trellis/spec .trellis/tasks scripts`: REVIEW PASS, hits were placeholders, spec/rule text, task criteria, or scanner arrays; no real secrets/raw evidence.
+- `rg -n "docs/runtime-evidence-checklist.md|runtime-evidence-checklist.md|evidence-pack.md|demo-smoke.ps1|V0.2|V0.2 beta|release candidate" README.md docs .trellis/spec .trellis/tasks`: PASS, V0.2 references were consistent.
+- `rg -n "console\\.log|debugger|TODO|\\bas any\\b|:\\s*any\\b|!\\." frontend\\src backend\\src scripts .trellis\\tasks\\06-10-v0-2-release-readiness-closeout .trellis\\spec README.md docs -g "!**/node_modules/**" -g "!**/target/**" -g "!**/dist/**"`: PASS for this documentation-only task.
+
+**Not Run**:
+- Maven/backend tests: skipped because no backend files changed.
+- Frontend typecheck/build: skipped because no frontend files changed.
+- Full smoke: skipped because it requires runtime providers, ready KB, active app key, and revoked-key fixture; this session only recorded release metadata.
+- PSParser: skipped because `scripts/demo-smoke.ps1` was not changed and had passed in the evidence pack session.
+
+**Notes**:
+- This was a release closeout, not a feature task.
+- The release candidate still required operator confirmation at the time of this session.
+- Final RC readiness depended on fresh demo key revoke and 401 verification.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8a10655c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+---
+
+## Session 44: 2026-06-10 19:03 UTC+8 — V0.2 Fresh Demo Key Cleanup Confirmation
+
+### Task
+
+- `v0-2-fresh-demo-key-cleanup-confirmation` — P2, security evidence task
+- PRD: `.trellis/tasks/06-10-v0-2-fresh-demo-key-cleanup-confirmation/prd.md`
+
+### Summary
+
+Closed the last V0.2 release-candidate blocker by confirming the fresh demo key has been revoked and verifying 401 `invalid_api_key` rejection.
+
+### Changes
+
+- Created `fresh-demo-key-cleanup-confirmation.md` — metadata-only evidence recording key ID 28 (`demo-acceptance-20260610`), revocation result, and 401 verification.
+- Updated `task.json` status to `completed`.
+- Updated archived `release-readiness.md`: upgraded from `READY WITH OPERATOR-ACTION REQUIRED` to `READY FOR V0.2 RELEASE CANDIDATE`. Fresh demo key status changed from `UNCONFIRMED` to `REVOKED`.
+- No backend/frontend/API/DB/infra implementation files modified.
+
+### Runtime Verification
+
+- Admin API revocation: `POST /api/admin/api-keys/28/revoke` → `code=OK`, `status=REVOKED`, `revoked_at=2026-06-10T11:03:19`.
+- Public gateway rejection: `POST /v1/chat/completions` with revoked key → HTTP 401, `error.code=invalid_api_key`.
+- Plaintext key held only in runtime memory; never committed.
+
+### Security Scans
+
+- `git diff --check`: PASS (CRLF warning for journal-2.md only).
+- Forbidden-field scan (`Select-String`): PASS — all hits are rule text, placeholders, or scanner arrays.
+- Release status scan: PASS — consistent `READY FOR V0.2 RELEASE CANDIDATE` / `REVOKED`.
+- `git status --short`: only Trellis task/evidence/session files changed.
+
+### Testing
+
+- No implementation files changed; backend/frontend tests skipped per PRD.
+- Runtime verification completed manually via curl.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Archive this task.
+- V0.2 release candidate is ready — no blockers remain.

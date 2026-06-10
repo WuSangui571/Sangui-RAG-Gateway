@@ -1,0 +1,16 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project source of truth for API key lifecycle, gateway auth, V0.2 demo evidence, and release boundary"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin revoke and public 401 invalid_api_key response contract"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe evidence and forbidden logged fields"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Validation expectations and when implementation tests are required"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret, evidence, tenant, and error boundary rules for key cleanup"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Safe public gateway error shape and no raw provider/body leakage"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "API key lifecycle and /v1 auth boundary flow"}
+{"file": "README.md", "reason": "Canonical runbook for key revoke and revoked-key 401 verification"}
+{"file": "docs\\runtime-evidence-checklist.md", "reason": "Durable metadata-only evidence template and key cleanup rules"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-release-readiness-closeout\\release-readiness.md", "reason": "Prior release blocker and wording to update or reference"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-demo-acceptance-evidence-pack-final-run\\evidence-pack.md", "reason": "Latest evidence pack showing fresh demo key PENDING MANUAL CONFIRMATION"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminController.java", "reason": "Revoke endpoint contract and admin ownership checks"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyService.java", "reason": "Revoke idempotency and valid-key status behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Public /v1 auth rejection behavior and invalid_api_key shape"}

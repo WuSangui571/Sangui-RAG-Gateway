@@ -1,0 +1,16 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Check release evidence against project source of truth and V0.2 boundary"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Verify response/status claims match error contract"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Review evidence for forbidden secrets/raw runtime material"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Confirm no implementation test gap if no source files change"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Security review for committed confirmation evidence"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Check gateway error evidence remains normalized and safe"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer self-check for API/security/release evidence alignment"}
+{"file": "README.md", "reason": "Verify confirmation note aligns with documented demo cleanup contract"}
+{"file": "docs\\runtime-evidence-checklist.md", "reason": "Check confirmation note follows metadata-only recording rules"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-release-readiness-closeout\\release-readiness.md", "reason": "Check final readiness status no longer overstates/understates blocker"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-demo-acceptance-evidence-pack-final-run\\evidence-pack.md", "reason": "Check consistency with prior evidence pack"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminController.java", "reason": "Verify evidence uses actual revoke endpoint semantics"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyService.java", "reason": "Check REVOKED state claims match service behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Verify 401 evidence matches auth filter behavior"}
