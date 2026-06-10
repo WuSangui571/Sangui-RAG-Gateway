@@ -630,3 +630,73 @@ Closed the last V0.2 release-candidate blocker by confirming the fresh demo key 
 
 - Archive this task.
 - V0.2 release candidate is ready — no blockers remain.
+
+
+## Session 45: V0.2 Fresh Demo Key Cleanup Confirmation
+
+**Date**: 2026-06-10
+**Task**: V0.2 Fresh Demo Key Cleanup Confirmation
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | `3be0282e docs:??v0.2 fresh demo key??` |
+| Task | `v0-2-fresh-demo-key-cleanup-confirmation` |
+| Result | Fresh demo key cleanup evidence confirmed and committed; task archived after human testing. |
+| Release State | V0.2 release readiness upgraded to `READY FOR V0.2 RELEASE CANDIDATE`; no release blockers remain. |
+
+**Main Changes**:
+- Recorded metadata-only confirmation for fresh demo key `demo-acceptance-20260610` (Key ID 28, App ID 5).
+- Recorded Admin API revoke result: `code=OK`, `status=REVOKED`, `revoked_at=2026-06-10T11:03:19`.
+- Recorded public gateway revoked-key rejection: HTTP 401 with `error.code=invalid_api_key`.
+- Updated archived V0.2 release-readiness closeout to state `READY FOR V0.2 RELEASE CANDIDATE`.
+- Preserved the release evidence boundary: no plaintext API key, Authorization header value, raw runtime response, provider body, prompt/messages, chunk content, or stack trace committed.
+
+**Updated Files / Trellis Records**:
+- `.trellis/tasks/archive/2026-06/06-10-v0-2-fresh-demo-key-cleanup-confirmation/fresh-demo-key-cleanup-confirmation.md`
+- `.trellis/tasks/archive/2026-06/06-10-v0-2-fresh-demo-key-cleanup-confirmation/task.json`
+- `.trellis/tasks/archive/2026-06/06-10-v0-2-release-readiness-closeout/release-readiness.md`
+- `.trellis/workspace/sangui/index.md`
+- `.trellis/workspace/sangui/journal-2.md`
+
+**Validation**:
+- Human manual runtime test completed before record-session.
+- `git status --short`: clean before record-session.
+- `git diff --check`: PASS during Codex quality check; only CRLF warning for `journal-2.md` was observed.
+- `rg` forbidden-field scan: REVIEW PASS; hits were placeholders, spec/rule text, task criteria, or scanner arrays; no real `sk-sangui-*` key or concrete Authorization value found.
+- Release status scan: PASS; final evidence records `READY FOR V0.2 RELEASE CANDIDATE` and `REVOKED`, with historical `UNCONFIRMED` references limited to prior-state PRD/research/evidence context.
+
+**Not Run**:
+- Backend Maven tests were skipped because no backend implementation files changed.
+- Frontend typecheck/build were skipped because no frontend implementation files changed.
+- Full smoke was not rerun by Codex because runtime provider/KB/key context is operator-held; human manual testing completed separately.
+
+**Boundary**:
+- No backend/frontend/API/DB/infra behavior changed.
+- This was a release evidence and key-cleanup confirmation task, not a feature task.
+- `$record-session` was run only after human testing and commit.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3be0282e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

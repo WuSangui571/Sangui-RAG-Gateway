@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 44
+- **Total Sessions**: 45
 - **Last Active**: 2026-06-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~640 | Active |
+| `journal-2.md` | ~702 | Active |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 45 | 2026-06-10 | V0.2 Fresh Demo Key Cleanup Confirmation | `3be0282e` | `main` |
 | 44 | 2026-06-10 | V0.2 Fresh Demo Key Cleanup Confirmation | (pending) | `main` |
 | 43 | 2026-06-10 | 记录v0.2发布就绪收尾 | `8a10655c` | `main` |
 | 42 | 2026-06-10 | V0.2 demo acceptance evidence pack final run | `1180ad8` | `main` |
