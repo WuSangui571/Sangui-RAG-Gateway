@@ -1,0 +1,14 @@
+{"file": ".trellis\\tasks\\06-10-v0-2-release-readiness-closeout\\prd.md", "reason": "Check final release note against requirements and forbidden scope"}
+{"file": ".trellis\\tasks\\06-10-v0-2-release-readiness-closeout\\research.md", "reason": "Check final release note against research risks and required validation"}
+{"file": "README.md", "reason": "Canonical V0.2 status, smoke runbook, safe/forbidden evidence contract, key cleanup checklist"}
+{"file": "docs\\runtime-evidence-checklist.md", "reason": "Durable metadata-only evidence checklist and key cleanup template"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, V0.2 scope, implemented demo automation contract"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret-safe evidence, tenant and hit-chunk exposure boundaries"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe logging and request-log fields; forbidden key/prompt/document/provider fields"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Revoked-key 401 invalid_api_key and admin revoke contract"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Quality/test expectations and when backend tests are required"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Upstream/streaming/request-log failure and safe evidence boundaries"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer release boundary, secret checks, validation matrix"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-10-v0-2-demo-acceptance-evidence-pack-final-run\\evidence-pack.md", "reason": "Latest formal V0.2 metadata-only acceptance evidence and pending key cleanup state"}
+{"file": ".trellis\\workspace\\sangui\\journal-2.md", "reason": "Recent session status and known unresolved fresh demo key confirmation"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Executable smoke contract; should be reviewed but not modified"}
