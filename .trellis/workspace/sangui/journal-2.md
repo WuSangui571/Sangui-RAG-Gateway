@@ -465,3 +465,50 @@ This session closes the Demo Smoke Runtime Evidence Checklist Finalization task.
 ### Next Steps
 
 - None - task complete
+
+
+## Session 42: V0.2 demo acceptance evidence pack final run
+
+**Date**: 2026-06-10
+**Task**: V0.2 demo acceptance evidence pack final run
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Field | Details |
+|---|---|
+| Commit | `1180ad8` (`docs:??v0.2 demo?????`) |
+| Result | User completed manual testing and committed the V0.2 demo acceptance evidence pack. Codex completed `$check`, `$finish-work`, and `$record-session` closeout. |
+| Main modules | Trellis task evidence pack, demo smoke runtime evidence contract, safe evidence/security review, task archive metadata, workspace journal metadata. |
+| Updated files | `.trellis/tasks/archive/2026-06/06-10-v0-2-demo-acceptance-evidence-pack-final-run/evidence-pack.md`; task PRD/research/implement/check/debug metadata; `.trellis/workspace/sangui/index.md`; `.trellis/workspace/sangui/journal-2.md`. |
+| Scope | Evidence-only acceptance closeout. No backend/frontend business code, API DTO, database migration, infra, Docker, Redis/MQ, or CI behavior changed. |
+| Codex check fixes | Corrected fresh demo key cleanup evidence from an implied future action to `PENDING MANUAL CONFIRMATION`; replaced an unverifiable terminal-artifact safety claim with a repository-scan-scoped statement; recorded Codex static validation rows in the evidence pack. |
+| Automated validation | `git diff --check HEAD` PASS with CRLF warning only; PowerShell PSParser syntax check for `scripts/demo-smoke.ps1` PASS; real generated key regex scan PASS; trailing-whitespace scan PASS; forbidden-field scan REVIEW PASS with hits limited to rule text/placeholders/script scanner lists; changed-file scan confirmed no backend/frontend/API/DB/infra/CI files changed. |
+| Not run | Maven backend tests and frontend typecheck/build were not rerun because no backend/frontend source, DTO, DB, or script behavior changed. Formal smoke was not rerun by Codex because runtime keys and local demo state were not available in committed metadata; user completed manual testing before commit. |
+| Manual validation | User stated manual testing was completed before requesting record-session. |
+| Boundaries | Evidence remains metadata-only: no real app keys, upstream keys, raw answers, raw SSE, prompts/messages, chunk content, provider bodies, stack traces, `.env` values, or runtime logs were committed. Fresh demo key server-side final state still requires operator confirmation unless intentionally retained for follow-up manual testing. |
+
+This session closes the V0.2 Demo Acceptance Evidence Pack Final Run task. The project now has a committed formal evidence pack for the V0.2 demo acceptance path, including health, proxy, readiness, non-streaming, streaming, request-log/hit-chunk, revoked-key, and static safety validation evidence.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1180ad8` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
