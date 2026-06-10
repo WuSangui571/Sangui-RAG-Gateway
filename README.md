@@ -514,51 +514,84 @@ After completing the admin setup and running the smoke flow, verify that each it
 | 10 | Revoked-key 401 | HTTP 401 with `error.code=invalid_api_key` after key revocation | `auth` |
 | 11 | No secrets in output | No API keys, key hashes, encrypted keys, provider bodies, stack traces, or embedding vectors in script output or committed files | — |
 
-### Safe Evidence Fields (Allowed in Script Output)
+### Safe Evidence Fields (Allowed in Script Output and Recorded Evidence)
 
-The smoke script and manual commands may print only these fields:
+The smoke script, manual commands, and runtime evidence records may contain only these safe metadata fields:
 
 ```text
+backend base URL
+frontend base URL
+app_id
+admin_user_id
+message length or known non-sensitive demo message label
+readiness overall_status
+readiness check count
+readiness required check names and statuses
 request_id
 model
 provider_name
 latency_ms
 messages_count
-hit_chunk_ids (count and numeric IDs)
+hit_chunk_ids (numeric IDs and count)
 chunk_id
 document_id
-knowledge_base_id
+knowledge_base_id (script output label may be kb_id)
 source_filename
 chunk_index
 HTTP status
 boundary label
 SSE data line count
-content length only (non-streaming chat)
+SSE [DONE] present/absent
+non-streaming content length only
+script exit code
+test command names and PASS/FAIL result
 ```
 
 ### Forbidden Output Fields (Never Printed or Committed)
 
-The smoke script, README examples, and committed evidence must never contain:
+The smoke script, README examples, spec examples, task-local templates, and committed evidence must never contain:
 
 ```text
 plaintext app API key
-key_hash
+real generated sk-sangui-* key
 Authorization header value
-upstream API key
+upstream provider key
+api_key
+key_hash
 api_key_encrypted
+provider_response_body
+provider raw body
+stack_trace
+Java stack trace
+embedding
+embedding vectors
+prompt
+messages
+full_messages
+augmented_prompt
+raw assistant answer
+bounded assistant answer preview
+raw SSE payload
 chunk content
 chunk_content response field
 chunk summary text
-full assistant answer content
-full prompt
-messages content beyond the configured smoke Message label/length
-provider raw body
-embedding vectors
-stack trace
 storage_path
 real .env secrets
 backend/data upload artifacts
+Playwright report/artifact contents
 ```
+
+### Runtime Evidence Recording
+
+When recording demo acceptance evidence for audit or commit, use the durable [Runtime Evidence Checklist Template](docs/runtime-evidence-checklist.md). The current Trellis task also keeps a task-local copy at `.trellis/tasks/06-10-demo-smoke-runtime-evidence-checklist-finalization/runtime-evidence-checklist.md` for review history. The template provides a metadata-only recording format with `<redacted>` placeholders for secrets and `PASS/FAIL/SKIP` rows for each smoke step.
+
+#### Good / Base / Bad Recording Cases
+
+| Case | Recording rule |
+|---|---|
+| **Good** (complete pass) | Record only safe metadata: HTTP 200, readiness `overall_status=READY` and check count, non-streaming content length, SSE `[DONE]` and data line count, request-log `request_id`/`model`/`provider_name`/`latency_ms`/`hit_chunk_ids`, hit-chunk `chunk_id`/`document_id`/`knowledge_base_id` (script label `kb_id`)/`source_filename`/`chunk_index`, revoked-key HTTP 401 `invalid_api_key`, script exit code `0`. Never record answer body, raw SSE, keys, prompt, messages, chunk content, or chunk summary text. |
+| **Base** (partial or non-ready) | Record readiness `overall_status` and failing check boundaries (`embedding`, `auth`, `retrieval`) without pasting raw readiness JSON that contains unreviewed values. Record request-log no-match failures with query parameters and boundary `request-log`. Record revoked-key failures with HTTP status and safe error code, boundary `auth`. Never record revoked key value. |
+| **Bad** (rejected before commit) | Any recording that contains raw assistant answer, bounded answer preview, raw SSE payload, API keys, key hashes, encrypted keys, prompts, messages, full_messages, augmented_prompt, chunk content, chunk summary text, provider raw bodies, embedding vectors, stack traces, or uploaded file artifacts. Do not commit. |
 
 ## Key Rotation and Revocation
 

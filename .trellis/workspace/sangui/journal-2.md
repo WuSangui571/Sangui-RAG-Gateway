@@ -181,7 +181,7 @@ Completed the controlled frontend Admin visual-smoke failure artifact acceptance
 
 ### Summary
 
-(Add summary)
+Closed the frontend visual-smoke CI artifact and main baseline closeout after manual confirmation. The session recorded the controlled failure-artifact evidence path, restored the `main` dark-background baseline, and archived the related Trellis tasks.
 
 ### Main Changes
 
@@ -351,6 +351,60 @@ Closed and archived the GitHub CI remote evidence closeout review after manual t
 - [OK] `git log --oneline -5`
 - [OK] `python ./.trellis/scripts/task.py list`
 - [OK] `python ./.trellis/scripts/task.py archive github-ci-remote-evidence-closeout-review`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 40: Admin smoke readiness demo acceptance evidence
+
+**Date**: 2026-06-06
+**Task**: Admin smoke readiness demo acceptance evidence
+**Branch**: `main`
+
+### Summary
+
+Closed the Admin smoke readiness demo acceptance task after manual validation and commit `5c8c546`. The demo smoke script now includes readiness validation, recursive safe-evidence scanning, and clearer failure boundaries, with README and project spec contracts kept in sync.
+
+### Main Changes
+
+| Field | Details |
+|---|---|
+| Commit | `5c8c546` (`fix: demo smoke readiness acceptance checks`) |
+| Result | Manual smoke accepted by user; task archived after committed implementation. |
+| Main modules | Demo smoke automation, README runbook, project spec contract. |
+| Updated files | `scripts/demo-smoke.ps1`; `README.md`; `.trellis/spec/sangui-rag-gateway.md`; task metadata archived under `.trellis/tasks/archive/2026-06/06-06-admin-smoke-readiness-demo-acceptance-evidence`. |
+| Scope | Added Admin App readiness into canonical demo smoke evidence path; tightened safe-evidence checks and boundary classification. |
+| Codex check fixes | Recursive forbidden-field scan now covers readiness `data.checks[].metadata`; readiness non-ready failures classify to `embedding`, `auth`, `retrieval`, or `readiness`; README and project spec updated to match executable command contract. |
+| Automated validation | `git diff --check` PASS; PowerShell PSParser syntax check for `scripts/demo-smoke.ps1` PASS; `mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test` PASS; `mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test` PASS; `mvn -q "-Dtest=GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test` PASS; `mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test` PASS; `mvn -q test` PASS. |
+| Manual validation | User confirmed manual testing completed before record-session. |
+| Boundaries | Readiness is checked through frontend proxy at `/api/admin/apps/{appId}/readiness`; business readiness failures remain visible and are not silently downgraded; safe evidence excludes API keys, prompts, chunk content, provider bodies, embeddings, stack traces, and raw answers. |
+| Not run | Frontend typecheck/build not rerun because no frontend source/type files changed. |
+
+This session closes the Admin Smoke Readiness Demo Acceptance Evidence task. The current demo acceptance chain now covers backend health, frontend proxy health, app readiness, non-streaming chat, streaming SSE, request-log list/detail, hit-chunk metadata, revoked-key auth, and forbidden-field safety checks.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5c8c546` | (see git log) |
+
+### Testing
+
+- [OK] User-confirmed manual smoke validation before record-session.
+- [OK] `git diff --check`
+- [OK] PowerShell PSParser syntax check for `scripts/demo-smoke.ps1`
+- [OK] `mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test`
+- [OK] `mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test`
+- [OK] `mvn -q "-Dtest=GatewayAuthFilterTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test`
+- [OK] `mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test`
+- [OK] `mvn -q test`
 
 ### Status
 

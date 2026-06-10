@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 39
+- **Total Sessions**: 40
 - **Last Active**: 2026-06-06
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~357 | Active |
+| `journal-2.md` | ~408 | Active |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 40 | 2026-06-06 | Admin smoke readiness demo acceptance evidence | `5c8c546` | `main` |
 | 39 | 2026-06-06 | GitHub CI remote evidence closeout review | `129d418` | `main` |
 | 38 | 2026-06-06 | Visual smoke temp branch cleanup | `93dc435` | `main` |
 | 37 | 2026-06-06 | Frontend visual smoke CI artifact and main baseline closeout | `c0f8e5d`, `4cb098f`, `84b3798` | `main` |

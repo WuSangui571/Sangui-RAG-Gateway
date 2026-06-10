@@ -1,0 +1,20 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-10-demo-smoke-runtime-evidence-checklist-finalization\\prd.md", "reason": "Task PRD with scope, acceptance criteria, safe evidence contract, Good/Base/Bad examples, and forbidden modification boundaries"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project-level demo smoke automation rule, readiness/request-log contracts, safe and forbidden evidence fields"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe request-log fields, forbidden sensitive fields, request-log and hit-chunk observability boundaries"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Gateway/Admin error shapes, revoked-key invalid_api_key contract, request-log error matrix"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required targeted tests and review checklist for request-log, auth, RAG, and safe logging"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Gateway upstream/streaming failure boundaries and safe request-log persistence rules"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Retrieval hit_chunk_ids, tenant-safe evidence, and no-hit boundaries"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Prompt secrecy, no raw augmented prompt, no raw answer evidence boundaries"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Chunk metadata and document content exposure boundaries"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "RAG evidence security, tenant isolation, allowed hit-chunk fields, forbidden response/log fields"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer command/API/log/evidence contract checklist"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Readiness/request-log/hit-chunk DTO field alignment if frontend docs/types are touched"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend smoke safe-display and secret handling expectations"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Canonical PowerShell smoke script actual output, safe evidence printing, forbidden-field scan, and failure boundaries"}
+{"file": "README.md", "reason": "Demo Acceptance Flow, Evidence Checklist, Safe Evidence Fields, and Forbidden Output Fields to synchronize"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-01-rag-demo-acceptance-runtime-evidence-stabilization\\runtime-evidence.md", "reason": "Older runtime evidence template to reuse cautiously while removing answer preview/raw content patterns"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-06-admin-smoke-readiness-demo-acceptance-evidence\\prd.md", "reason": "Previous readiness demo acceptance PRD and acceptance path context"}
