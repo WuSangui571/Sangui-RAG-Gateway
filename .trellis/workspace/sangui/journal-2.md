@@ -700,3 +700,47 @@ Closed the last V0.2 release-candidate blocker by confirming the fresh demo key 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 46: V0.2 RC smoke/tag runbook check and archive
+
+**Date**: 2026-06-10
+**Task**: V0.2 RC smoke/tag runbook check and archive
+**Branch**: `main`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| ?? | ?? |
+|---|---|
+| ?? | `5aec32fe docs:??v0.2 rc??smoke?tag runbook` |
+| ?????? | Trellis release engineering metadata?V0.2 RC reproducible smoke/tag runbook |
+| ???? | `.trellis/tasks/06-10-v0-2-rc-tagging-reproducible-smoke-runbook/release-candidate-runbook.md`?`prd.md`?`research.md`?`implement.jsonl`?`check.jsonl`?`debug.jsonl`?`task.json`???? `.trellis/tasks/archive/2026-06/06-10-v0-2-rc-tagging-reproducible-smoke-runbook/` |
+| Codex check | ?? `$check` ? `$finish-work`???? backend/frontend/API/DB/Docker/CI/smoke-script ??????? runbook ??? tag/smoke ????????? spec |
+| ???? | `git status --short`?`git diff --name-only HEAD`?`git diff --check`?`git log --oneline -5`?`git rev-parse HEAD`?`git tag --list "v0.2.0-rc.*"`?PRD forbidden-field `rg` scan?JSONL parse check |
+| ???? | ?????? runtime ?? Docker Compose?postgres/redis/backend/frontend ???backend `/api/health` ? frontend `/api/health` ?? `code=OK`?`status=UP`?`scripts/demo-smoke.ps1` 7 ??? PASS?backend health?frontend proxy health?readiness READY?non-streaming chat?streaming SSE?request-log/hit-chunks?revoked-key 401 `invalid_api_key` |
+| ?? smoke ?? | request_id `dd22aca4-525d-4b8c-99d6-4353dd6b68ac`?model `deepseek-v4-pro`?provider `sanguicode`?latency_ms `5048`?hit_chunk_ids `[5]`?hit-chunk `chunk_id=5 document_id=5 kb_id=4 file=sangui-demo-acceptance.md chunk_idx=0` |
+| ?? | V0.2 RC reproducible smoke/tag runbook ??????? runtime smoke ????? Trellis task ????????? |
+| ?? | ??? git tag?? push tag?runbook ????????? tag ??? clean checkout?secret scan?Docker/health/smoke ??? tag target???? plaintext app keys?revoked keys?provider keys?raw answers?raw SSE?prompt/messages?chunk content ? provider body |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5aec32fe` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
