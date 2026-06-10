@@ -413,3 +413,55 @@ This session closes the Admin Smoke Readiness Demo Acceptance Evidence task. The
 ### Next Steps
 
 - None - task complete
+
+
+## Session 41: Demo smoke runtime evidence checklist finalization
+
+**Date**: 2026-06-10
+**Task**: Demo smoke runtime evidence checklist finalization
+**Branch**: `main`
+
+### Summary
+
+Closed the Demo Smoke Runtime Evidence Checklist Finalization task after user manual testing and commit `d17b806`. The session finalized the metadata-only demo smoke evidence contract, added a durable checklist template, and archived the Trellis task.
+
+### Main Changes
+
+| Field | Details |
+|---|---|
+| Commit | `d17b806` (`docs: demo smoke runtime evidence checklist`) |
+| Result | Manual testing completed by user; implementation committed; task archived after review. |
+| Main modules | Demo smoke runtime evidence contract, README evidence rules, project spec automation contract, Trellis task-local checklist, durable docs checklist. |
+| Updated files | `README.md`; `.trellis/spec/sangui-rag-gateway.md`; `docs/runtime-evidence-checklist.md`; `.trellis/tasks/06-10-demo-smoke-runtime-evidence-checklist-finalization/runtime-evidence-checklist.md`; task metadata archived under `.trellis/tasks/archive/2026-06/06-10-demo-smoke-runtime-evidence-checklist-finalization`. |
+| Scope | Documentation/template finalization only. No backend/frontend business code, API DTO, database migration, infra, CI, or `scripts/demo-smoke.ps1` behavior changed. |
+| Codex check fixes | Added durable runtime evidence checklist under `docs/`; kept task-local checklist as review copy; updated README/spec references away from unstable task-only path; clarified `knowledge_base_id` may be printed as script label `kb_id`; removed encoding-damaged punctuation from task-local template. |
+| Automated validation | `git diff --check` PASS with CRLF warnings only; forbidden-field `rg` scan REVIEW PASS with hits limited to rule text/placeholders/script scanner lists, no real secrets; trailing-whitespace scan PASS; changed-file scan confirmed no backend/frontend/deploy/CI/db files changed; PowerShell PSParser syntax check for `scripts/demo-smoke.ps1` PASS. |
+| Not run | Maven backend tests and frontend typecheck/build were not rerun because no backend/frontend source, DTO, DB, or script behavior changed. Docker/CI checks were not run because deploy and workflow files were unchanged. |
+| Manual validation | User confirmed manual testing completed before record-session. |
+| Boundaries | Evidence records remain metadata-only. README is the durable safe/forbidden evidence contract; project spec describes automation contract; durable template lives at `docs/runtime-evidence-checklist.md`; task-local copy remains for archived Trellis review history. |
+
+This session closes the Demo Smoke Runtime Evidence Checklist Finalization task. The project now has a stable runtime evidence checklist for future demo smoke acceptance records, with explicit Good/Base/Bad cases, safe fields, forbidden fields, validation expectations, and key cleanup notes.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d17b806` | (see git log) |
+
+### Testing
+
+- [OK] User-confirmed manual testing before record-session.
+- [OK] `git diff --check` (CRLF warnings only).
+- [OK] Forbidden-field `rg` scan reviewed: hits were limited to rule text, placeholders, and script scanner lists; no real secrets found.
+- [OK] Trailing-whitespace scan for changed docs/templates.
+- [OK] Changed-file scan confirmed no backend/frontend/deploy/CI/db files changed.
+- [OK] PowerShell PSParser syntax check for `scripts/demo-smoke.ps1`.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

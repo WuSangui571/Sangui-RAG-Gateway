@@ -1,0 +1,23 @@
+{"file": ".trellis\\tasks\\06-10-v0-2-demo-acceptance-evidence-pack-final-run\\prd.md", "reason": "Check final evidence against task requirements and prohibited modification scope"}
+{"file": "docs\\runtime-evidence-checklist.md", "reason": "Verify evidence pack follows durable checklist and safe/forbidden field rules"}
+{"file": "README.md", "reason": "Check evidence against canonical README safe/forbidden evidence contract"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Check evidence matches actual script output fields and failure boundaries"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Validate release evidence does not drift from project-level contract"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Check no API/DTO/DB/frontend boundary drift in evidence-only task"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Verify committed evidence contains only safe observability metadata"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check failure evidence uses safe status/error metadata"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Confirm test scope is adequate for any non-evidence changes"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Check upstream/streaming failures are recorded safely and visibly"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Check request-log/hit-chunk evidence does not weaken RAG boundaries"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Verify no prompt, messages, raw answer, or augmented context is committed"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Check evidence pack for tenant/secret/content leakage"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Confirm evidence aligns with frontend DTO names without adding forbidden fields"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppService.java", "reason": "If readiness fails, verify boundary maps to current readiness checks"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "Check readiness evidence uses safe admin envelope metadata"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminController.java", "reason": "Check request-log evidence follows current endpoint contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Verify no full chunk content or unsafe request-log field is required in evidence"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Check revoked-key evidence uses current 401 invalid_api_key contract"}
+{"file": "frontend\\src\\pages\\smoke\\SmokeTestPage.tsx", "reason": "Confirm no frontend smoke evidence renders raw answer/SSE/keys if touched"}
+{"file": "frontend\\src\\types\\app.ts", "reason": "Check readiness DTO alignment if frontend types are touched"}
+{"file": "frontend\\src\\types\\request-log.ts", "reason": "Check request-log DTO alignment and summary evidence boundary"}
+{"file": ".trellis\\tasks\\06-10-v0-2-demo-acceptance-evidence-pack-final-run\\research.md", "reason": "Check evidence and changes against research risks and required tests"}

@@ -1,0 +1,26 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-10-v0-2-demo-acceptance-evidence-pack-final-run\\prd.md", "reason": "Task requirements, evidence-only scope, command contract, validation matrix, Good/Base/Bad cases"}
+{"file": "docs\\runtime-evidence-checklist.md", "reason": "Durable metadata-only evidence checklist template and recording rules"}
+{"file": "README.md", "reason": "Canonical demo acceptance flow, safe evidence fields, forbidden output fields, smoke script contract"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Executable smoke contract for health, readiness, chat, streaming, request-log, hit-chunks, revoked-key"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, implemented demo automation contract, API and evidence rules"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer flow, validation owner, secret and tenant boundary checklist"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe request log and structured logging fields; forbidden prompt/key/document/provider body rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "OpenAI-compatible errors, admin envelope, auth/readiness/request-log error matrices"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required targeted tests if backend boundaries are changed"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Upstream timeout/error/streaming/request-log failure boundaries"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Retrieval hit_chunk_ids, no-hit behavior, tenant-safe retrieval contract"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Prompt/context safety, no raw prompt/messages/full context in evidence"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Tenant, prompt/context secrecy, hit-chunk evidence, and secret-safe observability"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend readiness/request-log DTO fields and forbidden fields not to type/record"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppService.java", "reason": "Readiness assembly checks and metadata fields"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "Admin readiness endpoint ownership and envelope pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminController.java", "reason": "Request-log list/detail/hit-chunks endpoints and tenant ownership validation"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Hit-chunk summary generation and request-log service behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Public /v1 API key auth and invalid_api_key behavior"}
+{"file": "frontend\\src\\pages\\smoke\\SmokeTestPage.tsx", "reason": "Browser smoke UI mirrors safe evidence boundaries; useful if frontend smoke defects appear"}
+{"file": "frontend\\src\\types\\app.ts", "reason": "Readiness frontend DTO shape"}
+{"file": "frontend\\src\\types\\request-log.ts", "reason": "Request-log and hit-chunk frontend DTO shape"}
+{"file": ".trellis\\tasks\\06-10-v0-2-demo-acceptance-evidence-pack-final-run\\research.md", "reason": "Focused code research and handoff constraints"}
