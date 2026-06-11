@@ -744,3 +744,56 @@ Closed the last V0.2 release-candidate blocker by confirming the fresh demo key 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 47: V0.2 RC Tag Creation and Release Verification
+
+**Date**: 2026-06-11
+**Task**: V0.2 RC Tag Creation and Release Verification
+**Branch**: `main`
+
+### Summary
+
+Attempted to create annotated tag `v0.2.0-rc.1` targeting `5aec32fe`. Remote tag already existed at `1efaa8a9` (archive commit, `chore:归档v0.2 rc runbook会话`). Operator accepted the remote lightweight tag as the canonical `v0.2.0-rc.1`. All preflight checks passed; tag target verified; evidence recorded.
+
+### Main Changes
+
+| Area | Summary |
+|---|---|
+| Preflight | `git status --short`: only current Trellis task dir. `git log --oneline -8`: expected recent commits. `git rev-parse 5aec32fe`: `5aec32fec53a...`. `git rev-parse ea55a1c5`: `ea55a1c5ea72...`. `git tag --list "v0.2.0-rc.*"`: no local output (local tag absent before creation). `git diff --check`: PASS, no whitespace errors. |
+| Forbidden-field scan | REVIEW PASS -- all hits are rule text, placeholders, spec contracts, historical task rules, or scanner arrays. No real keys, Authorization values, key hashes, encrypted keys, provider bodies, or stack traces found. |
+| Tag creation attempt | Created local annotated tag `v0.2.0-rc.1` at `5aec32fe`. Push rejected: remote already has `v0.2.0-rc.1` at `1efaa8a9`. |
+| Operator decision | Accepted remote tag as canonical. Deleted local conflicting tag, fetched remote tag. |
+| Remote tag verification | `git cat-file -t v0.2.0-rc.1`: `commit`, confirming the accepted remote tag is lightweight, not annotated. `git show --stat --oneline v0.2.0-rc.1`: tag target `1efaa8a9`, 9 files +49/-4 (Trellis archive indices + journal). `git rev-list -n 1 v0.2.0-rc.1`: `1efaa8a97f9b...`. |
+| Evidence recorded | `task.json` updated to `completed` with notes. Journal updated. No implementation files changed. |
+
+### Validation
+
+- [OK] `git status --short`: only untracked Trellis task dir
+- [OK] `git log --oneline -8`: expected commits present
+- [OK] `git rev-parse 5aec32fe`: `5aec32fec53a2f39a298432a6e7cf78314963675`
+- [OK] `git rev-parse ea55a1c5`: `ea55a1c5ea7242e4d8a1cc38679bb5e2d4b48cf2`
+- [OK] `git tag --list "v0.2.0-rc.*"`: no local conflict pre-existing
+- [OK] `git diff --check`: no whitespace errors
+- [OK] Forbidden-field scan (`Select-String`): REVIEW PASS
+- [OK] `git cat-file -t v0.2.0-rc.1`: `commit` (lightweight tag)
+- [OK] `git show --stat --oneline v0.2.0-rc.1`: tag target 1efaa8a9 verified
+- [OK] `git rev-list -n 1 v0.2.0-rc.1`: `1efaa8a97f9bcf2ed085e88eddbf163c630e6fae`
+- [OK] `git status --short` final: only untracked Trellis task dir
+
+### Not Run
+
+| Check | Reason |
+|---|---|
+| `git push origin v0.2.0-rc.1` | Tag already exists on remote; push not needed (Base case per PRD) |
+| Backend Maven tests | No backend implementation files changed |
+| Frontend typecheck/build | No frontend implementation files changed |
+| Runtime smoke via `demo-smoke.ps1` | Requires operator-held secrets and configured local runtime |
+
+### Status
+
+[OK] **Completed with operator-accepted exception** - remote lightweight tag accepted as canonical
+
+### Next Steps
+
+- Manual release decision remains: keep the existing lightweight `v0.2.0-rc.1`, or publish a new annotated RC tag such as `v0.2.0-rc.2` if annotated-tag form is required.

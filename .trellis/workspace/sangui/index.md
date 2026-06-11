@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 46
-- **Last Active**: 2026-06-10
+- **Total Sessions**: 47
+- **Last Active**: 2026-06-11
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~746 | Active |
+| `journal-2.md` | ~800 | Active |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 47 | 2026-06-11 | V0.2 RC Tag Creation and Release Verification | (pending) | `main` |
 | 46 | 2026-06-10 | V0.2 RC smoke/tag runbook check and archive | `5aec32fe` | `main` |
 | 45 | 2026-06-10 | V0.2 Fresh Demo Key Cleanup Confirmation | `3be0282e` | `main` |
 | 44 | 2026-06-10 | V0.2 Fresh Demo Key Cleanup Confirmation | (pending) | `main` |

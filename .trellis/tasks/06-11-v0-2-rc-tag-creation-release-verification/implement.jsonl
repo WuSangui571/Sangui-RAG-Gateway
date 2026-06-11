@@ -1,0 +1,13 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, V0.2 release scope, smoke evidence rules, and deployment/smoke contracts."}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Secret/evidence safety boundaries for tag and journal records."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe logging/evidence field rules for runtime and release records."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Define validation scope when no implementation files change."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Release verification references Docker/env, gateway/admin smoke, logs, and secret boundaries."}
+{"file": ".trellis/tasks/archive/2026-06/06-10-v0-2-rc-tagging-reproducible-smoke-runbook/release-candidate-runbook.md", "reason": "Prior RC runbook with original tag target, preconditions, smoke commands, and rollback notes."}
+{"file": ".trellis/tasks/archive/2026-06/06-10-v0-2-release-readiness-closeout/release-readiness.md", "reason": "Release readiness decision and no-blocker evidence."}
+{"file": ".trellis/tasks/archive/2026-06/06-10-v0-2-fresh-demo-key-cleanup-confirmation/fresh-demo-key-cleanup-confirmation.md", "reason": "Fresh demo key revocation and 401 invalid_api_key evidence."}
+{"file": ".trellis/tasks/06-11-v0-2-rc-tag-creation-release-verification/prd.md", "reason": "Current task requirements, command contract, and acceptance criteria."}
+{"file": ".trellis/tasks/06-11-v0-2-rc-tag-creation-release-verification/research.md", "reason": "Focused repo research and validation plan for tag execution."}
