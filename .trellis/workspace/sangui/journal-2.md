@@ -797,3 +797,46 @@ Attempted to create annotated tag `v0.2.0-rc.1` targeting `5aec32fe`. Remote tag
 ### Next Steps
 
 - Manual release decision remains: keep the existing lightweight `v0.2.0-rc.1`, or publish a new annotated RC tag such as `v0.2.0-rc.2` if annotated-tag form is required.
+
+
+## Session 48: V0.2 RC tag and release publication closeout
+
+**Date**: 2026-06-11
+**Task**: V0.2 RC tag and release publication closeout
+**Branch**: `main`
+
+### Summary
+
+Recorded V0.2 RC tag verification closeout after manual release publication and archived the completed Trellis task.
+
+### Main Changes
+
+| Area | Description |
+|------|-------------|
+| Release | Human published GitHub Release v0.2.0-rc.1 at https://github.com/WuSangui571/Sangui-RAG-Gateway/releases/tag/v0.2.0-rc.1. No new RC tag is needed. |
+| Tag verification | Remote refs/tags/v0.2.0-rc.1 points to 1efaa8a97f9bcf2ed085e88eddbf163c630e6fae. The accepted remote tag is lightweight, not annotated, and this exception is recorded in task metadata. |
+| Trellis task | Archived 06-11-v0-2-rc-tag-creation-release-verification after manual test, release publication, and commit 188d1b78. |
+| Updated files | .trellis/tasks/archive/2026-06/06-11-v0-2-rc-tag-creation-release-verification/*, .trellis/workspace/sangui/index.md, .trellis/workspace/sangui/journal-2.md. |
+| Validation | git status --short clean before archive; git log --oneline -5 showed 188d1b78; task.py list showed the completed active task; tag target and remote ref had been verified during Codex check. |
+| Boundary | No backend, frontend, API, DB, Docker, CI, or smoke-script behavior changed in this closeout. No secrets, raw answers, raw SSE, provider bodies, prompts/messages, chunk content, or runtime logs were recorded. |
+
+**Result**: Completed. V0.2 RC tag/release verification is closed and archived. Existing v0.2.0-rc.1 release remains canonical; do not publish v0.2.0-rc.2 for this task.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `188d1b78` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
