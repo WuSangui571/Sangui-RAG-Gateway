@@ -1,11 +1,10 @@
-package com.sangui.raggateway.model.dto;
+package com.sangui.raggateway.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class CreateModelConfigDTO {
+public class ModelConfigCheckRequest {
 
     private String capability;
-    private String name;
     @JsonProperty("provider_name")
     private String providerName;
     @JsonProperty("base_url")
@@ -25,14 +24,6 @@ public class CreateModelConfigDTO {
 
     public void setCapability(String capability) {
         this.capability = capability;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getProviderName() {

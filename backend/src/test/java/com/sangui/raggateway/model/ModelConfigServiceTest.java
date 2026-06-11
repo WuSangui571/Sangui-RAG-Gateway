@@ -58,6 +58,7 @@ class ModelConfigServiceTest {
         assertThat(persisted.getProviderName()).isEqualTo("openai");
         assertThat(persisted.getBaseUrl()).isEqualTo("https://api.openai.com/v1");
         assertThat(persisted.getChatModel()).isEqualTo("gpt-4o-mini");
+        assertThat(persisted.getCapability()).isEqualTo("CHAT");
         assertThat(persisted.getStatus()).isEqualTo(ModelConfigStatus.ENABLED.name());
         assertThat(persisted.getCreatedAt()).isNotNull();
         assertThat(persisted.getUpdatedAt()).isNotNull();
@@ -87,6 +88,7 @@ class ModelConfigServiceTest {
 
         verify(modelConfigMapper).insert(entityCaptor.capture());
         ModelConfigEntity persisted = entityCaptor.getValue();
+        assertThat(persisted.getCapability()).isEqualTo("CHAT_EMBEDDING");
         assertThat(persisted.getEmbeddingModel()).isEqualTo("text-embedding-3-small");
         assertThat(persisted.getEmbeddingDimension()).isEqualTo(1536);
     }
@@ -220,6 +222,7 @@ class ModelConfigServiceTest {
         when(masker.mask("sk-upstream-secret")).thenReturn("sk-...cret");
 
         CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("CHAT");
         dto.setName("Default OpenAI");
         dto.setProviderName("openai");
         dto.setBaseUrl("https://api.openai.com/v1");
@@ -233,6 +236,7 @@ class ModelConfigServiceTest {
         assertThat(persisted.getApiKeyEncrypted()).isEqualTo("v1:iv:ciphertext");
         assertThat(persisted.getApiKeyMasked()).isEqualTo("sk-...cret");
         assertThat(persisted.getUserId()).isEqualTo(100L);
+        assertThat(persisted.getCapability()).isEqualTo("CHAT");
         assertThat(persisted.getStatus()).isEqualTo("ENABLED");
     }
 
@@ -242,6 +246,7 @@ class ModelConfigServiceTest {
         when(masker.mask(any())).thenReturn("sk-...cret");
 
         CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("CHAT");
         dto.setName("Config");
         dto.setProviderName("openai");
         dto.setBaseUrl("https://api.openai.com/v1");
@@ -259,11 +264,12 @@ class ModelConfigServiceTest {
         when(masker.mask("sk-upstream-secret")).thenReturn("sk-...cret");
 
         CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("CHAT_EMBEDDING");
         dto.setName(" Text Embedding ");
         dto.setProviderName(" openai-compatible ");
         dto.setBaseUrl(" https://dashscope.aliyuncs.com/compatible-mode/v1 ");
         dto.setApiKey("sk-upstream-secret");
-        dto.setChatModel(" unused-for-embedding ");
+        dto.setChatModel(" deepseek-v4 ");
         dto.setEmbeddingModel(" text-embedding-v4 ");
         dto.setEmbeddingDimension(1024);
 
@@ -274,15 +280,18 @@ class ModelConfigServiceTest {
         assertThat(persisted.getName()).isEqualTo("Text Embedding");
         assertThat(persisted.getProviderName()).isEqualTo("openai-compatible");
         assertThat(persisted.getBaseUrl()).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
-        assertThat(persisted.getChatModel()).isEqualTo("unused-for-embedding");
+        assertThat(persisted.getChatModel()).isEqualTo("deepseek-v4");
         assertThat(persisted.getEmbeddingModel()).isEqualTo("text-embedding-v4");
         assertThat(persisted.getEmbeddingDimension()).isEqualTo(1024);
+        assertThat(persisted.getCapability()).isEqualTo("CHAT_EMBEDDING");
     }
 
     @Test
     void shouldRejectCreateAdminConfigWithoutRequiredFields() {
         CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("CHAT");
         dto.setName("");
+        dto.setChatModel("gpt-4o-mini");
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -292,6 +301,7 @@ class ModelConfigServiceTest {
     @Test
     void shouldRejectCreateAdminConfigWithoutApiKey() {
         CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("CHAT");
         dto.setName("Config");
         dto.setProviderName("openai");
         dto.setBaseUrl("https://api.openai.com/v1");
@@ -306,11 +316,13 @@ class ModelConfigServiceTest {
     @Test
     void shouldRejectCreateAdminConfigWithNonPositiveEmbeddingDimension() {
         CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("CHAT_EMBEDDING");
         dto.setName("Config");
         dto.setProviderName("openai");
         dto.setBaseUrl("https://api.openai.com/v1");
         dto.setApiKey("sk-secret");
         dto.setChatModel("gpt-4o-mini");
+        dto.setEmbeddingModel("text-embedding-3-small");
         dto.setEmbeddingDimension(0);
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
@@ -319,8 +331,9 @@ class ModelConfigServiceTest {
     }
 
     @Test
-    void shouldRejectCreateAdminConfigWithEmbeddingModelWithoutDimension() {
+    void shouldRejectCreateCHATWithEmbeddingFields() {
         CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("CHAT");
         dto.setName("Config");
         dto.setProviderName("openai");
         dto.setBaseUrl("https://api.openai.com/v1");
@@ -330,31 +343,78 @@ class ModelConfigServiceTest {
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("embeddingDimension is required");
+                .hasMessageContaining("embedding fields must not be set for CHAT capability");
     }
 
     @Test
-    void shouldRejectCreateAdminConfigWithEmbeddingDimensionWithoutModel() {
+    void shouldCreateEMBEDDINGConfigWithoutChatModel() {
+        when(encryptor.encrypt(any())).thenReturn("v1:iv:ciphertext");
+        when(masker.mask(any())).thenReturn("sk-...cret");
+
         CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("EMBEDDING");
+        dto.setName("DashScope Embedding");
+        dto.setProviderName("dashscope");
+        dto.setBaseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1");
+        dto.setApiKey("sk-upstream-secret");
+        dto.setChatModel(null);
+        dto.setEmbeddingModel("text-embedding-v4");
+        dto.setEmbeddingDimension(1024);
+
+        ModelConfigVO vo = modelConfigService.createAdminConfig(100L, dto);
+
+        verify(modelConfigMapper).insert(entityCaptor.capture());
+        ModelConfigEntity persisted = entityCaptor.getValue();
+        assertThat(persisted.getCapability()).isEqualTo("EMBEDDING");
+        assertThat(persisted.getChatModel()).isNull();
+        assertThat(persisted.getEmbeddingModel()).isEqualTo("text-embedding-v4");
+        assertThat(persisted.getEmbeddingDimension()).isEqualTo(1024);
+    }
+
+    @Test
+    void shouldRejectCreateEMBEDDINGConfigWithChatModel() {
+        CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("EMBEDDING");
         dto.setName("Config");
         dto.setProviderName("openai");
         dto.setBaseUrl("https://api.openai.com/v1");
         dto.setApiKey("sk-secret");
         dto.setChatModel("gpt-4o-mini");
-        dto.setEmbeddingModel(" ");
-        dto.setEmbeddingDimension(1536);
+        dto.setEmbeddingModel("text-embedding-v4");
+        dto.setEmbeddingDimension(1024);
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("embeddingModel is required");
+                .hasMessageContaining("chatModel must not be set for EMBEDDING capability");
     }
 
+    @Test
+    void shouldRejectCreateConfigWithoutCapability() {
+        CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setName("Config");
+
+        assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("capability is required");
+    }
+
+    @Test
+    void shouldRejectCreateConfigWithInvalidCapability() {
+        CreateModelConfigDTO dto = new CreateModelConfigDTO();
+        dto.setCapability("INVALID");
+        dto.setName("Config");
+
+        assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid capability");
+    }
 
     @Test
     void shouldUpdateWithoutApiKeyPreserveExistingEncryptedKey() {
         ModelConfigEntity existing = new ModelConfigEntity();
         existing.setId(10L);
         existing.setUserId(100L);
+        existing.setCapability("CHAT");
         existing.setName("Old Name");
         existing.setProviderName("openai");
         existing.setBaseUrl("https://api.openai.com/v1");
@@ -385,6 +445,7 @@ class ModelConfigServiceTest {
         ModelConfigEntity existing = new ModelConfigEntity();
         existing.setId(10L);
         existing.setUserId(100L);
+        existing.setCapability("CHAT");
         existing.setName("Old Name");
         existing.setProviderName("openai");
         existing.setBaseUrl("https://api.openai.com/v1");
@@ -415,10 +476,13 @@ class ModelConfigServiceTest {
         ModelConfigEntity existing = new ModelConfigEntity();
         existing.setId(10L);
         existing.setUserId(100L);
+        existing.setCapability("CHAT_EMBEDDING");
         existing.setName("Old Name");
         existing.setProviderName("openai");
         existing.setBaseUrl("https://api.openai.com/v1");
         existing.setChatModel("gpt-4o-mini");
+        existing.setEmbeddingModel("text-embedding-v4");
+        existing.setEmbeddingDimension(1024);
         existing.setApiKeyEncrypted("v1:old:encrypted");
         existing.setApiKeyMasked("sk-***old");
         existing.setStatus("ENABLED");
@@ -431,7 +495,7 @@ class ModelConfigServiceTest {
         dto.setName(" New Name ");
         dto.setProviderName(" openai-compatible ");
         dto.setBaseUrl(" https://dashscope.aliyuncs.com/compatible-mode/v1 ");
-        dto.setChatModel(" unused-for-embedding ");
+        dto.setChatModel(" deepseek-v4 ");
         dto.setEmbeddingModel(" text-embedding-v4 ");
         dto.setEmbeddingDimension(1024);
 
@@ -442,7 +506,7 @@ class ModelConfigServiceTest {
         assertThat(updated.getName()).isEqualTo("New Name");
         assertThat(updated.getProviderName()).isEqualTo("openai-compatible");
         assertThat(updated.getBaseUrl()).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
-        assertThat(updated.getChatModel()).isEqualTo("unused-for-embedding");
+        assertThat(updated.getChatModel()).isEqualTo("deepseek-v4");
         assertThat(updated.getEmbeddingModel()).isEqualTo("text-embedding-v4");
         assertThat(updated.getEmbeddingDimension()).isEqualTo(1024);
     }
@@ -452,6 +516,7 @@ class ModelConfigServiceTest {
         ModelConfigEntity existing = new ModelConfigEntity();
         existing.setId(10L);
         existing.setUserId(100L);
+        existing.setCapability("CHAT");
         existing.setName("Old");
         existing.setProviderName("openai");
         existing.setBaseUrl("https://api.openai.com/v1");
@@ -496,6 +561,8 @@ class ModelConfigServiceTest {
         ModelConfigEntity existing = new ModelConfigEntity();
         existing.setId(10L);
         existing.setUserId(100L);
+        existing.setCapability("CHAT");
+        existing.setChatModel("gpt-4o-mini");
         existing.setStatus("DISABLED");
         existing.setApiKeyEncrypted("v1:iv:ciphertext");
         existing.setApiKeyMasked("sk-...cret");
@@ -518,6 +585,8 @@ class ModelConfigServiceTest {
         ModelConfigEntity existing = new ModelConfigEntity();
         existing.setId(10L);
         existing.setUserId(100L);
+        existing.setCapability("CHAT");
+        existing.setChatModel("gpt-4o-mini");
         existing.setStatus("ENABLED");
         existing.setApiKeyEncrypted("v1:iv:ciphertext");
         existing.setApiKeyMasked("sk-...cret");
@@ -537,6 +606,8 @@ class ModelConfigServiceTest {
         ModelConfigEntity existing = new ModelConfigEntity();
         existing.setId(10L);
         existing.setUserId(100L);
+        existing.setCapability("CHAT");
+        existing.setChatModel("gpt-4o-mini");
         existing.setStatus("DISABLED");
         existing.setApiKeyEncrypted(null);
         existing.setCreatedAt(LocalDateTime.now());
@@ -554,6 +625,8 @@ class ModelConfigServiceTest {
         ModelConfigEntity existing = new ModelConfigEntity();
         existing.setId(10L);
         existing.setUserId(100L);
+        existing.setCapability("CHAT");
+        existing.setChatModel("gpt-4o-mini");
         existing.setStatus("DISABLED");
         existing.setApiKeyEncrypted("  ");
         existing.setCreatedAt(LocalDateTime.now());
@@ -567,6 +640,26 @@ class ModelConfigServiceTest {
     }
 
     @Test
+    void shouldRejectEnableEmbeddingConfigWithoutDimension() {
+        ModelConfigEntity existing = new ModelConfigEntity();
+        existing.setId(10L);
+        existing.setUserId(100L);
+        existing.setCapability("EMBEDDING");
+        existing.setEmbeddingModel("text-embedding-v4");
+        existing.setEmbeddingDimension(null);
+        existing.setStatus("DISABLED");
+        existing.setApiKeyEncrypted("v1:iv:ciphertext");
+        existing.setCreatedAt(LocalDateTime.now());
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        when(modelConfigMapper.selectOne(any())).thenReturn(existing);
+
+        assertThatThrownBy(() -> modelConfigService.enableAdminConfig(10L, 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("positive embedding dimension");
+    }
+
+    @Test
     void shouldListConfigsByUserId() {
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setId(10L);
@@ -576,7 +669,7 @@ class ModelConfigServiceTest {
 
         when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(entity));
 
-        List<ModelConfigVO> result = modelConfigService.listAdminConfigs(100L, null);
+        List<ModelConfigVO> result = modelConfigService.listAdminConfigs(100L, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getApiKeyMasked()).isEqualTo("sk-***");
@@ -592,9 +685,34 @@ class ModelConfigServiceTest {
 
         when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(entity));
 
-        List<ModelConfigVO> result = modelConfigService.listAdminConfigs(100L, "ENABLED");
+        List<ModelConfigVO> result = modelConfigService.listAdminConfigs(100L, "ENABLED", null);
 
         assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void shouldListConfigsByCapability() {
+        ModelConfigEntity entity = new ModelConfigEntity();
+        entity.setId(10L);
+        entity.setUserId(100L);
+        entity.setCapability("CHAT");
+        entity.setApiKeyMasked("sk-***");
+        entity.setStatus("ENABLED");
+
+        when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(entity));
+
+        List<ModelConfigVO> result = modelConfigService.listAdminConfigs(100L, "ENABLED", "CHAT");
+
+        assertThat(result).hasSize(1);
+        verify(modelConfigMapper).selectList(wrapperCaptor.capture());
+        assertThat(wrapperCaptor.getValue()).isNotNull();
+    }
+
+    @Test
+    void shouldRejectInvalidCapabilityFilter() {
+        assertThatThrownBy(() -> modelConfigService.listAdminConfigs(100L, null, "INVALID"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid capability filter");
     }
 
     @Test
@@ -615,6 +733,7 @@ class ModelConfigServiceTest {
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setId(10L);
         entity.setUserId(100L);
+        entity.setCapability("CHAT_EMBEDDING");
         entity.setEmbeddingModel("text-embedding-3-small");
         entity.setEmbeddingDimension(1536);
         entity.setStatus("ENABLED");
@@ -633,6 +752,7 @@ class ModelConfigServiceTest {
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setId(10L);
         entity.setUserId(100L);
+        entity.setCapability("EMBEDDING");
         entity.setEmbeddingModel("text-embedding-v4");
         entity.setEmbeddingDimension(1024);
         entity.setStatus("ENABLED");
@@ -730,5 +850,48 @@ class ModelConfigServiceTest {
 
         assertThat(result).isNull();
         verifyNoInteractions(encryptor);
+    }
+
+    @Test
+    void isChatCapableShouldReturnTrueForCHAT() {
+        ModelConfigEntity entity = new ModelConfigEntity();
+        entity.setCapability("CHAT");
+        assertThat(modelConfigService.isChatCapable(entity)).isTrue();
+    }
+
+    @Test
+    void isChatCapableShouldReturnTrueForCHAT_EMBEDDING() {
+        ModelConfigEntity entity = new ModelConfigEntity();
+        entity.setCapability("CHAT_EMBEDDING");
+        assertThat(modelConfigService.isChatCapable(entity)).isTrue();
+    }
+
+    @Test
+    void isChatCapableShouldReturnFalseForEMBEDDING() {
+        ModelConfigEntity entity = new ModelConfigEntity();
+        entity.setCapability("EMBEDDING");
+        assertThat(modelConfigService.isChatCapable(entity)).isFalse();
+    }
+
+    @Test
+    void isChatCapableShouldReturnFalseForNull() {
+        assertThat(modelConfigService.isChatCapable(null)).isFalse();
+    }
+
+    @Test
+    void shouldListEnabledChatCapableConfigs() {
+        ModelConfigEntity entity = new ModelConfigEntity();
+        entity.setId(10L);
+        entity.setUserId(100L);
+        entity.setCapability("CHAT");
+        entity.setApiKeyMasked("sk-***");
+        entity.setStatus("ENABLED");
+
+        when(modelConfigMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(entity));
+
+        List<ModelConfigVO> result = modelConfigService.listEnabledChatCapableConfigs(100L);
+
+        assertThat(result).hasSize(1);
+        verify(modelConfigMapper).selectList(wrapperCaptor.capture());
     }
 }

@@ -13,10 +13,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Profile("!test")
 public class ModelConfigService {
+
+    private static final Set<String> CHAT_CAPABILITY_FILTER_VALUES = Set.of(
+            ModelConfigCapability.CHAT.name(), ModelConfigCapability.CHAT_EMBEDDING.name());
+    private static final Set<String> EMBEDDING_CAPABILITY_FILTER_VALUES = Set.of(
+            ModelConfigCapability.EMBEDDING.name(), ModelConfigCapability.CHAT_EMBEDDING.name());
 
     private final ModelConfigMapper modelConfigMapper;
     private final UpstreamApiKeyEncryptor encryptor;
@@ -47,8 +53,12 @@ public class ModelConfigService {
         String normalizedEmbeddingModel = normalizeOptionalText(embeddingModel);
         validateEmbeddingConfig(normalizedEmbeddingModel, embeddingDimension);
 
+        ModelConfigCapability capability = resolveCapability(
+                normalizedChatModel != null, normalizedEmbeddingModel != null);
+
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setUserId(userId);
+        entity.setCapability(capability.name());
         entity.setName(normalizedName);
         entity.setProviderName(normalizedProviderName);
         entity.setBaseUrl(normalizedBaseUrl);
@@ -64,19 +74,21 @@ public class ModelConfigService {
 
     @Transactional
     public ModelConfigVO createAdminConfig(Long userId, CreateModelConfigDTO dto) {
+        ModelConfigCapability capability = parseCapability(dto.getCapability());
         String normalizedName = normalizeRequiredText(dto.getName());
         String normalizedProviderName = normalizeRequiredText(dto.getProviderName());
         String normalizedBaseUrl = normalizeRequiredText(dto.getBaseUrl());
-        String normalizedChatModel = normalizeRequiredText(dto.getChatModel());
+        String normalizedChatModel = normalizeOptionalText(dto.getChatModel());
         String normalizedEmbeddingModel = normalizeOptionalText(dto.getEmbeddingModel());
-        validateRequiredFields(normalizedName, normalizedProviderName, normalizedBaseUrl, normalizedChatModel, dto.getApiKey());
-        validateEmbeddingConfig(normalizedEmbeddingModel, dto.getEmbeddingDimension());
+        validateCapabilityFields(capability, normalizedChatModel, normalizedEmbeddingModel, dto.getEmbeddingDimension(), true);
+        validateRequiredFields(normalizedName, normalizedProviderName, normalizedBaseUrl, dto.getApiKey());
 
         String encrypted = encryptor.encrypt(dto.getApiKey());
         String masked = masker.mask(dto.getApiKey());
 
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setUserId(userId);
+        entity.setCapability(capability.name());
         entity.setName(normalizedName);
         entity.setProviderName(normalizedProviderName);
         entity.setBaseUrl(normalizedBaseUrl);
@@ -96,6 +108,10 @@ public class ModelConfigService {
     public ModelConfigVO updateAdminConfig(Long id, Long userId, UpdateModelConfigDTO dto) {
         ModelConfigEntity entity = findByIdAndUserId(id, userId);
 
+        ModelConfigCapability currentCapability = parseCapability(entity.getCapability());
+        ModelConfigCapability newCapability = dto.getCapability() != null
+                ? parseCapability(dto.getCapability()) : currentCapability;
+
         if (hasText(dto.getName())) {
             entity.setName(normalizeRequiredText(dto.getName()));
         }
@@ -105,8 +121,12 @@ public class ModelConfigService {
         if (hasText(dto.getBaseUrl())) {
             entity.setBaseUrl(normalizeRequiredText(dto.getBaseUrl()));
         }
-        if (hasText(dto.getChatModel())) {
-            entity.setChatModel(normalizeRequiredText(dto.getChatModel()));
+        if (dto.getCapability() != null) {
+            entity.setCapability(newCapability.name());
+        }
+
+        if (dto.getChatModel() != null) {
+            entity.setChatModel(normalizeOptionalText(dto.getChatModel()));
         }
 
         if (dto.getApiKey() != null) {
@@ -119,12 +139,17 @@ public class ModelConfigService {
             entity.setApiKeyMasked(masked);
         }
 
-        String normalizedEmbeddingModel = normalizeOptionalText(dto.getEmbeddingModel());
-        validateEmbeddingConfig(normalizedEmbeddingModel, dto.getEmbeddingDimension());
-        if (dto.getEmbeddingModel() != null) {
+        String normalizedEmbeddingModel = dto.getEmbeddingModel() != null
+                ? normalizeOptionalText(dto.getEmbeddingModel()) : entity.getEmbeddingModel();
+        Integer embeddingDimension = dto.getEmbeddingDimension() != null
+                ? dto.getEmbeddingDimension() : entity.getEmbeddingDimension();
+        if (dto.getEmbeddingModel() != null || dto.getEmbeddingDimension() != null) {
             entity.setEmbeddingModel(normalizedEmbeddingModel);
-            entity.setEmbeddingDimension(dto.getEmbeddingDimension());
+            entity.setEmbeddingDimension(embeddingDimension);
         }
+
+        validateCapabilityFields(newCapability,
+                entity.getChatModel(), entity.getEmbeddingModel(), entity.getEmbeddingDimension(), false);
 
         entity.setUpdatedAt(LocalDateTime.now());
         modelConfigMapper.updateById(entity);
@@ -136,12 +161,13 @@ public class ModelConfigService {
         return ModelConfigVO.from(entity);
     }
 
-    public List<ModelConfigVO> listAdminConfigs(Long userId, String status) {
+    public List<ModelConfigVO> listAdminConfigs(Long userId, String status, String capability) {
         LambdaQueryWrapper<ModelConfigEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ModelConfigEntity::getUserId, userId);
         if (status != null) {
             wrapper.eq(ModelConfigEntity::getStatus, status);
         }
+        applyCapabilityFilter(wrapper, capability);
         wrapper.orderByDesc(ModelConfigEntity::getCreatedAt);
         List<ModelConfigEntity> entities = modelConfigMapper.selectList(wrapper);
         List<ModelConfigVO> result = new ArrayList<>(entities.size());
@@ -166,6 +192,14 @@ public class ModelConfigService {
         if (entity.getApiKeyEncrypted() == null || entity.getApiKeyEncrypted().isBlank()) {
             throw new IllegalArgumentException("Cannot enable model config without an upstream API key");
         }
+        ModelConfigCapability capability = parseCapability(entity.getCapability());
+        if (capability.isEmbeddingCapable()
+                && (entity.getEmbeddingDimension() == null || entity.getEmbeddingDimension() <= 0)) {
+            throw new IllegalArgumentException(
+                    "Cannot enable embedding-capable config without a positive embedding dimension");
+        }
+        validateCapabilityFields(capability, entity.getChatModel(),
+                entity.getEmbeddingModel(), entity.getEmbeddingDimension(), false);
         entity.setStatus(ModelConfigStatus.ENABLED.name());
         entity.setUpdatedAt(LocalDateTime.now());
         modelConfigMapper.updateById(entity);
@@ -203,6 +237,8 @@ public class ModelConfigService {
         wrapper.eq(ModelConfigEntity::getUserId, userId)
                 .eq(ModelConfigEntity::getEmbeddingModel, normalizedEmbeddingModel)
                 .eq(ModelConfigEntity::getEmbeddingDimension, embeddingDimension)
+                .in(ModelConfigEntity::getCapability,
+                        EMBEDDING_CAPABILITY_FILTER_VALUES)
                 .orderByDesc(ModelConfigEntity::getStatus)
                 .orderByDesc(ModelConfigEntity::getUpdatedAt)
                 .orderByDesc(ModelConfigEntity::getId)
@@ -224,11 +260,27 @@ public class ModelConfigService {
                 .eq(ModelConfigEntity::getEmbeddingModel, normalizedEmbeddingModel)
                 .eq(ModelConfigEntity::getEmbeddingDimension, embeddingDimension)
                 .eq(ModelConfigEntity::getStatus, ModelConfigStatus.ENABLED.name())
+                .in(ModelConfigEntity::getCapability,
+                        EMBEDDING_CAPABILITY_FILTER_VALUES)
                 .orderByDesc(ModelConfigEntity::getUpdatedAt)
                 .orderByDesc(ModelConfigEntity::getId)
                 .last("LIMIT 1");
         List<ModelConfigEntity> matches = modelConfigMapper.selectList(wrapper);
         return matches.isEmpty() ? null : matches.get(0);
+    }
+
+    public List<ModelConfigVO> listEnabledChatCapableConfigs(Long userId) {
+        LambdaQueryWrapper<ModelConfigEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ModelConfigEntity::getUserId, userId)
+                .eq(ModelConfigEntity::getStatus, ModelConfigStatus.ENABLED.name())
+                .in(ModelConfigEntity::getCapability, CHAT_CAPABILITY_FILTER_VALUES)
+                .orderByDesc(ModelConfigEntity::getCreatedAt);
+        List<ModelConfigEntity> entities = modelConfigMapper.selectList(wrapper);
+        List<ModelConfigVO> result = new ArrayList<>(entities.size());
+        for (ModelConfigEntity entity : entities) {
+            result.add(ModelConfigVO.from(entity));
+        }
+        return result;
     }
 
     public String decryptUpstreamKey(ModelConfigEntity config) {
@@ -242,7 +294,97 @@ public class ModelConfigService {
         return entity != null && ModelConfigStatus.ENABLED.name().equals(entity.getStatus());
     }
 
-    private void validateRequiredFields(String name, String providerName, String baseUrl, String chatModel, String apiKey) {
+    public boolean isChatCapable(ModelConfigEntity entity) {
+        if (entity == null) {
+            return false;
+        }
+        ModelConfigCapability cap = parseCapability(entity.getCapability());
+        return cap != null && cap.isChatCapable();
+    }
+
+    static ModelConfigCapability resolveCapability(boolean hasChatModel, boolean hasEmbeddingModel) {
+        if (hasChatModel && hasEmbeddingModel) {
+            return ModelConfigCapability.CHAT_EMBEDDING;
+        }
+        if (hasChatModel) {
+            return ModelConfigCapability.CHAT;
+        }
+        if (hasEmbeddingModel) {
+            return ModelConfigCapability.EMBEDDING;
+        }
+        return ModelConfigCapability.CHAT;
+    }
+
+    static ModelConfigCapability parseCapability(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("capability is required");
+        }
+        try {
+            return ModelConfigCapability.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid capability: " + value
+                    + ". Must be one of: CHAT, EMBEDDING, CHAT_EMBEDDING");
+        }
+    }
+
+    private void validateCapabilityFields(ModelConfigCapability capability, String chatModel,
+                                          String embeddingModel, Integer embeddingDimension, boolean isCreate) {
+        switch (capability) {
+            case CHAT:
+                if (!hasText(chatModel)) {
+                    throw new IllegalArgumentException("chatModel is required for CHAT capability");
+                }
+                if (hasText(embeddingModel) || (embeddingDimension != null && embeddingDimension > 0)) {
+                    throw new IllegalArgumentException(
+                            "embedding fields must not be set for CHAT capability");
+                }
+                break;
+            case EMBEDDING:
+                if (hasText(chatModel)) {
+                    throw new IllegalArgumentException("chatModel must not be set for EMBEDDING capability");
+                }
+                if (!hasText(embeddingModel)) {
+                    throw new IllegalArgumentException("embeddingModel is required for EMBEDDING capability");
+                }
+                if (isCreate) {
+                    if (embeddingDimension != null && embeddingDimension <= 0) {
+                        throw new IllegalArgumentException(
+                                "embeddingDimension must be positive when provided");
+                    }
+                }
+                break;
+            case CHAT_EMBEDDING:
+                if (!hasText(chatModel)) {
+                    throw new IllegalArgumentException("chatModel is required for CHAT_EMBEDDING capability");
+                }
+                if (!hasText(embeddingModel)) {
+                    throw new IllegalArgumentException("embeddingModel is required for CHAT_EMBEDDING capability");
+                }
+                if (embeddingDimension != null && embeddingDimension <= 0) {
+                    throw new IllegalArgumentException("embeddingDimension must be positive when provided");
+                }
+                break;
+        }
+    }
+
+    private void applyCapabilityFilter(LambdaQueryWrapper<ModelConfigEntity> wrapper, String capability) {
+        if (capability == null) {
+            return;
+        }
+        switch (capability.toUpperCase()) {
+            case "CHAT":
+                wrapper.in(ModelConfigEntity::getCapability, CHAT_CAPABILITY_FILTER_VALUES);
+                break;
+            case "EMBEDDING":
+                wrapper.in(ModelConfigEntity::getCapability, EMBEDDING_CAPABILITY_FILTER_VALUES);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid capability filter: " + capability
+                        + ". Must be CHAT or EMBEDDING.");
+        }
+    }
+
+    private void validateRequiredFields(String name, String providerName, String baseUrl, String apiKey) {
         if (!hasText(name)) {
             throw new IllegalArgumentException("name is required");
         }
@@ -251,9 +393,6 @@ public class ModelConfigService {
         }
         if (!hasText(baseUrl)) {
             throw new IllegalArgumentException("baseUrl is required");
-        }
-        if (!hasText(chatModel)) {
-            throw new IllegalArgumentException("chatModel is required");
         }
         if (!hasText(apiKey)) {
             throw new IllegalArgumentException("apiKey is required");

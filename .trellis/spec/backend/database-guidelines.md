@@ -264,9 +264,10 @@ backend/src/main/resources/db/migration/V3__create_model_config_and_app_default.
 | `base_url` | `VARCHAR(1024)` | yes | Upstream OpenAI-compatible base URL. |
 | `api_key_encrypted` | `TEXT` | no | Encrypted upstream key placeholder. Never plaintext. |
 | `api_key_masked` | `VARCHAR(128)` | no | Safe display value. |
-| `chat_model` | `VARCHAR(255)` | yes | Model id returned by `/v1/models`. |
-| `embedding_model` | `VARCHAR(255)` | no | Embedding model id for later RAG tasks. |
-| `embedding_dimension` | `INTEGER` | no | Required only with embedding model. |
+| `capability` | `VARCHAR(32)` | no | Model config capability: `CHAT`, `EMBEDDING`, `CHAT_EMBEDDING`. Added in V9 migration. |
+| `chat_model` | `VARCHAR(255)` | no | Model id; required for CHAT/CHAT_EMBEDDING, must be null for EMBEDDING. Nullable since V9. |
+| `embedding_model` | `VARCHAR(255)` | no | Embedding model id for later RAG tasks. Required for EMBEDDING/CHAT_EMBEDDING. |
+| `embedding_dimension` | `INTEGER` | no | Required only with embedding model when enabling embedding-capable configs. |
 | `status` | `VARCHAR(32)` | yes | `ENABLED` or `DISABLED`. |
 | `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
 | `updated_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |

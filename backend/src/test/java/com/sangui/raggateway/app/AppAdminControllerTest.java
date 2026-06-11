@@ -381,6 +381,7 @@ class AppAdminControllerTest {
 
         when(appService.findById(1L)).thenReturn(app);
         when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+        when(modelConfigService.isChatCapable(modelConfig)).thenReturn(true);
         when(appService.bindDefaultModelConfig(1L, 10L, 100L)).thenReturn(updated);
 
         mockMvc.perform(put("/api/admin/apps/1/default-model-config")
@@ -455,7 +456,7 @@ class AppAdminControllerTest {
 
         when(appService.findById(1L)).thenReturn(app);
         when(modelConfigService.findById(10L)).thenReturn(modelConfig);
-        when(appService.bindDefaultModelConfig(1L, 10L, 100L)).thenReturn(null);
+        when(modelConfigService.isChatCapable(modelConfig)).thenReturn(true);
 
         mockMvc.perform(put("/api/admin/apps/1/default-model-config")
                         .header("X-Admin-User-Id", "100")
