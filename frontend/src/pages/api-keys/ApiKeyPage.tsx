@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Table, Button, Modal, Form, Input, Select, Space, Typography, Alert, DatePicker, Tag,
+  Table, Button, Modal, Form, Input, Select, Space, Typography, Alert, DatePicker,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import type { ApiKeyVO, ApiKeyStatus, CreateApiKeyDTO, ApiKeyDetectionVO } from '../../types/api-key'
+import type { ApiKeyVO, ApiKeyStatus, CreateApiKeyDTO } from '../../types/api-key'
 import type { AppVO } from '../../types/app'
 import { ApiError } from '../../api/http'
 import { listApps } from '../../api/apps'
-import { listApiKeys, createApiKey, disableApiKey, enableApiKey, revokeApiKey, detectApiKey } from '../../api/api-keys'
+import { listApiKeys, createApiKey, disableApiKey, enableApiKey, revokeApiKey } from '../../api/api-keys'
 import { useShell } from '../../components/layout/AdminShell'
 import StatusTag from '../../components/domain/StatusTag'
 import ApiKeyOneTimeSecret from '../../components/domain/ApiKeyOneTimeSecret'
@@ -33,9 +33,6 @@ export default function ApiKeyPage() {
 
   const [disableConfirmId, setDisableConfirmId] = useState<number | null>(null)
   const [revokeConfirmId, setRevokeConfirmId] = useState<number | null>(null)
-
-  const [detectLoadingIds, setDetectLoadingIds] = useState<Set<number>>(new Set())
-  const [detectResults, setDetectResults] = useState<Map<number, ApiKeyDetectionVO>>(new Map())
 
   const fetchApps = useCallback(async () => {
     if (adminUserId === null) return
@@ -80,18 +77,12 @@ export default function ApiKeyPage() {
       setKeys([])
     } finally {
       setLoading(false)
-      setDetectResults(new Map())
     }
   }, [activeAppId, adminUserId, t])
 
   useEffect(() => {
     fetchKeys()
   }, [fetchKeys])
-
-  useEffect(() => {
-    setDetectLoadingIds(new Set())
-    setDetectResults(new Map())
-  }, [activeAppId])
 
   function handleAppSelect(appId: number) {
     setActiveAppId(appId)
@@ -160,27 +151,6 @@ export default function ApiKeyPage() {
     }
   }
 
-  async function handleDetect(id: number) {
-    if (adminUserId === null) return
-    setDetectLoadingIds(prev => new Set(prev).add(id))
-    try {
-      const res = await detectApiKey(id, adminUserId)
-      if (res.code !== 'OK') {
-        setError(res.message)
-      } else {
-        setDetectResults(prev => new Map(prev).set(id, res.data))
-      }
-    } catch (e: unknown) {
-      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('api-keys.networkError')))
-    } finally {
-      setDetectLoadingIds(prev => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
-    }
-  }
-
   function handleSecretClose() {
     setSecretOpen(false)
     setPlaintextKey(null)
@@ -219,46 +189,27 @@ export default function ApiKeyPage() {
       },
     },
     {
-      title: t('api-keys.column.actions'), key: 'actions', width: 280,
+      title: t('api-keys.column.actions'), key: 'actions', width: 180,
       render: (_: unknown, record: ApiKeyVO) => {
         if (record.status === 'REVOKED') {
-          return (
-            <Tag color="red">{t('api-keys.detectRevokedTerminal')}</Tag>
-          )
+          return '-'
         }
 
-        const isDetectLoading = detectLoadingIds.has(record.id)
-        const detectResult = detectResults.get(record.id)
-
         return (
-          <Space direction="vertical" size={4}>
-            <Space size={4}>
-              <Button
-                size="small"
-                loading={isDetectLoading}
-                onClick={() => handleDetect(record.id)}
-              >
-                {t('api-keys.detect')}
+          <Space size={4}>
+            {record.status === 'ACTIVE' ? (
+              <Button size="small" onClick={() => setDisableConfirmId(record.id)}>
+                {t('api-keys.disable')}
               </Button>
-              {record.status === 'ACTIVE' ? (
-                <Button size="small" onClick={() => setDisableConfirmId(record.id)}>
-                  {t('api-keys.disable')}
-                </Button>
-              ) : null}
-              {record.status === 'DISABLED' ? (
-                <Button size="small" onClick={() => handleEnable(record.id)}>
-                  {t('api-keys.enable')}
-                </Button>
-              ) : null}
-              <Button size="small" danger onClick={() => setRevokeConfirmId(record.id)}>
-                {t('api-keys.revoke')}
+            ) : null}
+            {record.status === 'DISABLED' ? (
+              <Button size="small" onClick={() => handleEnable(record.id)}>
+                {t('api-keys.enable')}
               </Button>
-            </Space>
-            {detectResult && (
-              <Tag color={detectResult.usable ? 'green' : 'red'}>
-                {detectResult.usable ? t('api-keys.detectUsable') : t('api-keys.detectUnusable')}
-              </Tag>
-            )}
+            ) : null}
+            <Button size="small" danger onClick={() => setRevokeConfirmId(record.id)}>
+              {t('api-keys.revoke')}
+            </Button>
           </Space>
         )
       },
@@ -299,7 +250,7 @@ export default function ApiKeyPage() {
         loading={loading}
         locale={{ emptyText: activeAppId === null ? t('api-keys.emptyNoApp') : t('api-keys.empty') }}
         pagination={false}
-        scroll={{ x: 1440 }}
+        scroll={{ x: 1200 }}
       />
 
       <Modal

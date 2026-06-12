@@ -1,5 +1,5 @@
 import type { ApiResponse } from '../types/common'
-import type { ApiKeyVO, ApiKeyCreateVO, CreateApiKeyDTO, ApiKeyDetectionVO } from '../types/api-key'
+import type { ApiKeyVO, ApiKeyCreateVO, CreateApiKeyDTO } from '../types/api-key'
 import { apiGet, apiPost } from './http'
 
 export function listApiKeys(
@@ -36,11 +36,4 @@ export function revokeApiKey(
   adminUserId: number,
 ): Promise<ApiResponse<ApiKeyVO>> {
   return apiPost<ApiKeyVO>(`/admin/api-keys/${id}/revoke`, undefined, adminUserId)
-}
-
-export function detectApiKey(
-  id: number,
-  adminUserId: number,
-): Promise<ApiResponse<ApiKeyDetectionVO>> {
-  return apiPost<ApiKeyDetectionVO>(`/admin/api-keys/${id}/detect`, undefined, adminUserId)
 }

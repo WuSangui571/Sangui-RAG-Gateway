@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~927 | Active |
+| `journal-2.md` | ~963 | Active |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -31,6 +31,7 @@
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
 | 49 | 2026-06-11 | V0.3 Model Config Capability Split and Checks | `e9dfe735`, `bdf56ab2` | `feature/v0-3-model-config-capability-split` |
+| 50 | 2026-06-11 | V0.3 admin request diagnostics UX | `e4195c1f` | `feature/v0-3-admin-request-diagnostics-ux` |
 | 48 | 2026-06-11 | V0.2 RC tag and release publication closeout | `188d1b78` | `main` |
 | 47 | 2026-06-11 | V0.2 RC Tag Creation and Release Verification | (pending) | `main` |
 | 46 | 2026-06-10 | V0.2 RC smoke/tag runbook check and archive | `5aec32fe` | `main` |

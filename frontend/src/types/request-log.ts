@@ -51,3 +51,13 @@ export interface RequestLogListParams {
   start_time?: string
   end_time?: string
 }
+
+export type DiagnosticBoundary =
+  | 'auth'
+  | 'readiness'
+  | 'retrieval'
+  | 'embedding'
+  | 'upstream'
+  | 'streaming'
+  | 'request-log'
+  | 'unknown'

@@ -925,3 +925,49 @@ Recorded V0.2 RC tag verification closeout after manual release publication and 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 50: V0.3 admin request diagnostics UX
+
+**Date**: 2026-06-11
+**Task**: V0.3 admin request diagnostics UX
+**Branch**: `feature/v0-3-admin-request-diagnostics-ux`
+
+### Summary
+
+Recorded completed V0.3 admin request diagnostics UX after manual acceptance and commit.
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | e4195c1f feat: admin request diagnostics UX |
+| Main modules | Frontend request-log detail drawer, diagnostics mapper, diagnostics panel, typed i18n dictionary, request-log diagnostic boundary type |
+| Updated files | frontend/src/app/i18n/dict.ts; frontend/src/components/domain/RequestLogDetailDrawer.tsx; frontend/src/components/domain/RequestDiagnosticsPanel.tsx; frontend/src/components/domain/requestDiagnostics.ts; frontend/src/types/request-log.ts |
+| Validation | cd frontend && cmd /c npm run typecheck: passed; cd frontend && cmd /c npm run build: passed with existing Vite large chunk warning; cd frontend && cmd /c npm run test:visual: passed 3 Chromium tests; git diff --check: no whitespace errors, only LF/CRLF working-copy warnings |
+| Result | Request-log detail now shows a safe diagnostics panel derived from existing request-log fields and app readiness checks. Successful requests with hit chunks do not show diagnostics; successful no-hit requests show retrieval diagnostics. Readiness load failure is visible but does not block request-log detail rendering. |
+| Boundaries | Frontend-only change. No backend API, database schema, Docker/infra, or public /v1 compatibility changes. Diagnostics use safe fields only and do not expose prompts, answers, chunk content, provider bodies, keys, stack traces, embeddings, or filesystem paths. |
+| Manual acceptance | User manually tested and committed before record-session. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e4195c1f` | (see git log) |
+
+### Testing
+
+- [OK] `cd frontend && cmd /c npm run typecheck`
+- [OK] `cd frontend && cmd /c npm run build` (passed with existing Vite large chunk warning)
+- [OK] `cd frontend && cmd /c npm run test:visual` (3 Chromium tests passed)
+- [OK] `git diff --check` (no whitespace errors; LF/CRLF working-copy warnings only)
+- [OK] User manually tested before commit
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

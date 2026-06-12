@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ApiRequestLogDetailVO, HitChunkSummaryVO } from '../../types/request-log'
+import type { AppReadinessVO } from '../../types/app'
 import { getRequestLogDetail, getHitChunks } from '../../api/request-logs'
+import { getAppReadiness } from '../../api/apps'
+import { classifyDiagnostic } from './requestDiagnostics'
 import RequestLogStatusTag from './RequestLogStatusTag'
 import HitChunksPanel from './HitChunksPanel'
+import RequestDiagnosticsPanel from './RequestDiagnosticsPanel'
 import { Drawer, Descriptions, Typography, Button, Space, Alert, Spin, Tag } from 'antd'
 import { useI18n } from '../../app/i18n'
 
@@ -41,12 +45,18 @@ export default function RequestLogDetailDrawer({
   const [chunksLoading, setChunksLoading] = useState(false)
   const [chunksError, setChunksError] = useState<string | null>(null)
 
+  const [readiness, setReadiness] = useState<AppReadinessVO | null>(null)
+  const [readinessLoading, setReadinessLoading] = useState(false)
+  const [readinessError, setReadinessError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!open || !requestId) {
       setDetail(null)
       setChunks([])
       setDetailError(null)
       setChunksError(null)
+      setReadiness(null)
+      setReadinessError(null)
       return
     }
 
@@ -56,6 +66,9 @@ export default function RequestLogDetailDrawer({
     setDetailError(null)
     setChunksError(null)
     setChunks([])
+    setReadiness(null)
+    setReadinessError(null)
+    setReadinessLoading(true)
 
     getRequestLogDetail(appId, requestId, adminUserId)
       .then((res) => {
@@ -74,6 +87,23 @@ export default function RequestLogDetailDrawer({
         if (!cancelled) setLoading(false)
       })
 
+    getAppReadiness(appId, adminUserId)
+      .then((res) => {
+        if (cancelled) return
+        if (res.code !== 'OK') {
+          setReadinessError(res.message)
+        } else {
+          setReadiness(res.data)
+        }
+      })
+      .catch((e: Error) => {
+        if (cancelled) return
+        setReadinessError(e.message)
+      })
+      .finally(() => {
+        if (!cancelled) setReadinessLoading(false)
+      })
+
     loadHitChunks(appId, requestId, adminUserId, () => cancelled, setChunks, setChunksLoading, setChunksError)
 
     return () => {
@@ -87,6 +117,18 @@ export default function RequestLogDetailDrawer({
     setChunksLoading(true)
     loadHitChunks(appId, requestId, adminUserId, () => false, setChunks, setChunksLoading, setChunksError)
   }
+
+  const diagnostic = useMemo(() => {
+    if (!detail) return null
+    return classifyDiagnostic(
+      {
+        status: detail.status,
+        error_code: detail.error_code,
+        hit_chunk_ids: detail.hit_chunk_ids,
+      },
+      readiness,
+    )
+  }, [detail, readiness])
 
   return (
     <Drawer
@@ -174,6 +216,13 @@ export default function RequestLogDetailDrawer({
             loading={chunksLoading}
             error={chunksError}
             onRetry={handleRetryHitChunks}
+          />
+
+          <RequestDiagnosticsPanel
+            diagnostic={diagnostic}
+            readiness={readiness}
+            readinessLoading={readinessLoading}
+            readinessError={readinessError}
           />
         </>
       )}
