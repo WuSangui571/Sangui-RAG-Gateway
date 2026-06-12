@@ -840,3 +840,82 @@ Recorded V0.2 RC tag verification closeout after manual release publication and 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 49: API key lifecycle enable accepted
+
+**Date**: 2026-06-12
+**Task**: API key lifecycle enable accepted
+**Branch**: `feature/api-key-lifecycle-enable`
+
+### Summary
+
+Implemented and accepted reversible API key enable lifecycle while keeping revoked keys terminal.
+
+### Main Changes
+
+**Commit**: `60d53014 feat: API key lifecycle enable`
+
+**Manual Acceptance**:
+- User manually tested the same `/v1/chat/completions` request through four API key states.
+- ACTIVE before disable: request succeeded.
+- DISABLED after disable: request failed with OpenAI-compatible `401 invalid_api_key`.
+- ACTIVE after enable: request succeeded again.
+- REVOKED after revoke: request failed with OpenAI-compatible `401 invalid_api_key`.
+- Manual evidence stayed metadata-level here; the journal does not record the plaintext key or full response body.
+
+**Implemented Modules**:
+- Backend API key lifecycle state machine: `DISABLED -> ACTIVE` enable path, `REVOKED` terminal, `EXPIRED` not silently revived.
+- Admin API: `POST /api/admin/api-keys/{id}/enable` with existing `X-Admin-User-Id`, 404/403 ownership checks, and secret-safe `ApiKeyVO` response.
+- Readiness guidance: disabled-only key state now tells admins to enable a disabled key or create a new active key.
+- Frontend API key page: Enable action and modal for disabled keys; status-based action visibility for ACTIVE/DISABLED/EXPIRED/REVOKED.
+- Trellis specs: backend lifecycle/error matrix and frontend API key action visibility contract.
+
+**Updated Files**:
+- `.trellis/spec/backend/error-handling.md`
+- `.trellis/spec/frontend/component-guidelines.md`
+- `backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyAdminController.java`
+- `backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyService.java`
+- `backend/src/main/java/com/sangui/raggateway/app/AppService.java`
+- `backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyAdminControllerTest.java`
+- `backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java`
+- `frontend/src/api/api-keys.ts`
+- `frontend/src/app/i18n/dict.ts`
+- `frontend/src/pages/api-keys/ApiKeyPage.tsx`
+
+**Automated Validation**:
+- `cd backend && mvn -q "-Dtest=ApiKeyServiceTest,ApiKeyAdminControllerTest,GatewayAuthFilterTest,AppServiceTest" test` -> passed.
+- `cd backend && mvn test` -> passed, 470 tests, BUILD SUCCESS.
+- `cd frontend && cmd /c npm run typecheck` -> passed.
+- `cd frontend && cmd /c npm run build` -> passed, with existing Vite large chunk warning only.
+- `cd frontend && cmd /c npm run test:visual` -> passed, 3 Chromium login-theme smoke tests.
+
+**Result and Boundaries**:
+- Task acceptance is complete and task was archived from active Trellis tasks.
+- No database migration or infra change was needed because `rag_api_key.status` and `revoked_at` already existed.
+- Gateway callers still receive generic OpenAI-compatible `invalid_api_key` for disabled, revoked, expired, unknown, malformed, or disabled-app keys.
+- Lifecycle responses remain secret-safe: no plaintext key and no key hash outside one-time create response.
+- Existing visual smoke does not cover the API key table; manual acceptance covered the key lifecycle runtime path.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `60d53014` | (see git log) |
+
+### Testing
+
+- [OK] Backend targeted lifecycle tests passed.
+- [OK] Backend full regression passed: 470 tests, BUILD SUCCESS.
+- [OK] Frontend typecheck, build, and existing visual smoke passed.
+- [OK] Manual lifecycle acceptance passed for active -> disabled -> enabled -> revoked states.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
