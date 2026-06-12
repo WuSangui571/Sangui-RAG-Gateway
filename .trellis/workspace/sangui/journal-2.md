@@ -971,3 +971,57 @@ Recorded completed V0.3 admin request diagnostics UX after manual acceptance and
 ### Next Steps
 
 - None - task complete
+
+
+## Session 50: API Key lifecycle restore and model config check merge
+
+**Date**: 2026-06-12
+**Task**: API Key lifecycle restore and model config check merge
+**Branch**: `codex/api-key-detection`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Code commits | `1e66997e` merge:?????????API Key??; `72af3218` merge model config capability split; `a9011d2c` fix:???? API Key ????? |
+| Main modules | API Key lifecycle Admin UI/API; model config capability split and model config check UI/API; admin request diagnostics frontend panel |
+| Product decision | Removed the API Key detect endpoint/button because API key usability is already represented by ACTIVE/DISABLED/REVOKED/EXPIRED plus app status, and the more valuable real connectivity check belongs on the model config page. |
+| Updated backend | Removed `POST /api/admin/api-keys/{id}/detect` and `ApiKeyDetectionVO`; kept disable/enable/revoke controller behavior; retained model config saved/unsaved check endpoints from the capability split merge. |
+| Updated frontend | Removed API Key row-level detect button/result state/types/client API/i18n; kept disabled-key restore action; model config page now supports capability selection (`CHAT`, `EMBEDDING`, `CHAT_EMBEDDING`) and saved/unsaved checks. |
+| Trellis/spec | Archived `06-12-api-key-detection-button`; removed API Key detect spec sections; resolved journal/index conflicts from merging prior completed branches. |
+| Validation | `mvn -q "-Dtest=ApiKeyAdminControllerTest,ApiKeyServiceTest" test`: passed; `mvn -q "-Dtest=ModelConfigServiceTest,ModelConfigAdminControllerTest,ModelConfigCheckServiceTest,AppServiceTest,AppAdminControllerTest" test`: passed; `mvn -q -DskipTests compile`: passed; `cmd /c npm run typecheck`: passed; `cmd /c npm run build`: passed with existing Vite large chunk warning; `git diff --cached --check`: passed before commit; human manual test passed before record-session. |
+| Result | Current branch has the model config capability/check work merged, API Key restore behavior retained, API Key detect removed, and request diagnostics UX merged. |
+| Boundaries | No new DB/API changes were introduced during record-session. No secrets, raw prompts, raw answers, provider bodies, Authorization headers, key hashes, embeddings, or chunk content were recorded. |
+
+**Manual Acceptance**:
+- User manually tested the branch and committed before record-session.
+- User confirmed the API Key detect UX should be removed and model config checks are the desired detection surface.
+
+**Next Notes**:
+- Do not continue API Key detect as a feature.
+- Future model config cleanup should remove `CHAT_EMBEDDING` from creation and migrate/normalize legacy mixed configs deliberately in a new task.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1e66997e` | (see git log) |
+| `72af3218` | (see git log) |
+| `a9011d2c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

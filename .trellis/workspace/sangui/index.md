@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 49
-- **Last Active**: 2026-06-11
+- **Total Sessions**: 50
+- **Last Active**: 2026-06-12
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~963 | Active |
+| `journal-2.md` | ~1027 | Active |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 50 | 2026-06-12 | API Key lifecycle restore and model config check merge | `1e66997e`, `72af3218`, `a9011d2c` | `codex/api-key-detection` |
 | 49 | 2026-06-11 | V0.3 Model Config Capability Split and Checks | `e9dfe735`, `bdf56ab2` | `feature/v0-3-model-config-capability-split` |
 | 50 | 2026-06-11 | V0.3 admin request diagnostics UX | `e4195c1f` | `feature/v0-3-admin-request-diagnostics-ux` |
 | 48 | 2026-06-11 | V0.2 RC tag and release publication closeout | `188d1b78` | `main` |
