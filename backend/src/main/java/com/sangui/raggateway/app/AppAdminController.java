@@ -188,6 +188,11 @@ public class AppAdminController {
         if (!modelConfig.getUserId().equals(userId)) {
             throw new BusinessException("FORBIDDEN", "Model config does not belong to this user", HttpStatus.FORBIDDEN);
         }
+        if (!modelConfigService.isChatCapable(modelConfig)) {
+            throw new BusinessException("MODEL_CONFIG_NOT_READY",
+                    "Model config is not chat-capable. Only CHAT or CHAT_EMBEDDING configs can be bound as the default model.",
+                    HttpStatus.BAD_REQUEST);
+        }
 
         AppEntity updated = appService.bindDefaultModelConfig(appId, modelConfigId, userId);
         if (updated == null) {

@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class AppServiceTest {
@@ -47,6 +48,7 @@ class AppServiceTest {
     @BeforeEach
     void setUp() {
         appService = new AppService(appMapper, modelConfigService, knowledgeBaseService, apiKeyService);
+        lenient().when(modelConfigService.isChatCapable(any())).thenReturn(true);
     }
 
     @Test
@@ -104,8 +106,11 @@ class AppServiceTest {
         ModelConfigEntity modelConfig = new ModelConfigEntity();
         modelConfig.setId(10L);
         modelConfig.setUserId(100L);
+        modelConfig.setCapability("CHAT");
+        modelConfig.setChatModel("gpt-4o-mini");
         modelConfig.setStatus("ENABLED");
         when(modelConfigService.findEnabledByIdAndUserId(10L, 100L)).thenReturn(modelConfig);
+        when(modelConfigService.isChatCapable(modelConfig)).thenReturn(true);
 
         AppEntity result = appService.bindDefaultModelConfig(1L, 10L, 100L);
 
@@ -479,6 +484,7 @@ class AppServiceTest {
 
         ModelConfigEntity modelConfig = createModelConfig(10L, 100L, "ENABLED", "openai", "gpt-4o-mini");
         when(modelConfigService.findById(10L)).thenReturn(modelConfig);
+        when(modelConfigService.isChatCapable(modelConfig)).thenReturn(true);
 
         KnowledgeBaseEntity kb = createKnowledgeBase(20L, 100L, "READY");
         when(knowledgeBaseService.findById(20L)).thenReturn(kb);
@@ -779,6 +785,7 @@ class AppServiceTest {
         config.setName("Test Config");
         config.setProviderName(providerName);
         config.setBaseUrl("https://api.example.com");
+        config.setCapability("CHAT");
         config.setChatModel(chatModel);
         config.setStatus(status);
         return config;
@@ -791,6 +798,7 @@ class AppServiceTest {
         config.setName("Embedding Config");
         config.setProviderName("openai");
         config.setBaseUrl("https://api.example.com");
+        config.setCapability("CHAT_EMBEDDING");
         config.setChatModel("gpt-4o-mini");
         config.setEmbeddingModel(embeddingModel);
         config.setEmbeddingDimension(embeddingDimension);

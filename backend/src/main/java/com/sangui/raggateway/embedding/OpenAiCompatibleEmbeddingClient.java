@@ -47,9 +47,9 @@ public class OpenAiCompatibleEmbeddingClient implements EmbeddingClient {
 
     @Override
     public List<float[]> embed(String baseUrl, String apiKey, String model,
-                               List<String> inputs, int expectedDimension) {
+                                List<String> inputs, int expectedDimension) {
         String base = normalizeBaseUrl(baseUrl);
-        String url = base.endsWith("/v1") ? base + "/embeddings" : base + EMBEDDING_PATH;
+        String url = buildEmbeddingUrl(base);
 
         EmbeddingRequest request = new EmbeddingRequest(model, inputs);
 
@@ -99,6 +99,76 @@ public class OpenAiCompatibleEmbeddingClient implements EmbeddingClient {
                     e.getClass().getSimpleName(), model, inputs.size(), latency);
             throw new EmbeddingException("Embedding upstream is unavailable", false);
         }
+    }
+
+    @Override
+    public EmbeddingProbeResult probe(String baseUrl, String apiKey, String model) {
+        String base = normalizeBaseUrl(baseUrl);
+        String url = buildEmbeddingUrl(base);
+
+        String probeInput = "dimension probe";
+        EmbeddingRequest request = new EmbeddingRequest(model, List.of(probeInput));
+
+        long start = System.currentTimeMillis();
+        try {
+            EmbeddingResponse response = restClient.post()
+                    .uri(url)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .exchange((req, resp) -> {
+                        HttpStatusCode status = resp.getStatusCode();
+                        if (!status.is2xxSuccessful()) {
+                            long latency = System.currentTimeMillis() - start;
+                            log.warn("embedding.probe_failed status={} model={} latency_ms={}",
+                                    status.value(), model, latency);
+                            throw new EmbeddingException(
+                                    "Embedding probe returned status " + status.value(), false);
+                        }
+                        byte[] body = resp.getBody().readAllBytes();
+                        return RestClientUtils.parseJson(body, EmbeddingResponse.class);
+                    });
+
+            long latency = System.currentTimeMillis() - start;
+
+            if (response.getData() == null || response.getData().isEmpty()) {
+                throw new EmbeddingException("Embedding probe returned empty data", false);
+            }
+
+            EmbeddingResponse.EmbeddingData first = response.getData().get(0);
+            if (first.getEmbedding() == null || first.getEmbedding().isEmpty()) {
+                throw new EmbeddingException("Embedding probe returned empty vector", false);
+            }
+
+            int dimension = first.getEmbedding().size();
+            log.info("embedding.probe_completed model={} actual_dimension={} latency_ms={}",
+                    model, dimension, latency);
+
+            return new EmbeddingProbeResult(model, dimension);
+        } catch (EmbeddingException e) {
+            throw e;
+        } catch (ResourceAccessException e) {
+            long latency = System.currentTimeMillis() - start;
+            Throwable cause = e.getCause();
+            boolean timeout = cause instanceof SocketTimeoutException
+                    || (cause instanceof java.net.ConnectException
+                    && cause.getMessage() != null
+                    && cause.getMessage().contains("time"));
+            log.error("embedding.probe_failed error_class={} timeout={} model={} latency_ms={}",
+                    e.getClass().getSimpleName(), timeout, model, latency);
+            throw new EmbeddingException(
+                    timeout ? "Embedding probe timed out" : "Embedding probe upstream is unavailable",
+                    timeout);
+        } catch (Exception e) {
+            long latency = System.currentTimeMillis() - start;
+            log.error("embedding.probe_failed error_class={} model={} latency_ms={}",
+                    e.getClass().getSimpleName(), model, latency);
+            throw new EmbeddingException("Embedding probe is unavailable", false);
+        }
+    }
+
+    private String buildEmbeddingUrl(String base) {
+        return base.endsWith("/v1") ? base + "/embeddings" : base + EMBEDDING_PATH;
     }
 
     private List<float[]> validateAndExtract(EmbeddingResponse response, int inputCount, int expectedDimension) {

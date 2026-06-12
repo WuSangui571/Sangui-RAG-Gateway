@@ -55,6 +55,10 @@ export type ApiKeyStatus =
   | 'REVOKED';
 
 export type AppStatus = 'ENABLED' | 'DISABLED';
+
+export type ModelConfigCapability = 'CHAT' | 'EMBEDDING' | 'CHAT_EMBEDDING';
+
+export type CheckStatus = 'SUCCESS' | 'FAILED' | 'PARTIAL';
 ```
 
 Keep frontend enum values aligned with backend enum values.

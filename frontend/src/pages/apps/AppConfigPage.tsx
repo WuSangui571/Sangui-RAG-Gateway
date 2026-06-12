@@ -8,7 +8,7 @@ import type { ModelConfigVO } from '../../types/model-config'
 import type { KnowledgeBaseVO } from '../../types/knowledge'
 import { ApiError } from '../../api/http'
 import { listApps, createApp, bindDefaultModelConfig, bindDefaultKnowledgeBase, disableApp, enableApp } from '../../api/apps'
-import { listModelConfigs } from '../../api/model-configs'
+import { listChatCapableConfigs } from '../../api/model-configs'
 import { listKnowledgeBases } from '../../api/knowledge'
 import { useShell } from '../../components/layout/AdminShell'
 import StatusTag from '../../components/domain/StatusTag'
@@ -86,7 +86,7 @@ export default function AppConfigPage() {
     if (adminUserId === null) return
     setBindModelAppId(appId)
     try {
-      const res = await listModelConfigs('ENABLED', adminUserId)
+      const res = await listChatCapableConfigs(adminUserId)
       if (res.code === 'OK') {
         setModelConfigs(res.data)
       } else {
@@ -284,7 +284,7 @@ export default function AppConfigPage() {
           style={{ width: '100%' }}
           options={modelConfigs.map(mc => ({
             value: mc.id,
-            label: `${mc.name} (${mc.chat_model})`,
+            label: `${mc.name} (${mc.chat_model ?? '-'})`,
           }))}
         />
       </Modal>

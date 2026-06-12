@@ -840,3 +840,88 @@ Recorded V0.2 RC tag verification closeout after manual release publication and 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 49: V0.3 Model Config Capability Split and Checks
+
+**Date**: 2026-06-11
+**Task**: V0.3 Model Config Capability Split and Checks
+**Branch**: `feature/v0-3-model-config-capability-split`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+**Commits**:
+- `e9dfe735` `feat:?????????????`
+- `bdf56ab2` `fix:model-config-check-service-injection`
+
+**??????**:
+- Backend model config: ?? `ModelConfigCapability`??? `CHAT` / `EMBEDDING` / `CHAT_EMBEDDING` ??????? create/update/list/enable/check ???
+- Backend app binding/readiness: app ????????? enabled chat-capable config?readiness ? chat/embedding ?????????
+- Backend embedding check: ????? model config check service/request/result??? chat ??? embedding dimension probe???? raw provider body?key?prompt???? answer?
+- Database: ?? `V9__model_config_capability_split.sql`?? `rag_model_config` ?? capability ??? chat_model nullable ???
+- Frontend admin: Model Config ???? capability ????????check ??? embedding dimension ???App ?????? chat-capable configs?KB ???? embedding-capable config ??????????
+- Specs: ?? project/backend/frontend spec??? capability split?schema?????????????
+
+**????**:
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/backend/error-handling.md`
+- `.trellis/spec/frontend/type-safety.md`
+- `backend/src/main/resources/db/migration/V9__model_config_capability_split.sql`
+- `backend/src/main/java/com/sangui/raggateway/model/*`
+- `backend/src/main/java/com/sangui/raggateway/app/AppService.java`
+- `backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java`
+- `backend/src/main/java/com/sangui/raggateway/embedding/*`
+- `backend/src/test/java/com/sangui/raggateway/model/*`
+- `backend/src/test/java/com/sangui/raggateway/app/*`
+- `frontend/src/types/model-config.ts`
+- `frontend/src/api/model-configs.ts`
+- `frontend/src/pages/model-configs/ModelConfigPage.tsx`
+- `frontend/src/pages/apps/AppConfigPage.tsx`
+- `frontend/src/pages/knowledge/KnowledgeBasePage.tsx`
+- `frontend/src/app/i18n/dict.ts`
+
+**???????**:
+- `cd backend; mvn -q -DskipTests compile` ? ???
+- `cd backend; mvn -q "-Dtest=ModelConfigServiceTest,ModelConfigAdminControllerTest" test` ? ???
+- `cd backend; mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test` ? ???
+- `cd backend; mvn -q "-Dtest=DocumentServiceTest,RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test` ? ???
+- `cd backend; mvn test` ? ???468 tests passed?
+- `cd frontend; cmd /c npm run typecheck` ? ???
+- `cd frontend; cmd /c npm run build` ? ???
+- `git diff --check HEAD` ? ???
+- `docker compose --env-file .env -f deploy/docker-compose.yml up -d --build` ? ???`sangui-backend` reached healthy and `sangui-frontend` started?
+- `docker compose --env-file .env -f deploy/docker-compose.yml ps` ? backend/postgres/redis healthy?frontend up?
+- `curl.exe -sS http://localhost:8080/api/health` ? ?? `status=UP`?
+- `curl.exe -sS http://localhost:3000/api/health` ? frontend proxy ?? `status=UP`?
+
+**?????**:
+- Task `06-11-v0-3-model-config-capability-split` ????
+- ?????????????
+- Codex closeout ??????? Docker runtime ?????`ModelConfigCheckService` ?????????????? `@Autowired`?Spring ???????? backend ????????????? health check ????
+- ????? provider catalog??? `/v1/embeddings`?fallback routing?????/?? provider raw body?prompt?answer?embedding vector?API key ? chunk content?
+- ???? provider check ?????? upstream key/base URL/model ??????? smoke?
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e9dfe735` | (see git log) |
+| `bdf56ab2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
