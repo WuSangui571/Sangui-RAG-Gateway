@@ -17,6 +17,7 @@ public class ModelConfigEntity {
     private String baseUrl;
     private String apiKeyEncrypted;
     private String apiKeyMasked;
+    private String capability;
     private String chatModel;
     private String embeddingModel;
     private Integer embeddingDimension;
@@ -78,6 +79,14 @@ public class ModelConfigEntity {
 
     public void setApiKeyMasked(String apiKeyMasked) {
         this.apiKeyMasked = apiKeyMasked;
+    }
+
+    public String getCapability() {
+        return capability;
+    }
+
+    public void setCapability(String capability) {
+        this.capability = capability;
     }
 
     public String getChatModel() {

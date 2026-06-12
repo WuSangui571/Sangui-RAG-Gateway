@@ -172,6 +172,74 @@ class ApiKeyAdminControllerTest {
                 .andExpect(content().string(not(containsString("\"key_hash\""))));
     }
 
+    // ---- Enable ----
+
+    @Test
+    void shouldEnableDisabledKey() throws Exception {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, "DISABLED");
+        ApiKeyEntity enabled = createKey(10L, 1L, 100L, "ACTIVE");
+
+        when(apiKeyService.findById(10L)).thenReturn(key);
+        when(apiKeyService.enable(10L, 100L)).thenReturn(enabled);
+
+        mockMvc.perform(post("/api/admin/api-keys/10/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.id").value(10))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.key").doesNotExist())
+                .andExpect(jsonPath("$.data.key_hash").doesNotExist());
+    }
+
+    @Test
+    void shouldReturn404ForEnableOfNonExistentKey() throws Exception {
+        when(apiKeyService.findById(999L)).thenReturn(null);
+
+        mockMvc.perform(post("/api/admin/api-keys/999/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldReturn403ForEnableOfCrossUserKey() throws Exception {
+        ApiKeyEntity otherUserKey = createKey(10L, 1L, 200L, "DISABLED");
+        when(apiKeyService.findById(10L)).thenReturn(otherUserKey);
+
+        mockMvc.perform(post("/api/admin/api-keys/10/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    void shouldRejectEnableOfRevokedKey() throws Exception {
+        ApiKeyEntity revokedKey = createKey(10L, 1L, 100L, "REVOKED");
+        when(apiKeyService.findById(10L)).thenReturn(revokedKey);
+        when(apiKeyService.enable(10L, 100L))
+                .thenThrow(new IllegalArgumentException("Revoked key cannot be enabled"));
+
+        mockMvc.perform(post("/api/admin/api-keys/10/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldRejectEnableOfExpiredKey() throws Exception {
+        ApiKeyEntity expiredKey = createKey(10L, 1L, 100L, "EXPIRED");
+        when(apiKeyService.findById(10L)).thenReturn(expiredKey);
+        when(apiKeyService.enable(10L, 100L))
+                .thenThrow(new IllegalArgumentException("Expired key cannot be enabled"));
+
+        mockMvc.perform(post("/api/admin/api-keys/10/enable")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
     private ApiKeyEntity createKey(Long id, Long appId, Long userId, String status) {
         ApiKeyEntity key = new ApiKeyEntity();
         key.setId(id);

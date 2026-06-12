@@ -21,9 +21,12 @@ public class ModelConfigAdminController {
     private static final Logger log = LoggerFactory.getLogger(ModelConfigAdminController.class);
 
     private final ModelConfigService modelConfigService;
+    private final ModelConfigCheckService modelConfigCheckService;
 
-    public ModelConfigAdminController(ModelConfigService modelConfigService) {
+    public ModelConfigAdminController(ModelConfigService modelConfigService,
+                                      ModelConfigCheckService modelConfigCheckService) {
         this.modelConfigService = modelConfigService;
+        this.modelConfigCheckService = modelConfigCheckService;
     }
 
     @PostMapping
@@ -63,12 +66,19 @@ public class ModelConfigAdminController {
 
     @GetMapping
     public ApiResponse<List<ModelConfigVO>> list(@RequestHeader("X-Admin-User-Id") Long userId,
-                                                  @RequestParam(required = false) String status) {
+                                                  @RequestParam(required = false) String status,
+                                                  @RequestParam(required = false) String capability) {
         validateAdminUserId(userId);
         if (status != null && !status.equals("ENABLED") && !status.equals("DISABLED")) {
             throw new BusinessException("INVALID_REQUEST", "Invalid status filter");
         }
-        List<ModelConfigVO> list = modelConfigService.listAdminConfigs(userId, status);
+        if (capability != null
+                && !capability.equalsIgnoreCase("CHAT")
+                && !capability.equalsIgnoreCase("EMBEDDING")) {
+            throw new BusinessException("INVALID_REQUEST",
+                    "Invalid capability filter. Must be CHAT or EMBEDDING.");
+        }
+        List<ModelConfigVO> list = modelConfigService.listAdminConfigs(userId, status, capability);
         return ApiResponse.success(list);
     }
 
@@ -83,7 +93,7 @@ public class ModelConfigAdminController {
 
     @PostMapping("/{id}/enable")
     public ApiResponse<ModelConfigVO> enable(@RequestHeader("X-Admin-User-Id") Long userId,
-                                               @PathVariable Long id) {
+                                              @PathVariable Long id) {
         validateAdminUserId(userId);
         requireOwnedConfig(id, userId);
         try {
@@ -92,6 +102,42 @@ public class ModelConfigAdminController {
         } catch (IllegalArgumentException e) {
             throw new BusinessException("INVALID_REQUEST", e.getMessage());
         }
+    }
+
+    @PostMapping("/check")
+    public ApiResponse<ModelConfigCheckResult> checkUnsaved(
+            @RequestHeader("X-Admin-User-Id") Long userId,
+            @RequestBody ModelConfigCheckRequest request) {
+        validateAdminUserId(userId);
+        try {
+            ModelConfigCheckResult result = modelConfigCheckService.checkUnsavedConfig(userId, request);
+            return ApiResponse.success(result);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("INVALID_REQUEST", e.getMessage());
+        }
+    }
+
+    @PostMapping("/{id}/check")
+    public ApiResponse<ModelConfigCheckResult> checkSaved(
+            @RequestHeader("X-Admin-User-Id") Long userId,
+            @PathVariable Long id,
+            @RequestBody ModelConfigCheckRequest request) {
+        validateAdminUserId(userId);
+        requireOwnedConfig(id, userId);
+        try {
+            ModelConfigCheckResult result = modelConfigCheckService.checkSavedConfig(userId, id, request);
+            return ApiResponse.success(result);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("INVALID_REQUEST", e.getMessage());
+        }
+    }
+
+    @GetMapping("/chat-capable")
+    public ApiResponse<List<ModelConfigVO>> listChatCapable(
+            @RequestHeader("X-Admin-User-Id") Long userId) {
+        validateAdminUserId(userId);
+        List<ModelConfigVO> list = modelConfigService.listEnabledChatCapableConfigs(userId);
+        return ApiResponse.success(list);
     }
 
     private ModelConfigEntity requireOwnedConfig(Long id, Long userId) {

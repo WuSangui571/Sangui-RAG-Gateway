@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CreateModelConfigDTO {
 
+    private String capability;
     private String name;
     @JsonProperty("provider_name")
     private String providerName;
@@ -17,6 +18,14 @@ public class CreateModelConfigDTO {
     private String embeddingModel;
     @JsonProperty("embedding_dimension")
     private Integer embeddingDimension;
+
+    public String getCapability() {
+        return capability;
+    }
+
+    public void setCapability(String capability) {
+        this.capability = capability;
+    }
 
     public String getName() {
         return name;

@@ -10,6 +10,7 @@ public class ModelConfigVO {
     private Long id;
     @JsonProperty("user_id")
     private Long userId;
+    private String capability;
     private String name;
     @JsonProperty("provider_name")
     private String providerName;
@@ -33,6 +34,7 @@ public class ModelConfigVO {
         ModelConfigVO vo = new ModelConfigVO();
         vo.id = entity.getId();
         vo.userId = entity.getUserId();
+        vo.capability = entity.getCapability();
         vo.name = entity.getName();
         vo.providerName = entity.getProviderName();
         vo.baseUrl = entity.getBaseUrl();
@@ -52,6 +54,10 @@ public class ModelConfigVO {
 
     public Long getUserId() {
         return userId;
+    }
+
+    public String getCapability() {
+        return capability;
     }
 
     public String getName() {

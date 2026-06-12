@@ -64,6 +64,27 @@ public class ApiKeyAdminController {
         return ApiResponse.success(ApiKeyVO.from(updated));
     }
 
+    @PostMapping("/{id}/enable")
+    public ApiResponse<ApiKeyVO> enableKey(
+            @RequestHeader("X-Admin-User-Id") Long userId,
+            @PathVariable Long id) {
+        validateUserId(userId);
+
+        ApiKeyEntity key = apiKeyService.findById(id);
+        if (key == null) {
+            throw new BusinessException("NOT_FOUND", "API key not found", HttpStatus.NOT_FOUND);
+        }
+        if (!key.getUserId().equals(userId)) {
+            throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+        }
+
+        ApiKeyEntity updated = apiKeyService.enable(id, userId);
+        if (updated == null) {
+            throw new BusinessException("NOT_FOUND", "API key not found", HttpStatus.NOT_FOUND);
+        }
+        return ApiResponse.success(ApiKeyVO.from(updated));
+    }
+
     private void validateUserId(Long userId) {
         if (userId == null || userId <= 0) {
             throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");

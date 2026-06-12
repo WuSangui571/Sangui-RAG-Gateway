@@ -1070,6 +1070,92 @@ mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest"
 mvn test
 ```
 
+### Implemented V0.3 Model Config Capability Split
+
+`rag_model_config` now has explicit capability semantics via migration `V9__model_config_capability_split.sql`:
+
+| Capability | Required fields | Optional fields | Binding behavior |
+|---|---|---|---|
+| `CHAT` | `chat_model` | `embedding_model`, `embedding_dimension` must be null | Eligible for app default model binding |
+| `EMBEDDING` | `embedding_model`; `embedding_dimension` may be null before successful check, but must be positive before enable/readiness/upload use | `chat_model` must be null/blank | Not eligible for app default model binding |
+| `CHAT_EMBEDDING` | `chat_model`, `embedding_model`; `embedding_dimension` may be null before successful check, but must be positive before embedding use | n/a | Eligible for app default model binding and embedding lookup |
+
+**Server-side invariants:**
+- App default model binding: requires `status=ENABLED`, chat capability (`CHAT` or `CHAT_EMBEDDING`), same-user, and non-blank `chat_model`.
+- Embedding lookup: requires `status=ENABLED`, embedding capability (`EMBEDDING` or `CHAT_EMBEDDING`), matching `embedding_model`, matching positive `embedding_dimension`.
+- Enabling an embedding-capable config without positive `embedding_dimension` returns `400 INVALID_REQUEST`.
+
+**Migration backfill:**
+- `chat_model` present + no embedding model -> `CHAT`
+- `chat_model` present + embedding model present -> `CHAT_EMBEDDING`
+- `chat_model` absent + embedding model present -> `EMBEDDING`
+- Fallback -> `CHAT`
+
+**Listing / Filtering:**
+```
+GET /api/admin/model-configs?status=ENABLED&capability=CHAT       -> CHAT + CHAT_EMBEDDING
+GET /api/admin/model-configs?status=ENABLED&capability=EMBEDDING  -> EMBEDDING + CHAT_EMBEDDING
+```
+
+Invalid capability filter returns `400 INVALID_REQUEST`. Chat-capable configs list accessible via `GET /api/admin/model-configs/chat-capable`.
+
+**Model Config Check API:**
+```
+POST /api/admin/model-configs/check       (unsaved check)
+POST /api/admin/model-configs/{id}/check  (saved check)
+```
+
+Check response:
+```json
+{
+  "capability": "EMBEDDING",
+  "overall_status": "SUCCESS | FAILED | PARTIAL",
+  "base_url_checked": true,
+  "chat": { "status": "SUCCESS", "model": "...", "message": "..." } | null,
+  "embedding": { "status": "SUCCESS", "model": "...", "actual_dimension": 1024, "configured_dimension": null, "message": "..." } | null
+}
+```
+
+Safety: check never returns raw provider body, embedding vectors, stack traces, plaintext keys, prompts, or assistant answers.
+
+**New/updated files:**
+- `V9__model_config_capability_split.sql`
+- `ModelConfigCapability.java` (enum: CHAT, EMBEDDING, CHAT_EMBEDDING with `isChatCapable()`/`isEmbeddingCapable()`)
+- `ModelConfigEntity.java` (+capability field)
+- `CreateModelConfigDTO.java` (+capability field)
+- `UpdateModelConfigDTO.java` (+capability field)
+- `ModelConfigVO.java` (+capability field)
+- `ModelConfigService.java` (capability-aware validation, list filtering, enable checks, `listEnabledChatCapableConfigs()`, `isChatCapable()`)
+- `ModelConfigAdminController.java` (capability filter, check endpoints, chat-capable list)
+- `ModelConfigCheckRequest.java` (check DTO)
+- `ModelConfigCheckResult.java` (check VO with ChatCheckResult/EmbeddingCheckResult)
+- `ModelConfigCheckService.java` (chat/embedding probe orchestration)
+- `EmbeddingClient.java` (+probe method)
+- `OpenAiCompatibleEmbeddingClient.java` (+probe impl, safe logging)
+- `EmbeddingProbeResult.java` (model + dimension only)
+- `AppService.java` (+chatCapable guard in `bindDefaultModelConfig`, readiness chatCapable check)
+- `AppAdminController.java` (+isChatCapable pre-check on binding)
+- `ModelConfigServiceTest.java`, `ModelConfigAdminControllerTest.java`, `AppServiceTest.java`, `AppAdminControllerTest.java` updated
+
+**Frontend changes:**
+- `model-config.ts`: capability, check types, nullable chat_model
+- `model-configs.ts`: capability filter param, check/chat-capable API functions
+- `ModelConfigPage.tsx`: capability radio selector, conditional fields, check modal with results, capability column/filter
+- `AppConfigPage.tsx`: uses `listChatCapableConfigs` instead of `listModelConfigs('ENABLED')`
+- `KnowledgeBasePage.tsx`: auto-fill from enabled embedding-capable configs
+- `dict.ts`: capability/check i18n keys
+
+**Run commands:**
+```bash
+cd backend
+mvn -q -DskipTests compile
+mvn -q "-Dtest=ModelConfigServiceTest,ModelConfigAdminControllerTest,ModelConfigCheckServiceTest" test
+mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test
+mvn -q "-Dtest=OpenAiCompatibleEmbeddingClientTest" test
+cmd /c npm run typecheck
+cmd /c npm run build
+```
+
 ### Implemented App API Key Admin API Baseline
 
 The backend app and app API key management baseline is implemented. It reuses the existing `rag_app` and `rag_api_key` schema from `V2__create_app_api_key_tables.sql`; no new migration is required for this baseline.
@@ -1095,6 +1181,7 @@ GET  /api/admin/apps/{id}
 POST /api/admin/apps/{appId}/api-keys
 GET  /api/admin/apps/{appId}/api-keys
 POST /api/admin/api-keys/{id}/disable
+POST /api/admin/api-keys/{id}/enable
 POST /api/admin/api-keys/{id}/revoke
 ```
 
@@ -1185,6 +1272,9 @@ Status behavior:
 - `ACTIVE -> DISABLED` is allowed.
 - `DISABLED -> DISABLED` is idempotent.
 - `REVOKED -> DISABLED` returns `400 INVALID_REQUEST`.
+- `DISABLED -> ACTIVE` is allowed through `POST /api/admin/api-keys/{id}/enable`.
+- `ACTIVE -> ACTIVE` is idempotent through the same enable endpoint.
+- `REVOKED|EXPIRED -> ACTIVE` through enable returns `400 INVALID_REQUEST`; revoked and expired keys are not restored by this action.
 - `ACTIVE|DISABLED -> REVOKED` is allowed and sets `revoked_at`.
 - `REVOKED -> REVOKED` is idempotent.
 
@@ -1218,6 +1308,7 @@ Validation matrix for this baseline:
 | Create key | Returns plaintext once and stores hash/prefix | Blank name, null body, past expiry, missing/cross-user app fail without persisting plaintext | `AppAdminControllerTest`, `ApiKeyServiceTest` |
 | List keys | Same-user app keys return prefix/status metadata only | Cross-user app returns 403 and does not enumerate keys | `AppAdminControllerTest`, `ApiKeyServiceTest` |
 | Disable key | Same-user active/disabled key returns safe `ApiKeyVO` with status `DISABLED` | Missing returns 404; cross-user returns 403; revoked returns 400 | `ApiKeyAdminControllerTest`, `ApiKeyServiceTest` |
+| Enable key | Same-user disabled/active key returns safe `ApiKeyVO` with status `ACTIVE` | Missing returns 404; cross-user returns 403; revoked/expired returns 400 | `ApiKeyAdminControllerTest`, `ApiKeyServiceTest` |
 | Revoke key | Same-user active/disabled key returns safe `ApiKeyVO` with `revoked_at` | Missing returns 404; cross-user returns 403 | `ApiKeyAdminControllerTest`, `ApiKeyServiceTest` |
 | Gateway auth | Active key for enabled app remains valid | Disabled, revoked, or expired keys return OpenAI-compatible `401 invalid_api_key` | `GatewayAuthFilterTest` |
 

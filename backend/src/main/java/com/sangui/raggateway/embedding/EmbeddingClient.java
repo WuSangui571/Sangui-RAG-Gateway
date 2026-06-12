@@ -6,4 +6,6 @@ public interface EmbeddingClient {
 
     List<float[]> embed(String baseUrl, String apiKey, String model,
                         List<String> inputs, int expectedDimension);
+
+    EmbeddingProbeResult probe(String baseUrl, String apiKey, String model);
 }

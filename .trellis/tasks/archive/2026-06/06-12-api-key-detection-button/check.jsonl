@@ -1,0 +1,31 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/tasks/06-12-api-key-detection-button/prd.md", "reason": "Task requirements, API contract, validation matrix, scope limits, and required tests"}
+{"file": ".trellis/tasks/06-12-api-key-detection-button/research.md", "reason": "Focused code research and implementation handoff notes"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product boundary, API key security, and gateway auth scope"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend package/layer ownership for apikey/admin code"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "API key status/storage and tenant-safe query rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin ApiResponse versus public OpenAI-compatible invalid_api_key boundary"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-safe key/auth logging rules"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend test and review expectations for API key auth"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend API key page/client/type organization"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "API key table action and explicit UI state rules"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "TypeScript API key status and secret-safe VO contract"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Page-local state and no secret persistence rules"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend UX/security completion checklist"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API/service/frontend/spec contract checklist"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing validity and action patterns"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "API key and error/observability security boundaries"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Public gateway error shape must remain unchanged"}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyAdminController.java", "reason": "Existing admin key disable/revoke endpoint pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyService.java", "reason": "Existing API key validity and lifecycle source of truth"}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/vo/ApiKeyVO.java", "reason": "Safe API key metadata VO pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java", "reason": "Public /v1 auth metadata checks and last_used boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Existing app enabled helper and readiness API key check"}
+{"file": "backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyServiceTest.java", "reason": "Service test patterns for validity and lifecycle"}
+{"file": "backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyAdminControllerTest.java", "reason": "Controller test patterns for admin envelope and secret omission"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java", "reason": "Regression boundary for public invalid_api_key behavior"}
+{"file": "frontend/src/types/api-key.ts", "reason": "Existing API key TypeScript status and VO contracts"}
+{"file": "frontend/src/api/api-keys.ts", "reason": "Typed frontend API key client pattern"}
+{"file": "frontend/src/pages/api-keys/ApiKeyPage.tsx", "reason": "Existing API key table actions and local state"}
+{"file": "frontend/src/app/i18n/dict.ts", "reason": "Dictionary-backed API key UI strings"}

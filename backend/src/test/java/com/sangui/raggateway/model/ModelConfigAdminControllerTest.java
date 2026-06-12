@@ -37,11 +37,14 @@ class ModelConfigAdminControllerTest {
     @Mock
     private ModelConfigService modelConfigService;
 
+    @Mock
+    private ModelConfigCheckService modelConfigCheckService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        ModelConfigAdminController controller = new ModelConfigAdminController(modelConfigService);
+        ModelConfigAdminController controller = new ModelConfigAdminController(modelConfigService, modelConfigCheckService);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -163,7 +166,7 @@ class ModelConfigAdminControllerTest {
 
     @Test
     void shouldListConfigsForUser() throws Exception {
-        when(modelConfigService.listAdminConfigs(100L, null))
+        when(modelConfigService.listAdminConfigs(100L, null, null))
                 .thenReturn(List.of(createTestVO(10L, 100L, "sk-...cret", "ENABLED")));
 
         mockMvc.perform(get("/api/admin/model-configs")
@@ -176,7 +179,7 @@ class ModelConfigAdminControllerTest {
 
     @Test
     void shouldListConfigsWithStatusFilter() throws Exception {
-        when(modelConfigService.listAdminConfigs(100L, "ENABLED"))
+        when(modelConfigService.listAdminConfigs(100L, "ENABLED", null))
                 .thenReturn(List.of(createTestVO(10L, 100L, "sk-...cret", "ENABLED")));
 
         mockMvc.perform(get("/api/admin/model-configs?status=ENABLED")
@@ -297,7 +300,7 @@ class ModelConfigAdminControllerTest {
 
     @Test
     void shouldNotContainPlaintextOrEncryptedKeyInAnyResponse() throws Exception {
-        when(modelConfigService.listAdminConfigs(100L, null))
+        when(modelConfigService.listAdminConfigs(100L, null, null))
                 .thenReturn(List.of(createTestVO(10L, 100L, "sk-...cret", "ENABLED")));
 
         mockMvc.perform(get("/api/admin/model-configs")

@@ -1,0 +1,25 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-11-v0-3-model-config-capability-split\\prd.md", "reason": "Task requirements, API payloads, validation matrix, acceptance criteria, and boundaries"}
+{"file": ".trellis\\tasks\\06-11-v0-3-model-config-capability-split\\research.md", "reason": "Focused code research and likely modification/test map"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, model config baseline, readiness and safe evidence contracts"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API/DB/DTO/frontend/security checklist"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "rag_model_config schema, app binding, embedding dimension, migration rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin model config/app binding error codes and safe response shapes"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe logging and forbidden fields for provider checks and embedding operations"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend testing expectations for model config, embedding, readiness, gateway regressions"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend API type unions and secret-safe response modeling"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Admin form and status component behavior"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Local state and secret handling boundaries"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend validation, UX, and build/typecheck completion rules"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Upstream timeout/error classification for chat and embedding checks"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Embedding lookup and no silent fallback boundary"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Upload failure behavior and embedding dimension rules"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Tenant, secret, prompt, vector, and provider-body safety boundary"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigService.java", "reason": "Existing model config validation, lookup, key preservation, embedding matching pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppService.java", "reason": "Existing default model binding and readiness checks"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\embedding\\OpenAiCompatibleEmbeddingClient.java", "reason": "Existing embedding URL normalization, timeout, validation, and safe logging pattern"}
+{"file": "frontend\\src\\pages\\model-configs\\ModelConfigPage.tsx", "reason": "Existing model config form and table UX to split by capability"}
+{"file": "frontend\\src\\pages\\apps\\AppConfigPage.tsx", "reason": "Existing app default model binding modal to filter chat-capable configs"}
+{"file": "frontend\\src\\types\\model-config.ts", "reason": "Frontend model config DTO/VO types to update with capability/check contracts"}

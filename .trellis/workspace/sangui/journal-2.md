@@ -840,3 +840,188 @@ Recorded V0.2 RC tag verification closeout after manual release publication and 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 49: V0.3 Model Config Capability Split and Checks
+
+**Date**: 2026-06-11
+**Task**: V0.3 Model Config Capability Split and Checks
+**Branch**: `feature/v0-3-model-config-capability-split`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+**Commits**:
+- `e9dfe735` `feat:?????????????`
+- `bdf56ab2` `fix:model-config-check-service-injection`
+
+**??????**:
+- Backend model config: ?? `ModelConfigCapability`??? `CHAT` / `EMBEDDING` / `CHAT_EMBEDDING` ??????? create/update/list/enable/check ???
+- Backend app binding/readiness: app ????????? enabled chat-capable config?readiness ? chat/embedding ?????????
+- Backend embedding check: ????? model config check service/request/result??? chat ??? embedding dimension probe???? raw provider body?key?prompt???? answer?
+- Database: ?? `V9__model_config_capability_split.sql`?? `rag_model_config` ?? capability ??? chat_model nullable ???
+- Frontend admin: Model Config ???? capability ????????check ??? embedding dimension ???App ?????? chat-capable configs?KB ???? embedding-capable config ??????????
+- Specs: ?? project/backend/frontend spec??? capability split?schema?????????????
+
+**????**:
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/backend/error-handling.md`
+- `.trellis/spec/frontend/type-safety.md`
+- `backend/src/main/resources/db/migration/V9__model_config_capability_split.sql`
+- `backend/src/main/java/com/sangui/raggateway/model/*`
+- `backend/src/main/java/com/sangui/raggateway/app/AppService.java`
+- `backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java`
+- `backend/src/main/java/com/sangui/raggateway/embedding/*`
+- `backend/src/test/java/com/sangui/raggateway/model/*`
+- `backend/src/test/java/com/sangui/raggateway/app/*`
+- `frontend/src/types/model-config.ts`
+- `frontend/src/api/model-configs.ts`
+- `frontend/src/pages/model-configs/ModelConfigPage.tsx`
+- `frontend/src/pages/apps/AppConfigPage.tsx`
+- `frontend/src/pages/knowledge/KnowledgeBasePage.tsx`
+- `frontend/src/app/i18n/dict.ts`
+
+**???????**:
+- `cd backend; mvn -q -DskipTests compile` ? ???
+- `cd backend; mvn -q "-Dtest=ModelConfigServiceTest,ModelConfigAdminControllerTest" test` ? ???
+- `cd backend; mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test` ? ???
+- `cd backend; mvn -q "-Dtest=DocumentServiceTest,RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test` ? ???
+- `cd backend; mvn test` ? ???468 tests passed?
+- `cd frontend; cmd /c npm run typecheck` ? ???
+- `cd frontend; cmd /c npm run build` ? ???
+- `git diff --check HEAD` ? ???
+- `docker compose --env-file .env -f deploy/docker-compose.yml up -d --build` ? ???`sangui-backend` reached healthy and `sangui-frontend` started?
+- `docker compose --env-file .env -f deploy/docker-compose.yml ps` ? backend/postgres/redis healthy?frontend up?
+- `curl.exe -sS http://localhost:8080/api/health` ? ?? `status=UP`?
+- `curl.exe -sS http://localhost:3000/api/health` ? frontend proxy ?? `status=UP`?
+
+**?????**:
+- Task `06-11-v0-3-model-config-capability-split` ????
+- ?????????????
+- Codex closeout ??????? Docker runtime ?????`ModelConfigCheckService` ?????????????? `@Autowired`?Spring ???????? backend ????????????? health check ????
+- ????? provider catalog??? `/v1/embeddings`?fallback routing?????/?? provider raw body?prompt?answer?embedding vector?API key ? chunk content?
+- ???? provider check ?????? upstream key/base URL/model ??????? smoke?
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e9dfe735` | (see git log) |
+| `bdf56ab2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 50: V0.3 admin request diagnostics UX
+
+**Date**: 2026-06-11
+**Task**: V0.3 admin request diagnostics UX
+**Branch**: `feature/v0-3-admin-request-diagnostics-ux`
+
+### Summary
+
+Recorded completed V0.3 admin request diagnostics UX after manual acceptance and commit.
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | e4195c1f feat: admin request diagnostics UX |
+| Main modules | Frontend request-log detail drawer, diagnostics mapper, diagnostics panel, typed i18n dictionary, request-log diagnostic boundary type |
+| Updated files | frontend/src/app/i18n/dict.ts; frontend/src/components/domain/RequestLogDetailDrawer.tsx; frontend/src/components/domain/RequestDiagnosticsPanel.tsx; frontend/src/components/domain/requestDiagnostics.ts; frontend/src/types/request-log.ts |
+| Validation | cd frontend && cmd /c npm run typecheck: passed; cd frontend && cmd /c npm run build: passed with existing Vite large chunk warning; cd frontend && cmd /c npm run test:visual: passed 3 Chromium tests; git diff --check: no whitespace errors, only LF/CRLF working-copy warnings |
+| Result | Request-log detail now shows a safe diagnostics panel derived from existing request-log fields and app readiness checks. Successful requests with hit chunks do not show diagnostics; successful no-hit requests show retrieval diagnostics. Readiness load failure is visible but does not block request-log detail rendering. |
+| Boundaries | Frontend-only change. No backend API, database schema, Docker/infra, or public /v1 compatibility changes. Diagnostics use safe fields only and do not expose prompts, answers, chunk content, provider bodies, keys, stack traces, embeddings, or filesystem paths. |
+| Manual acceptance | User manually tested and committed before record-session. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e4195c1f` | (see git log) |
+
+### Testing
+
+- [OK] `cd frontend && cmd /c npm run typecheck`
+- [OK] `cd frontend && cmd /c npm run build` (passed with existing Vite large chunk warning)
+- [OK] `cd frontend && cmd /c npm run test:visual` (3 Chromium tests passed)
+- [OK] `git diff --check` (no whitespace errors; LF/CRLF working-copy warnings only)
+- [OK] User manually tested before commit
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 50: API Key lifecycle restore and model config check merge
+
+**Date**: 2026-06-12
+**Task**: API Key lifecycle restore and model config check merge
+**Branch**: `codex/api-key-detection`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Code commits | `1e66997e` merge:?????????API Key??; `72af3218` merge model config capability split; `a9011d2c` fix:???? API Key ????? |
+| Main modules | API Key lifecycle Admin UI/API; model config capability split and model config check UI/API; admin request diagnostics frontend panel |
+| Product decision | Removed the API Key detect endpoint/button because API key usability is already represented by ACTIVE/DISABLED/REVOKED/EXPIRED plus app status, and the more valuable real connectivity check belongs on the model config page. |
+| Updated backend | Removed `POST /api/admin/api-keys/{id}/detect` and `ApiKeyDetectionVO`; kept disable/enable/revoke controller behavior; retained model config saved/unsaved check endpoints from the capability split merge. |
+| Updated frontend | Removed API Key row-level detect button/result state/types/client API/i18n; kept disabled-key restore action; model config page now supports capability selection (`CHAT`, `EMBEDDING`, `CHAT_EMBEDDING`) and saved/unsaved checks. |
+| Trellis/spec | Archived `06-12-api-key-detection-button`; removed API Key detect spec sections; resolved journal/index conflicts from merging prior completed branches. |
+| Validation | `mvn -q "-Dtest=ApiKeyAdminControllerTest,ApiKeyServiceTest" test`: passed; `mvn -q "-Dtest=ModelConfigServiceTest,ModelConfigAdminControllerTest,ModelConfigCheckServiceTest,AppServiceTest,AppAdminControllerTest" test`: passed; `mvn -q -DskipTests compile`: passed; `cmd /c npm run typecheck`: passed; `cmd /c npm run build`: passed with existing Vite large chunk warning; `git diff --cached --check`: passed before commit; human manual test passed before record-session. |
+| Result | Current branch has the model config capability/check work merged, API Key restore behavior retained, API Key detect removed, and request diagnostics UX merged. |
+| Boundaries | No new DB/API changes were introduced during record-session. No secrets, raw prompts, raw answers, provider bodies, Authorization headers, key hashes, embeddings, or chunk content were recorded. |
+
+**Manual Acceptance**:
+- User manually tested the branch and committed before record-session.
+- User confirmed the API Key detect UX should be removed and model config checks are the desired detection surface.
+
+**Next Notes**:
+- Do not continue API Key detect as a feature.
+- Future model config cleanup should remove `CHAT_EMBEDDING` from creation and migrate/normalize legacy mixed configs deliberately in a new task.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1e66997e` | (see git log) |
+| `72af3218` | (see git log) |
+| `a9011d2c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

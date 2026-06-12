@@ -1,0 +1,34 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product boundary plus implemented request-log/readiness/smoke safe evidence contracts"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend file placement for request-log pages and domain components"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Admin component UX and safe request-log summary rules"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Typed request-log/readiness API contracts and forbidden fields"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Keep request-log/readiness server state local and non-persistent"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Typed API access and visible error handling conventions"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend validation, safe observability, and completion checks"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Gateway/admin error code families and request-log/readiness error matrices"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe request-log fields and forbidden observability fields"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Request-log schema and tenant-scoped hit chunk query contracts"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required request-log tests if backend changes"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Upstream timeout/error classification and request-log failure boundary"}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "Retrieval hit_chunk_ids and no-hit diagnostics boundary"}
+{"file": ".trellis/spec/rag/prompt-context-policy.md", "reason": "Prompt/context secrecy and no-hit policy"}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "KB/document status transitions used by readiness diagnostics"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Tenant, prompt, chunk, key, provider body, and evidence safety boundaries"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API/payload/error/validation planning checklist"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing request-log/readiness UI and avoid duplicate logic"}
+{"file": "frontend/src/types/request-log.ts", "reason": "Existing frontend safe request-log types to extend carefully"}
+{"file": "frontend/src/api/request-logs.ts", "reason": "Existing typed request-log API client pattern"}
+{"file": "frontend/src/components/domain/RequestLogDetailDrawer.tsx", "reason": "Existing detail drawer extension point for diagnostics panel"}
+{"file": "frontend/src/pages/request-logs/RequestLogListPage.tsx", "reason": "Existing request-log page filters/list/detail flow"}
+{"file": "frontend/src/components/domain/HitChunksPanel.tsx", "reason": "Existing safe hit chunk rendering pattern"}
+{"file": "frontend/src/api/apps.ts", "reason": "Existing readiness API client used for diagnostic context"}
+{"file": "frontend/src/types/app.ts", "reason": "Existing readiness type contract"}
+{"file": "frontend/src/app/i18n/dict.ts", "reason": "Typed i18n dictionary requiring zh-CN/en-US key parity"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java", "reason": "Backend request-log tenant validation and endpoint contract if backend changes"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Backend request-log VO conversion and hit chunk summary contract if backend changes"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogVO.java", "reason": "Backend safe request-log list/detail fields"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/vo/AppReadinessVO.java", "reason": "Backend readiness VO safe fields"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/vo/AppReadinessCheckVO.java", "reason": "Backend readiness check safe fields"}

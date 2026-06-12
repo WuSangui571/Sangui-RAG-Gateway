@@ -102,6 +102,16 @@ The admin model config endpoints (`/api/admin/model-configs/**`) and app binding
 | App belongs to different user | 403 | `FORBIDDEN` | App exists but owned by another user. |
 | Model config disabled for binding | 400 | `MODEL_CONFIG_NOT_READY` | Config exists but is not enabled. |
 | Invalid status filter | 400 | `INVALID_REQUEST` | Only `ENABLED` or `DISABLED` accepted. |
+| Invalid capability filter | 400 | `INVALID_REQUEST` | Only `CHAT` or `EMBEDDING` accepted. |
+| Invalid capability literal on create/update | 400 | `INVALID_REQUEST` | Must be CHAT, EMBEDDING, or CHAT_EMBEDDING. |
+| Create CHAT without chat_model | 400 | `INVALID_REQUEST` | Capability field mismatch. |
+| Create EMBEDDING without embedding_model | 400 | `INVALID_REQUEST` | Capability field mismatch. |
+| Create EMBEDDING with chat_model | 400 | `INVALID_REQUEST` | chat_model must be null for EMBEDDING. |
+| Enable embedding-capable without positive dimension | 400 | `INVALID_REQUEST` | embedding_dimension required before enabling. |
+| Bind embedding-only config as app default | 400 | `MODEL_CONFIG_NOT_READY` | Only CHAT/CHAT_EMBEDDING configs eligible. |
+| Missing capability on create | 400 | `INVALID_REQUEST` | capability is required. |
+| Check: missing required fields (unsaved) | 400 | `INVALID_REQUEST` | capability, base_url, api_key, and capability-specific model fields required. |
+| Check: cross-user saved config | 403 | `FORBIDDEN` | No provider call. |
 
 `BusinessException` now supports an optional `HttpStatus` parameter. The default constructor (code + message) returns 400 BAD_REQUEST. The extended constructor (code + message + httpStatus) returns the specified status. This allows 403 FORBIDDEN and 404 NOT_FOUND responses while maintaining backward compatibility with all existing callers.
 
@@ -122,6 +132,7 @@ GET  /api/admin/apps/{id}
 POST /api/admin/apps/{appId}/api-keys
 GET  /api/admin/apps/{appId}/api-keys
 POST /api/admin/api-keys/{id}/disable
+POST /api/admin/api-keys/{id}/enable
 POST /api/admin/api-keys/{id}/revoke
 ```
 
@@ -143,6 +154,8 @@ Validation and error matrix:
 | Key id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`. |
 | Disable revoked key | 400 | `INVALID_REQUEST` | Revoked is terminal for disable. |
 | Disable active/disabled key | 200 | `OK` | Response omits `key` and `key_hash`. |
+| Enable disabled/active key | 200 | `OK` | Status becomes or remains `ACTIVE`; response omits `key` and `key_hash`. |
+| Enable revoked/expired key | 400 | `INVALID_REQUEST` | Revoked and expired keys are not restored by this action. |
 | Revoke active/disabled/revoked key | 200 | `OK` | Response omits `key` and `key_hash`; revoked rows keep or set `revoked_at`. |
 
 Secret-safe app API key responses:
