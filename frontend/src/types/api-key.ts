@@ -22,3 +22,13 @@ export interface CreateApiKeyDTO {
   name: string
   expires_at: string | null
 }
+
+export interface ApiKeyDetectionVO {
+  key_id: number
+  app_id: number
+  usable: boolean
+  status: ApiKeyStatus
+  app_enabled: boolean
+  expires_at: string | null
+  checked_at: string
+}

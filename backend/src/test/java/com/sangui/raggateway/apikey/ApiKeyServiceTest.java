@@ -237,6 +237,57 @@ class ApiKeyServiceTest {
     }
 
     @Test
+    void shouldEnableDisabledKey() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.DISABLED.name());
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        ApiKeyEntity result = apiKeyService.enable(10L, 100L);
+
+        assertThat(result.getStatus()).isEqualTo(ApiKeyStatus.ACTIVE.name());
+        verify(apiKeyMapper).updateById(key);
+    }
+
+    @Test
+    void shouldEnableAlreadyActiveKey() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.ACTIVE.name());
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        ApiKeyEntity result = apiKeyService.enable(10L, 100L);
+
+        assertThat(result.getStatus()).isEqualTo(ApiKeyStatus.ACTIVE.name());
+        verify(apiKeyMapper).updateById(key);
+    }
+
+    @Test
+    void shouldRejectEnableOfRevokedKey() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.REVOKED.name());
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        assertThatThrownBy(() -> apiKeyService.enable(10L, 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Revoked key cannot be enabled");
+    }
+
+    @Test
+    void shouldRejectEnableOfExpiredKey() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.EXPIRED.name());
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        assertThatThrownBy(() -> apiKeyService.enable(10L, 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Expired key cannot be enabled");
+    }
+
+    @Test
+    void shouldReturnNullForEnableOfNonExistentKey() {
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        ApiKeyEntity result = apiKeyService.enable(999L, 100L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
     void shouldRevokeActiveKey() {
         ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.ACTIVE.name());
         when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);

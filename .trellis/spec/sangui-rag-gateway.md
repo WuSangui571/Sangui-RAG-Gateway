@@ -1095,6 +1095,7 @@ GET  /api/admin/apps/{id}
 POST /api/admin/apps/{appId}/api-keys
 GET  /api/admin/apps/{appId}/api-keys
 POST /api/admin/api-keys/{id}/disable
+POST /api/admin/api-keys/{id}/enable
 POST /api/admin/api-keys/{id}/revoke
 ```
 
@@ -1185,6 +1186,9 @@ Status behavior:
 - `ACTIVE -> DISABLED` is allowed.
 - `DISABLED -> DISABLED` is idempotent.
 - `REVOKED -> DISABLED` returns `400 INVALID_REQUEST`.
+- `DISABLED -> ACTIVE` is allowed through `POST /api/admin/api-keys/{id}/enable`.
+- `ACTIVE -> ACTIVE` is idempotent through the same enable endpoint.
+- `REVOKED|EXPIRED -> ACTIVE` through enable returns `400 INVALID_REQUEST`; revoked and expired keys are not restored by this action.
 - `ACTIVE|DISABLED -> REVOKED` is allowed and sets `revoked_at`.
 - `REVOKED -> REVOKED` is idempotent.
 
@@ -1218,6 +1222,7 @@ Validation matrix for this baseline:
 | Create key | Returns plaintext once and stores hash/prefix | Blank name, null body, past expiry, missing/cross-user app fail without persisting plaintext | `AppAdminControllerTest`, `ApiKeyServiceTest` |
 | List keys | Same-user app keys return prefix/status metadata only | Cross-user app returns 403 and does not enumerate keys | `AppAdminControllerTest`, `ApiKeyServiceTest` |
 | Disable key | Same-user active/disabled key returns safe `ApiKeyVO` with status `DISABLED` | Missing returns 404; cross-user returns 403; revoked returns 400 | `ApiKeyAdminControllerTest`, `ApiKeyServiceTest` |
+| Enable key | Same-user disabled/active key returns safe `ApiKeyVO` with status `ACTIVE` | Missing returns 404; cross-user returns 403; revoked/expired returns 400 | `ApiKeyAdminControllerTest`, `ApiKeyServiceTest` |
 | Revoke key | Same-user active/disabled key returns safe `ApiKeyVO` with `revoked_at` | Missing returns 404; cross-user returns 403 | `ApiKeyAdminControllerTest`, `ApiKeyServiceTest` |
 | Gateway auth | Active key for enabled app remains valid | Disabled, revoked, or expired keys return OpenAI-compatible `401 invalid_api_key` | `GatewayAuthFilterTest` |
 

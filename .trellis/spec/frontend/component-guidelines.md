@@ -93,6 +93,20 @@ Tables should support:
 
 Request log tables should show safe summaries only, not full prompts.
 
+## API Key Table Detect Action
+
+The API key management page includes a row-level detect action for each key:
+
+- Detect button calls `POST /api/admin/api-keys/{id}/detect` with admin user ID header.
+- `DISABLED` rows show the restore action, which calls `POST /api/admin/api-keys/{id}/enable`.
+- Row-level loading state is shown only on the detect button for the row being detected (no global loading spinner).
+- Detection result (`usable`/`unusable`) is shown as an inline Tag per row and is not persisted globally or in local storage.
+- `REVOKED` rows display a terminal "Revoked" tag directly; no detect button is rendered.
+- Detection result is cleared on table refresh (`fetchKeys`) and when the active app selection changes.
+- No plaintext key, key hash, or secret fields are stored in detection UI state.
+- TypeScript types (`ApiKeyDetectionVO`) match backend snake_case fields: `key_id`, `app_id`, `usable`, `status`, `app_enabled`, `expires_at`, `checked_at`.
+- Actions column is widened to accommodate the extra detect button and inline result tag.
+
 ## Layout
 
 Use an app shell with navigation for the admin console. Keep pages task-oriented:

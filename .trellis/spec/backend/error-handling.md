@@ -122,6 +122,7 @@ GET  /api/admin/apps/{id}
 POST /api/admin/apps/{appId}/api-keys
 GET  /api/admin/apps/{appId}/api-keys
 POST /api/admin/api-keys/{id}/disable
+POST /api/admin/api-keys/{id}/enable
 POST /api/admin/api-keys/{id}/revoke
 ```
 
@@ -143,6 +144,8 @@ Validation and error matrix:
 | Key id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`. |
 | Disable revoked key | 400 | `INVALID_REQUEST` | Revoked is terminal for disable. |
 | Disable active/disabled key | 200 | `OK` | Response omits `key` and `key_hash`. |
+| Enable disabled/active key | 200 | `OK` | Status becomes or remains `ACTIVE`; response omits `key` and `key_hash`. |
+| Enable revoked/expired key | 400 | `INVALID_REQUEST` | Revoked and expired keys are not restored by this action. |
 | Revoke active/disabled/revoked key | 200 | `OK` | Response omits `key` and `key_hash`; revoked rows keep or set `revoked_at`. |
 
 Secret-safe app API key responses:
@@ -505,3 +508,31 @@ The request log observability endpoints (`/api/admin/apps/{appId}/request-logs/*
 | `hit_chunk_ids` null/empty | 200 | `OK` | Empty chunk summary list. |
 
 Secret-safe error responses: error messages never include raw API keys, upstream keys, chunk content, embedding vectors, or stack traces. Cross-user access failures use generic `Access denied` to avoid information leakage.
+
+## Admin API Key Detection Endpoint
+
+Endpoint: `POST /api/admin/api-keys/{id}/detect` with `X-Admin-User-Id` header.
+
+Detection returns safe key metadata only — no plaintext key, key hash, Authorization, or any secret fields. It does not update `last_used_at`.
+
+Response fields: `key_id`, `app_id`, `usable`, `status`, `app_enabled`, `expires_at`, `checked_at`.
+
+Error matrix:
+
+| Scenario | HTTP | Code | Required behavior |
+|---|---|---|---|
+| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException`. |
+| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException`. |
+| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated in controller; no key query. |
+| Key id not found | 404 | `NOT_FOUND` | Safe admin envelope. |
+| Key id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no detection metadata. |
+| Key ACTIVE + unexpired + app ENABLED | 200 | `OK` | `usable=true`, safe metadata only. |
+| Key DISABLED | 200 | `OK` | `usable=false`. |
+| Key REVOKED | 200 | `OK` | `usable=false`. |
+| Key expired (persisted ACTIVE but past `expires_at`) | 200 | `OK` | `usable=false`, `status` reflects persisted status. |
+| App DISABLED | 200 | `OK` | `usable=false`, `app_enabled=false`. |
+| App missing or belongs to another user | 200 | `OK` | `usable=false`, `app_enabled=false`; inconsistent metadata must not be treated as usable. |
+
+Public `/v1/*` gateway auth remains unchanged — all invalid key cases (unknown, disabled, revoked, expired, disabled-app) return OpenAI-compatible `{"error":{"message":"Invalid API key.","type":"invalid_request_error","code":"invalid_api_key"}}` with HTTP 401.
+
+Detection uses `ApiResponse` admin envelope, not OpenAI-compatible error shape. Detection must not call `updateLastUsed()` and must not expose `key`, `key_hash`, or `authorization` in any response field. `app_enabled` may be true only when the resolved app exists, belongs to the same `user_id` as the detected key/admin caller, and satisfies `AppService.isEnabled(app)`.
