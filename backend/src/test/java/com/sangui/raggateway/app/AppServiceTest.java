@@ -644,6 +644,8 @@ class AppServiceTest {
 
         AppReadinessCheckVO keyCheck = findCheck(result, "active_api_key");
         assertThat(keyCheck.getStatus()).isEqualTo("DISABLED");
+        assertThat(keyCheck.getMessage()).contains("Enable a disabled key");
+        assertThat(keyCheck.getMessage()).contains("create a new active API key");
     }
 
     @Test

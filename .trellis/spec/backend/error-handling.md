@@ -122,6 +122,7 @@ GET  /api/admin/apps/{id}
 POST /api/admin/apps/{appId}/api-keys
 GET  /api/admin/apps/{appId}/api-keys
 POST /api/admin/api-keys/{id}/disable
+POST /api/admin/api-keys/{id}/enable
 POST /api/admin/api-keys/{id}/revoke
 ```
 
@@ -139,17 +140,47 @@ Validation and error matrix:
 | App id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`. |
 | Create key blank `name` | 400 | `INVALID_REQUEST` | No plaintext key or hash returned. |
 | Create key `expires_at` is not in the future | 400 | `INVALID_REQUEST` | No key inserted. |
-| Key id does not exist | 404 | `NOT_FOUND` | Applies to disable/revoke. |
+| Key id does not exist | 404 | `NOT_FOUND` | Applies to enable/disable/revoke. |
 | Key id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`. |
 | Disable revoked key | 400 | `INVALID_REQUEST` | Revoked is terminal for disable. |
+| Disable expired key | 400 | `INVALID_REQUEST` | Expired keys cannot be disabled. |
 | Disable active/disabled key | 200 | `OK` | Response omits `key` and `key_hash`. |
-| Revoke active/disabled/revoked key | 200 | `OK` | Response omits `key` and `key_hash`; revoked rows keep or set `revoked_at`. |
+| Enable disabled key | 200 | `OK` | Response status ACTIVE; no secret fields. |
+| Enable active key | 400 | `INVALID_REQUEST` | Only DISABLED → ACTIVE allowed. |
+| Enable revoked key | 400 | `INVALID_REQUEST` | Terminal; `revoked_at` remains. |
+| Enable expired key | 400 | `INVALID_REQUEST` | Expired keys cannot be silently revived. |
+| Revoke active/disabled/expired/revoked key | 200 | `OK` | Response omits `key` and `key_hash`; revoked rows keep or set `revoked_at`. |
 
 Secret-safe app API key responses:
 
 - `key` appears only in `ApiKeyCreateVO` from `POST /api/admin/apps/{appId}/api-keys`.
 - `key_hash` is never returned by Admin APIs.
 - Gateway failures for disabled, revoked, expired, unknown, or malformed app keys still use OpenAI-compatible `401 invalid_api_key`; they must not use the admin envelope.
+- `DISABLED` is reversible via `POST /api/admin/api-keys/{id}/enable`; `REVOKED` is terminal and cannot be undone.
+
+API key lifecycle contract:
+
+| Action endpoint | Request body | Allowed transition | Forbidden transition | Response |
+|---|---|---|---|---|
+| `POST /api/admin/api-keys/{id}/disable` | none | `ACTIVE -> DISABLED`; `DISABLED -> DISABLED` may remain idempotent | `REVOKED`, `EXPIRED` | `ApiResponse<ApiKeyVO>` without `key` or `key_hash` |
+| `POST /api/admin/api-keys/{id}/enable` | none | `DISABLED -> ACTIVE` | `ACTIVE`, `REVOKED`, `EXPIRED` | `ApiResponse<ApiKeyVO>` without `key` or `key_hash` |
+| `POST /api/admin/api-keys/{id}/revoke` | none | `ACTIVE/DISABLED/EXPIRED -> REVOKED`; `REVOKED -> REVOKED` remains idempotent | n/a | `ApiResponse<ApiKeyVO>` without `key` or `key_hash` |
+
+Good/base/bad cases:
+
+| Case | Expected result |
+|---|---|
+| Good | A disabled key can be enabled and then authenticates on `/v1/*` only when the owning app is enabled and the key is not expired. |
+| Base | Existing create/list/disable/revoke responses keep their admin envelope and secret-safe field set. |
+| Bad | A revoked or expired key can be enabled, `revoked_at` is cleared by enable, or any lifecycle response exposes `key`, `key_hash`, `Authorization`, `api_key_encrypted`, or `stack_trace`. |
+
+Required tests after changing this lifecycle:
+
+```bash
+cd backend
+mvn -q "-Dtest=ApiKeyServiceTest,ApiKeyAdminControllerTest,GatewayAuthFilterTest,AppServiceTest" test
+mvn test
+```
 
 ## Gateway API Key Auth Baseline
 

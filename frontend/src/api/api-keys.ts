@@ -24,6 +24,13 @@ export function disableApiKey(
   return apiPost<ApiKeyVO>(`/admin/api-keys/${id}/disable`, undefined, adminUserId)
 }
 
+export function enableApiKey(
+  id: number,
+  adminUserId: number,
+): Promise<ApiResponse<ApiKeyVO>> {
+  return apiPost<ApiKeyVO>(`/admin/api-keys/${id}/enable`, undefined, adminUserId)
+}
+
 export function revokeApiKey(
   id: number,
   adminUserId: number,

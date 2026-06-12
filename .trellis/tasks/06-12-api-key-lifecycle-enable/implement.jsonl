@@ -1,0 +1,29 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-12-api-key-lifecycle-enable\\prd.md", "reason": "Primary PRD with API key lifecycle state machine, error matrix, scope limits, and required tests."}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, API key storage rules, gateway auth flow, and secret safety baseline."}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Existing rag_api_key schema, status enum, revoked_at, tenant queries, and no-migration expectation."}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin API key error matrix, gateway invalid_api_key behavior, and lifecycle response safety."}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe logging rules for API keys and admin lifecycle actions."}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend targeted test and regression expectations for API key auth and admin flows."}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend ApiKeyStatus union and secret response typing rules."}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Admin table action behavior, status tags, modal/action semantics."}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Secret state and mutation refresh rules for API key workflows."}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend checks, visual smoke expectations, status clarity, and secret safety."}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Server-state mutation and error handling pattern for page-level API calls."}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Security boundary covering API key handling, error secrecy, and forbidden fields."}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API/DTO/DB/frontend/status contract planning guide."}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Search-first and no duplicated lifecycle logic guidance."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyService.java", "reason": "Existing source of truth for create, isValid, disable, revoke, and future enable lifecycle rule."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminController.java", "reason": "Existing admin lifecycle action controller and ownership pre-check pattern."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppService.java", "reason": "Readiness active_api_key check and disabled-key guidance message."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyServiceTest.java", "reason": "Existing lifecycle unit tests to extend for enable and illegal transitions."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminControllerTest.java", "reason": "Existing admin controller tests to extend for enable endpoint and secret safety."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilterTest.java", "reason": "Gateway auth invalid_key tests for disabled/revoked and valid active path."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppServiceTest.java", "reason": "Readiness tests around active_api_key and disabled-only keys."}
+{"file": "frontend\\src\\api\\api-keys.ts", "reason": "Existing typed API client for list/create/disable/revoke; add enable here."}
+{"file": "frontend\\src\\types\\api-key.ts", "reason": "Existing ApiKeyStatus union and VO contract."}
+{"file": "frontend\\src\\pages\\api-keys\\ApiKeyPage.tsx", "reason": "Existing API key table/actions/modals; add enable action and visibility rules."}
+{"file": "frontend\\src\\app\\i18n\\dict.ts", "reason": "Typed bilingual dictionary; add enable/restore text in zh-CN and en-US."}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V2__create_app_api_key_tables.sql", "reason": "Confirms existing status and revoked_at columns; likely no migration required."}

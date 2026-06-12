@@ -228,12 +228,102 @@ class ApiKeyServiceTest {
     }
 
     @Test
+    void shouldRejectDisableOfExpiredKey() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.EXPIRED.name());
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        assertThatThrownBy(() -> apiKeyService.disable(10L, 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Expired key cannot be disabled");
+    }
+
+    @Test
     void shouldReturnNullForDisableOfNonExistentKey() {
         when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
 
         ApiKeyEntity result = apiKeyService.disable(999L, 100L);
 
         assertThat(result).isNull();
+    }
+
+    // ---- Enable ----
+
+    @Test
+    void shouldEnableDisabledKey() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.DISABLED.name());
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        ApiKeyEntity result = apiKeyService.enable(10L, 100L);
+
+        assertThat(result.getStatus()).isEqualTo(ApiKeyStatus.ACTIVE.name());
+        verify(apiKeyMapper).updateById(key);
+    }
+
+    @Test
+    void shouldRejectEnableOfActiveKey() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.ACTIVE.name());
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        assertThatThrownBy(() -> apiKeyService.enable(10L, 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Only disabled keys can be enabled");
+    }
+
+    @Test
+    void shouldRejectEnableOfRevokedKey() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.REVOKED.name());
+        key.setRevokedAt(LocalDateTime.now().minusDays(1));
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        assertThatThrownBy(() -> apiKeyService.enable(10L, 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Only disabled keys can be enabled");
+        assertThat(key.getRevokedAt()).isNotNull();
+    }
+
+    @Test
+    void shouldRejectEnableOfExpiredKey() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.EXPIRED.name());
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        assertThatThrownBy(() -> apiKeyService.enable(10L, 100L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Only disabled keys can be enabled");
+    }
+
+    @Test
+    void shouldReturnNullForEnableOfNonExistentKey() {
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        ApiKeyEntity result = apiKeyService.enable(999L, 100L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldUpdateTimestampOnEnable() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.DISABLED.name());
+        LocalDateTime before = LocalDateTime.now();
+        key.setUpdatedAt(before.minusDays(1));
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        ApiKeyEntity result = apiKeyService.enable(10L, 100L);
+
+        assertThat(result.getUpdatedAt()).isNotNull();
+        assertThat(result.getUpdatedAt()).isAfter(before.minusMinutes(1));
+    }
+
+    @Test
+    void shouldPreserveKeyHashAndPrefixOnEnable() {
+        ApiKeyEntity key = createKey(10L, 1L, 100L, ApiKeyStatus.DISABLED.name());
+        String originalHash = key.getKeyHash();
+        String originalPrefix = key.getKeyPrefix();
+        when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
+
+        ApiKeyEntity result = apiKeyService.enable(10L, 100L);
+
+        assertThat(result.getKeyHash()).isEqualTo(originalHash);
+        assertThat(result.getKeyPrefix()).isEqualTo(originalPrefix);
     }
 
     @Test

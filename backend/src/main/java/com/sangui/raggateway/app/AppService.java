@@ -304,7 +304,7 @@ public class AppService {
             Map<String, Object> metadata = new LinkedHashMap<>();
             metadata.put("active_key_count", 0);
             return new AppReadinessCheckVO("active_api_key", "Active API Key",
-                    AppReadinessStatus.DISABLED, "All API keys are disabled, revoked, or expired. Create a new active API key.", metadata);
+                    AppReadinessStatus.DISABLED, "All API keys are disabled, revoked, or expired. Enable a disabled key or create a new active API key.", metadata);
         }
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("active_key_count", activeCount);

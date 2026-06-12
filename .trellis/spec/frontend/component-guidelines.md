@@ -93,6 +93,19 @@ Tables should support:
 
 Request log tables should show safe summaries only, not full prompts.
 
+### Implemented API Key Lifecycle Actions
+
+The API key table in `frontend/src/pages/api-keys/ApiKeyPage.tsx` mirrors the backend lifecycle contract for display only. Backend services remain the source of truth for allowed transitions.
+
+| Status | Visible row actions | Modal semantics |
+|---|---|---|
+| `ACTIVE` | Disable, Revoke | Disable is reversible warning-level copy; Revoke is danger/terminal copy. |
+| `DISABLED` | Enable, Revoke | Enable is non-danger copy and states the key can authenticate again only if the app is enabled and the key is not expired. |
+| `EXPIRED` | Revoke | Do not show Enable; expired keys must not be silently revived. |
+| `REVOKED` | none | Revoked keys are terminal. |
+
+After a successful lifecycle mutation, refresh the API key list. Normal lifecycle responses must use `ApiKeyVO` and must not be typed or rendered as if they include the one-time plaintext `key`.
+
 ## Layout
 
 Use an app shell with navigation for the admin console. Keep pages task-oriented:

@@ -7,7 +7,7 @@ import type { ApiKeyVO, ApiKeyStatus, CreateApiKeyDTO } from '../../types/api-ke
 import type { AppVO } from '../../types/app'
 import { ApiError } from '../../api/http'
 import { listApps } from '../../api/apps'
-import { listApiKeys, createApiKey, disableApiKey, revokeApiKey } from '../../api/api-keys'
+import { listApiKeys, createApiKey, disableApiKey, enableApiKey, revokeApiKey } from '../../api/api-keys'
 import { useShell } from '../../components/layout/AdminShell'
 import StatusTag from '../../components/domain/StatusTag'
 import ApiKeyOneTimeSecret from '../../components/domain/ApiKeyOneTimeSecret'
@@ -32,6 +32,7 @@ export default function ApiKeyPage() {
   const [plaintextKey, setPlaintextKey] = useState<string | null>(null)
 
   const [disableConfirmId, setDisableConfirmId] = useState<number | null>(null)
+  const [enableConfirmId, setEnableConfirmId] = useState<number | null>(null)
   const [revokeConfirmId, setRevokeConfirmId] = useState<number | null>(null)
 
   const fetchApps = useCallback(async () => {
@@ -127,6 +128,19 @@ export default function ApiKeyPage() {
     }
   }
 
+  async function handleEnable(id: number) {
+    if (adminUserId === null) return
+    try {
+      const res = await enableApiKey(id, adminUserId)
+      if (res.code !== 'OK') setError(res.message)
+      else fetchKeys()
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('api-keys.networkError')))
+    } finally {
+      setEnableConfirmId(null)
+    }
+  }
+
   async function handleRevoke(id: number) {
     if (adminUserId === null) return
     try {
@@ -178,7 +192,7 @@ export default function ApiKeyPage() {
       },
     },
     {
-      title: t('api-keys.column.actions'), key: 'actions', width: 180,
+      title: t('api-keys.column.actions'), key: 'actions', width: 240,
       render: (_: unknown, record: ApiKeyVO) => {
         if (record.status === 'REVOKED') return null
         return (
@@ -186,6 +200,11 @@ export default function ApiKeyPage() {
             {record.status === 'ACTIVE' ? (
               <Button size="small" onClick={() => setDisableConfirmId(record.id)}>
                 {t('api-keys.disable')}
+              </Button>
+            ) : null}
+            {record.status === 'DISABLED' ? (
+              <Button size="small" onClick={() => setEnableConfirmId(record.id)}>
+                {t('api-keys.enable')}
               </Button>
             ) : null}
             <Button size="small" danger onClick={() => setRevokeConfirmId(record.id)}>
@@ -286,6 +305,20 @@ export default function ApiKeyPage() {
         />
         <Typography.Text type="secondary">
           {t('api-keys.disableHint')}
+        </Typography.Text>
+      </Modal>
+
+      <Modal
+        title={t('api-keys.enableTitle')}
+        open={enableConfirmId !== null}
+        onCancel={() => setEnableConfirmId(null)}
+        onOk={() => enableConfirmId !== null && handleEnable(enableConfirmId)}
+        okText={t('api-keys.enableOk')}
+        okButtonProps={{ danger: false }}
+        cancelText={t('api-keys.cancel')}
+      >
+        <Typography.Text>
+          {t('api-keys.enableDesc')}
         </Typography.Text>
       </Modal>
 

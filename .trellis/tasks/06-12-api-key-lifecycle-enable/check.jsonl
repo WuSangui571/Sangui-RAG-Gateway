@@ -1,0 +1,28 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-12-api-key-lifecycle-enable\\prd.md", "reason": "Acceptance contract for review and finish-work."}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify the implementation stays inside the lightweight RAG gateway and API key safety boundary."}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Check API key status and DB contract alignment."}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Review admin and public error shapes for enable/disable/revoke."}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Ensure no key/hash/Authorization values are logged or exposed."}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Use as backend completion checklist."}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Verify typed API client/page contracts and no plaintext key in normal VO."}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Review button visibility and warning/danger UI semantics."}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Check one-time key state remains short-lived and local."}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Use as frontend completion checklist."}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Review mutation refresh and error visibility."}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Check no lifecycle response/log leaks secrets or internals."}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Review API, DB, frontend type, and error-contract alignment."}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Review for duplicate state-machine or frontend-only business logic."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyService.java", "reason": "Review state-machine enforcement and timestamp/secret preservation."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminController.java", "reason": "Review enable endpoint, 400/403/404 behavior, and secret-safe VO."}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppService.java", "reason": "Review readiness semantics after disabled keys can be restored."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyServiceTest.java", "reason": "Review unit coverage for the state machine."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyAdminControllerTest.java", "reason": "Review endpoint/error/security coverage."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilterTest.java", "reason": "Review public auth behavior after enable."}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppServiceTest.java", "reason": "Review readiness test coverage."}
+{"file": "frontend\\src\\api\\api-keys.ts", "reason": "Review API path and response typing."}
+{"file": "frontend\\src\\types\\api-key.ts", "reason": "Verify no normal lifecycle response includes plaintext key."}
+{"file": "frontend\\src\\pages\\api-keys\\ApiKeyPage.tsx", "reason": "Review button visibility, mutation refresh, and modal copy."}
+{"file": "frontend\\src\\app\\i18n\\dict.ts", "reason": "Review dictionary parity and lifecycle wording."}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V2__create_app_api_key_tables.sql", "reason": "Verify no unnecessary schema migration was introduced."}

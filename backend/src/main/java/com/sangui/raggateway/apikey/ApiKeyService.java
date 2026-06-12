@@ -124,7 +124,25 @@ public class ApiKeyService {
         if (ApiKeyStatus.REVOKED.name().equals(key.getStatus())) {
             throw new IllegalArgumentException("Revoked key cannot be disabled");
         }
+        if (ApiKeyStatus.EXPIRED.name().equals(key.getStatus())) {
+            throw new IllegalArgumentException("Expired key cannot be disabled");
+        }
         key.setStatus(ApiKeyStatus.DISABLED.name());
+        key.setUpdatedAt(LocalDateTime.now());
+        apiKeyMapper.updateById(key);
+        return key;
+    }
+
+    @Transactional
+    public ApiKeyEntity enable(Long id, Long userId) {
+        ApiKeyEntity key = findByIdAndUserId(id, userId);
+        if (key == null) {
+            return null;
+        }
+        if (!ApiKeyStatus.DISABLED.name().equals(key.getStatus())) {
+            throw new IllegalArgumentException("Only disabled keys can be enabled");
+        }
+        key.setStatus(ApiKeyStatus.ACTIVE.name());
         key.setUpdatedAt(LocalDateTime.now());
         apiKeyMapper.updateById(key);
         return key;
