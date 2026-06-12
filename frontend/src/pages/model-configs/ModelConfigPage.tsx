@@ -5,7 +5,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import type {
   ModelConfigVO, CreateModelConfigDTO, UpdateModelConfigDTO, ModelConfigStatus,
-  ModelConfigCapability, ModelConfigCheckRequest, ModelConfigCheckResult,
+  ModelConfigCapability, ModelConfigCheckRequest, ModelConfigCheckResult, CheckStatus,
 } from '../../types/model-config'
 import { ApiError } from '../../api/http'
 import {
@@ -48,8 +48,10 @@ export default function ModelConfigPage() {
 
   const [checkOpen, setCheckOpen] = useState(false)
   const [checking, setChecking] = useState(false)
+  const [checkingId, setCheckingId] = useState<number | null>(null)
   const [checkResult, setCheckResult] = useState<ModelConfigCheckResult | null>(null)
-  const [checkConfigId, setCheckConfigId] = useState<number | null>(null)
+  const [checkResultConfig, setCheckResultConfig] = useState<ModelConfigVO | null>(null)
+  const [checkResultOpen, setCheckResultOpen] = useState(false)
   const [checkForm] = Form.useForm<ModelConfigCheckRequest>()
   const checkCapability = Form.useWatch('capability', checkForm)
 
@@ -59,6 +61,9 @@ export default function ModelConfigPage() {
     value: option.value,
     label: t(`model-config.capability${option.value}`),
   }))
+  const checkStatusColor = (status: CheckStatus) => (
+    status === 'SUCCESS' ? 'green' : status === 'PARTIAL' ? 'orange' : 'red'
+  )
 
   const fetchConfigs = useCallback(async () => {
     if (adminUserId === null) return
@@ -202,17 +207,38 @@ export default function ModelConfigPage() {
     }
   }
 
-  function handleOpenCheck(record: ModelConfigVO | null) {
-    const inheritedCapability: ModelConfigCapability =
-      record?.capability === 'EMBEDDING'
-        || (record?.capability === 'CHAT_EMBEDDING' && record.embedding_model)
-        ? 'EMBEDDING'
-        : 'CHAT'
-    setCheckConfigId(record?.id ?? null)
+  function handleOpenUnsavedCheck() {
     setCheckResult(null)
+    setCheckResultConfig(null)
+    setCheckResultOpen(false)
     checkForm.resetFields()
-    checkForm.setFieldsValue({ capability: inheritedCapability })
+    checkForm.setFieldsValue({ capability: 'CHAT' })
     setCheckOpen(true)
+  }
+
+  async function handleRunSavedCheck(record: ModelConfigVO) {
+    if (adminUserId === null) return
+    try {
+      setCheckingId(record.id)
+      setError(null)
+      setCheckResult(null)
+      setCheckResultConfig(record)
+      setCheckResultOpen(false)
+      const res = await checkSavedModelConfig(record.id, {}, adminUserId)
+      if (res.code !== 'OK') {
+        setError(res.message)
+        setCheckResult(null)
+      } else {
+        setCheckResult(res.data)
+        setCheckResultOpen(true)
+      }
+    } catch (e: unknown) {
+      if (e instanceof ApiError) setError(e.message)
+      else if (e instanceof Error) setError(e.message)
+      setCheckResult(null)
+    } finally {
+      setCheckingId(null)
+    }
   }
 
   async function handleRunCheck() {
@@ -231,22 +257,20 @@ export default function ModelConfigPage() {
         embedding_model: selectedCapability === 'EMBEDDING' ? (values.embedding_model || undefined) : undefined,
         embedding_dimension: selectedCapability === 'EMBEDDING' ? values.embedding_dimension : undefined,
       }
-      let res
-      if (checkConfigId !== null) {
-        res = await checkSavedModelConfig(checkConfigId, request, adminUserId)
-      } else {
-        if (!request.capability || !request.base_url || !request.api_key) {
-          setError(t('model-config.checkMissingRequired'))
-          setChecking(false)
-          return
-        }
-        res = await checkUnsavedModelConfig(request, adminUserId)
+      if (!request.capability || !request.base_url || !request.api_key) {
+        setError(t('model-config.checkMissingRequired'))
+        setChecking(false)
+        return
       }
+      const res = await checkUnsavedModelConfig(request, adminUserId)
       if (res.code !== 'OK') {
         setError(res.message)
         setCheckResult(null)
       } else {
+        setCheckResultConfig(null)
         setCheckResult(res.data)
+        setCheckOpen(false)
+        setCheckResultOpen(true)
       }
     } catch (e: unknown) {
       if (e instanceof ApiError) setError(e.message)
@@ -254,18 +278,6 @@ export default function ModelConfigPage() {
       setCheckResult(null)
     } finally {
       setChecking(false)
-    }
-  }
-
-  function handleFillDimension(dimension: number) {
-    editForm.setFieldsValue({ embedding_dimension: dimension })
-    form.setFieldsValue({ embedding_dimension: dimension })
-  }
-
-  function handleFillDimensionFromCheckResult() {
-    const dimension = checkResult?.embedding?.actual_dimension
-    if (dimension != null) {
-      handleFillDimension(dimension)
     }
   }
 
@@ -326,7 +338,13 @@ export default function ModelConfigPage() {
           <Button size="small" onClick={() => handleEdit(record)}>
             {t('model-config.edit')}
           </Button>
-          <Button size="small" onClick={() => handleOpenCheck(record)}>
+          <Button
+            size="small"
+            disabled={checkingId !== null}
+            style={{ width: 56 }}
+            aria-busy={checkingId === record.id}
+            onClick={() => handleRunSavedCheck(record)}
+          >
             {t('model-config.checkButton')}
           </Button>
           {record.status === 'ENABLED' ? (
@@ -371,7 +389,7 @@ export default function ModelConfigPage() {
         <Button type="primary" onClick={() => { setCreateOpen(true); setError(null) }}>
           {t('model-config.create')}
         </Button>
-        <Button onClick={() => handleOpenCheck(null)}>{t('model-config.checkUnsaved')}</Button>
+        <Button onClick={handleOpenUnsavedCheck}>{t('model-config.checkUnsaved')}</Button>
         <Button onClick={fetchConfigs}>{t('model-config.refresh')}</Button>
       </Space>
 
@@ -510,25 +528,21 @@ export default function ModelConfigPage() {
               options={capabilityOptions}
             />
           </Form.Item>
-          {checkConfigId === null && (
-            <>
-              <Form.Item name="base_url" label={t('model-config.baseUrlLabel')} rules={[{ required: true, message: t('model-config.checkUnsavedBaseUrlRequired') }]}>
-                <Input placeholder="https://api.example.com/v1" />
-              </Form.Item>
-              <Form.Item name="api_key" label={t('model-config.column.apiKey')} rules={[{ required: true, message: t('model-config.checkUnsavedApiKeyRequired') }]}>
-                <Input.Password placeholder="sk-..." />
-              </Form.Item>
-            </>
-          )}
+          <Form.Item name="base_url" label={t('model-config.baseUrlLabel')} rules={[{ required: true, message: t('model-config.checkUnsavedBaseUrlRequired') }]}>
+            <Input placeholder="https://api.example.com/v1" />
+          </Form.Item>
+          <Form.Item name="api_key" label={t('model-config.column.apiKey')} rules={[{ required: true, message: t('model-config.checkUnsavedApiKeyRequired') }]}>
+            <Input.Password placeholder="sk-..." />
+          </Form.Item>
           {checkCapability === 'CHAT' && (
-            <Form.Item name="chat_model" label={t('model-config.column.chatModel')}>
-              <Input placeholder={checkConfigId === null ? 'deepseek-v4-pro' : 'Override chat model'} />
+            <Form.Item name="chat_model" label={t('model-config.column.chatModel')} rules={[{ required: true, message: t('model-config.chatModelRequired') }]}>
+              <Input placeholder="deepseek-v4-pro" />
             </Form.Item>
           )}
           {checkCapability === 'EMBEDDING' && (
             <>
-              <Form.Item name="embedding_model" label={t('model-config.column.embeddingModel')}>
-                <Input placeholder={checkConfigId === null ? 'text-embedding-v4' : 'Override embedding model'} />
+              <Form.Item name="embedding_model" label={t('model-config.column.embeddingModel')} rules={[{ required: true, message: t('model-config.embeddingModelRequired') }]}>
+                <Input placeholder="text-embedding-v4" />
               </Form.Item>
               <Form.Item name="embedding_dimension" label={t('model-config.checkConfiguredDim')}>
                 <InputNumber min={1} style={{ width: '100%' }} />
@@ -537,51 +551,73 @@ export default function ModelConfigPage() {
           )}
         </Form>
 
+      </Modal>
+
+      <Modal
+        title={t('model-config.checkResultTitle')}
+        open={checkResultOpen && checkResult !== null}
+        onCancel={() => setCheckResultOpen(false)}
+        footer={(
+          <Button type="primary" onClick={() => setCheckResultOpen(false)}>
+            {t('model-config.close')}
+          </Button>
+        )}
+        width={640}
+      >
         {checkResult && (
-          <div style={{ marginTop: 16 }}>
-            <Typography.Title level={5}>
-              {t('model-config.checkOverallStatus')} <Tag color={
-                checkResult.overall_status === 'SUCCESS' ? 'green' :
-                checkResult.overall_status === 'PARTIAL' ? 'orange' : 'red'
-              }>{checkResult.overall_status}</Tag>
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              {t('model-config.checkBaseUrlChecked')} {checkResult.base_url_checked ? t('evidence.yes') : t('evidence.no')}
-            </Typography.Text>
+          <Space direction="vertical" size={16} style={{ width: '100%' }}>
+            <Space wrap>
+              {checkResultConfig && (
+                <Typography.Text type="secondary">
+                  #{checkResultConfig.id} {checkResultConfig.name}
+                </Typography.Text>
+              )}
+              <Tag color={checkStatusColor(checkResult.overall_status)}>
+                {checkResult.overall_status}
+              </Tag>
+              <Tag color={checkResult.capability === 'CHAT' ? 'blue' : 'green'}>
+                {checkResult.capability}
+              </Tag>
+            </Space>
 
-            {checkResult.chat && (
-              <Descriptions title={t('model-config.checkChatTitle')} bordered size="small" column={1} style={{ marginTop: 12 }}>
-                <Descriptions.Item label={t('evidence.status')}>
-                  <Tag color={checkResult.chat.status === 'SUCCESS' ? 'green' : 'red'}>{checkResult.chat.status}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label={t('evidence.model')}>{checkResult.chat.model}</Descriptions.Item>
-                <Descriptions.Item label={t('model-config.checkMessage')}>{checkResult.chat.message}</Descriptions.Item>
-              </Descriptions>
-            )}
-
-            {checkResult.embedding && (
-              <Descriptions title={t('model-config.checkEmbeddingTitle')} bordered size="small" column={1} style={{ marginTop: 12 }}>
-                <Descriptions.Item label={t('evidence.status')}>
-                  <Tag color={checkResult.embedding.status === 'SUCCESS' ? 'green' : 'red'}>{checkResult.embedding.status}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label={t('evidence.model')}>{checkResult.embedding.model}</Descriptions.Item>
-                <Descriptions.Item label={t('model-config.checkActualDim')}>
-                  {checkResult.embedding.actual_dimension != null ? (
-                    <Space>
-                      <Typography.Text strong>{checkResult.embedding.actual_dimension}</Typography.Text>
-                      <Button size="small" onClick={handleFillDimensionFromCheckResult}>
-                        {t('model-config.checkFillDimension')}
-                      </Button>
-                    </Space>
-                  ) : '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label={t('model-config.checkConfiguredDim')}>
-                  {checkResult.embedding.configured_dimension ?? '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label={t('model-config.checkMessage')}>{checkResult.embedding.message}</Descriptions.Item>
-              </Descriptions>
-            )}
-          </div>
+            <Descriptions bordered size="small" column={1}>
+              <Descriptions.Item label={t('model-config.checkBaseUrlChecked')}>
+                {checkResult.base_url_checked ? t('evidence.yes') : t('evidence.no')}
+              </Descriptions.Item>
+              {checkResult.chat && (
+                <>
+                  <Descriptions.Item label={t('model-config.checkChatTitle')}>
+                    <Tag color={checkStatusColor(checkResult.chat.status)}>{checkResult.chat.status}</Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('evidence.model')}>
+                    {checkResult.chat.model}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('model-config.checkMessage')}>
+                    {checkResult.chat.message}
+                  </Descriptions.Item>
+                </>
+              )}
+              {checkResult.embedding && (
+                <>
+                  <Descriptions.Item label={t('model-config.checkEmbeddingTitle')}>
+                    <Tag color={checkStatusColor(checkResult.embedding.status)}>{checkResult.embedding.status}</Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('evidence.model')}>
+                    {checkResult.embedding.model}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('model-config.checkActualDim')}>
+                    {checkResult.embedding.actual_dimension ?? '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('model-config.checkConfiguredDim')}>
+                    {checkResult.embedding.configured_dimension ?? '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('model-config.checkMessage')}>
+                    {checkResult.embedding.message}
+                  </Descriptions.Item>
+                </>
+              )}
+            </Descriptions>
+          </Space>
         )}
       </Modal>
     </div>
