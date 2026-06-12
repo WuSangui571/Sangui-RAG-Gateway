@@ -74,9 +74,16 @@ public class ModelConfigCheckService {
             throw new IllegalArgumentException("Model config not found or not owned by this user");
         }
 
-        ModelConfigCapability capability = ModelConfigService.parseCapability(entity.getCapability());
+        ModelConfigCapability capability;
         if (request.getCapability() != null) {
             capability = ModelConfigService.parseCapability(request.getCapability());
+        } else {
+            String storedCap = entity.getCapability();
+            if (ModelConfigCapability.CHAT_EMBEDDING.name().equals(storedCap)) {
+                capability = resolveLegacyChatEmbeddingCapability(entity);
+            } else {
+                capability = ModelConfigService.parseCapability(storedCap);
+            }
         }
 
         String baseUrl = entity.getBaseUrl();
@@ -279,6 +286,18 @@ public class ModelConfigCheckService {
             return "upstream_unavailable";
         }
         return "upstream_error";
+    }
+
+    private static ModelConfigCapability resolveLegacyChatEmbeddingCapability(ModelConfigEntity entity) {
+        boolean hasChat = entity.getChatModel() != null && !entity.getChatModel().isBlank();
+        boolean hasEmbedding = entity.getEmbeddingModel() != null && !entity.getEmbeddingModel().isBlank();
+        if (hasEmbedding) {
+            return ModelConfigCapability.EMBEDDING;
+        }
+        if (hasChat) {
+            return ModelConfigCapability.CHAT;
+        }
+        return ModelConfigCapability.CHAT;
     }
 
     private String requireNonBlank(String value, String fieldName) {

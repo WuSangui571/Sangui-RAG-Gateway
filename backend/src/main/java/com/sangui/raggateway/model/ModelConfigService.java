@@ -20,9 +20,9 @@ import java.util.Set;
 public class ModelConfigService {
 
     private static final Set<String> CHAT_CAPABILITY_FILTER_VALUES = Set.of(
-            ModelConfigCapability.CHAT.name(), ModelConfigCapability.CHAT_EMBEDDING.name());
+            ModelConfigCapability.CHAT.name());
     private static final Set<String> EMBEDDING_CAPABILITY_FILTER_VALUES = Set.of(
-            ModelConfigCapability.EMBEDDING.name(), ModelConfigCapability.CHAT_EMBEDDING.name());
+            ModelConfigCapability.EMBEDDING.name());
 
     private final ModelConfigMapper modelConfigMapper;
     private final UpstreamApiKeyEncryptor encryptor;
@@ -49,12 +49,15 @@ public class ModelConfigService {
         String normalizedName = normalizeRequiredText(name);
         String normalizedProviderName = normalizeRequiredText(providerName);
         String normalizedBaseUrl = normalizeRequiredText(baseUrl);
-        String normalizedChatModel = normalizeRequiredText(chatModel);
         String normalizedEmbeddingModel = normalizeOptionalText(embeddingModel);
+        String normalizedChatModel = normalizedEmbeddingModel == null
+                ? normalizeRequiredText(chatModel) : null;
         validateEmbeddingConfig(normalizedEmbeddingModel, embeddingDimension);
 
         ModelConfigCapability capability = resolveCapability(
                 normalizedChatModel != null, normalizedEmbeddingModel != null);
+        validateCapabilityFields(capability, normalizedChatModel,
+                normalizedEmbeddingModel, embeddingDimension, true);
 
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setUserId(userId);
@@ -192,14 +195,22 @@ public class ModelConfigService {
         if (entity.getApiKeyEncrypted() == null || entity.getApiKeyEncrypted().isBlank()) {
             throw new IllegalArgumentException("Cannot enable model config without an upstream API key");
         }
-        ModelConfigCapability capability = parseCapability(entity.getCapability());
-        if (capability.isEmbeddingCapable()
+        if (ModelConfigCapability.EMBEDDING.name().equals(entity.getCapability())
                 && (entity.getEmbeddingDimension() == null || entity.getEmbeddingDimension() <= 0)) {
             throw new IllegalArgumentException(
-                    "Cannot enable embedding-capable config without a positive embedding dimension");
+                    "Cannot enable embedding config without a positive embedding dimension");
         }
-        validateCapabilityFields(capability, entity.getChatModel(),
-                entity.getEmbeddingModel(), entity.getEmbeddingDimension(), false);
+        String chatModel = entity.getChatModel();
+        String embeddingModel = entity.getEmbeddingModel();
+        Integer embeddingDimension = entity.getEmbeddingDimension();
+        ModelConfigCapability capability;
+        if (ModelConfigCapability.EMBEDDING.name().equals(entity.getCapability())) {
+            capability = ModelConfigCapability.EMBEDDING;
+        } else {
+            capability = ModelConfigCapability.CHAT;
+        }
+        validateCapabilityFields(capability, chatModel,
+                embeddingModel, embeddingDimension, false);
         entity.setStatus(ModelConfigStatus.ENABLED.name());
         entity.setUpdatedAt(LocalDateTime.now());
         modelConfigMapper.updateById(entity);
@@ -298,17 +309,10 @@ public class ModelConfigService {
         if (entity == null) {
             return false;
         }
-        ModelConfigCapability cap = parseCapability(entity.getCapability());
-        return cap != null && cap.isChatCapable();
+        return ModelConfigCapability.CHAT.name().equals(entity.getCapability());
     }
 
     static ModelConfigCapability resolveCapability(boolean hasChatModel, boolean hasEmbeddingModel) {
-        if (hasChatModel && hasEmbeddingModel) {
-            return ModelConfigCapability.CHAT_EMBEDDING;
-        }
-        if (hasChatModel) {
-            return ModelConfigCapability.CHAT;
-        }
         if (hasEmbeddingModel) {
             return ModelConfigCapability.EMBEDDING;
         }
@@ -319,12 +323,18 @@ public class ModelConfigService {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("capability is required");
         }
+        ModelConfigCapability cap;
         try {
-            return ModelConfigCapability.valueOf(value.toUpperCase());
+            cap = ModelConfigCapability.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid capability: " + value
-                    + ". Must be one of: CHAT, EMBEDDING, CHAT_EMBEDDING");
+                    + ". Must be CHAT or EMBEDDING.");
         }
+        if (cap == ModelConfigCapability.CHAT_EMBEDDING) {
+            throw new IllegalArgumentException(
+                    "CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING.");
+        }
+        return cap;
     }
 
     private void validateCapabilityFields(ModelConfigCapability capability, String chatModel,
@@ -353,17 +363,8 @@ public class ModelConfigService {
                     }
                 }
                 break;
-            case CHAT_EMBEDDING:
-                if (!hasText(chatModel)) {
-                    throw new IllegalArgumentException("chatModel is required for CHAT_EMBEDDING capability");
-                }
-                if (!hasText(embeddingModel)) {
-                    throw new IllegalArgumentException("embeddingModel is required for CHAT_EMBEDDING capability");
-                }
-                if (embeddingDimension != null && embeddingDimension <= 0) {
-                    throw new IllegalArgumentException("embeddingDimension must be positive when provided");
-                }
-                break;
+            default:
+                throw new IllegalArgumentException("Unsupported capability: " + capability);
         }
     }
 

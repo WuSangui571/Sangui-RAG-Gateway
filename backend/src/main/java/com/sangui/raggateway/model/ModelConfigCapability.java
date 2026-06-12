@@ -6,10 +6,10 @@ public enum ModelConfigCapability {
     CHAT_EMBEDDING;
 
     public boolean isChatCapable() {
-        return this == CHAT || this == CHAT_EMBEDDING;
+        return this == CHAT;
     }
 
     public boolean isEmbeddingCapable() {
-        return this == EMBEDDING || this == CHAT_EMBEDDING;
+        return this == EMBEDDING;
     }
 }

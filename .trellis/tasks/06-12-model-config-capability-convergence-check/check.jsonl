@@ -1,0 +1,36 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-12-model-config-capability-convergence-check\\prd.md", "reason": "PRD with capability convergence contract, payloads, migration strategy, validation matrix, and tests"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary and current model config capability/check contracts to update"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Model config schema, migration, tenant, enum, and embedding dimension rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin model config/app binding error matrix and safe response rules"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe logging boundaries for upstream checks and embeddings"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend test and review checklist for model config and RAG regression"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend capability union and API contract type-safety rules"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Frontend local/server/secret state boundaries for forms and checks"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Admin UX, secret safety, and frontend validation expectations"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Upstream chat/embedding check timeout and error normalization boundaries"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Embedding config and document status failure contracts"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Embedding lookup and retrieval readiness boundaries"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret, tenant, prompt/context, and evidence safety boundaries"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API/DB/frontend/type validation checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Search/reuse guidance to avoid duplicate capability logic"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigCapability.java", "reason": "Current capability enum and legacy CHAT_EMBEDDING source"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigService.java", "reason": "Central capability validation/filtering/embedding lookup logic"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigCheckService.java", "reason": "Saved/unsaved real upstream check implementation pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminController.java", "reason": "Admin model config endpoints and error mapping"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppService.java", "reason": "App binding/readiness usage of chat and embedding capability"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "App default model config binding guard and messages"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V9__model_config_capability_split.sql", "reason": "Existing migration to preserve and supersede with new normalization migration"}
+{"file": "frontend\\src\\types\\model-config.ts", "reason": "Frontend capability/check DTO/VO type contract"}
+{"file": "frontend\\src\\api\\model-configs.ts", "reason": "Typed model config API client and capability filter"}
+{"file": "frontend\\src\\pages\\model-configs\\ModelConfigPage.tsx", "reason": "Model config page capability selector and check modal UX"}
+{"file": "frontend\\src\\pages\\apps\\AppConfigPage.tsx", "reason": "App model binding uses chat-capable config list"}
+{"file": "frontend\\src\\pages\\knowledge\\KnowledgeBasePage.tsx", "reason": "KB creation uses embedding-capable config auto-fill"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigServiceTest.java", "reason": "Existing model config validation/list/filter/capability tests to update"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminControllerTest.java", "reason": "Admin endpoint payload/error tests for model config capability and checks"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigCheckServiceTest.java", "reason": "Real check service branching and safe result tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppServiceTest.java", "reason": "App binding/readiness tests affected by chat-only capability"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppAdminControllerTest.java", "reason": "App binding controller tests and messages"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Embedding lookup regression coverage"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalServiceTest.java", "reason": "Query embedding lookup regression coverage"}

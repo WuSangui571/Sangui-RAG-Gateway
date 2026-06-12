@@ -1,10 +1,10 @@
 export type ModelConfigStatus = 'ENABLED' | 'DISABLED'
-export type ModelConfigCapability = 'CHAT' | 'EMBEDDING' | 'CHAT_EMBEDDING'
+export type ModelConfigCapability = 'CHAT' | 'EMBEDDING'
 
 export interface ModelConfigVO {
   id: number
   user_id: number
-  capability: ModelConfigCapability
+  capability: string
   name: string
   provider_name: string
   base_url: string

@@ -109,4 +109,16 @@ class ModelConfigCheckServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("embeddingModel is required");
     }
+
+    @Test
+    void shouldRejectCheckWithCHAT_EMBEDDINGCapability() {
+        ModelConfigCheckRequest request = new ModelConfigCheckRequest();
+        request.setCapability("CHAT_EMBEDDING");
+        request.setBaseUrl(BASE_URL);
+        request.setApiKey(API_KEY);
+
+        assertThatThrownBy(() -> service.checkUnsavedConfig(100L, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("CHAT_EMBEDDING is no longer supported");
+    }
 }

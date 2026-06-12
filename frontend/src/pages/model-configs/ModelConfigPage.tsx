@@ -5,7 +5,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import type {
   ModelConfigVO, CreateModelConfigDTO, UpdateModelConfigDTO, ModelConfigStatus,
-  ModelConfigCapability, ModelConfigCheckResult,
+  ModelConfigCapability, ModelConfigCheckRequest, ModelConfigCheckResult,
 } from '../../types/model-config'
 import { ApiError } from '../../api/http'
 import {
@@ -23,7 +23,6 @@ type EditModelConfigFormValues = Omit<UpdateModelConfigDTO, 'api_key'> & {
 const CAPABILITY_OPTIONS: { value: ModelConfigCapability; label: string }[] = [
   { value: 'CHAT', label: 'CHAT' },
   { value: 'EMBEDDING', label: 'EMBEDDING' },
-  { value: 'CHAT_EMBEDDING', label: 'CHAT + EMBEDDING' },
 ]
 
 export default function ModelConfigPage() {
@@ -34,7 +33,7 @@ export default function ModelConfigPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<ModelConfigStatus | undefined>(undefined)
-  const [capabilityFilter, setCapabilityFilter] = useState<Extract<ModelConfigCapability, 'CHAT' | 'EMBEDDING'> | undefined>(undefined)
+  const [capabilityFilter, setCapabilityFilter] = useState<ModelConfigCapability | undefined>(undefined)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -51,10 +50,11 @@ export default function ModelConfigPage() {
   const [checking, setChecking] = useState(false)
   const [checkResult, setCheckResult] = useState<ModelConfigCheckResult | null>(null)
   const [checkConfigId, setCheckConfigId] = useState<number | null>(null)
-  const [checkForm] = Form.useForm()
+  const [checkForm] = Form.useForm<ModelConfigCheckRequest>()
+  const checkCapability = Form.useWatch('capability', checkForm)
 
-  const needsChatModel = (cap: ModelConfigCapability) => cap === 'CHAT' || cap === 'CHAT_EMBEDDING'
-  const needsEmbeddingModel = (cap: ModelConfigCapability) => cap === 'EMBEDDING' || cap === 'CHAT_EMBEDDING'
+  const needsChatModel = (cap: ModelConfigCapability) => cap === 'CHAT'
+  const needsEmbeddingModel = (cap: ModelConfigCapability) => cap === 'EMBEDDING'
   const capabilityOptions = CAPABILITY_OPTIONS.map(option => ({
     value: option.value,
     label: t(`model-config.capability${option.value}`),
@@ -158,7 +158,7 @@ export default function ModelConfigPage() {
       embedding_dimension: record.embedding_dimension ?? null,
       api_key: '',
     })
-    setEditCapability(record.capability)
+    setEditCapability(record.capability === 'EMBEDDING' ? 'EMBEDDING' : 'CHAT')
     setEditOpen(true)
     setError(null)
   }
@@ -202,10 +202,16 @@ export default function ModelConfigPage() {
     }
   }
 
-  function handleOpenCheck(configId: number | null) {
-    setCheckConfigId(configId)
+  function handleOpenCheck(record: ModelConfigVO | null) {
+    const inheritedCapability: ModelConfigCapability =
+      record?.capability === 'EMBEDDING'
+        || (record?.capability === 'CHAT_EMBEDDING' && record.embedding_model)
+        ? 'EMBEDDING'
+        : 'CHAT'
+    setCheckConfigId(record?.id ?? null)
     setCheckResult(null)
     checkForm.resetFields()
+    checkForm.setFieldsValue({ capability: inheritedCapability })
     setCheckOpen(true)
   }
 
@@ -213,16 +219,17 @@ export default function ModelConfigPage() {
     if (adminUserId === null) return
     try {
       const values = await checkForm.validateFields()
+      const selectedCapability = values.capability
       setChecking(true)
       setError(null)
-      const request = {
-        capability: values.capability || null,
-        provider_name: values.provider_name || null,
-        base_url: values.base_url || null,
-        api_key: values.api_key || null,
-        chat_model: values.chat_model || null,
-        embedding_model: values.embedding_model || null,
-        embedding_dimension: values.embedding_dimension || null,
+      const request: ModelConfigCheckRequest = {
+        capability: selectedCapability,
+        provider_name: values.provider_name || undefined,
+        base_url: values.base_url || undefined,
+        api_key: values.api_key || undefined,
+        chat_model: selectedCapability === 'CHAT' ? (values.chat_model || undefined) : undefined,
+        embedding_model: selectedCapability === 'EMBEDDING' ? (values.embedding_model || undefined) : undefined,
+        embedding_dimension: selectedCapability === 'EMBEDDING' ? values.embedding_dimension : undefined,
       }
       let res
       if (checkConfigId !== null) {
@@ -270,8 +277,8 @@ export default function ModelConfigPage() {
       dataIndex: 'capability',
       key: 'capability',
       width: 130,
-      render: (v: ModelConfigCapability) => (
-        <Tag color={v === 'CHAT' ? 'blue' : v === 'EMBEDDING' ? 'green' : 'purple'}>{v}</Tag>
+      render: (v: string) => (
+        <Tag color={v === 'CHAT' ? 'blue' : v === 'EMBEDDING' ? 'green' : 'default'}>{v}</Tag>
       ),
     },
     { title: t('model-config.column.provider'), dataIndex: 'provider_name', key: 'provider_name', width: 110 },
@@ -319,7 +326,7 @@ export default function ModelConfigPage() {
           <Button size="small" onClick={() => handleEdit(record)}>
             {t('model-config.edit')}
           </Button>
-          <Button size="small" onClick={() => handleOpenCheck(record.id)}>
+          <Button size="small" onClick={() => handleOpenCheck(record)}>
             {t('model-config.checkButton')}
           </Button>
           {record.status === 'ENABLED' ? (
@@ -493,10 +500,13 @@ export default function ModelConfigPage() {
         okText={t('model-config.checkRun')}
       >
         <Form form={checkForm} layout="vertical">
-          <Form.Item name="capability" label={t('model-config.capabilityLabel')}>
+          <Form.Item
+            name="capability"
+            label={t('model-config.capabilityLabel')}
+            rules={[{ required: true, message: t('model-config.checkMissingRequired') }]}
+          >
             <Select
-              allowClear
-              placeholder="Inherit from config"
+              placeholder={t('model-config.capabilityLabel')}
               options={capabilityOptions}
             />
           </Form.Item>
@@ -510,15 +520,21 @@ export default function ModelConfigPage() {
               </Form.Item>
             </>
           )}
-          <Form.Item name="chat_model" label={t('model-config.column.chatModel')}>
-            <Input placeholder={checkConfigId === null ? 'deepseek-v4-pro' : 'Override chat model'} />
-          </Form.Item>
-          <Form.Item name="embedding_model" label={t('model-config.column.embeddingModel')}>
-            <Input placeholder={checkConfigId === null ? 'text-embedding-v4' : 'Override embedding model'} />
-          </Form.Item>
-          <Form.Item name="embedding_dimension" label={t('model-config.checkConfiguredDim')}>
-            <InputNumber min={1} style={{ width: '100%' }} />
-          </Form.Item>
+          {checkCapability === 'CHAT' && (
+            <Form.Item name="chat_model" label={t('model-config.column.chatModel')}>
+              <Input placeholder={checkConfigId === null ? 'deepseek-v4-pro' : 'Override chat model'} />
+            </Form.Item>
+          )}
+          {checkCapability === 'EMBEDDING' && (
+            <>
+              <Form.Item name="embedding_model" label={t('model-config.column.embeddingModel')}>
+                <Input placeholder={checkConfigId === null ? 'text-embedding-v4' : 'Override embedding model'} />
+              </Form.Item>
+              <Form.Item name="embedding_dimension" label={t('model-config.checkConfiguredDim')}>
+                <InputNumber min={1} style={{ width: '100%' }} />
+              </Form.Item>
+            </>
+          )}
         </Form>
 
         {checkResult && (

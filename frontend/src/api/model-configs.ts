@@ -10,7 +10,7 @@ import type {
 } from '../types/model-config'
 import { apiGet, apiPost, apiPut } from './http'
 
-type ModelConfigCapabilityFilter = Extract<ModelConfigCapability, 'CHAT' | 'EMBEDDING'>
+type ModelConfigCapabilityFilter = ModelConfigCapability
 
 export function listModelConfigs(
   status: ModelConfigStatus | undefined,

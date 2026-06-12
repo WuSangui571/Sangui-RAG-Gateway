@@ -798,8 +798,8 @@ class AppServiceTest {
         config.setName("Embedding Config");
         config.setProviderName("openai");
         config.setBaseUrl("https://api.example.com");
-        config.setCapability("CHAT_EMBEDDING");
-        config.setChatModel("gpt-4o-mini");
+        config.setCapability("EMBEDDING");
+        config.setChatModel(null);
         config.setEmbeddingModel(embeddingModel);
         config.setEmbeddingDimension(embeddingDimension);
         config.setApiKeyEncrypted("encrypted-key-data");

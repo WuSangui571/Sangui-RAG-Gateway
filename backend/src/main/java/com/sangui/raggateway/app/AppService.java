@@ -244,7 +244,7 @@ public class AppService {
             metadata.put("provider_name", config.getProviderName());
             metadata.put("capability", config.getCapability());
             return new AppReadinessCheckVO("default_model_config", "Default Model Config",
-                    AppReadinessStatus.NOT_READY, "Bound default model config is not chat-capable. Bind an enabled CHAT or CHAT_EMBEDDING config.", metadata);
+                    AppReadinessStatus.NOT_READY, "Bound default model config is not chat-capable. Bind an enabled CHAT config.", metadata);
         }
         if (config.getChatModel() == null || config.getChatModel().isBlank()) {
             Map<String, Object> metadata = new LinkedHashMap<>();

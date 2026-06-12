@@ -103,12 +103,12 @@ The admin model config endpoints (`/api/admin/model-configs/**`) and app binding
 | Model config disabled for binding | 400 | `MODEL_CONFIG_NOT_READY` | Config exists but is not enabled. |
 | Invalid status filter | 400 | `INVALID_REQUEST` | Only `ENABLED` or `DISABLED` accepted. |
 | Invalid capability filter | 400 | `INVALID_REQUEST` | Only `CHAT` or `EMBEDDING` accepted. |
-| Invalid capability literal on create/update | 400 | `INVALID_REQUEST` | Must be CHAT, EMBEDDING, or CHAT_EMBEDDING. |
+| Invalid capability literal on create/update/check | 400 | `INVALID_REQUEST` | Must be CHAT or EMBEDDING. CHAT_EMBEDDING is legacy-only and rejected. |
 | Create CHAT without chat_model | 400 | `INVALID_REQUEST` | Capability field mismatch. |
 | Create EMBEDDING without embedding_model | 400 | `INVALID_REQUEST` | Capability field mismatch. |
 | Create EMBEDDING with chat_model | 400 | `INVALID_REQUEST` | chat_model must be null for EMBEDDING. |
 | Enable embedding-capable without positive dimension | 400 | `INVALID_REQUEST` | embedding_dimension required before enabling. |
-| Bind embedding-only config as app default | 400 | `MODEL_CONFIG_NOT_READY` | Only CHAT/CHAT_EMBEDDING configs eligible. |
+| Bind embedding-only config as app default | 400 | `MODEL_CONFIG_NOT_READY` | Only CHAT configs eligible. |
 | Missing capability on create | 400 | `INVALID_REQUEST` | capability is required. |
 | Check: missing required fields (unsaved) | 400 | `INVALID_REQUEST` | capability, base_url, api_key, and capability-specific model fields required. |
 | Check: cross-user saved config | 403 | `FORBIDDEN` | No provider call. |

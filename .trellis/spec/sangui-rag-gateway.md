@@ -1072,29 +1072,35 @@ mvn test
 
 ### Implemented V0.3 Model Config Capability Split
 
-`rag_model_config` now has explicit capability semantics via migration `V9__model_config_capability_split.sql`:
+`rag_model_config` now has explicit capability semantics via migration `V9__model_config_capability_split.sql` and normalization via `V10__normalize_legacy_chat_embedding.sql`:
 
 | Capability | Required fields | Optional fields | Binding behavior |
 |---|---|---|---|
 | `CHAT` | `chat_model` | `embedding_model`, `embedding_dimension` must be null | Eligible for app default model binding |
 | `EMBEDDING` | `embedding_model`; `embedding_dimension` may be null before successful check, but must be positive before enable/readiness/upload use | `chat_model` must be null/blank | Not eligible for app default model binding |
-| `CHAT_EMBEDDING` | `chat_model`, `embedding_model`; `embedding_dimension` may be null before successful check, but must be positive before embedding use | n/a | Eligible for app default model binding and embedding lookup |
+
+`CHAT_EMBEDDING` is legacy-only (V9 backfill). V10 migration normalizes all legacy rows to `CHAT` or `EMBEDDING`. Create/update/check inputs reject `CHAT_EMBEDDING` with `400 INVALID_REQUEST`.
 
 **Server-side invariants:**
-- App default model binding: requires `status=ENABLED`, chat capability (`CHAT` or `CHAT_EMBEDDING`), same-user, and non-blank `chat_model`.
-- Embedding lookup: requires `status=ENABLED`, embedding capability (`EMBEDDING` or `CHAT_EMBEDDING`), matching `embedding_model`, matching positive `embedding_dimension`.
-- Enabling an embedding-capable config without positive `embedding_dimension` returns `400 INVALID_REQUEST`.
+- App default model binding: requires `status=ENABLED`, chat capability (`CHAT` only), same-user, and non-blank `chat_model`.
+- Embedding lookup: requires `status=ENABLED`, embedding capability (`EMBEDDING` only), matching `embedding_model`, matching positive `embedding_dimension`.
+- Enabling an embedding config without positive `embedding_dimension` returns `400 INVALID_REQUEST`.
 
-**Migration backfill:**
+**Migration backfill (V9):**
 - `chat_model` present + no embedding model -> `CHAT`
 - `chat_model` present + embedding model present -> `CHAT_EMBEDDING`
 - `chat_model` absent + embedding model present -> `EMBEDDING`
 - Fallback -> `CHAT`
 
+**Migration normalization (V10):**
+- `CHAT_EMBEDDING` + `embedding_model` present -> `EMBEDDING`, `chat_model` cleared
+- `CHAT_EMBEDDING` + `chat_model` present + no `embedding_model` -> `CHAT`
+- Remaining `CHAT_EMBEDDING` rows with insufficient fields -> `CHAT`, `chat_model` cleared, `status=DISABLED`
+
 **Listing / Filtering:**
 ```
-GET /api/admin/model-configs?status=ENABLED&capability=CHAT       -> CHAT + CHAT_EMBEDDING
-GET /api/admin/model-configs?status=ENABLED&capability=EMBEDDING  -> EMBEDDING + CHAT_EMBEDDING
+GET /api/admin/model-configs?status=ENABLED&capability=CHAT       -> CHAT only (post-V10)
+GET /api/admin/model-configs?status=ENABLED&capability=EMBEDDING  -> EMBEDDING only (post-V10)
 ```
 
 Invalid capability filter returns `400 INVALID_REQUEST`. Chat-capable configs list accessible via `GET /api/admin/model-configs/chat-capable`.
@@ -1120,7 +1126,8 @@ Safety: check never returns raw provider body, embedding vectors, stack traces, 
 
 **New/updated files:**
 - `V9__model_config_capability_split.sql`
-- `ModelConfigCapability.java` (enum: CHAT, EMBEDDING, CHAT_EMBEDDING with `isChatCapable()`/`isEmbeddingCapable()`)
+- `ModelConfigCapability.java` (enum: CHAT, EMBEDDING, CHAT_EMBEDDING with `isChatCapable()`→CHAT only, `isEmbeddingCapable()`→EMBEDDING only)
+- `V10__normalize_legacy_chat_embedding.sql` (normalization migration)
 - `ModelConfigEntity.java` (+capability field)
 - `CreateModelConfigDTO.java` (+capability field)
 - `UpdateModelConfigDTO.java` (+capability field)
@@ -2081,9 +2088,9 @@ The demo uses two separate upstream providers:
 | Chat | Sanguicode | `https://api.sanguicode.com` | `deepseek-v4-pro` | — |
 | Embedding | DashScope | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `text-embedding-v4` | `1024` |
 
-Both configs must be `ENABLED` under the same admin user. The Sanguicode chat config is bound as the app default model config. The DashScope embedding config is resolved automatically by `findEnabledEmbeddingConfig(userId, embeddingModel, embeddingDimension)`.
+Both configs must be `ENABLED` under the same admin user. The Sanguicode `CHAT` config is bound as the app default model config and must omit embedding fields. The DashScope `EMBEDDING` config is resolved automatically by `findEnabledEmbeddingConfig(userId, embeddingModel, embeddingDimension)` and must keep `chat_model` null.
 
-Current Admin model-config creation requires `chat_model` on every config. Split-provider runbooks must omit embedding fields from the chat config when they are unused, and must set a non-empty `chat_model` placeholder on the DashScope embedding config without binding that config as the app default chat config.
+Admin model-config creation accepts only `CHAT` or `EMBEDDING`. Split-provider runbooks must create separate rows: `CHAT` with `chat_model` only, and `EMBEDDING` with `embedding_model` plus positive `embedding_dimension` only. `CHAT_EMBEDDING` is legacy-only after V10 normalization and must not be used in setup commands.
 
 **Evidence checklist:**
 

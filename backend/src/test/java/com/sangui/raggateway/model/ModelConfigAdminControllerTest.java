@@ -333,6 +333,50 @@ class ModelConfigAdminControllerTest {
                 .andExpect(jsonPath("$.error").doesNotExist());
     }
 
+    @Test
+    void shouldRejectCreateWithCHAT_EMBEDDINGCapability() throws Exception {
+        when(modelConfigService.createAdminConfig(eq(100L), any(CreateModelConfigDTO.class)))
+                .thenThrow(new IllegalArgumentException("CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING."));
+
+        mockMvc.perform(post("/api/admin/model-configs")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "capability": "CHAT_EMBEDDING",
+                                    "name": "Mixed config",
+                                    "provider_name": "openai",
+                                    "base_url": "https://api.openai.com/v1",
+                                    "api_key": "sk-secret",
+                                    "chat_model": "gpt-4o-mini",
+                                    "embedding_model": "text-embedding-v4",
+                                    "embedding_dimension": 1024
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING."));
+    }
+
+    @Test
+    void shouldRejectCheckUnsavedWithCHAT_EMBEDDINGCapability() throws Exception {
+        when(modelConfigCheckService.checkUnsavedConfig(eq(100L), any(ModelConfigCheckRequest.class)))
+                .thenThrow(new IllegalArgumentException("CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING."));
+
+        mockMvc.perform(post("/api/admin/model-configs/check")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "capability": "CHAT_EMBEDDING",
+                                    "base_url": "https://api.example.com/v1",
+                                    "api_key": "sk-test"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
     private ModelConfigVO createTestVO(Long id, Long userId, String apiKeyMasked, String status) {
         ModelConfigVO vo = new ModelConfigVO();
         // Use ModelConfigEntity to build the VO via from()

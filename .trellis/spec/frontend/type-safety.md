@@ -56,7 +56,7 @@ export type ApiKeyStatus =
 
 export type AppStatus = 'ENABLED' | 'DISABLED';
 
-export type ModelConfigCapability = 'CHAT' | 'EMBEDDING' | 'CHAT_EMBEDDING';
+export type ModelConfigCapability = 'CHAT' | 'EMBEDDING';
 
 export type CheckStatus = 'SUCCESS' | 'FAILED' | 'PARTIAL';
 ```
