@@ -1025,3 +1025,37 @@ Recorded completed V0.3 admin request diagnostics UX after manual acceptance and
 ### Next Steps
 
 - None - task complete
+
+
+## Session 51: Model Config Capability Convergence
+
+**Date**: 2026-06-12
+**Task**: Model Config Capability Convergence
+**Branch**: `feature/model-config-capability-cleanup`
+
+### Summary
+
+Completed model config capability convergence after manual acceptance. Commits 3a009937 and 5c176c82 converge writable/checkable capabilities to CHAT or EMBEDDING, reject CHAT_EMBEDDING for new create/update/check flows, add V10 legacy normalization, align backend services/controllers/readiness/check logic, update frontend model-config types/API/page/i18n, update Trellis specs, and refine the saved-row check UX to one-click execution with a read-only result modal and stable fixed-width check button without spinner layout shift. Updated modules: backend model config service/check/admin/app readiness, Flyway migration, backend tests, frontend model-config page/API/types/i18n, and .trellis specs. Validation passed: mvn -q -DskipTests compile; mvn -q -Dtest=ModelConfigServiceTest,ModelConfigAdminControllerTest,ModelConfigCheckServiceTest test; mvn -q -Dtest=AppServiceTest,AppAdminControllerTest test; mvn -q -Dtest=DocumentServiceTest,RetrievalServiceTest test; mvn -q test; cmd /c npm run typecheck; cmd /c npm run build; git diff --check. npm run lint was not run successfully because frontend/package.json has no lint script. Boundary: no provider catalog/routing/fallback work, no API-key rotation work, no request-log prompt/answer/body capture, and no secret exposure.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3a009937` | (see git log) |
+| `5c176c82` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
