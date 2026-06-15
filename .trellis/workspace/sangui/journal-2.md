@@ -1355,3 +1355,55 @@ Completed and recorded the App Output Capture Switch Management task. The existi
 ### Next Steps
 
 - None - task complete
+
+
+## Session 56: Admin auth session completed
+
+**Date**: 2026-06-15
+**Task**: Admin auth session completed
+**Branch**: `feature/admin-auth-session`
+
+### Summary
+
+Completed the admin login/session authentication task and recorded the user's manual acceptance. The work adds JWT-backed admin auth, replaces legacy admin user header plumbing, updates frontend login/token handling, fixes backend Docker dependency resolution with a public Maven mirror settings file, and syncs the related specs.
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| Task | Admin login and session authentication completed on `feature/admin-auth-session`. |
+| Commits | `e10603d2 feat:admin-auth-session`; `cedbecfd fix:backend Docker dependency resolution`. |
+| Backend | Added `sys_user`, BCrypt password hashing, JWT issue/verify, admin auth filter/context, login/current-user APIs, and converted admin controllers from `X-Admin-User-Id` header usage to auth context usage. |
+| Frontend | Added admin login flow, auth API/types, bearer token injection, centralized 401 handling, and removed admin user id input/parameter plumbing from admin pages and API clients. |
+| Docker | Fixed backend Docker build dependency resolution by adding `backend/settings.xml` public Maven mirror config and simplifying Dockerfile Maven package step for visible build logs. |
+| Specs | Updated backend/frontend/security/cross-layer specs for admin auth, auth errors, logging, type safety, state handling, and Docker Maven settings contract. |
+| Validation | Backend targeted auth/controller/service tests passed; full backend `mvn test` passed with 578 tests; frontend `npm run typecheck`, `npm run build`, and `npm run test:visual` passed; `docker compose --progress=plain --env-file .env -f deploy/docker-compose.yml build backend --no-cache` passed; `docker compose --env-file .env -f deploy/docker-compose.yml config` passed; `git diff --check` passed except normal CRLF warnings. |
+| Human Testing | User reported manual testing completed and code committed before record-session. |
+| Boundary | No automatic production default admin/password was added. Local admin can be manually inserted with BCrypt hash; a future dev-only bootstrap can be considered separately. |
+| Follow-up Candidates | API-key rate limiting/quota; production-context smoke test; async document ingestion; source citations and retrieval evaluation; streaming robustness; app-level output-capture management; production config guardrails; gateway metrics baseline; frontend quality baseline; model/KB setup wizard; object storage and file lifecycle. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e10603d2` | (see git log) |
+| `cedbecfd` | (see git log) |
+
+### Testing
+
+- [OK] Backend targeted auth/controller/service tests passed.
+- [OK] Full backend `mvn test` passed with 578 tests.
+- [OK] Frontend `npm run typecheck`, `npm run build`, and `npm run test:visual` passed.
+- [OK] Backend Docker build passed with `docker compose --progress=plain --env-file .env -f deploy/docker-compose.yml build backend --no-cache`.
+- [OK] Compose config render passed with `docker compose --env-file .env -f deploy/docker-compose.yml config`.
+- [OK] `git diff --check` passed except normal CRLF working-tree warnings.
+- [OK] User reported manual testing completed before record-session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
