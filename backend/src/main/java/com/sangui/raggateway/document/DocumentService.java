@@ -98,6 +98,7 @@ public class DocumentService {
         }
 
         String safeFilename = DocumentUploadRules.sanitizeFilename(originalFilename);
+        String displayBasename = DocumentUploadRules.extractDisplayBasename(originalFilename);
 
         InputStream storageStream = new ByteArrayInputStream(fileContent);
         StoredFile storedFile = fileStorageService.save("knowledge", knowledgeBaseId, safeFilename, storageStream);
@@ -105,7 +106,7 @@ public class DocumentService {
         DocumentEntity doc = new DocumentEntity();
         doc.setUserId(userId);
         doc.setKnowledgeBaseId(knowledgeBaseId);
-        doc.setOriginalFilename(safeFilename);
+        doc.setOriginalFilename(displayBasename);
         doc.setContentType(contentType);
         doc.setFileSize(storedFile.getFileSize());
         doc.setStoragePath(storedFile.getStoragePath());
@@ -115,7 +116,7 @@ public class DocumentService {
         doc.setUpdatedAt(LocalDateTime.now());
         documentMapper.insert(doc);
         log.info("Document created: id={}, kbId={}, filename={}, status=UPLOADED",
-                doc.getId(), knowledgeBaseId, safeFilename);
+                doc.getId(), knowledgeBaseId, displayBasename);
 
         knowledgeBaseService.updateStatus(knowledgeBaseId, KnowledgeBaseStatus.PROCESSING.name());
 
@@ -124,9 +125,9 @@ public class DocumentService {
         documentMapper.updateById(doc);
 
         try {
-            DocumentParser parser = selectParser(contentType, safeFilename);
+            DocumentParser parser = selectParser(contentType, displayBasename);
             if (parser == null) {
-                throw new IllegalArgumentException("No parser found for file: " + safeFilename);
+                throw new IllegalArgumentException("No parser found for file: " + displayBasename);
             }
 
             InputStream parseStream = new ByteArrayInputStream(fileContent);
@@ -155,7 +156,7 @@ public class DocumentService {
                 chunk.setChunkIndex(i);
                 chunk.setContent(chunks.get(i));
                 chunk.setTokenCount(chunks.get(i).length());
-                chunk.setMetadata("{\"parser\":\"" + parsed.getParserName() + "\",\"source\":\"" + escapeJson(safeFilename) + "\"}");
+                chunk.setMetadata("{\"parser\":\"" + parsed.getParserName() + "\",\"source\":\"" + escapeJson(displayBasename) + "\"}");
                 chunk.setCreatedAt(LocalDateTime.now());
                 chunk.setUpdatedAt(LocalDateTime.now());
                 documentChunkMapper.insertChunk(chunk);

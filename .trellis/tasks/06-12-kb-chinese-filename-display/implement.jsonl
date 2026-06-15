@@ -1,0 +1,20 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-12-kb-chinese-filename-display\\prd.md", "reason": "Task requirements, boundaries, validation matrix, and DeepSeek handoff constraints"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project document/storage/API boundary and lightweight RAG gateway scope"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Existing rag_document original_filename/storage_path schema and no-migration boundary"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required document upload/storage tests and storage_path exclusion contract"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Document admin upload error matrix must remain unchanged"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "DocumentVO original_filename frontend contract and storage_path exclusion"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Document upload/list polling state should remain page/server-state scoped"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Upload -> storage -> document row -> parser/status flow must remain explicit"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Storage path, document content, and internal path exposure boundaries"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentUploadRules.java", "reason": "Current sanitizeFilename replaces Chinese characters with underscores; likely helper split point"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer multipart-service-VO-frontend filename data flow"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Root cause: safeFilename is persisted as originalFilename and used for parser/metadata"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\storage\\LocalFileStorageService.java", "reason": "Storage-safe filename/key behavior must remain internal and path-safe"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentAdminController.java", "reason": "Multipart filename intake and DocumentVO upload response boundary"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Add Chinese/mixed filename persistence and path basename unit coverage"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentAdminControllerTest.java", "reason": "Add upload/list response coverage for Chinese original_filename and storage_path absence"}
+{"file": "frontend\\src\\pages\\knowledge\\KnowledgeBasePage.tsx", "reason": "Frontend document table already displays original_filename; only change if needed"}

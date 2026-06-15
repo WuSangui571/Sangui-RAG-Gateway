@@ -86,4 +86,44 @@ class LocalFileStorageServiceTest {
 
         assertThat(result.getFileSize()).isEqualTo(0L);
     }
+
+    @Test
+    void shouldSanitizeChineseFilenameInStoragePath() {
+        byte[] content = "中文内容".getBytes(StandardCharsets.UTF_8);
+        InputStream stream = new ByteArrayInputStream(content);
+
+        StoredFile result = storageService.save("knowledge", 1L, "中文 文件名（v1）.md", stream);
+
+        assertThat(result.getStoragePath()).startsWith("knowledge/1/");
+        assertThat(result.getStoragePath()).doesNotContain("中文");
+        assertThat(result.getStoragePath()).doesNotContain("文件名");
+        assertThat(result.getStoragePath()).doesNotContain("（");
+        assertThat(result.getStoragePath()).doesNotContain("）");
+        assertThat(result.getStoragePath()).endsWith(".md");
+    }
+
+    @Test
+    void shouldSanitizeChineseWithPathTraversalInStoragePath() {
+        byte[] content = "内容".getBytes(StandardCharsets.UTF_8);
+        InputStream stream = new ByteArrayInputStream(content);
+
+        StoredFile result = storageService.save("knowledge", 1L, "../中文.md", stream);
+
+        assertThat(result.getStoragePath()).doesNotContain("..");
+        assertThat(result.getStoragePath()).doesNotContain("中文");
+        assertThat(result.getStoragePath()).endsWith(".md");
+    }
+
+    @Test
+    void shouldSanitizeChineseWithWindowsPathInStoragePath() {
+        byte[] content = "内容".getBytes(StandardCharsets.UTF_8);
+        InputStream stream = new ByteArrayInputStream(content);
+
+        StoredFile result = storageService.save("knowledge", 1L, "C:\\fakepath\\中文.md", stream);
+
+        assertThat(result.getStoragePath()).doesNotContain("fakepath");
+        assertThat(result.getStoragePath()).doesNotContain("\\");
+        assertThat(result.getStoragePath()).doesNotContain("中文");
+        assertThat(result.getStoragePath()).endsWith(".md");
+    }
 }

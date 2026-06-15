@@ -360,7 +360,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    void shouldStoreSanitizedOriginalFilename() throws Exception {
+    void shouldStoreDisplayBasenameStrippingPath() throws Exception {
         byte[] fileContent = "Plain text content".getBytes(StandardCharsets.UTF_8);
 
         StoredFile storedFile = new StoredFile("knowledge/1/uuid/secret.md", fileContent.length);
@@ -383,6 +383,139 @@ class DocumentServiceTest {
                 100L, 1L, "../secret.md", "text/markdown", fileContent);
 
         assertThat(result.getOriginalFilename()).isEqualTo("secret.md");
+    }
+
+    @Test
+    void shouldPreserveChineseOriginalFilename() throws Exception {
+        byte[] fileContent = "中文内容测试".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/safe.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), any(), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("中文 文件名（v1）.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("中文内容测试", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("中文内容测试"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(null);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentEntity result = documentService.uploadAndProcess(
+                100L, 1L, "中文 文件名（v1）.md", "text/markdown", fileContent);
+
+        assertThat(result.getOriginalFilename()).isEqualTo("中文 文件名（v1）.md");
+    }
+
+    @Test
+    void shouldStripPathButPreserveChineseBasename() throws Exception {
+        byte[] fileContent = "中文内容".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/safe.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), any(), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("中文.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("中文内容", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("中文内容"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(null);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentEntity result = documentService.uploadAndProcess(
+                100L, 1L, "../中文.md", "text/markdown", fileContent);
+
+        assertThat(result.getOriginalFilename()).isEqualTo("中文.md");
+    }
+
+    @Test
+    void shouldStripWindowsPathButPreserveChineseBasename() throws Exception {
+        byte[] fileContent = "中文内容".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/safe.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), any(), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("中文.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("中文内容", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("中文内容"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(null);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentEntity result = documentService.uploadAndProcess(
+                100L, 1L, "C:\\fakepath\\中文.md", "text/markdown", fileContent);
+
+        assertThat(result.getOriginalFilename()).isEqualTo("中文.md");
+    }
+
+    @Test
+    void shouldPreserveSpacesAndParenthesesInOriginalFilename() throws Exception {
+        byte[] fileContent = "Report final content".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/safe.txt", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), any(), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("报告 final (v2).txt"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("Report final content", "plain-text"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("Report final content"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(null);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentEntity result = documentService.uploadAndProcess(
+                100L, 1L, "报告 final (v2).txt", "text/plain", fileContent);
+
+        assertThat(result.getOriginalFilename()).isEqualTo("报告 final (v2).txt");
+    }
+
+    @Test
+    void shouldUseDisplayBasenameForChunkMetadataSource() throws Exception {
+        byte[] fileContent = "中文内容测试".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/safe.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), any(), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("中文doc.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("中文内容测试", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("中文内容测试"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(null);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        documentService.uploadAndProcess(
+                100L, 1L, "中文doc.md", "text/markdown", fileContent);
+
+        ArgumentCaptor<DocumentChunkEntity> chunkCaptor = ArgumentCaptor.forClass(DocumentChunkEntity.class);
+        verify(documentChunkMapper).insertChunk(chunkCaptor.capture());
+        DocumentChunkEntity chunk = chunkCaptor.getValue();
+        assertThat(chunk.getMetadata()).contains("\"source\":\"中文doc.md\"");
     }
 
     @Test

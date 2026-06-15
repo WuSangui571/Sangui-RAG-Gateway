@@ -296,6 +296,64 @@ class DocumentAdminControllerTest {
     }
 
     @Test
+    void shouldUploadWithChineseOriginalFilename() throws Exception {
+        KnowledgeBaseEntity kb = createKb(1L, 100L);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        DocumentEntity doc = createDoc(10L, 100L, 1L);
+        doc.setOriginalFilename("中文 文件名（v1）.md");
+        when(documentService.uploadAndProcess(eq(100L), eq(1L), eq("中文 文件名（v1）.md"), eq("text/markdown"), any(byte[].class)))
+                .thenReturn(doc);
+
+        MockMultipartFile file = new MockMultipartFile("file", "中文 文件名（v1）.md", "text/markdown", "中文内容".getBytes());
+
+        mockMvc.perform(multipart("/api/admin/knowledge-bases/1/documents")
+                        .file(file)
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.original_filename").value("中文 文件名（v1）.md"))
+                .andExpect(jsonPath("$.data.storage_path").doesNotExist());
+    }
+
+    @Test
+    void shouldUploadWithChineseAndTraversalPathStripped() throws Exception {
+        KnowledgeBaseEntity kb = createKb(1L, 100L);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        DocumentEntity doc = createDoc(11L, 100L, 1L);
+        doc.setOriginalFilename("中文.md");
+        when(documentService.uploadAndProcess(eq(100L), eq(1L), eq("../中文.md"), eq("text/markdown"), any(byte[].class)))
+                .thenReturn(doc);
+
+        MockMultipartFile file = new MockMultipartFile("file", "../中文.md", "text/markdown", "内容".getBytes());
+
+        mockMvc.perform(multipart("/api/admin/knowledge-bases/1/documents")
+                        .file(file)
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.original_filename").value("中文.md"))
+                .andExpect(jsonPath("$.data.storage_path").doesNotExist());
+    }
+
+    @Test
+    void shouldListDocumentsWithChineseOriginalFilename() throws Exception {
+        KnowledgeBaseEntity kb = createKb(1L, 100L);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        DocumentEntity doc = createDoc(10L, 100L, 1L);
+        doc.setOriginalFilename("测试文档.txt");
+        when(documentService.listByKnowledgeBase(100L, 1L, null)).thenReturn(List.of(doc));
+
+        mockMvc.perform(get("/api/admin/knowledge-bases/1/documents")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data[0].original_filename").value("测试文档.txt"))
+                .andExpect(content().string(not(containsString("storage_path"))));
+    }
+
+    @Test
     void shouldNotExposeStoragePathInListResponse() throws Exception {
         KnowledgeBaseEntity kb = createKb(1L, 100L);
         when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
