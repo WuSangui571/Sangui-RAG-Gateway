@@ -1059,3 +1059,67 @@ Completed model config capability convergence after manual acceptance. Commits 3
 ### Next Steps
 
 - None - task complete
+
+
+## Session 52: KB Chinese Filename Display Fix
+
+**Date**: 2026-06-15
+**Task**: KB Chinese Filename Display Fix
+**Branch**: `feature/kb-chinese-filename-display`
+
+### Summary
+
+Fixed knowledge-base upload display filenames by separating Unicode display basenames from sanitized storage keys.
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Commit | `8d6055809396e58d9a25db480b99d1ad0299fe12` (`fix:知识库中文文件名显示`) |
+| Branch | `feature/kb-chinese-filename-display` |
+| Main modules | Backend document upload/service/storage boundary; backend document controller/service/storage tests |
+| Result | Knowledge base upload now separates display basename from internal storage-safe filename. Chinese, spaces, parentheses, Unicode basename, POSIX traversal-like paths, and Windows `C:\fakepath\...` inputs keep a safe user-visible basename while storage keys remain sanitized. |
+
+## Updated Files
+
+- `backend/src/main/java/com/sangui/raggateway/document/DocumentUploadRules.java`
+- `backend/src/main/java/com/sangui/raggateway/document/DocumentService.java`
+- `backend/src/test/java/com/sangui/raggateway/document/DocumentAdminControllerTest.java`
+- `backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/document/storage/LocalFileStorageServiceTest.java`
+
+## Verification
+
+- `cd backend; mvn -q -DskipTests compile` passed.
+- `cd backend; mvn -q "-Dtest=DocumentServiceTest,DocumentAdminControllerTest,LocalFileStorageServiceTest" test` passed.
+- `cd backend; mvn -q "-Dtest=KnowledgeBaseServiceTest,KnowledgeBaseAdminControllerTest,DocumentServiceTest,DocumentAdminControllerTest,PlainTextDocumentParserTest,MarkdownDocumentParserTest,TextChunkerTest,LocalFileStorageServiceTest" test` passed.
+- `cd backend; mvn -q test` passed, 498 tests run with 0 failures and 0 errors.
+- `git diff --check` passed.
+- Human manual acceptance was reported before record-session.
+
+## Boundaries
+
+- No database migration was added.
+- No API path, DTO, VO field, or frontend type contract was changed.
+- `DocumentVO` continues to expose `original_filename` and omit `storage_path`.
+- Frontend `KnowledgeBasePage.tsx` already displays `original_filename`, so no frontend implementation change was needed.
+- No infra, Docker, Redis, MQ, model config, API key, retrieval SQL, prompt, or request-log behavior was changed.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8d6055809396e58d9a25db480b99d1ad0299fe12` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
