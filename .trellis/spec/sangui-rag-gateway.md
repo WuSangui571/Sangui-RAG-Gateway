@@ -521,6 +521,7 @@ The full-stack deployment baseline is implemented through these files:
 ```text
 backend/Dockerfile
 backend/.dockerignore
+backend/settings.xml
 frontend/Dockerfile
 frontend/.dockerignore
 frontend/nginx.conf
@@ -589,6 +590,7 @@ Secret rules:
 - `.env.example` contains only safe local placeholders.
 - Real `.env`, generated app API keys, upstream provider keys, Maven `target`, frontend `dist`, `node_modules`, and uploaded knowledge files must not be committed.
 - Provider keys remain configured through Admin model config workflows and encrypted at rest; Docker images must not bake provider keys through `ARG`, `ENV`, copied files, or README examples.
+- `backend/settings.xml` is part of the backend Docker build contract and may contain public Maven mirror metadata only; it must not contain repository credentials, tokens, or private repository URLs.
 
 CI baseline:
 
