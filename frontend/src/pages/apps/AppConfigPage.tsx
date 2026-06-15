@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Table, Button, Modal, Form, Input, Select, Space, Typography, Alert,
+  Table, Button, Modal, Form, Input, Select, Space, Typography, Alert, Switch,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { AppVO, AppStatus, CreateAppDTO } from '../../types/app'
 import type { ModelConfigVO } from '../../types/model-config'
 import type { KnowledgeBaseVO } from '../../types/knowledge'
 import { ApiError } from '../../api/http'
-import { listApps, createApp, bindDefaultModelConfig, bindDefaultKnowledgeBase, disableApp, enableApp } from '../../api/apps'
+import { listApps, createApp, bindDefaultModelConfig, bindDefaultKnowledgeBase, disableApp, enableApp, updateAppOutputCapture } from '../../api/apps'
 import { listChatCapableConfigs } from '../../api/model-configs'
 import { listKnowledgeBases } from '../../api/knowledge'
 import { useShell } from '../../components/layout/AdminShell'
@@ -35,6 +35,8 @@ export default function AppConfigPage() {
   const [bindKbAppId, setBindKbAppId] = useState<number | null>(null)
   const [kbList, setKbList] = useState<KnowledgeBaseVO[]>([])
   const [selectedKbId, setSelectedKbId] = useState<number | null>(null)
+
+  const [toggleCaptureApp, setToggleCaptureApp] = useState<AppVO | null>(null)
 
   const fetchApps = useCallback(async () => {
     if (adminUserId === null) return
@@ -184,6 +186,32 @@ export default function AppConfigPage() {
     }
   }
 
+  function handleToggleCapture(app: AppVO) {
+    if (adminUserId === null) return
+    const nextEnabled = !app.request_log_output_capture_enabled
+    if (nextEnabled) {
+      setToggleCaptureApp(app)
+    } else {
+      doUpdateCapture(app, false)
+    }
+  }
+
+  async function doUpdateCapture(app: AppVO, enabled: boolean) {
+    if (adminUserId === null) return
+    try {
+      const res = await updateAppOutputCapture(app.id, { request_log_output_capture_enabled: enabled }, adminUserId)
+      if (res.code !== 'OK') {
+        setError(res.message)
+      } else {
+        setToggleCaptureApp(null)
+        fetchApps()
+      }
+    } catch (e: unknown) {
+      setError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : t('apps.networkError')))
+      setToggleCaptureApp(null)
+    }
+  }
+
   const columns: ColumnsType<AppVO> = [
     { title: t('apps.column.id'), dataIndex: 'id', key: 'id', width: 60 },
     { title: t('apps.column.name'), dataIndex: 'name', key: 'name', width: 180 },
@@ -198,6 +226,15 @@ export default function AppConfigPage() {
     {
       title: t('apps.column.defaultKb'), key: 'kb', width: 140,
       render: (_: unknown, record: AppVO) => record.default_knowledge_base_id ?? '-',
+    },
+    {
+      title: t('apps.outputCapture'), key: 'output_capture', width: 110,
+      render: (_: unknown, record: AppVO) => (
+        <Switch
+          checked={record.request_log_output_capture_enabled}
+          onChange={() => handleToggleCapture(record)}
+        />
+      ),
     },
     {
       title: t('apps.column.actions'), key: 'actions', width: 380,
@@ -249,7 +286,7 @@ export default function AppConfigPage() {
         loading={loading}
         locale={{ emptyText: t('apps.empty') }}
         pagination={false}
-        scroll={{ x: 900 }}
+        scroll={{ x: 1020 }}
       />
 
       <Modal
@@ -309,6 +346,25 @@ export default function AppConfigPage() {
             label: `${kb.name} (${kb.embedding_model}, ${kb.embedding_dimension}d)`,
           }))}
         />
+      </Modal>
+
+      <Modal
+        title={t('apps.outputCaptureEnableTitle')}
+        open={toggleCaptureApp !== null}
+        onCancel={() => setToggleCaptureApp(null)}
+        onOk={() => { if (toggleCaptureApp) doUpdateCapture(toggleCaptureApp, true) }}
+        okText={t('apps.outputCaptureEnableOk')}
+        okButtonProps={{ danger: true }}
+      >
+        <Alert
+          type="warning"
+          showIcon
+          message={t('apps.outputCaptureRiskWarning')}
+          style={{ marginBottom: 16 }}
+        />
+        <Typography.Paragraph>
+          {toggleCaptureApp ? t('apps.outputCaptureEnableContent', { appName: toggleCaptureApp.name }) : ''}
+        </Typography.Paragraph>
       </Modal>
     </div>
   )

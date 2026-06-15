@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 54
+- **Total Sessions**: 55
 - **Last Active**: 2026-06-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1276 | Active |
+| `journal-2.md` | ~1350 | Active |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 55 | 2026-06-15 | App Output Capture Switch Management | `0895350d` | `feature/app-output-capture-switch` |
 | 54 | 2026-06-15 | Request log output observability policy | `6b8877a1` | `feature/request-log-output-observability-policy` |
 | 53 | 2026-06-15 | Smoke module clarity check and archive | `e625f0ab` | `feature/smoke-module-clarity` |
 | 52 | 2026-06-15 | KB Chinese Filename Display Fix | `8d6055809396e58d9a25db480b99d1ad0299fe12` | `feature/kb-chinese-filename-display` |

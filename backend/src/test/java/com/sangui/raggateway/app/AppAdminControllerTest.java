@@ -660,6 +660,218 @@ class AppAdminControllerTest {
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
 
+    // ---- Update Output Capture ----
+
+    @Test
+    void shouldUpdateOutputCaptureToTrue() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        AppEntity updated = createApp(1L, 100L);
+        updated.setRequestLogOutputCaptureEnabled(true);
+
+        when(appService.findById(1L)).thenReturn(app);
+        when(appService.updateOutputCapture(1L, true, 100L)).thenReturn(updated);
+
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "request_log_output_capture_enabled": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.request_log_output_capture_enabled").value(true));
+    }
+
+    @Test
+    void shouldUpdateOutputCaptureToFalse() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        AppEntity updated = createApp(1L, 100L);
+        updated.setRequestLogOutputCaptureEnabled(false);
+
+        when(appService.findById(1L)).thenReturn(app);
+        when(appService.updateOutputCapture(1L, false, 100L)).thenReturn(updated);
+
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "request_log_output_capture_enabled": false
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.request_log_output_capture_enabled").value(false));
+    }
+
+    @Test
+    void shouldRejectOutputCaptureWithNullBody() throws Exception {
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("null"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldRejectOutputCaptureWithMissingField() throws Exception {
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldReturn404ForOutputCaptureOnMissingApp() throws Exception {
+        when(appService.findById(999L)).thenReturn(null);
+
+        mockMvc.perform(put("/api/admin/apps/999/request-log-output-capture")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "request_log_output_capture_enabled": true
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldReturn403ForOutputCaptureOnCrossUserApp() throws Exception {
+        AppEntity otherUserApp = createApp(1L, 200L);
+        when(appService.findById(1L)).thenReturn(otherUserApp);
+
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "request_log_output_capture_enabled": true
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void shouldReturn404WhenOutputCaptureUpdateMissesAfterOwnershipCheck() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findById(1L)).thenReturn(app, null);
+        when(appService.updateOutputCapture(1L, true, 100L)).thenReturn(null);
+
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "request_log_output_capture_enabled": true
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+    }
+
+    @Test
+    void shouldNotContainForbiddenFieldsInOutputCaptureResponse() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        AppEntity updated = createApp(1L, 100L);
+        updated.setRequestLogOutputCaptureEnabled(true);
+
+        when(appService.findById(1L)).thenReturn(app);
+        when(appService.updateOutputCapture(1L, true, 100L)).thenReturn(updated);
+
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "request_log_output_capture_enabled": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("\"output_preview\""))))
+                .andExpect(content().string(not(containsString("\"api_key\""))))
+                .andExpect(content().string(not(containsString("\"key_hash\""))))
+                .andExpect(content().string(not(containsString("\"api_key_encrypted\""))))
+                .andExpect(content().string(not(containsString("\"upstream_api_key\""))))
+                .andExpect(content().string(not(containsString("\"stack_trace\""))));
+    }
+
+    @Test
+    void shouldRejectOutputCaptureWithNonNumericUserId() throws Exception {
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .header("X-Admin-User-Id", "abc")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "request_log_output_capture_enabled": true
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRejectOutputCaptureWithNonPositiveUserId() throws Exception {
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .header("X-Admin-User-Id", "0")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "request_log_output_capture_enabled": true
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldRejectOutputCaptureWithMissingUserId() throws Exception {
+        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "request_log_output_capture_enabled": true
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldIncludeOutputCaptureInAppListResponse() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.listByUserId(eq(100L), isNull())).thenReturn(List.of(app));
+
+        mockMvc.perform(get("/api/admin/apps")
+                        .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].request_log_output_capture_enabled").value(false));
+    }
+
+    @Test
+    void shouldIncludeOutputCaptureInCreateAppResponse() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.create(eq("Demo App"), eq(100L))).thenReturn(app);
+
+        mockMvc.perform(post("/api/admin/apps")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "Demo App"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.request_log_output_capture_enabled").value(false));
+    }
+
     // ---- Readiness ----
 
     @Test

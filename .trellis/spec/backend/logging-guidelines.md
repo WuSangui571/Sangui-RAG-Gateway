@@ -368,6 +368,20 @@ global rag.request-log.output-capture.enabled
 AND rag_app.request_log_output_capture_enabled
 ```
 
+App switch management endpoint:
+
+```http
+PUT /api/admin/apps/{appId}/request-log-output-capture
+X-Admin-User-Id: <userId>
+Content-Type: application/json
+
+{
+  "request_log_output_capture_enabled": true
+}
+```
+
+This endpoint only changes the app-level opt-in flag and returns `AppVO` with `request_log_output_capture_enabled`. It must not return output preview content, raw answers, prompts, request messages, provider bodies, raw SSE payloads, chunk content, embeddings, keys, hashes, encrypted keys, stack traces, or environment values. Enabling the app switch alone is not sufficient to capture output; the global `rag.request-log.output-capture.enabled` switch must also be enabled.
+
 Implemented policy classes:
 
 ```text
@@ -468,6 +482,7 @@ Required tests:
 
 ```bash
 cd backend
+mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest,OutputCapturePolicyTest" test
 mvn -q "-Dtest=ApiRequestLogOutputServiceTest,OutputCapturePolicyTest" test
 mvn -q "-Dtest=ApiRequestLogAdminControllerTest,OpenAiChatCompletionsControllerTest" test
 ```

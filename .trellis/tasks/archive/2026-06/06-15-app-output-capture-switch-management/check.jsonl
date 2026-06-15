@@ -1,0 +1,24 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-15-app-output-capture-switch-management\\prd.md", "reason": "Acceptance criteria and scope boundaries for review"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Validate feature remains within lightweight RAG gateway scope"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Check controller/service/DTO/VO placement"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Verify no migration needed and DB contract remains aligned"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Review status codes and safe error shapes"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Verify no unsafe logs or response fields"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend completion/test expectations"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Review frontend file placement"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Review App page UI behavior"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Verify no persistence/global store misuse"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Review frontend type/API alignment"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend completion checks"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Security boundary review"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer review checklist"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Review no hidden fallback or raw provider/body exposure"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppServiceTest.java", "reason": "Backend service assertions to update"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppAdminControllerTest.java", "reason": "Backend controller/error/security assertions to update"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\OutputCapturePolicyTest.java", "reason": "Effective capture policy regression assertions"}
+{"file": "frontend\\src\\types\\app.ts", "reason": "Review AppVO and update DTO type alignment"}
+{"file": "frontend\\src\\api\\apps.ts", "reason": "Review typed API client path and payload"}
+{"file": "frontend\\src\\pages\\apps\\AppConfigPage.tsx", "reason": "Review App page switch and warning UX"}
+{"file": "frontend\\src\\app\\i18n\\dict.ts", "reason": "Review bilingual UI text"}

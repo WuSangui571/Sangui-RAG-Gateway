@@ -3,6 +3,7 @@ package com.sangui.raggateway.app;
 import com.sangui.raggateway.app.dto.BindAppDefaultModelConfigDTO;
 import com.sangui.raggateway.app.dto.BindAppDefaultKnowledgeBaseDTO;
 import com.sangui.raggateway.app.dto.CreateAppDTO;
+import com.sangui.raggateway.app.dto.UpdateAppOutputCaptureDTO;
 import com.sangui.raggateway.app.vo.AppReadinessVO;
 import com.sangui.raggateway.app.vo.AppVO;
 import com.sangui.raggateway.app.vo.BindAppDefaultModelConfigVO;
@@ -281,6 +282,39 @@ public class AppAdminController {
         BindAppDefaultKnowledgeBaseVO vo = new BindAppDefaultKnowledgeBaseVO(
                 updated.getId(), updated.getUserId(), updated.getDefaultKnowledgeBaseId());
         return ApiResponse.success(vo);
+    }
+
+    @PutMapping("/{appId}/request-log-output-capture")
+    public ApiResponse<AppVO> updateOutputCapture(
+            @RequestHeader("X-Admin-User-Id") Long userId,
+            @PathVariable Long appId,
+            @RequestBody UpdateAppOutputCaptureDTO dto) {
+        if (userId == null || userId <= 0) {
+            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
+        }
+
+        if (dto == null || dto.getRequestLogOutputCaptureEnabled() == null) {
+            throw new BusinessException("INVALID_REQUEST", "request_log_output_capture_enabled is required");
+        }
+
+        AppEntity app = appService.findById(appId);
+        if (app == null) {
+            throw new BusinessException("NOT_FOUND", "App not found", HttpStatus.NOT_FOUND);
+        }
+        if (!app.getUserId().equals(userId)) {
+            throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+        }
+
+        boolean enabled = dto.getRequestLogOutputCaptureEnabled();
+        AppEntity updated = appService.updateOutputCapture(appId, enabled, userId);
+        if (updated == null) {
+            AppEntity anyApp = appService.findById(appId);
+            if (anyApp != null && !anyApp.getUserId().equals(userId)) {
+                throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+            }
+            throw new BusinessException("NOT_FOUND", "App not found", HttpStatus.NOT_FOUND);
+        }
+        return ApiResponse.success(AppVO.from(updated));
     }
 
     private void validateUserId(Long userId) {

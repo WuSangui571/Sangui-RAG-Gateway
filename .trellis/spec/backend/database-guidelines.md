@@ -482,6 +482,14 @@ backend/src/main/resources/db/migration/V11__add_request_log_output_observabilit
 |---|---|---:|---|
 | `request_log_output_capture_enabled` | `BOOLEAN` | yes | Defaults to `FALSE`; app-level opt-in switch. Effective capture requires this and the global switch. |
 
+Admin mutation contract for this column:
+
+```java
+AppService.updateOutputCapture(Long appId, boolean enabled, Long userId)
+```
+
+The service must scope the update by `id` and `user_id`, set `request_log_output_capture_enabled` to the requested boolean, update `updated_at`, and return `null` when the app is missing or not owned by the caller. No migration is needed when only exposing this existing column through Admin APIs.
+
 Output access audit table:
 
 ```text
@@ -521,6 +529,8 @@ Validation cases:
 | Case | Expected result | Required assertion |
 |---|---|---|
 | Both global and app switches disabled by default | New rows do not persist output preview by default | `OutputCapturePolicyTest`, gateway controller test. |
+| Owner toggles app switch | `rag_app.request_log_output_capture_enabled` is persisted and `updated_at` changes | `AppServiceTest`. |
+| Cross-user app switch update | Service returns `null` and does not update the row | `AppServiceTest`, `AppAdminControllerTest`. |
 | Captured non-streaming output | Bounded preview metadata maps through `CreateRequestLogCommand` to `ApiRequestLogEntity` | `ApiRequestLogOutputServiceTest`. |
 | Audit write | Audit row stores caller/app/request/result/reason only, not preview content | `ApiRequestLogOutputServiceTest`. |
 | Expired preview cleanup | Preview is nulled and status becomes `EXPIRED`; row remains | `ApiRequestLogOutputServiceTest`. |

@@ -1,0 +1,27 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-15-app-output-capture-switch-management\\prd.md", "reason": "Task PRD with API payload, validation matrix, boundaries, and required tests"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary and app/request-log output observability contract"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend app/log module structure and layering"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Existing rag_app request_log_output_capture_enabled schema and defaults"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin App API error matrix and output preview access boundary"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Request-log output preview observability and forbidden fields"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend tests and review checklist"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend App page/API/type placement"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Admin UI controls, modals, warnings, states"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Keep app switch server-state/local UI only"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend AppVO and DTO snake_case contract"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend validation/build and UX safety"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Output preview boundary, tenant isolation, forbidden fields"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API/DTO/VO/frontend/test alignment"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Ensure request-log/gateway behavior remains visible and safe"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppEntity.java", "reason": "Existing app entity already has requestLogOutputCaptureEnabled"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\vo\\AppVO.java", "reason": "App response mapping needs new switch field"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppService.java", "reason": "Existing owner-scoped app mutations and service patterns"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\app\\AppAdminController.java", "reason": "Existing app Admin API ownership/error patterns"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\OutputCapturePolicy.java", "reason": "Effective capture policy already requires app flag"}
+{"file": "frontend\\src\\types\\app.ts", "reason": "Frontend AppVO/DTO type contract"}
+{"file": "frontend\\src\\api\\apps.ts", "reason": "Existing typed App API client pattern"}
+{"file": "frontend\\src\\pages\\apps\\AppConfigPage.tsx", "reason": "Existing App management page for switch UI"}
+{"file": "frontend\\src\\app\\i18n\\dict.ts", "reason": "Bilingual app/output capture UI strings"}

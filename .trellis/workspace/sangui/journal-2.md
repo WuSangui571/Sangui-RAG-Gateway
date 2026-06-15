@@ -475,7 +475,7 @@ This session closes the Demo Smoke Runtime Evidence Checklist Finalization task.
 
 ### Summary
 
-(Add summary)
+Completed and recorded the App Output Capture Switch Management task. The existing app-level request-log output capture flag is now exposed through owner-scoped Admin API and frontend App management UI, with explicit enable-risk confirmation, synchronized DTO/VO/frontend types, regression tests, and executable Trellis spec updates for the API, frontend, and security boundaries.
 
 ### Main Changes
 
@@ -1266,6 +1266,87 @@ Implemented and manually accepted bounded request-log output preview observabili
 ### Testing
 
 - [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 55: App Output Capture Switch Management
+
+**Date**: 2026-06-15
+**Task**: App Output Capture Switch Management
+**Branch**: `feature/app-output-capture-switch`
+
+### Summary
+
+Completed and recorded the App Output Capture Switch Management task. The existing app-level request-log output capture flag is now exposed through owner-scoped Admin API and frontend App management UI, with explicit enable-risk confirmation, synchronized DTO/VO/frontend types, regression tests, and executable Trellis spec updates for the API, frontend, and security boundaries.
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| Commit | 0895350d feat:app-output-capture-switch-management |
+| Backend | Exposed existing rag_app.request_log_output_capture_enabled through AppVO, UpdateAppOutputCaptureDTO, AppService.updateOutputCapture, and PUT /api/admin/apps/{appId}/request-log-output-capture. |
+| Frontend | Added typed updateAppOutputCapture client, AppVO/DTO types, AppConfigPage output-capture Switch, enable-risk confirmation modal, and zh-CN/en-US i18n text. |
+| Specs | Updated backend database/error/logging specs, frontend type-safety spec, and RAG security spec with the app switch API, DTO payload, error matrix, frontend contract, and safe-field boundary. |
+| Trellis context | Fixed task check/debug context paths from stale .claude/commands/trellis references to .agents/skills paths before commit. |
+
+**Updated Files**:
+- `backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java`
+- `backend/src/main/java/com/sangui/raggateway/app/AppService.java`
+- `backend/src/main/java/com/sangui/raggateway/app/vo/AppVO.java`
+- `backend/src/main/java/com/sangui/raggateway/app/dto/UpdateAppOutputCaptureDTO.java`
+- `backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java`
+- `backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java`
+- `frontend/src/api/apps.ts`
+- `frontend/src/types/app.ts`
+- `frontend/src/pages/apps/AppConfigPage.tsx`
+- `frontend/src/app/i18n/dict.ts`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/backend/error-handling.md`
+- `.trellis/spec/backend/logging-guidelines.md`
+- `.trellis/spec/frontend/type-safety.md`
+- `.trellis/spec/security/rag-security.md`
+
+**Validation**:
+- `git diff --check`: passed, line-ending warnings only.
+- `mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest,OutputCapturePolicyTest" test`: passed after Maven network/cache permission escalation.
+- `mvn -q -DskipTests compile`: passed.
+- `cmd /c npm run typecheck`: passed.
+- `cmd /c npm run build`: passed, existing Vite chunk-size warning only.
+- `mvn test`: passed after Maven network/cache permission escalation, 530 tests, 0 failures, 0 errors.
+- `cmd /c npm run test:visual`: passed, 3 Chromium visual smoke tests.
+- User manually tested and committed the business change before record-session.
+
+**Result And Boundaries**:
+- The app-level output capture switch is now owner-manageable through Admin API and the App management page.
+- Normal app/list/detail/update responses still expose only metadata and the boolean switch, not output preview content.
+- Explicit audited request-log output preview access remains unchanged.
+- No database schema, Docker, Redis, MQ, or request-log preview-access behavior was changed in this task.
+- Remaining related gap: output preview cleanup scheduling is still a separate follow-up candidate.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0895350d` | feat:app-output-capture-switch-management |
+
+### Testing
+
+- [OK] `git diff --check` passed with line-ending warnings only.
+- [OK] `mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest,OutputCapturePolicyTest" test` passed after Maven network/cache permission escalation.
+- [OK] `mvn -q -DskipTests compile` passed.
+- [OK] `cmd /c npm run typecheck` passed.
+- [OK] `cmd /c npm run build` passed with the existing Vite chunk-size warning only.
+- [OK] `mvn test` passed after Maven network/cache permission escalation: 530 tests, 0 failures, 0 errors.
+- [OK] `cmd /c npm run test:visual` passed: 3 Chromium visual smoke tests.
+- [OK] User manually tested and committed the business change before record-session.
 
 ### Status
 
