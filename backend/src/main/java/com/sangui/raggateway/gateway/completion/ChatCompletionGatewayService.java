@@ -137,10 +137,13 @@ public class ChatCompletionGatewayService {
             }
             String questionSummary = truncateForSummary(extractLastUserMessage(request.getMessages()));
             String hitChunkIdsJson = toJsonArray(retrievalResult.getHitChunkIds());
+            String assistantOutputContent = extractAssistantOutput(response);
+            Integer completionLength = assistantOutputContent != null ? assistantOutputContent.length() : null;
             return new ChatCompletionResult(response, modelConfig.getChatModel(),
                     modelConfig.getProviderName(), upstreamLatency,
                     promptTokens, completionTokens, totalTokens,
-                    questionSummary, hitChunkIdsJson);
+                    questionSummary, hitChunkIdsJson,
+                    assistantOutputContent, completionLength);
         } catch (GatewayException e) {
             throw e;
         } catch (Exception e) {
@@ -360,6 +363,18 @@ public class ChatCompletionGatewayService {
             }
         }
         return null;
+    }
+
+    static String extractAssistantOutput(OpenAiChatCompletionResponse response) {
+        if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
+            return null;
+        }
+        OpenAiChatCompletionResponse.Choice choice = response.getChoices().get(0);
+        if (choice.getMessage() == null) {
+            return null;
+        }
+        String content = choice.getMessage().getContent();
+        return content != null && !content.isEmpty() ? content : null;
     }
 
     static String truncateForSummary(String text) {

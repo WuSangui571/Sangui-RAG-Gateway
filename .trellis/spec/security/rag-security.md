@@ -84,6 +84,16 @@ internal filesystem path
 environment variables
 ```
 
+Output preview exception:
+
+`output_preview` is allowed only through:
+
+```http
+POST /api/admin/apps/{appId}/request-logs/{requestId}/output-preview/access
+```
+
+It must be bounded, deterministically redacted, explicitly confirmed with `confirm_access=true`, tenant-scoped by app ownership before any request-log lookup, and audited without storing preview content.
+
 ## 4. Contracts
 
 | Contract | Required behavior |
@@ -95,6 +105,7 @@ environment variables
 | Evidence boundary | Admin hit chunks return safe metadata and bounded summary, not full chunk content. |
 | Log boundary | Request logs hold safe operational fields only. |
 | Error boundary | Errors are compatible and safe; no internals or secrets. |
+| Output preview boundary | Preview content is default-off, app-opt-in, bounded/redacted, expired by retention, and returned only through explicit audited access. |
 
 ## 5. Validation & Error Matrix
 
@@ -103,6 +114,8 @@ environment variables
 | App key for app A tries to retrieve app B KB | No chunks returned; request fails according to binding/readiness contract | Retrieval/service test |
 | Admin user guesses another user's app or KB ID | 403/404 according to admin contract; no data leak | Controller/service test |
 | Request-log detail requested cross-user | 403 `FORBIDDEN`; no log row returned | Request-log API test |
+| Output preview requested cross-user | 403 `FORBIDDEN`; app ownership check happens before request-log query | Request-log output access controller test |
+| Output preview requested without confirmation | 400 `INVALID_REQUEST`; audit `DENIED`; no preview returned | Request-log output access controller test |
 | Hit chunks include IDs from another KB | Only current app-bound KB chunks are returned | Hit chunk service test |
 | User asks for keys or full prompt | Prompt safety instruction refuses; logs omit secrets | Prompt/security test |
 | Provider error includes request content | Client and logs receive only safe normalized error | Upstream client test |
@@ -113,8 +126,10 @@ environment variables
 | Case | Expected result |
 |------|-----------------|
 | Good | Retrieval, prompt, logs, and hit chunk APIs all use app/user/KB boundaries and return only safe evidence. |
+| Good | Output preview capture is globally and app disabled by default; when enabled, only bounded redacted preview is stored and explicit access is audited. |
 | Base | No KB evidence or denied access: the gateway fails clearly or says evidence is insufficient without leaking internals. |
 | Bad | Context contains another app's data, logs persist full prompts, errors expose SQL or provider bodies, or evidence APIs return full chunk content by default. |
+| Bad | Request-log list/detail exposes `output_preview`, preview access bypasses app ownership, raw SSE is persisted, or audit rows store preview content. |
 
 ## 7. Wrong vs Correct
 

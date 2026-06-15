@@ -7,6 +7,7 @@ import { classifyDiagnostic } from './requestDiagnostics'
 import RequestLogStatusTag from './RequestLogStatusTag'
 import HitChunksPanel from './HitChunksPanel'
 import RequestDiagnosticsPanel from './RequestDiagnosticsPanel'
+import OutputPreviewModal from './OutputPreviewModal'
 import { Drawer, Descriptions, Typography, Button, Space, Alert, Spin, Tag } from 'antd'
 import { useI18n } from '../../app/i18n'
 
@@ -48,6 +49,8 @@ export default function RequestLogDetailDrawer({
   const [readiness, setReadiness] = useState<AppReadinessVO | null>(null)
   const [readinessLoading, setReadinessLoading] = useState(false)
   const [readinessError, setReadinessError] = useState<string | null>(null)
+
+  const [previewModalOpen, setPreviewModalOpen] = useState(false)
 
   useEffect(() => {
     if (!open || !requestId) {
@@ -210,6 +213,39 @@ export default function RequestLogDetailDrawer({
             </Descriptions.Item>
           </Descriptions>
 
+          <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
+            <Descriptions.Item label={t('rl-drawer.outputCaptureStatus')}>
+              <Tag>{detail.output_capture_status}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label={t('rl-drawer.completionLength')}>
+              {detail.completion_length !== null && detail.completion_length !== undefined
+                ? String(detail.completion_length) : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('rl-drawer.outputPreviewAvailable')}>
+              {detail.output_preview_available ? t('rl-drawer.yes') : t('rl-drawer.no')}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('rl-drawer.outputPreviewTruncated')}>
+              {detail.output_preview_truncated ? t('rl-drawer.yes') : t('rl-drawer.no')}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('rl-drawer.outputRedacted')}>
+              {detail.output_redacted ? t('rl-drawer.yes') : t('rl-drawer.no')}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('rl-drawer.outputRetentionExpiresAt')}>
+              {detail.output_retention_expires_at ?? '-'}
+            </Descriptions.Item>
+          </Descriptions>
+
+          {detail.output_preview_available && (
+            <div style={{ marginBottom: 16 }}>
+              <Button
+                type="primary"
+                onClick={() => setPreviewModalOpen(true)}
+              >
+                {t('rl-drawer.viewOutputPreview')}
+              </Button>
+            </div>
+          )}
+
           <Typography.Title level={5}>{t('rl-drawer.hitChunks')}</Typography.Title>
           <HitChunksPanel
             chunks={chunks}
@@ -224,6 +260,16 @@ export default function RequestLogDetailDrawer({
             readinessLoading={readinessLoading}
             readinessError={readinessError}
           />
+
+          {appId && adminUserId && requestId && (
+            <OutputPreviewModal
+              open={previewModalOpen}
+              appId={appId}
+              requestId={requestId}
+              adminUserId={adminUserId}
+              onClose={() => setPreviewModalOpen(false)}
+            />
+          )}
         </>
       )}
     </Drawer>

@@ -1,6 +1,7 @@
 package com.sangui.raggateway.gateway.openai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sangui.raggateway.app.AppService;
 import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
@@ -11,6 +12,7 @@ import com.sangui.raggateway.gateway.stream.ChatCompletionStreamPreparation;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
 import com.sangui.raggateway.gateway.upstream.UpstreamChatCompletionRequest;
 import com.sangui.raggateway.log.ApiRequestLogService;
+import com.sangui.raggateway.log.OutputCapturePolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +51,12 @@ class OpenAiChatCompletionsControllerTest {
     @Mock
     private OpenAiCompatibleUpstreamClient upstreamClient;
 
+    @Mock
+    private AppService appService;
+
+    @Mock
+    private OutputCapturePolicy outputCapturePolicy;
+
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private MockMvc mockMvc;
@@ -60,7 +68,8 @@ class OpenAiChatCompletionsControllerTest {
     @BeforeEach
     void setUp() {
         OpenAiChatCompletionsController controller = new OpenAiChatCompletionsController(
-                chatCompletionGatewayService, apiRequestLogService, upstreamClient, objectMapper);
+                chatCompletionGatewayService, apiRequestLogService, upstreamClient, objectMapper,
+                appService, outputCapturePolicy);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -98,7 +107,7 @@ class OpenAiChatCompletionsControllerTest {
         usage.setTotalTokens(2);
         mockResponse.setUsage(usage);
         return new ChatCompletionResult(mockResponse, "gpt-4o-mini", "openai", 500L, 1, 1, 2,
-                "What is RAG?", "[1,2,3]");
+                "What is RAG?", "[1,2,3]", "Hello", 5);
     }
 
     private ChatCompletionStreamPreparation createStreamPreparation() {

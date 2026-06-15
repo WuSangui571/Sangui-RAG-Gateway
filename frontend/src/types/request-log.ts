@@ -25,6 +25,12 @@ export interface ApiRequestLogVO {
 export interface ApiRequestLogDetailVO extends ApiRequestLogVO {
   user_id: number
   updated_at: string
+  output_capture_status: OutputCaptureStatus
+  completion_length: number | null
+  output_preview_available: boolean
+  output_preview_truncated: boolean
+  output_redacted: boolean
+  output_retention_expires_at: string | null
 }
 
 export interface ApiRequestLogPageVO<T> {
@@ -50,6 +56,32 @@ export interface RequestLogListParams {
   error_code?: string
   start_time?: string
   end_time?: string
+}
+
+export type OutputCaptureStatus =
+  | 'DISABLED'
+  | 'CAPTURED'
+  | 'EMPTY'
+  | 'TRUNCATED_ONLY'
+  | 'REDACTED'
+  | 'REDACTION_BLOCKED'
+  | 'STREAMING_UNSUPPORTED'
+  | 'FAILED'
+  | 'EXPIRED'
+
+export interface RequestLogOutputPreviewVO {
+  request_id: string
+  output_capture_status: OutputCaptureStatus
+  completion_length: number | null
+  output_preview: string | null
+  output_preview_truncated: boolean
+  output_redacted: boolean
+  output_retention_expires_at: string | null
+}
+
+export interface RequestLogOutputAccessDTO {
+  confirm_access: boolean
+  reason?: string
 }
 
 export type DiagnosticBoundary =

@@ -457,6 +457,82 @@ mvn -q "-Dtest=ApiRequestLogServiceTest" test
 mvn test
 ```
 
+### Implemented Request Log Output Observability Schema
+
+The request-log output observability schema is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V11__add_request_log_output_observability.sql
+```
+
+`rag_request_log` additional columns:
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| `completion_length` | `INTEGER` | no | Character count of assistant output when available. Safe numeric metadata. |
+| `output_capture_status` | `VARCHAR(32)` | yes | Defaults to `DISABLED`. Explicit status, not inferred from nulls. |
+| `output_preview` | `TEXT` | no | Bounded redacted preview only. Not returned by list or normal detail APIs. |
+| `output_preview_truncated` | `BOOLEAN` | yes | Defaults to `FALSE`; true when original output exceeded preview limit. |
+| `output_redacted` | `BOOLEAN` | yes | Defaults to `FALSE`; true when deterministic redaction changed the preview. |
+| `output_retention_expires_at` | `TIMESTAMP` | no | Used by cleanup to expire preview content. |
+
+`rag_app` additional column:
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| `request_log_output_capture_enabled` | `BOOLEAN` | yes | Defaults to `FALSE`; app-level opt-in switch. Effective capture requires this and the global switch. |
+
+Output access audit table:
+
+```text
+rag_request_log_output_access_audit
+```
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `user_id` | `BIGINT` | yes | Admin caller from `X-Admin-User-Id`. |
+| `app_id` | `BIGINT` | yes | App boundary. |
+| `request_log_id` | `BIGINT` | no | Null only when the request log was missing. |
+| `request_id` | `VARCHAR(64)` | yes | Attempted request id. |
+| `access_result` | `VARCHAR(32)` | yes | `GRANTED`, `DENIED`, `NOT_FOUND`, etc. |
+| `reason` | `VARCHAR(256)` | no | Bounded optional reason. Never stores preview content. |
+| `created_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`. |
+
+Required indexes:
+
+```text
+idx_rag_request_log_output_expiry on rag_request_log(output_retention_expires_at)
+idx_rag_request_log_output_audit_user_created_at on rag_request_log_output_access_audit(user_id, created_at DESC)
+idx_rag_request_log_output_audit_app_created_at on rag_request_log_output_access_audit(app_id, created_at DESC)
+idx_rag_request_log_output_audit_request_id on rag_request_log_output_access_audit(request_id)
+```
+
+Retention cleanup contract:
+
+```java
+ApiRequestLogService.cleanupExpiredOutputPreviews()
+```
+
+The cleanup selects rows where `output_retention_expires_at < now` and `output_preview IS NOT NULL`, then sets `output_preview = NULL`, `output_capture_status = 'EXPIRED'`, and updates `updated_at`. It must not delete request-log rows and must preserve numeric metadata such as `completion_length`.
+
+Validation cases:
+
+| Case | Expected result | Required assertion |
+|---|---|---|
+| Both global and app switches disabled by default | New rows do not persist output preview by default | `OutputCapturePolicyTest`, gateway controller test. |
+| Captured non-streaming output | Bounded preview metadata maps through `CreateRequestLogCommand` to `ApiRequestLogEntity` | `ApiRequestLogOutputServiceTest`. |
+| Audit write | Audit row stores caller/app/request/result/reason only, not preview content | `ApiRequestLogOutputServiceTest`. |
+| Expired preview cleanup | Preview is nulled and status becomes `EXPIRED`; row remains | `ApiRequestLogOutputServiceTest`. |
+
+Run after changing this schema or matching services:
+
+```bash
+cd backend
+mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogOutputServiceTest,OutputCapturePolicyTest" test
+mvn -q "-Dtest=ApiRequestLogAdminControllerTest,OpenAiChatCompletionsControllerTest" test
+```
+
 ## Migrations
 
 - Every schema change must be represented by a migration file.

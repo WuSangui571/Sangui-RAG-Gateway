@@ -7,6 +7,11 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import org.apache.ibatis.annotations.Update;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Mapper
 public interface ApiRequestLogMapper extends BaseMapper<ApiRequestLogEntity> {
 
@@ -28,6 +33,12 @@ public interface ApiRequestLogMapper extends BaseMapper<ApiRequestLogEntity> {
                 messages_count,
                 question_summary,
                 hit_chunk_ids,
+                completion_length,
+                output_capture_status,
+                output_preview,
+                output_preview_truncated,
+                output_redacted,
+                output_retention_expires_at,
                 created_at,
                 updated_at
             ) VALUES (
@@ -47,6 +58,12 @@ public interface ApiRequestLogMapper extends BaseMapper<ApiRequestLogEntity> {
                 #{messagesCount},
                 #{questionSummary},
                 CASE WHEN #{hitChunkIds} IS NULL THEN NULL ELSE #{hitChunkIds}::jsonb END,
+                #{completionLength},
+                #{outputCaptureStatus},
+                #{outputPreview},
+                #{outputPreviewTruncated},
+                #{outputRedacted},
+                #{outputRetentionExpiresAt},
                 CURRENT_TIMESTAMP,
                 CURRENT_TIMESTAMP
             )
@@ -58,4 +75,16 @@ public interface ApiRequestLogMapper extends BaseMapper<ApiRequestLogEntity> {
     ApiRequestLogEntity selectByRequestIdAndUserAndApp(@Param("userId") Long userId,
                                                         @Param("appId") Long appId,
                                                         @Param("requestId") String requestId);
+
+    @Select("SELECT * FROM rag_request_log WHERE output_retention_expires_at < #{now} AND output_preview IS NOT NULL")
+    List<ApiRequestLogEntity> selectExpiredOutputPreviews(@Param("now") LocalDateTime now);
+
+    @Update("""
+            UPDATE rag_request_log
+            SET output_preview = NULL,
+                output_capture_status = 'EXPIRED',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = #{id}
+            """)
+    int expireOutputPreview(@Param("id") Long id);
 }

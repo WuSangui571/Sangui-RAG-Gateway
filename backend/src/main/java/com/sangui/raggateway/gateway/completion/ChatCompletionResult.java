@@ -13,6 +13,8 @@ public class ChatCompletionResult {
     private final Integer totalTokens;
     private final String questionSummary;
     private final String hitChunkIds;
+    private final String assistantOutputContent;
+    private final Integer completionLength;
 
     public ChatCompletionResult(OpenAiChatCompletionResponse response,
                                 String model,
@@ -22,7 +24,9 @@ public class ChatCompletionResult {
                                 Integer completionTokens,
                                 Integer totalTokens,
                                 String questionSummary,
-                                String hitChunkIds) {
+                                String hitChunkIds,
+                                String assistantOutputContent,
+                                Integer completionLength) {
         this.response = response;
         this.model = model;
         this.providerName = providerName;
@@ -32,6 +36,8 @@ public class ChatCompletionResult {
         this.totalTokens = totalTokens;
         this.questionSummary = questionSummary;
         this.hitChunkIds = hitChunkIds;
+        this.assistantOutputContent = assistantOutputContent;
+        this.completionLength = completionLength;
     }
 
     public OpenAiChatCompletionResponse getResponse() {
@@ -68,5 +74,13 @@ public class ChatCompletionResult {
 
     public String getHitChunkIds() {
         return hitChunkIds;
+    }
+
+    public String getAssistantOutputContent() {
+        return assistantOutputContent;
+    }
+
+    public Integer getCompletionLength() {
+        return completionLength;
     }
 }

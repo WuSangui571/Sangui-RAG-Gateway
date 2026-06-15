@@ -27,6 +27,12 @@ public class ApiRequestLogEntity {
     private Integer messagesCount;
     private String questionSummary;
     private String hitChunkIds;
+    private Integer completionLength;
+    private String outputCaptureStatus;
+    private String outputPreview;
+    private Boolean outputPreviewTruncated;
+    private Boolean outputRedacted;
+    private LocalDateTime outputRetentionExpiresAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -164,6 +170,54 @@ public class ApiRequestLogEntity {
 
     public void setHitChunkIds(String hitChunkIds) {
         this.hitChunkIds = hitChunkIds;
+    }
+
+    public Integer getCompletionLength() {
+        return completionLength;
+    }
+
+    public void setCompletionLength(Integer completionLength) {
+        this.completionLength = completionLength;
+    }
+
+    public String getOutputCaptureStatus() {
+        return outputCaptureStatus;
+    }
+
+    public void setOutputCaptureStatus(String outputCaptureStatus) {
+        this.outputCaptureStatus = outputCaptureStatus;
+    }
+
+    public String getOutputPreview() {
+        return outputPreview;
+    }
+
+    public void setOutputPreview(String outputPreview) {
+        this.outputPreview = outputPreview;
+    }
+
+    public Boolean getOutputPreviewTruncated() {
+        return outputPreviewTruncated;
+    }
+
+    public void setOutputPreviewTruncated(Boolean outputPreviewTruncated) {
+        this.outputPreviewTruncated = outputPreviewTruncated;
+    }
+
+    public Boolean getOutputRedacted() {
+        return outputRedacted;
+    }
+
+    public void setOutputRedacted(Boolean outputRedacted) {
+        this.outputRedacted = outputRedacted;
+    }
+
+    public LocalDateTime getOutputRetentionExpiresAt() {
+        return outputRetentionExpiresAt;
+    }
+
+    public void setOutputRetentionExpiresAt(LocalDateTime outputRetentionExpiresAt) {
+        this.outputRetentionExpiresAt = outputRetentionExpiresAt;
     }
 
     public LocalDateTime getCreatedAt() {

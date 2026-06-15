@@ -11,12 +11,32 @@ public class ApiRequestLogDetailVO extends ApiRequestLogVO {
     private Long userId;
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
+    @JsonProperty("output_capture_status")
+    private String outputCaptureStatus;
+    @JsonProperty("completion_length")
+    private Integer completionLength;
+    @JsonProperty("output_preview_available")
+    private Boolean outputPreviewAvailable;
+    @JsonProperty("output_preview_truncated")
+    private Boolean outputPreviewTruncated;
+    @JsonProperty("output_redacted")
+    private Boolean outputRedacted;
+    @JsonProperty("output_retention_expires_at")
+    private LocalDateTime outputRetentionExpiresAt;
 
     public static ApiRequestLogDetailVO from(ApiRequestLogEntity entity) {
         ApiRequestLogDetailVO vo = new ApiRequestLogDetailVO();
         vo.setBaseFields(entity);
         vo.userId = entity.getUserId();
         vo.updatedAt = entity.getUpdatedAt();
+        vo.outputCaptureStatus = entity.getOutputCaptureStatus();
+        vo.completionLength = entity.getCompletionLength();
+        vo.outputPreviewAvailable = entity.getOutputPreview() != null
+                && !"EXPIRED".equals(entity.getOutputCaptureStatus())
+                && !"REDACTION_BLOCKED".equals(entity.getOutputCaptureStatus());
+        vo.outputPreviewTruncated = entity.getOutputPreviewTruncated();
+        vo.outputRedacted = entity.getOutputRedacted();
+        vo.outputRetentionExpiresAt = entity.getOutputRetentionExpiresAt();
         return vo;
     }
 
@@ -42,4 +62,16 @@ public class ApiRequestLogDetailVO extends ApiRequestLogVO {
     public void setUserId(Long userId) { this.userId = userId; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getOutputCaptureStatus() { return outputCaptureStatus; }
+    public void setOutputCaptureStatus(String outputCaptureStatus) { this.outputCaptureStatus = outputCaptureStatus; }
+    public Integer getCompletionLength() { return completionLength; }
+    public void setCompletionLength(Integer completionLength) { this.completionLength = completionLength; }
+    public Boolean getOutputPreviewAvailable() { return outputPreviewAvailable; }
+    public void setOutputPreviewAvailable(Boolean outputPreviewAvailable) { this.outputPreviewAvailable = outputPreviewAvailable; }
+    public Boolean getOutputPreviewTruncated() { return outputPreviewTruncated; }
+    public void setOutputPreviewTruncated(Boolean outputPreviewTruncated) { this.outputPreviewTruncated = outputPreviewTruncated; }
+    public Boolean getOutputRedacted() { return outputRedacted; }
+    public void setOutputRedacted(Boolean outputRedacted) { this.outputRedacted = outputRedacted; }
+    public LocalDateTime getOutputRetentionExpiresAt() { return outputRetentionExpiresAt; }
+    public void setOutputRetentionExpiresAt(LocalDateTime outputRetentionExpiresAt) { this.outputRetentionExpiresAt = outputRetentionExpiresAt; }
 }

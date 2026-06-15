@@ -27,3 +27,10 @@ rag:
       default-max-context-chunks: ${RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS:5}
       default-max-context-chars: ${RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHARS:12000}
       default-max-single-chunk-chars: ${RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS:3000}
+  request-log:
+    output-capture:
+      enabled: false
+      preview-max-chars: 1000
+      retention-days: 7
+      cleanup-enabled: true
+      reason-max-chars: 256

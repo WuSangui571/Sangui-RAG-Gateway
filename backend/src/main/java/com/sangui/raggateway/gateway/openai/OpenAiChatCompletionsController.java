@@ -1,6 +1,8 @@
 package com.sangui.raggateway.gateway.openai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sangui.raggateway.app.AppEntity;
+import com.sangui.raggateway.app.AppService;
 import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.response.OpenAiErrorResponse;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
@@ -10,6 +12,7 @@ import com.sangui.raggateway.gateway.completion.ChatCompletionResult;
 import com.sangui.raggateway.gateway.stream.ChatCompletionStreamPreparation;
 import com.sangui.raggateway.log.ApiRequestLogService;
 import com.sangui.raggateway.log.CreateRequestLogCommand;
+import com.sangui.raggateway.log.OutputCapturePolicy;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,15 +40,21 @@ public class OpenAiChatCompletionsController {
     private final ApiRequestLogService apiRequestLogService;
     private final OpenAiCompatibleUpstreamClient upstreamClient;
     private final ObjectMapper objectMapper;
+    private final AppService appService;
+    private final OutputCapturePolicy outputCapturePolicy;
 
     public OpenAiChatCompletionsController(ChatCompletionGatewayService chatCompletionGatewayService,
                                            ApiRequestLogService apiRequestLogService,
                                            OpenAiCompatibleUpstreamClient upstreamClient,
-                                           ObjectMapper objectMapper) {
+                                           ObjectMapper objectMapper,
+                                           AppService appService,
+                                           OutputCapturePolicy outputCapturePolicy) {
         this.chatCompletionGatewayService = chatCompletionGatewayService;
         this.apiRequestLogService = apiRequestLogService;
         this.upstreamClient = upstreamClient;
         this.objectMapper = objectMapper;
+        this.appService = appService;
+        this.outputCapturePolicy = outputCapturePolicy;
     }
 
     @PostMapping("/v1/chat/completions")
@@ -72,6 +81,10 @@ public class OpenAiChatCompletionsController {
                     requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
                     messagesCount, latencyMs);
 
+            OutputCapturePolicy.OutputCaptureResult captureResult =
+                    resolveCaptureResult(context.getAppId(),
+                            result.getAssistantOutputContent(), result.getCompletionLength());
+
             apiRequestLogService.record(CreateRequestLogCommand.builder()
                     .requestId(requestId)
                     .userId(context.getUserId())
@@ -88,6 +101,12 @@ public class OpenAiChatCompletionsController {
                     .messagesCount(messagesCount)
                     .questionSummary(result.getQuestionSummary())
                     .hitChunkIds(result.getHitChunkIds())
+                    .completionLength(captureResult.getCompletionLength())
+                    .outputCaptureStatus(captureResult.getOutputCaptureStatus())
+                    .outputPreview(captureResult.getOutputPreview())
+                    .outputPreviewTruncated(captureResult.isOutputPreviewTruncated())
+                    .outputRedacted(captureResult.isOutputRedacted())
+                    .outputRetentionExpiresAt(captureResult.getOutputRetentionExpiresAt())
                     .build());
 
             return ResponseEntity.ok(result.getResponse());
@@ -106,6 +125,7 @@ public class OpenAiChatCompletionsController {
                     .errorCode(e.getCode())
                     .latencyMs(latencyMs)
                     .messagesCount(messagesCount)
+                    .outputCaptureStatus(outputCapturePolicy.getDisabledStatus())
                     .build());
 
             throw e;
@@ -133,6 +153,7 @@ public class OpenAiChatCompletionsController {
                     .errorCode(e.getCode())
                     .latencyMs(latencyMs)
                     .messagesCount(messagesCount)
+                    .outputCaptureStatus(outputCapturePolicy.getDisabledStatus())
                     .build());
 
             throw e;
@@ -176,6 +197,7 @@ public class OpenAiChatCompletionsController {
                         .messagesCount(messagesCount)
                         .questionSummary(prep.getQuestionSummary())
                         .hitChunkIds(prep.getHitChunkIds())
+                        .outputCaptureStatus("STREAMING_UNSUPPORTED")
                         .build());
             } catch (GatewayException e) {
                 if (!responseCommitted.get()) {
@@ -201,6 +223,7 @@ public class OpenAiChatCompletionsController {
                         .messagesCount(messagesCount)
                         .questionSummary(prep.getQuestionSummary())
                         .hitChunkIds(prep.getHitChunkIds())
+                        .outputCaptureStatus("STREAMING_UNSUPPORTED")
                         .build());
             } catch (Exception e) {
                 if (!responseCommitted.get()) {
@@ -233,6 +256,7 @@ public class OpenAiChatCompletionsController {
                         .messagesCount(messagesCount)
                         .questionSummary(prep.getQuestionSummary())
                         .hitChunkIds(prep.getHitChunkIds())
+                        .outputCaptureStatus("STREAMING_UNSUPPORTED")
                         .build());
             }
         });
@@ -286,6 +310,7 @@ public class OpenAiChatCompletionsController {
                     .messagesCount(messagesCount)
                     .questionSummary(questionSummary)
                     .hitChunkIds(hitChunkIds)
+                    .outputCaptureStatus("STREAMING_UNSUPPORTED")
                     .build());
 
             throw gatewayException;
@@ -303,5 +328,20 @@ public class OpenAiChatCompletionsController {
             emitter.complete();
         } catch (Exception ignored) {
         }
+    }
+
+    private OutputCapturePolicy.OutputCaptureResult resolveCaptureResult(Long appId,
+                                                                          String assistantOutputContent,
+                                                                          Integer completionLength) {
+        AppEntity app = appService.findById(appId);
+        if (!outputCapturePolicy.shouldCapture(app)) {
+            return new OutputCapturePolicy.OutputCaptureResult(
+                    null, completionLength, false, false, outputCapturePolicy.getDisabledStatus());
+        }
+        if (completionLength == null || completionLength == 0) {
+            return new OutputCapturePolicy.OutputCaptureResult(
+                    null, 0, false, false, "EMPTY");
+        }
+        return outputCapturePolicy.capture(assistantOutputContent);
     }
 }

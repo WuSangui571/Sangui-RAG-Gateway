@@ -518,3 +518,48 @@ The request log observability endpoints (`/api/admin/apps/{appId}/request-logs/*
 | `hit_chunk_ids` null/empty | 200 | `OK` | Empty chunk summary list. |
 
 Secret-safe error responses: error messages never include raw API keys, upstream keys, chunk content, embedding vectors, or stack traces. Cross-user access failures use generic `Access denied` to avoid information leakage.
+
+## Admin Request Log Output Preview API Error Codes
+
+The explicit output preview endpoint uses the admin `ApiResponse` envelope:
+
+```http
+POST /api/admin/apps/{appId}/request-logs/{requestId}/output-preview/access
+```
+
+Request payload:
+
+```json
+{
+  "confirm_access": true,
+  "reason": "optional bounded reason"
+}
+```
+
+Validation and error matrix:
+
+| Scenario | HTTP | Code | Required behavior |
+|---|---:|---|---|
+| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by header validation. |
+| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by Spring type conversion. |
+| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | No app or log query. |
+| App does not exist | 404 | `NOT_FOUND` | No request-log query. |
+| App belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no request-log query. |
+| Request log missing under owned app | 404 | `NOT_FOUND` | Audit `NOT_FOUND`; no preview. |
+| `confirm_access` missing, false, or request body is JSON null | 400 | `INVALID_REQUEST` | Audit `DENIED`; no preview query. |
+| `reason` exceeds `rag.request-log.output-capture.reason-max-chars` | 400 | `INVALID_REQUEST` | Audit `DENIED`; stored reason is bounded by service. |
+| Capture disabled/expired/blocked | 200 | `OK` | Response has status and `output_preview=null`. |
+| Captured preview | 200 | `OK` | Response may include `output_preview`; audit `GRANTED`. |
+
+Secret-safe response rules:
+
+- Normal list/detail endpoints must not return `output_preview`.
+- The explicit endpoint must not return prompts, messages, keys, chunk content, provider raw bodies, raw SSE payloads, environment values, or stack traces.
+- Audit records must not store preview content.
+
+Required tests:
+
+```bash
+cd backend
+mvn -q "-Dtest=ApiRequestLogAdminControllerTest" test
+```

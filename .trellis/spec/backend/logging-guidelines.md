@@ -343,3 +343,131 @@ stack_trace, storage_path
 ```
 
 `hit_chunk_ids` JSONB parsing: the raw JSONB string is parsed to `List<Long>` before serialization. Malformed JSONB fails visibly (no silent fallback). Null/empty maps to empty list. Chunk summary `content` is truncated to `HIT_CHUNK_SUMMARY_MAX_CHARS` (200) via a named constant in `ApiRequestLogService`.
+
+## Request Log Output Preview Observability
+
+Request-log output preview is implemented as a higher-sensitivity explicit access surface. It is for operational diagnosis only and must not turn request logs into full answer storage.
+
+Configuration:
+
+```yaml
+rag:
+  request-log:
+    output-capture:
+      enabled: false
+      preview-max-chars: 1000
+      retention-days: 7
+      cleanup-enabled: true
+      reason-max-chars: 256
+```
+
+Effective capture rule:
+
+```text
+global rag.request-log.output-capture.enabled
+AND rag_app.request_log_output_capture_enabled
+```
+
+Implemented policy classes:
+
+```text
+backend/src/main/java/com/sangui/raggateway/log/OutputCaptureProperties.java
+backend/src/main/java/com/sangui/raggateway/log/OutputCapturePolicy.java
+backend/src/main/java/com/sangui/raggateway/log/OutputRedactionService.java
+```
+
+Capture statuses:
+
+```text
+DISABLED
+CAPTURED
+EMPTY
+REDACTION_BLOCKED
+STREAMING_UNSUPPORTED
+FAILED
+EXPIRED
+```
+
+`TRUNCATED_ONLY` and `REDACTED` remain valid future status values in frontend types, but the current backend contract uses `CAPTURED` with `output_preview_truncated=true` and/or `output_redacted=true`.
+
+Normal detail endpoint:
+
+```http
+GET /api/admin/apps/{appId}/request-logs/{requestId}
+X-Admin-User-Id: <userId>
+```
+
+May return metadata only:
+
+```text
+output_capture_status
+completion_length
+output_preview_available
+output_preview_truncated
+output_redacted
+output_retention_expires_at
+```
+
+It must not return `output_preview`.
+
+Explicit preview endpoint:
+
+```http
+POST /api/admin/apps/{appId}/request-logs/{requestId}/output-preview/access
+X-Admin-User-Id: <userId>
+Content-Type: application/json
+
+{
+  "confirm_access": true,
+  "reason": "optional bounded reason"
+}
+```
+
+Response data:
+
+```text
+request_id
+output_capture_status
+completion_length
+output_preview
+output_preview_truncated
+output_redacted
+output_retention_expires_at
+```
+
+Access rules:
+
+| Scenario | Required behavior |
+|---|---|
+| Cross-user app | Validate app ownership first; return `403 FORBIDDEN`; do not query request logs. |
+| Missing app | Return `404 NOT_FOUND`; do not query request logs. |
+| Missing request log under owned app | Return `404 NOT_FOUND`; audit `NOT_FOUND`; no preview. |
+| `confirm_access` missing/false/null body | Return `400 INVALID_REQUEST`; audit `DENIED`; no preview. |
+| Reason exceeds `reason-max-chars` | Return `400 INVALID_REQUEST`; audit `DENIED` with bounded stored reason; no preview. |
+| Captured preview | Return preview only from the explicit endpoint; audit `GRANTED`. |
+
+Streaming contract:
+
+```text
+stream=true currently records output_capture_status=STREAMING_UNSUPPORTED.
+```
+
+Do not persist raw SSE payloads. Future streaming support must use a bounded assistant-delta collector and the same redaction/retention policy before persistence.
+
+Forbidden fields for output observability:
+
+```text
+prompt, messages, full_messages, augmented_prompt, api_key, key_hash, authorization,
+upstream_api_key, api_key_encrypted, chunk_content, content, embedding,
+provider_response_body, stack_trace, storage_path, raw_sse, environment
+```
+
+`output_preview` is allowed only in the explicit preview access endpoint.
+
+Required tests:
+
+```bash
+cd backend
+mvn -q "-Dtest=ApiRequestLogOutputServiceTest,OutputCapturePolicyTest" test
+mvn -q "-Dtest=ApiRequestLogAdminControllerTest,OpenAiChatCompletionsControllerTest" test
+```

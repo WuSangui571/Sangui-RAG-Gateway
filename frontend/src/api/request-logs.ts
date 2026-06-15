@@ -5,8 +5,10 @@ import type {
   ApiRequestLogVO,
   HitChunkSummaryVO,
   RequestLogListParams,
+  RequestLogOutputPreviewVO,
+  RequestLogOutputAccessDTO,
 } from '../types/request-log'
-import { apiGet } from './http'
+import { apiGet, apiPost } from './http'
 
 export function listRequestLogs(
   appId: number,
@@ -48,6 +50,19 @@ export function getHitChunks(
   return apiGet<HitChunkSummaryVO[]>(
     `/admin/apps/${appId}/request-logs/${requestId}/hit-chunks`,
     undefined,
+    adminUserId,
+  )
+}
+
+export function accessOutputPreview(
+  appId: number,
+  requestId: string,
+  adminUserId: number,
+  dto: RequestLogOutputAccessDTO,
+): Promise<ApiResponse<RequestLogOutputPreviewVO>> {
+  return apiPost<RequestLogOutputPreviewVO>(
+    `/admin/apps/${appId}/request-logs/${requestId}/output-preview/access`,
+    dto,
     adminUserId,
   )
 }

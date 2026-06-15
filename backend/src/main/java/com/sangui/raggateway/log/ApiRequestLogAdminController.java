@@ -8,12 +8,16 @@ import com.sangui.raggateway.log.vo.ApiRequestLogDetailVO;
 import com.sangui.raggateway.log.vo.ApiRequestLogPageVO;
 import com.sangui.raggateway.log.vo.ApiRequestLogVO;
 import com.sangui.raggateway.log.vo.HitChunkSummaryVO;
+import com.sangui.raggateway.log.vo.RequestLogOutputPreviewVO;
+import com.sangui.raggateway.log.dto.RequestLogOutputAccessDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,10 +36,14 @@ public class ApiRequestLogAdminController {
 
     private final AppService appService;
     private final ApiRequestLogService apiRequestLogService;
+    private final OutputCaptureProperties outputCaptureProperties;
 
-    public ApiRequestLogAdminController(AppService appService, ApiRequestLogService apiRequestLogService) {
+    public ApiRequestLogAdminController(AppService appService,
+                                        ApiRequestLogService apiRequestLogService,
+                                        OutputCaptureProperties outputCaptureProperties) {
         this.appService = appService;
         this.apiRequestLogService = apiRequestLogService;
+        this.outputCaptureProperties = outputCaptureProperties;
     }
 
     @GetMapping
@@ -101,6 +109,46 @@ public class ApiRequestLogAdminController {
 
         List<HitChunkSummaryVO> summaries = apiRequestLogService.getHitChunkSummaries(userId, appId, knowledgeBaseId, requestId);
         return ApiResponse.success(summaries);
+    }
+
+    @PostMapping("/{requestId}/output-preview/access")
+    public ApiResponse<RequestLogOutputPreviewVO> accessOutputPreview(
+            @RequestHeader("X-Admin-User-Id") Long userId,
+            @PathVariable Long appId,
+            @PathVariable String requestId,
+            @RequestBody RequestLogOutputAccessDTO dto) {
+        validateUserId(userId);
+        validateAppOwnership(userId, appId);
+
+        ApiRequestLogEntity logEntity = apiRequestLogService.findByRequestIdAndUserAndApp(userId, appId, requestId);
+        if (logEntity == null) {
+            log.warn("Output preview access denied: request log not found for appId={} requestId={} userId={}",
+                    appId, requestId, userId);
+            apiRequestLogService.writeAccessAudit(userId, appId, null, requestId, "NOT_FOUND", null);
+            throw new BusinessException("NOT_FOUND", "Request log not found", HttpStatus.NOT_FOUND);
+        }
+
+        if (dto == null || dto.getConfirmAccess() == null || !dto.getConfirmAccess()) {
+            apiRequestLogService.writeAccessAudit(userId, appId, logEntity.getId(), requestId,
+                    "DENIED", null);
+            throw new BusinessException("INVALID_REQUEST",
+                    "confirm_access must be true to view output preview");
+        }
+
+        String reason = dto.getReason() != null ? dto.getReason().trim() : null;
+        if (reason != null && reason.length() > outputCaptureProperties.getReasonMaxChars()) {
+            apiRequestLogService.writeAccessAudit(userId, appId, logEntity.getId(), requestId,
+                    "DENIED", reason);
+            throw new BusinessException("INVALID_REQUEST",
+                    "reason must not exceed " + outputCaptureProperties.getReasonMaxChars() + " characters");
+        }
+
+        RequestLogOutputPreviewVO preview = apiRequestLogService.getOutputPreview(userId, appId, requestId);
+
+        apiRequestLogService.writeAccessAudit(userId, appId, logEntity.getId(),
+                requestId, "GRANTED", reason);
+
+        return ApiResponse.success(preview);
     }
 
     private AppEntity validateAppOwnership(Long userId, Long appId) {

@@ -1,0 +1,41 @@
+{"file": ".trellis/tasks/06-15-request-log-output-observability-policy/prd.md", "reason": "Primary PRD and scope contract"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary and request-log contracts"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "DB migration and request-log persistence rules"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe logging and output observability boundaries"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin/gateway error matrix"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend required tests and review checklist"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend package placement rules"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend request-log DTO contract"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Frontend state and secret/content storage rules"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Request-log UI component rules"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Typed API client and hook rules"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend validation and visual smoke requirements"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Gateway upstream/streaming/request-log failure rules"}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "hit_chunk_ids and safe retrieval evidence rules"}
+{"file": ".trellis/spec/rag/prompt-context-policy.md", "reason": "Prompt/context secrecy rules"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Request-log output safety and tenant boundary rules"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API DB frontend validation guide"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing request-log patterns"}
+{"file": "backend/src/main/resources/db/migration/V4__create_request_log_table.sql", "reason": "Existing request-log schema baseline"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogEntity.java", "reason": "Existing request-log entity pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/CreateRequestLogCommand.java", "reason": "Existing request-log command pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogMapper.java", "reason": "Existing mapper insert/select pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Existing service list/detail/hit-chunks pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java", "reason": "Existing tenant-scoped admin request-log API pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogVO.java", "reason": "Existing safe list VO pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogDetailVO.java", "reason": "Existing safe detail VO pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java", "reason": "Gateway request-log capture points"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Gateway result/preparation and question summary pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionResult.java", "reason": "Non-streaming result carrier pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/stream/ChatCompletionStreamPreparation.java", "reason": "Streaming preparation carrier pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java", "reason": "Streaming SSE forwarding boundary"}
+{"file": "frontend/src/types/request-log.ts", "reason": "Frontend request-log types to extend"}
+{"file": "frontend/src/api/request-logs.ts", "reason": "Frontend typed request-log API client"}
+{"file": "frontend/src/components/domain/RequestLogDetailDrawer.tsx", "reason": "Frontend detail drawer extension point"}
+{"file": "frontend/src/pages/request-logs/RequestLogListPage.tsx", "reason": "Frontend request-log list pattern"}
+{"file": "frontend/src/app/i18n/dict.ts", "reason": "i18n parity requirement"}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java", "reason": "Request-log service test pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogAdminControllerTest.java", "reason": "Request-log admin controller test pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java", "reason": "Gateway controller logging test pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java", "reason": "Gateway service RAG/output test pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java", "reason": "Upstream streaming test pattern"}

@@ -9,12 +9,14 @@ import com.sangui.raggateway.log.vo.ApiRequestLogDetailVO;
 import com.sangui.raggateway.log.vo.ApiRequestLogPageVO;
 import com.sangui.raggateway.log.vo.ApiRequestLogVO;
 import com.sangui.raggateway.log.vo.HitChunkSummaryVO;
+import com.sangui.raggateway.log.vo.RequestLogOutputPreviewVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -31,18 +33,27 @@ public class ApiRequestLogService {
     private final ApiRequestLogMapper apiRequestLogMapper;
     private final DocumentChunkMapper documentChunkMapper;
     private final DocumentMapper documentMapper;
+    private final RequestLogOutputAccessAuditMapper auditMapper;
+    private final OutputCapturePolicy outputCapturePolicy;
+    private final OutputCaptureProperties outputCaptureProperties;
 
     public ApiRequestLogService(ApiRequestLogMapper apiRequestLogMapper) {
-        this(apiRequestLogMapper, null, null);
+        this(apiRequestLogMapper, null, null, null, null, null);
     }
 
     @Autowired
     public ApiRequestLogService(ApiRequestLogMapper apiRequestLogMapper,
                                  DocumentChunkMapper documentChunkMapper,
-                                 DocumentMapper documentMapper) {
+                                 DocumentMapper documentMapper,
+                                 RequestLogOutputAccessAuditMapper auditMapper,
+                                 OutputCapturePolicy outputCapturePolicy,
+                                 OutputCaptureProperties outputCaptureProperties) {
         this.apiRequestLogMapper = apiRequestLogMapper;
         this.documentChunkMapper = documentChunkMapper;
         this.documentMapper = documentMapper;
+        this.auditMapper = auditMapper;
+        this.outputCapturePolicy = outputCapturePolicy;
+        this.outputCaptureProperties = outputCaptureProperties;
     }
 
     public void record(CreateRequestLogCommand command) {
@@ -165,6 +176,63 @@ public class ApiRequestLogService {
         entity.setMessagesCount(command.getMessagesCount());
         entity.setQuestionSummary(command.getQuestionSummary());
         entity.setHitChunkIds(command.getHitChunkIds());
+        entity.setCompletionLength(command.getCompletionLength());
+        entity.setOutputCaptureStatus(command.getOutputCaptureStatus());
+        entity.setOutputPreview(command.getOutputPreview());
+        entity.setOutputPreviewTruncated(command.getOutputPreviewTruncated());
+        entity.setOutputRedacted(command.getOutputRedacted());
+        entity.setOutputRetentionExpiresAt(command.getOutputRetentionExpiresAt());
         return entity;
+    }
+
+    public RequestLogOutputPreviewVO getOutputPreview(Long userId, Long appId, String requestId) {
+        ApiRequestLogEntity entity = apiRequestLogMapper.selectByRequestIdAndUserAndApp(userId, appId, requestId);
+        if (entity == null) {
+            return null;
+        }
+        RequestLogOutputPreviewVO vo = new RequestLogOutputPreviewVO();
+        vo.setRequestId(entity.getRequestId());
+        vo.setOutputCaptureStatus(entity.getOutputCaptureStatus());
+        vo.setCompletionLength(entity.getCompletionLength());
+        vo.setOutputPreview(entity.getOutputPreview());
+        vo.setOutputPreviewTruncated(entity.getOutputPreviewTruncated());
+        vo.setOutputRedacted(entity.getOutputRedacted());
+        vo.setOutputRetentionExpiresAt(entity.getOutputRetentionExpiresAt());
+        return vo;
+    }
+
+    public void writeAccessAudit(Long userId, Long appId, Long requestLogId,
+                                  String requestId, String accessResult, String reason) {
+        try {
+            RequestLogOutputAccessAuditEntity audit = new RequestLogOutputAccessAuditEntity();
+            audit.setUserId(userId);
+            audit.setAppId(appId);
+            audit.setRequestLogId(requestLogId);
+            audit.setRequestId(requestId);
+            audit.setAccessResult(accessResult);
+            audit.setReason(reason != null && reason.length() > outputCaptureProperties.getReasonMaxChars()
+                    ? reason.substring(0, outputCaptureProperties.getReasonMaxChars()) : reason);
+            audit.setCreatedAt(LocalDateTime.now());
+            auditMapper.insertAudit(audit);
+        } catch (Exception e) {
+            log.error("Failed to write output access audit for request_id={}, errorType={}",
+                    requestId, e.getClass().getSimpleName());
+        }
+    }
+
+    public int cleanupExpiredOutputPreviews() {
+        LocalDateTime now = LocalDateTime.now();
+        List<ApiRequestLogEntity> expired = apiRequestLogMapper.selectExpiredOutputPreviews(now);
+        int count = 0;
+        for (ApiRequestLogEntity entity : expired) {
+            try {
+                apiRequestLogMapper.expireOutputPreview(entity.getId());
+                count++;
+            } catch (Exception e) {
+                log.error("Failed to expire output preview for id={}, errorType={}",
+                        entity.getId(), e.getClass().getSimpleName());
+            }
+        }
+        return count;
     }
 }

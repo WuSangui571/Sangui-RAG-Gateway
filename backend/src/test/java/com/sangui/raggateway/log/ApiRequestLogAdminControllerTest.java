@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,7 +47,8 @@ class ApiRequestLogAdminControllerTest {
 
     @BeforeEach
     void setUp() {
-        ApiRequestLogAdminController controller = new ApiRequestLogAdminController(appService, apiRequestLogService);
+        ApiRequestLogAdminController controller = new ApiRequestLogAdminController(
+                appService, apiRequestLogService, new OutputCaptureProperties());
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -404,6 +406,179 @@ class ApiRequestLogAdminControllerTest {
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs/req-001/hit-chunks")
                         .header("X-Admin-User-Id", "100"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        verifyNoInteractions(apiRequestLogService);
+    }
+
+    // ---- Output preview explicit access ----
+
+    @Test
+    void shouldAccessOutputPreviewWithExplicitConfirmation() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        ApiRequestLogEntity entity = new ApiRequestLogEntity();
+        entity.setId(9L);
+        entity.setRequestId("req-001");
+        when(apiRequestLogService.findByRequestIdAndUserAndApp(100L, 1L, "req-001"))
+                .thenReturn(entity);
+
+        com.sangui.raggateway.log.vo.RequestLogOutputPreviewVO preview =
+                new com.sangui.raggateway.log.vo.RequestLogOutputPreviewVO();
+        preview.setRequestId("req-001");
+        preview.setOutputCaptureStatus("CAPTURED");
+        preview.setCompletionLength(12);
+        preview.setOutputPreview("safe preview");
+        preview.setOutputPreviewTruncated(false);
+        preview.setOutputRedacted(false);
+        when(apiRequestLogService.getOutputPreview(100L, 1L, "req-001")).thenReturn(preview);
+
+        mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "confirm_access": true,
+                                  "reason": "Investigating truncation"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data.request_id").value("req-001"))
+                .andExpect(jsonPath("$.data.output_capture_status").value("CAPTURED"))
+                .andExpect(jsonPath("$.data.output_preview").value("safe preview"));
+
+        verify(apiRequestLogService).writeAccessAudit(100L, 1L, 9L,
+                "req-001", "GRANTED", "Investigating truncation");
+    }
+
+    @Test
+    void shouldTrimOutputPreviewAccessReasonBeforeAudit() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        ApiRequestLogEntity entity = new ApiRequestLogEntity();
+        entity.setId(9L);
+        entity.setRequestId("req-001");
+        when(apiRequestLogService.findByRequestIdAndUserAndApp(100L, 1L, "req-001"))
+                .thenReturn(entity);
+
+        com.sangui.raggateway.log.vo.RequestLogOutputPreviewVO preview =
+                new com.sangui.raggateway.log.vo.RequestLogOutputPreviewVO();
+        preview.setRequestId("req-001");
+        preview.setOutputCaptureStatus("CAPTURED");
+        preview.setOutputPreview("safe preview");
+        when(apiRequestLogService.getOutputPreview(100L, 1L, "req-001")).thenReturn(preview);
+
+        mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "confirm_access": true,
+                                  "reason": "  Investigating truncation  "
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"));
+
+        verify(apiRequestLogService).writeAccessAudit(100L, 1L, 9L,
+                "req-001", "GRANTED", "Investigating truncation");
+    }
+
+    @Test
+    void shouldRejectOutputPreviewAccessWithoutConfirmationAndAuditDenied() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        ApiRequestLogEntity entity = new ApiRequestLogEntity();
+        entity.setId(9L);
+        when(apiRequestLogService.findByRequestIdAndUserAndApp(100L, 1L, "req-001"))
+                .thenReturn(entity);
+
+        mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "confirm_access": false
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        verify(apiRequestLogService).writeAccessAudit(100L, 1L, 9L,
+                "req-001", "DENIED", null);
+        verify(apiRequestLogService, never()).getOutputPreview(anyLong(), anyLong(), anyString());
+    }
+
+    @Test
+    void shouldRejectOutputPreviewAccessWithTooLongReasonAndAuditDenied() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        ApiRequestLogEntity entity = new ApiRequestLogEntity();
+        entity.setId(9L);
+        when(apiRequestLogService.findByRequestIdAndUserAndApp(100L, 1L, "req-001"))
+                .thenReturn(entity);
+
+        String longReason = "x".repeat(257);
+        mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "confirm_access": true,
+                                  "reason": "%s"
+                                }
+                                """.formatted(longReason)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        verify(apiRequestLogService).writeAccessAudit(100L, 1L, 9L,
+                "req-001", "DENIED", longReason);
+        verify(apiRequestLogService, never()).getOutputPreview(anyLong(), anyLong(), anyString());
+    }
+
+    @Test
+    void shouldReturn404ForMissingOutputPreviewLogAndAuditNotFound() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+        when(apiRequestLogService.findByRequestIdAndUserAndApp(100L, 1L, "missing"))
+                .thenReturn(null);
+
+        mockMvc.perform(post("/api/admin/apps/1/request-logs/missing/output-preview/access")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "confirm_access": true
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
+
+        verify(apiRequestLogService).writeAccessAudit(100L, 1L, null,
+                "missing", "NOT_FOUND", null);
+        verify(apiRequestLogService, never()).getOutputPreview(anyLong(), anyLong(), anyString());
+    }
+
+    @Test
+    void shouldRejectOutputPreviewForCrossUserAppBeforeLogQuery() throws Exception {
+        AppEntity otherUserApp = createApp(1L, 200L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(null);
+        when(appService.findById(1L)).thenReturn(otherUserApp);
+
+        mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
+                        .header("X-Admin-User-Id", "100")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "confirm_access": true
+                                }
+                                """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
 

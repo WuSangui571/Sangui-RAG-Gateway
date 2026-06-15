@@ -22,6 +22,7 @@ public class AppEntity {
     private Integer retrievalMaxContextChars;
     private Integer retrievalMaxSingleChunkChars;
     private String noHitPolicy;
+    private Boolean requestLogOutputCaptureEnabled;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -119,6 +120,14 @@ public class AppEntity {
 
     public void setNoHitPolicy(String noHitPolicy) {
         this.noHitPolicy = noHitPolicy;
+    }
+
+    public Boolean getRequestLogOutputCaptureEnabled() {
+        return requestLogOutputCaptureEnabled;
+    }
+
+    public void setRequestLogOutputCaptureEnabled(Boolean requestLogOutputCaptureEnabled) {
+        this.requestLogOutputCaptureEnabled = requestLogOutputCaptureEnabled;
     }
 
     public LocalDateTime getCreatedAt() {

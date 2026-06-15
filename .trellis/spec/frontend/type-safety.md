@@ -268,3 +268,67 @@ prompt, messages, full_messages, augmented_prompt, api_key, key_hash, authorizat
 upstream_api_key, api_key_encrypted, chunk_content, embedding, provider_response_body,
 stack_trace
 ```
+
+### Request Log Output Preview Types
+
+Normal request-log detail may include output metadata only:
+
+```ts
+export type OutputCaptureStatus =
+  | 'DISABLED'
+  | 'CAPTURED'
+  | 'EMPTY'
+  | 'TRUNCATED_ONLY'
+  | 'REDACTED'
+  | 'REDACTION_BLOCKED'
+  | 'STREAMING_UNSUPPORTED'
+  | 'FAILED'
+  | 'EXPIRED';
+
+export interface ApiRequestLogDetailVO extends ApiRequestLogVO {
+  user_id: number;
+  updated_at: string;
+  output_capture_status: OutputCaptureStatus;
+  completion_length: number | null;
+  output_preview_available: boolean;
+  output_preview_truncated: boolean;
+  output_redacted: boolean;
+  output_retention_expires_at: string | null;
+}
+```
+
+Explicit preview access uses a separate DTO and VO:
+
+```ts
+export interface RequestLogOutputAccessDTO {
+  confirm_access: boolean;
+  reason?: string;
+}
+
+export interface RequestLogOutputPreviewVO {
+  request_id: string;
+  output_capture_status: OutputCaptureStatus;
+  completion_length: number | null;
+  output_preview: string | null;
+  output_preview_truncated: boolean;
+  output_redacted: boolean;
+  output_retention_expires_at: string | null;
+}
+```
+
+Frontend API client:
+
+```ts
+accessOutputPreview(appId, requestId, adminUserId, {
+  confirm_access: true,
+  reason,
+})
+```
+
+UI rules:
+
+- Detail drawer renders only output metadata by default.
+- Preview content is fetched only from the explicit access modal after confirmation.
+- Preview text must not be copied by default unless a future task adds an explicit approved copy flow.
+- Do not persist preview content in localStorage, sessionStorage, global stores, or URL state.
+- Keep shared DTO types UI-agnostic; labels and i18n keys stay in component/i18n files.
