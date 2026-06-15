@@ -1,0 +1,16 @@
+{"file": ".trellis\\tasks\\06-12-kb-chinese-filename-display\\prd.md", "reason": "Check implementation against accepted scope, tests, and forbidden areas"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify document filename behavior stays inside project boundary"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Check no duplicate display field or storage_path exposure is introduced"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Verify unsupported/empty/cross-user upload errors remain visible and safe"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Check targeted backend validation and regression safety"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Check ingestion status and parser behavior are not regressed"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Check frontend types remain aligned with backend DocumentVO"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Check field ownership, validation, and boundary formats"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentUploadRules.java", "reason": "Review display basename vs storage-safe filename behavior"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Check no forbidden storage/document fields are exposed"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Check display originalFilename, parser selection, metadata, and status flow"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentAdminController.java", "reason": "Check validation/error matrix and original_filename response"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\storage\\LocalFileStorageService.java", "reason": "Review storage key safety and path traversal prevention"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Verify targeted service tests assert originalFilename/display behavior"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentAdminControllerTest.java", "reason": "Check API response and error matrix regression tests"}
+{"file": "frontend\\src\\pages\\knowledge\\KnowledgeBasePage.tsx", "reason": "Check no fallback to storage key or local-only filename source is introduced"}

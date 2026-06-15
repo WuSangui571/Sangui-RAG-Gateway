@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 51
-- **Last Active**: 2026-06-12
+- **Total Sessions**: 52
+- **Last Active**: 2026-06-15
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~1061 | Active |
+| `journal-2.md` | ~1125 | Active |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 52 | 2026-06-15 | KB Chinese Filename Display Fix | `8d6055809396e58d9a25db480b99d1ad0299fe12` | `feature/kb-chinese-filename-display` |
 | 51 | 2026-06-12 | Model Config Capability Convergence | `3a009937`, `5c176c82` | `feature/model-config-capability-cleanup` |
 | 50 | 2026-06-12 | API Key lifecycle restore and model config check merge | `1e66997e`, `72af3218`, `a9011d2c` | `codex/api-key-detection` |
 | 49 | 2026-06-11 | V0.3 Model Config Capability Split and Checks | `e9dfe735`, `bdf56ab2` | `feature/v0-3-model-config-capability-split` |

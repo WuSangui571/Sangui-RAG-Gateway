@@ -1,6 +1,5 @@
 package com.sangui.raggateway.document;
 
-import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Set;
 
@@ -39,7 +38,21 @@ public final class DocumentUploadRules {
         if (filename == null || filename.isBlank()) {
             return "untitled";
         }
-        String name = Paths.get(filename).getFileName().toString();
+        String name = extractBasename(filename);
         return name.replaceAll("[^a-zA-Z0-9._\\-]", "_");
+    }
+
+    public static String extractDisplayBasename(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return "untitled";
+        }
+        return extractBasename(filename);
+    }
+
+    private static String extractBasename(String filename) {
+        String normalized = filename.replace('\\', '/');
+        int separatorIndex = normalized.lastIndexOf('/');
+        String basename = separatorIndex >= 0 ? normalized.substring(separatorIndex + 1) : normalized;
+        return basename.isBlank() ? "untitled" : basename;
     }
 }
