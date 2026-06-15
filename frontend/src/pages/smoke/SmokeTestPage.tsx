@@ -439,11 +439,54 @@ export default function SmokeTestPage() {
   const canRun = activeAppId !== null && selectedKeyValue !== null && userInput.trim().length > 0
   const canRunRequestLog = activeAppId !== null && adminUserId !== null && nonStreaming.status === 'pass'
 
+  function computeOverview(): { level: 'idle' | 'pass' | 'partial' | 'fail'; key: I18nKey } {
+    const steps: StepStatus[] = [nonStreaming.status, streaming.status, requestLog.status]
+    if (revokedKey.enabled) {
+      steps.push(revokedKey.status)
+    }
+    const allIdle = steps.every(s => s === 'idle')
+    if (allIdle) return { level: 'idle', key: 'smoke.overviewIdle' as I18nKey }
+    const readinessFailed = readinessError !== null || (readiness !== null && readiness.overall_status !== 'READY')
+    const allPass = steps.every(s => s === 'pass' || s === 'skip')
+    if (allPass && !readinessFailed) return { level: 'pass', key: 'smoke.overviewPass' as I18nKey }
+    const anyFail = readinessFailed || steps.some(s => s === 'fail')
+    if (anyFail) return { level: 'fail', key: 'smoke.overviewFail' as I18nKey }
+    return { level: 'partial', key: 'smoke.overviewPartial' as I18nKey }
+  }
+
+  const overview = computeOverview()
+
   return (
     <div>
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
         {loadError && (
           <Text type="danger">{loadError}</Text>
+        )}
+
+        {activeAppId !== null && (
+          <Card size="small" title={t('smoke.overviewTitle')} style={{
+            borderColor: overview.level === 'pass' ? '#52c41a' : overview.level === 'fail' ? '#ff4d4f'
+              : overview.level === 'partial' ? '#faad14' : undefined,
+          }}>
+            <Space>
+              <Tag color={
+                overview.level === 'pass' ? 'success' : overview.level === 'fail' ? 'error'
+                  : overview.level === 'partial' ? 'warning' : 'default'
+              }>
+                {overview.level === 'pass' ? t('status.smoke.PASS')
+                  : overview.level === 'fail' ? t('status.smoke.FAIL')
+                  : overview.level === 'partial' ? t('status.smoke.SKIP')
+                  : t('status.smoke.IDLE')}
+              </Tag>
+              <Text>{t(overview.key)}</Text>
+            </Space>
+          </Card>
+        )}
+
+        {activeAppId === null && (
+          <Card size="small">
+            <Text type="secondary">{t('smoke.noAppSelected')}</Text>
+          </Card>
         )}
 
         <Space>
@@ -470,6 +513,11 @@ export default function SmokeTestPage() {
               }))}
             />
           </div>
+          {activeAppId !== null && keys.length === 0 && !loadError && (
+            <Text type="warning" style={{ fontSize: 12 }}>
+              {t('smoke.noActiveApiKey')}
+            </Text>
+          )}
         </Space>
 
         {activeAppId !== null && (
@@ -488,7 +536,10 @@ export default function SmokeTestPage() {
               </Spin>
             )}
             {readinessError && (
-              <Text type="danger">{t('smoke.preflightError')} {readinessError}</Text>
+              <Space>
+                <Text type="danger">{t('smoke.preflightError')} {readinessError}</Text>
+                <Button size="small" onClick={fetchReadiness}>{t('smoke.retryReadiness')}</Button>
+              </Space>
             )}
             {readiness && readiness.checks.length > 0 && (
               <Descriptions column={1} size="small" bordered>
@@ -553,9 +604,16 @@ export default function SmokeTestPage() {
             rows={2}
             placeholder={t('smoke.userMessagePlaceholder')}
           />
+          <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+            {t('smoke.securityBoundary')}
+          </Text>
         </Card>
 
         <Divider orientation="left" plain>{t('smoke.step1')}</Divider>
+
+        <Text type="secondary" style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
+          {t('smoke.section1Desc')}
+        </Text>
 
         <Space>
           <Button
@@ -567,6 +625,9 @@ export default function SmokeTestPage() {
             {t('smoke.step1Send')}
           </Button>
           <StepStatusTagLocalized status={nonStreaming.status} />
+          {!canRun && (
+            <Text type="secondary">{t('smoke.disabledNoKey')}</Text>
+          )}
         </Space>
 
         {nonStreaming.status === 'running' && (
@@ -591,6 +652,9 @@ export default function SmokeTestPage() {
                 })}
               </Descriptions.Item>
             </Descriptions>
+            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
+              {t('smoke.securityBoundary')}
+            </Text>
           </Card>
         )}
 
@@ -608,6 +672,10 @@ export default function SmokeTestPage() {
 
         <Divider orientation="left" plain>{t('smoke.step2')}</Divider>
 
+        <Text type="secondary" style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
+          {t('smoke.section2Desc')}
+        </Text>
+
         <Space>
           <Button
             onClick={handleStreamingSmoke}
@@ -617,6 +685,9 @@ export default function SmokeTestPage() {
             {t('smoke.step2Send')}
           </Button>
           <StepStatusTagLocalized status={streaming.status} />
+          {!canRun && (
+            <Text type="secondary">{t('smoke.disabledNoKey')}</Text>
+          )}
         </Space>
 
         {streaming.status === 'running' && (
@@ -637,6 +708,9 @@ export default function SmokeTestPage() {
                 </Tag>
               </Descriptions.Item>
             </Descriptions>
+            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
+              {t('smoke.securityBoundary')}
+            </Text>
           </Card>
         )}
 
@@ -654,6 +728,10 @@ export default function SmokeTestPage() {
 
         <Divider orientation="left" plain>{t('smoke.step3')}</Divider>
 
+        <Text type="secondary" style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
+          {t('smoke.section3Desc')}
+        </Text>
+
         <Space>
           <Button
             onClick={handleRequestLogValidation}
@@ -664,7 +742,7 @@ export default function SmokeTestPage() {
           </Button>
           <StepStatusTagLocalized status={requestLog.status} />
           {!canRunRequestLog && (
-            <Text type="secondary">{t('smoke.step3Hint')}</Text>
+            <Text type="secondary">{t('smoke.nonStreamingRequired')}</Text>
           )}
         </Space>
 
@@ -690,6 +768,9 @@ export default function SmokeTestPage() {
                 })}
               </Descriptions.Item>
             </Descriptions>
+            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
+              {t('smoke.securityBoundary')}
+            </Text>
           </Card>
         )}
 
@@ -723,6 +804,10 @@ export default function SmokeTestPage() {
         )}
 
         <Divider orientation="left" plain>{t('smoke.step4')}</Divider>
+
+        <Text type="secondary" style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
+          {t('smoke.section4Desc')}
+        </Text>
 
         <Space direction="vertical" style={{ width: '100%' }}>
           <Space>

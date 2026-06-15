@@ -1,0 +1,22 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product boundary, smoke/readiness/request-log safe evidence contracts"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend page/component/API organization for smoke IA work"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Admin UI component states, cards, status and safety expectations"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Typed API contracts, request-log/readiness/openai DTO boundaries"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Local/session state and secret handling boundaries"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend UX, testing, security and visual smoke validation"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Request logging and observability boundary checklist"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing diagnostics helpers instead of duplicating classification"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Allowed/forbidden request-log and hit-chunk evidence fields"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe request-log and gateway observability metadata rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Gateway/admin error shape and request-log error boundaries"}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "RAG hit_chunk_ids/no-hit evidence and retrieval boundary semantics"}
+{"file": "frontend/src/pages/smoke/SmokeTestPage.tsx", "reason": "Primary page to reorganize; existing smoke/readiness/log validation flow"}
+{"file": "frontend/src/components/domain/requestDiagnostics.ts", "reason": "Existing diagnostic boundary classification to reuse or align"}
+{"file": "frontend/src/components/domain/RequestDiagnosticsPanel.tsx", "reason": "Existing diagnostic panel pattern for boundary summaries and readiness evidence"}
+{"file": "frontend/src/app/i18n/dict.ts", "reason": "Typed bilingual dictionary with DictionaryKeyParity"}
+{"file": "frontend/src/types/app.ts", "reason": "App readiness frontend contract"}
+{"file": "frontend/src/types/request-log.ts", "reason": "Request-log/hit-chunk safe metadata frontend contract"}
+{"file": "frontend/src/types/openai.ts", "reason": "Smoke OpenAI response/evidence frontend contract"}
+{"file": "frontend/src/api/openai.ts", "reason": "Smoke fetch/SSE evidence implementation and error extraction"}
