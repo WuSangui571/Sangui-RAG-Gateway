@@ -1194,3 +1194,83 @@ Completed and archived the smoke module clarity task after user manual acceptanc
 ### Next Steps
 
 - None - task complete
+
+
+## Session 54: Request log output observability policy
+
+**Date**: 2026-06-15
+**Task**: Request log output observability policy
+**Branch**: `feature/request-log-output-observability-policy`
+
+### Summary
+
+Implemented and manually accepted bounded request-log output preview observability with audit, frontend access flow, tests, specs, and task archive.
+
+### Main Changes
+
+﻿| Area | Details |
+|------|---------|
+| Commit | `6b8877a1` (`feat:request-log-output-observability`) |
+| Manual acceptance | User reported manual testing completed and code already committed. |
+| Backend DB | Added `V11__add_request_log_output_observability.sql` with request-log output metadata columns, app opt-in flag, and output access audit table/indexes. |
+| Backend policy/API | Added output capture properties, deterministic redaction, capture policy, request-log preview metadata, explicit preview access endpoint, audit writes, and expired-preview cleanup service path. |
+| Gateway behavior | Non-streaming completions compute completion length and optionally persist bounded/redacted preview. Streaming remains explicit `STREAMING_UNSUPPORTED` without raw SSE storage. |
+| Frontend | Added request-log output metadata types, `accessOutputPreview` API, detail drawer metadata display, explicit confirmation modal, and i18n keys. |
+| Specs | Updated backend database/logging/error handling specs, frontend type-safety, and RAG security with executable output-observability contracts. |
+
+**Updated Files**:
+- `.trellis/tasks/archive/2026-06/06-15-request-log-output-observability-policy/`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/backend/error-handling.md`
+- `.trellis/spec/backend/logging-guidelines.md`
+- `.trellis/spec/frontend/type-safety.md`
+- `.trellis/spec/security/rag-security.md`
+- `backend/src/main/java/com/sangui/raggateway/app/AppEntity.java`
+- `backend/src/main/java/com/sangui/raggateway/gateway/completion/*`
+- `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java`
+- `backend/src/main/java/com/sangui/raggateway/log/*`
+- `backend/src/main/resources/application.yml`
+- `backend/src/main/resources/db/migration/V11__add_request_log_output_observability.sql`
+- `backend/src/test/java/com/sangui/raggateway/log/*`
+- `backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java`
+- `frontend/src/api/request-logs.ts`
+- `frontend/src/app/i18n/dict.ts`
+- `frontend/src/components/domain/OutputPreviewModal.tsx`
+- `frontend/src/components/domain/RequestLogDetailDrawer.tsx`
+- `frontend/src/types/request-log.ts`
+
+**Validation Recorded**:
+- `cd backend; mvn -q -DskipTests compile` passed.
+- `cd backend; mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogOutputServiceTest,OutputCapturePolicyTest,ApiRequestLogAdminControllerTest,OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test` passed.
+- `cd backend; mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test` passed.
+- `cd backend; mvn -q "-Dtest=ApiRequestLogAdminControllerTest" test` passed after final reason-trim check.
+- `cd backend; mvn -q test` passed.
+- `cd frontend; cmd /c npm run typecheck` passed.
+- `cd frontend; cmd /c npm run build` passed.
+- `cd frontend; cmd /c npm run test:visual` passed.
+- `git diff --check HEAD` passed.
+
+**Result And Boundaries**:
+- Request-log output observability V1 is complete for bounded non-streaming preview, metadata-only default detail, explicit/audited preview access, retention cleanup method, and frontend inspection UX.
+- Full prompts, full answers, raw SSE payloads, provider raw bodies, API keys, key hashes, chunk content, stack traces, and environment values remain outside default request-log APIs.
+- Streaming preview capture is intentionally not implemented in V1; status remains `STREAMING_UNSUPPORTED`.
+- App-level `request_log_output_capture_enabled` exists in DB/entity and is part of the effective capture policy; a dedicated admin UI/API switch can be handled as a follow-up if desired.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6b8877a1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
