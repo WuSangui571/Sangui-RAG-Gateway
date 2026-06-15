@@ -503,7 +503,11 @@ This session closes the V0.2 Demo Acceptance Evidence Pack Final Run task. The p
 
 ### Testing
 
-- [OK] (Add test results)
+- [OK] `cmd /c npm run typecheck`
+- [OK] `cmd /c npm run build` (Vite chunk-size warning remains pre-existing)
+- [OK] `cmd /c npm run test:visual` (3/3 Chromium visual smoke tests)
+- [OK] `git diff --check` (only Windows LF-to-CRLF notice)
+- [OK] User manual acceptance completed before record-session
 
 ### Status
 
@@ -1115,6 +1119,73 @@ Fixed knowledge-base upload display filenames by separating Unicode display base
 ### Testing
 
 - [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 53: Smoke module clarity check and archive
+
+**Date**: 2026-06-15
+**Task**: Smoke module clarity check and archive
+**Branch**: `feature/smoke-module-clarity`
+
+### Summary
+
+Completed and archived the smoke module clarity task after user manual acceptance and commit `e625f0ab`.
+
+### Main Changes
+
+## Summary
+- Completed smoke module clarity and information architecture adjustment on branch feature/smoke-module-clarity.
+- Frontend Smoke page now presents admin-oriented diagnostic domains: API availability, streaming availability, RAG/log observability, and optional auth negative case.
+- Added diagnostic overview, explicit empty/disabled/retry states, and safe-evidence boundary copy.
+- Codex check fixed the overview aggregation so non-READY readiness or readiness load failure prevents an overall PASS conclusion.
+
+## Commit
+- e625f0ab feat:smoke-module-clarity
+
+## Main Modules
+- Frontend Smoke Test page IA and state presentation.
+- Frontend i18n dictionary parity for zh-CN and en-US.
+- Trellis task archive for 06-15-smoke-module-clarity.
+
+## Updated Files
+- frontend/src/pages/smoke/SmokeTestPage.tsx
+- frontend/src/app/i18n/dict.ts
+- .trellis/tasks/archive/2026-06/06-15-smoke-module-clarity/
+
+## Validation
+- cmd /c npm run typecheck: passed.
+- cmd /c npm run build: passed; Vite chunk-size warning remains pre-existing.
+- cmd /c npm run test:visual: passed, 3/3 Chromium visual smoke tests.
+- git diff --check: passed; only Windows LF-to-CRLF notice.
+- Manual user acceptance: completed before record-session request.
+
+## Boundaries
+- No backend Java, API contract, database schema, Docker/Compose, Redis/MQ, or infrastructure changes.
+- Smoke evidence remains metadata-only: no API key plaintext, answer body, prompts, chunk content, chunk summary text, provider raw body, stack trace, embeddings, storage path, or environment values are rendered as evidence.
+- Backend Docker Compose failure observed after the task was network/dependency-resolution related: Maven Central handshake failed for io.netty:netty-buffer:4.1.119.Final during backend image build, not a Smoke UI code regression.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e625f0ab` | (see git log) |
+
+### Testing
+
+- [OK] `cmd /c npm run typecheck`
+- [OK] `cmd /c npm run build` (Vite chunk-size warning remains pre-existing)
+- [OK] `cmd /c npm run test:visual` (3/3 Chromium visual smoke tests)
+- [OK] `git diff --check` (only Windows LF-to-CRLF notice)
+- [OK] User manual acceptance completed before record-session
 
 ### Status
 
