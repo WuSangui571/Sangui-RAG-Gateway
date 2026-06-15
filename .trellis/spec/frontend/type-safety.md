@@ -35,6 +35,40 @@ common.ts
 
 API clients should import these shared types instead of redefining payloads inline.
 
+## Admin Auth Types
+
+Admin login/session contracts live in:
+
+```text
+frontend/src/types/auth.ts
+frontend/src/api/auth.ts
+frontend/src/api/http.ts
+```
+
+Required DTO/VO shapes:
+
+```ts
+export interface AdminLoginDTO {
+  username: string;
+  password: string;
+}
+
+export interface AdminUserVO {
+  id: number;
+  username: string;
+  status: 'ACTIVE' | 'DISABLED' | string;
+}
+
+export interface AdminLoginVO {
+  access_token: string;
+  token_type: 'Bearer' | string;
+  expires_at: string;
+  user: AdminUserVO;
+}
+```
+
+Admin API clients must not accept `adminUserId` as a parameter. `frontend/src/api/http.ts` owns the single admin credential injection point and sends `Authorization: Bearer <token>` for Admin APIs after login. `/admin/auth/login` may be called without a token. A `401` from Admin APIs must clear or invalidate current auth state in the shell so the user can log in again.
+
 ## Domain Types
 
 Define explicit status unions:
@@ -222,7 +256,6 @@ export interface UpdateAppOutputCaptureDTO {
 updateAppOutputCapture(
   appId: number,
   dto: UpdateAppOutputCaptureDTO,
-  adminUserId: number,
 ): Promise<ApiResponse<AppVO>>
 ```
 
@@ -336,7 +369,7 @@ export interface RequestLogOutputPreviewVO {
 Frontend API client:
 
 ```ts
-accessOutputPreview(appId, requestId, adminUserId, {
+accessOutputPreview(appId, requestId, {
   confirm_access: true,
   reason,
 })

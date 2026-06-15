@@ -86,13 +86,13 @@ Do not expose internal implementation details in `message`.
 
 ## Admin Model Config API Error Codes
 
-The admin model config endpoints (`/api/admin/model-configs/**`) and app binding endpoint (`/api/admin/apps/**`) use the `ApiResponse` envelope with these error codes:
+The admin model config endpoints (`/api/admin/model-configs/**`) and app binding endpoint (`/api/admin/apps/**`) use the `ApiResponse` envelope with these error codes. Current Admin APIs are authenticated by `Authorization: Bearer <admin-jwt>`; legacy `X-Admin-User-Id` validation rows are superseded by the Admin Auth Error Matrix below.
 
 | Scenario | HTTP | Code | Notes |
 |---|---|---|---|
-| Missing `X-Admin-User-Id` header | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException` handler. |
-| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException` handler. |
-| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated in controller. |
+| Missing `Authorization` header | 401 | `UNAUTHORIZED` | Caught by `AdminAuthFilter`; no controller business method runs. |
+| Non-Bearer `Authorization` header | 401 | `UNAUTHORIZED` | Token content is not echoed. |
+| Invalid/expired admin JWT | 401 | `UNAUTHORIZED` | Context is not set. |
 | Malformed JSON request body | 400 | `INVALID_REQUEST` | Caught by `HttpMessageNotReadableException`; response message is `Malformed request body` and does not echo body content. |
 | Blank required field (name, provider_name, base_url, chat_model, api_key) | 400 | `INVALID_REQUEST` | Service-level validation. |
 | Invalid embedding dimension | 400 | `INVALID_REQUEST` | Reuses existing embedding validation. |
@@ -123,7 +123,7 @@ Secret-safe error responses:
 
 ## Admin App API Key API Error Codes
 
-The app and app API key admin endpoints use the same `ApiResponse` envelope and temporary `X-Admin-User-Id` identity contract:
+The app and app API key admin endpoints use the same `ApiResponse` envelope and `Authorization: Bearer <admin-jwt>` identity contract:
 
 ```http
 POST /api/admin/apps
@@ -140,9 +140,9 @@ Validation and error matrix:
 
 | Scenario | HTTP | Code | Notes |
 |---|---:|---|---|
-| Missing `X-Admin-User-Id` header | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException`. |
-| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException`. |
-| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated before business mutation. |
+| Missing `Authorization` header | 401 | `UNAUTHORIZED` | Caught by `AdminAuthFilter`; no mutation. |
+| Non-Bearer `Authorization` header | 401 | `UNAUTHORIZED` | No token content echoed. |
+| Invalid/expired admin JWT | 401 | `UNAUTHORIZED` | No auth context; no mutation. |
 | Malformed JSON or null request body | 400 | `INVALID_REQUEST` | Body content must not be echoed. |
 | Create app blank `name` | 400 | `INVALID_REQUEST` | No app row inserted. |
 | App status filter outside `ENABLED|DISABLED` | 400 | `INVALID_REQUEST` | Do not echo arbitrary filter values. |
@@ -445,9 +445,9 @@ The knowledge base and document admin endpoints use the `ApiResponse` envelope w
 
 | Scenario | HTTP | Code | Notes |
 |---|---|---|---|
-| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException`. |
-| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException`. |
-| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated in controller. |
+| Missing `Authorization` | 401 | `UNAUTHORIZED` | Caught by `AdminAuthFilter`. |
+| Non-Bearer `Authorization` | 401 | `UNAUTHORIZED` | No controller business method runs. |
+| Invalid/expired admin JWT | 401 | `UNAUTHORIZED` | Context is not set. |
 | Create KB with null/blank name | 400 | `INVALID_REQUEST` | No row inserted. |
 | Create KB with blank embedding model | 400 | `INVALID_REQUEST` | No row inserted. |
 | Create KB with null/non-positive dimension | 400 | `INVALID_REQUEST` | No row inserted. |
@@ -502,9 +502,9 @@ The request log observability endpoints (`/api/admin/apps/{appId}/request-logs/*
 
 | Scenario | HTTP | Code | Notes |
 |---|---|---|---|
-| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MissingRequestHeaderException`. |
-| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by `MethodArgumentTypeMismatchException`. |
-| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Validated in controller before any DB query. |
+| Missing `Authorization` | 401 | `UNAUTHORIZED` | Caught by `AdminAuthFilter`; no log query. |
+| Non-Bearer `Authorization` | 401 | `UNAUTHORIZED` | No token content echoed. |
+| Invalid/expired admin JWT | 401 | `UNAUTHORIZED` | Context is not set. |
 | App id does not exist | 404 | `NOT_FOUND` | Applies to all endpoints. |
 | App id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no log/chunk queries executed. |
 | Invalid `page` (< 1) | 400 | `INVALID_REQUEST` | No mapper query. |
@@ -540,9 +540,9 @@ Validation and error matrix:
 
 | Scenario | HTTP | Code | Required behavior |
 |---|---:|---|---|
-| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by header validation. |
-| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by Spring type conversion. |
-| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | No app or log query. |
+| Missing `Authorization` | 401 | `UNAUTHORIZED` | Caught by `AdminAuthFilter`; no app or log query. |
+| Non-Bearer `Authorization` | 401 | `UNAUTHORIZED` | No token content echoed. |
+| Invalid/expired admin JWT | 401 | `UNAUTHORIZED` | Context is not set. |
 | App does not exist | 404 | `NOT_FOUND` | No request-log query. |
 | App belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no request-log query. |
 | Request log missing under owned app | 404 | `NOT_FOUND` | Audit `NOT_FOUND`; no preview. |
@@ -570,7 +570,7 @@ The app-level request-log output capture switch is managed through the app Admin
 
 ```http
 PUT /api/admin/apps/{appId}/request-log-output-capture
-X-Admin-User-Id: <userId>
+Authorization: Bearer <admin-jwt>
 Content-Type: application/json
 
 {
@@ -584,9 +584,9 @@ Validation and error matrix:
 
 | Scenario | HTTP | Code | Required behavior |
 |---|---:|---|---|
-| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by header validation. |
-| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by Spring type conversion. |
-| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | No app mutation. |
+| Missing `Authorization` | 401 | `UNAUTHORIZED` | Caught by `AdminAuthFilter`; no app mutation. |
+| Non-Bearer `Authorization` | 401 | `UNAUTHORIZED` | No token content echoed. |
+| Invalid/expired admin JWT | 401 | `UNAUTHORIZED` | Context is not set; no app mutation. |
 | Malformed JSON body | 400 | `INVALID_REQUEST` | Body content is not echoed. |
 | Null body or missing `request_log_output_capture_enabled` | 400 | `INVALID_REQUEST` | No app mutation. |
 | App does not exist | 404 | `NOT_FOUND` | No app mutation. |
@@ -604,3 +604,41 @@ Required tests:
 cd backend
 mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest,OutputCapturePolicyTest" test
 ```
+
+## Admin Auth Error Matrix
+
+Admin APIs (`/api/admin/**`) use the `ApiResponse` envelope. Authentication is handled by `AdminAuthFilter` and `AdminAuthContext`, not `X-Admin-User-Id` header.
+
+### Login endpoint
+
+| Scenario | HTTP | Code | Response shape |
+|----------|------|------|---------------|
+| `POST /api/admin/auth/login` - valid credentials | 200 | `OK` | `ApiResponse<AdminLoginVO>` with `access_token`, `token_type: "Bearer"`, `expires_at`, `user: {id, username}` |
+| Missing username/password | 400 | `INVALID_REQUEST` | `ApiResponse` |
+| Unknown username or wrong password | 401 | `UNAUTHORIZED` | `ApiResponse` |
+| Disabled user | 401 | `UNAUTHORIZED` | `ApiResponse` |
+
+### Me endpoint
+
+| Scenario | HTTP | Code |
+|----------|------|------|
+| `GET /api/admin/auth/me` with valid token | 200 | `OK` | `ApiResponse<AdminUserVO>` with `id`, `username`, `status` |
+| Missing/invalid/expired token | 401 | `UNAUTHORIZED` |
+
+### Admin API authentication
+
+| Scenario | HTTP | Code |
+|----------|------|------|
+| Missing `Authorization` header | 401 | `UNAUTHORIZED` |
+| Non-Bearer scheme | 401 | `UNAUTHORIZED` |
+| Invalid/expired JWT | 401 | `UNAUTHORIZED` |
+| JWT user not found or disabled | 401 | `UNAUTHORIZED` |
+| Authenticated, access own resources | 200 | `OK` |
+| Authenticated, access other user's resources | 403 | `FORBIDDEN` |
+| Authenticated, resource not found | 404 | `NOT_FOUND` |
+
+### Identity source
+
+- Admin controllers derive `userId` from `AdminAuthContextHolder.getUserId()`, set by `AdminAuthFilter` after JWT validation.
+- `X-Admin-User-Id` header is no longer trusted or required.
+- `/v1/*` gateway auth (`GatewayAuthFilter` + app API keys) is unchanged; `/v1/*` does not accept admin JWT.

@@ -2,6 +2,7 @@ package com.sangui.raggateway.model;
 
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.response.ApiResponse;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import com.sangui.raggateway.model.dto.CreateModelConfigDTO;
 import com.sangui.raggateway.model.dto.UpdateModelConfigDTO;
 import com.sangui.raggateway.model.vo.ModelConfigVO;
@@ -30,9 +31,8 @@ public class ModelConfigAdminController {
     }
 
     @PostMapping
-    public ApiResponse<ModelConfigVO> create(@RequestHeader("X-Admin-User-Id") Long userId,
-                                              @RequestBody CreateModelConfigDTO dto) {
-        validateAdminUserId(userId);
+    public ApiResponse<ModelConfigVO> create(@RequestBody CreateModelConfigDTO dto) {
+        Long userId = getRequiredUserId();
         try {
             ModelConfigVO vo = modelConfigService.createAdminConfig(userId, dto);
             return ApiResponse.success(vo);
@@ -42,10 +42,9 @@ public class ModelConfigAdminController {
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<ModelConfigVO> update(@RequestHeader("X-Admin-User-Id") Long userId,
-                                              @PathVariable Long id,
+    public ApiResponse<ModelConfigVO> update(@PathVariable Long id,
                                               @RequestBody UpdateModelConfigDTO dto) {
-        validateAdminUserId(userId);
+        Long userId = getRequiredUserId();
         ModelConfigEntity target = requireOwnedConfig(id, userId);
         try {
             ModelConfigVO vo = modelConfigService.updateAdminConfig(target.getId(), userId, dto);
@@ -56,19 +55,17 @@ public class ModelConfigAdminController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<ModelConfigVO> detail(@RequestHeader("X-Admin-User-Id") Long userId,
-                                              @PathVariable Long id) {
-        validateAdminUserId(userId);
+    public ApiResponse<ModelConfigVO> detail(@PathVariable Long id) {
+        Long userId = getRequiredUserId();
         requireOwnedConfig(id, userId);
         ModelConfigVO vo = modelConfigService.findAdminDetail(id, userId);
         return ApiResponse.success(vo);
     }
 
     @GetMapping
-    public ApiResponse<List<ModelConfigVO>> list(@RequestHeader("X-Admin-User-Id") Long userId,
-                                                  @RequestParam(required = false) String status,
+    public ApiResponse<List<ModelConfigVO>> list(@RequestParam(required = false) String status,
                                                   @RequestParam(required = false) String capability) {
-        validateAdminUserId(userId);
+        Long userId = getRequiredUserId();
         if (status != null && !status.equals("ENABLED") && !status.equals("DISABLED")) {
             throw new BusinessException("INVALID_REQUEST", "Invalid status filter");
         }
@@ -83,18 +80,16 @@ public class ModelConfigAdminController {
     }
 
     @PostMapping("/{id}/disable")
-    public ApiResponse<ModelConfigVO> disable(@RequestHeader("X-Admin-User-Id") Long userId,
-                                               @PathVariable Long id) {
-        validateAdminUserId(userId);
+    public ApiResponse<ModelConfigVO> disable(@PathVariable Long id) {
+        Long userId = getRequiredUserId();
         requireOwnedConfig(id, userId);
         ModelConfigVO vo = modelConfigService.disableAdminConfig(id, userId);
         return ApiResponse.success(vo);
     }
 
     @PostMapping("/{id}/enable")
-    public ApiResponse<ModelConfigVO> enable(@RequestHeader("X-Admin-User-Id") Long userId,
-                                              @PathVariable Long id) {
-        validateAdminUserId(userId);
+    public ApiResponse<ModelConfigVO> enable(@PathVariable Long id) {
+        Long userId = getRequiredUserId();
         requireOwnedConfig(id, userId);
         try {
             ModelConfigVO vo = modelConfigService.enableAdminConfig(id, userId);
@@ -105,10 +100,8 @@ public class ModelConfigAdminController {
     }
 
     @PostMapping("/check")
-    public ApiResponse<ModelConfigCheckResult> checkUnsaved(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @RequestBody ModelConfigCheckRequest request) {
-        validateAdminUserId(userId);
+    public ApiResponse<ModelConfigCheckResult> checkUnsaved(@RequestBody ModelConfigCheckRequest request) {
+        Long userId = getRequiredUserId();
         try {
             ModelConfigCheckResult result = modelConfigCheckService.checkUnsavedConfig(userId, request);
             return ApiResponse.success(result);
@@ -118,11 +111,9 @@ public class ModelConfigAdminController {
     }
 
     @PostMapping("/{id}/check")
-    public ApiResponse<ModelConfigCheckResult> checkSaved(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long id,
-            @RequestBody ModelConfigCheckRequest request) {
-        validateAdminUserId(userId);
+    public ApiResponse<ModelConfigCheckResult> checkSaved(@PathVariable Long id,
+                                                           @RequestBody ModelConfigCheckRequest request) {
+        Long userId = getRequiredUserId();
         requireOwnedConfig(id, userId);
         try {
             ModelConfigCheckResult result = modelConfigCheckService.checkSavedConfig(userId, id, request);
@@ -133,9 +124,8 @@ public class ModelConfigAdminController {
     }
 
     @GetMapping("/chat-capable")
-    public ApiResponse<List<ModelConfigVO>> listChatCapable(
-            @RequestHeader("X-Admin-User-Id") Long userId) {
-        validateAdminUserId(userId);
+    public ApiResponse<List<ModelConfigVO>> listChatCapable() {
+        Long userId = getRequiredUserId();
         List<ModelConfigVO> list = modelConfigService.listEnabledChatCapableConfigs(userId);
         return ApiResponse.success(list);
     }
@@ -151,9 +141,11 @@ public class ModelConfigAdminController {
         return entity;
     }
 
-    private void validateAdminUserId(Long userId) {
+    private Long getRequiredUserId() {
+        Long userId = AdminAuthContextHolder.getUserId();
         if (userId == null || userId <= 0) {
-            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
+            throw new BusinessException("UNAUTHORIZED", "Authentication required", HttpStatus.UNAUTHORIZED);
         }
+        return userId;
     }
 }

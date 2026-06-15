@@ -42,7 +42,7 @@ Before completing backend work, verify:
 - [ ] API keys and upstream keys are never stored or logged in plaintext.
 - [ ] Upstream API keys are encrypted at rest with AES-256-GCM using `RAG_GATEWAY_SECRET_KEY`.
 - [ ] Admin API responses only return `api_key_masked`, never `api_key_encrypted` or plaintext upstream keys.
-- [ ] Admin endpoints use `X-Admin-User-Id` header for tenant isolation (temporary, until real admin auth exists).
+- [ ] Admin endpoints require `Authorization: Bearer <admin-jwt>` and derive tenant identity from `AdminAuthContextHolder`, not request headers.
 - [ ] Admin model config CRUD endpoints enforce same-user ownership with 404/403 distinction.
 - [ ] App-model config binding validates same-user ownership of both app and model config.
 - [ ] Disabled model configs are excluded from `/v1/models` resolution.
@@ -205,7 +205,7 @@ Tested areas:
 - App with no default KB returns `400 INVALID_REQUEST` for hit-chunks.
 - Empty/null hit_chunk_ids returns empty summary list.
 - JSONB `hit_chunk_ids` parsed to numeric array; sensitive fields absent from responses.
-- Admin identity validation (missing/non-numeric/non-positive `X-Admin-User-Id`).
+- Admin auth validation (missing/non-Bearer/invalid/expired JWT returns `401 UNAUTHORIZED`; controller fallback without context returns `401 UNAUTHORIZED`).
 
 Regression tests must still pass:
 ```bash

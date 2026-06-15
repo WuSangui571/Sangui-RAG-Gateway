@@ -3,11 +3,13 @@ export type Locale = 'zh-CN' | 'en-US'
 const dict = {
   'zh-CN': {
     'app.title': 'Sangui RAG Gateway 管理后台',
-    'app.connect': '连接',
-    'app.switchUser': '切换用户',
-    'app.enterUserId': '请输入管理员用户 ID',
-    'app.placeholderUserId': '正整数',
-    'app.errorUserId': '请输入一个正整数',
+    'app.login': '登录',
+    'app.logout': '退出登录',
+    'app.placeholderUsername': '用户名',
+    'app.placeholderPassword': '密码',
+    'app.errorCredentials': '请输入用户名和密码',
+    'app.errorInvalidCredentials': '用户名或密码错误',
+    'app.errorLoginFailed': '登录失败',
 
     'nav.model-configs': '模型配置',
     'nav.knowledge': '知识库',
@@ -450,11 +452,13 @@ const dict = {
   },
   'en-US': {
     'app.title': 'Sangui RAG Gateway Admin',
-    'app.connect': 'Connect',
-    'app.switchUser': 'Switch User',
-    'app.enterUserId': 'Enter Admin User ID to continue',
-    'app.placeholderUserId': 'Positive integer',
-    'app.errorUserId': 'Enter a positive number',
+    'app.login': 'Login',
+    'app.logout': 'Logout',
+    'app.placeholderUsername': 'Username',
+    'app.placeholderPassword': 'Password',
+    'app.errorCredentials': 'Enter username and password',
+    'app.errorInvalidCredentials': 'Invalid username or password',
+    'app.errorLoginFailed': 'Login failed',
 
     'nav.model-configs': 'Model Configs',
     'nav.knowledge': 'Knowledge Bases',

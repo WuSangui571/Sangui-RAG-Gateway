@@ -3,10 +3,13 @@ package com.sangui.raggateway.log;
 import com.sangui.raggateway.app.AppEntity;
 import com.sangui.raggateway.app.AppService;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
+import com.sangui.raggateway.common.security.AdminAuthContext;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import com.sangui.raggateway.log.vo.ApiRequestLogDetailVO;
 import com.sangui.raggateway.log.vo.ApiRequestLogPageVO;
 import com.sangui.raggateway.log.vo.ApiRequestLogVO;
 import com.sangui.raggateway.log.vo.HitChunkSummaryVO;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,21 +58,34 @@ class ApiRequestLogAdminControllerTest {
                 .build();
     }
 
+    @BeforeEach
+    void setUpAuthContext() {
+        AdminAuthContextHolder.set(new AdminAuthContext(100L, "testuser"));
+    }
+
+    @AfterEach
+    void tearDownAuthContext() {
+        AdminAuthContextHolder.clear();
+    }
+
     // ---- Admin identity ----
 
     @Test
     void shouldRejectMissingAdminUserIdHeader() throws Exception {
+        AdminAuthContextHolder.clear();
+
         mockMvc.perform(get("/api/admin/apps/1/request-logs"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test
     void shouldRejectNonPositiveAdminUserId() throws Exception {
-        mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "0"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        AdminAuthContextHolder.clear();
+
+        mockMvc.perform(get("/api/admin/apps/1/request-logs"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     // ---- App ownership ----
@@ -81,7 +97,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findById(1L)).thenReturn(otherUserApp);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
 
@@ -94,7 +110,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(get("/api/admin/apps/999/request-logs")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
 
@@ -113,7 +129,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.listRequestLogs(eq(100L), eq(1L), any(ApiRequestLogQuery.class))).thenReturn(pageVO);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.items[0].id").value(1))
@@ -134,7 +150,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.listRequestLogs(eq(100L), eq(1L), any(ApiRequestLogQuery.class))).thenReturn(pageVO);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100")
+
                         .param("page", "2")
                         .param("page_size", "10")
                         .param("status", "failure")
@@ -156,7 +172,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.listRequestLogs(eq(100L), eq(1L), any(ApiRequestLogQuery.class))).thenReturn(pageVO);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items").isArray())
                 .andExpect(jsonPath("$.data.items").isEmpty())
@@ -171,7 +187,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100")
+
                         .param("page", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
@@ -183,7 +199,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100")
+
                         .param("page_size", "101"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
@@ -195,7 +211,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100")
+
                         .param("status", "invalid_status"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
@@ -210,12 +226,12 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.listRequestLogs(eq(100L), eq(1L), any(ApiRequestLogQuery.class))).thenReturn(pageVO);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100")
+
                         .param("status", "SUCCESS"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100")
+
                         .param("status", "failure"))
                 .andExpect(status().isOk());
     }
@@ -226,7 +242,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100")
+
                         .param("start_time", "2026-06-01T00:00:00")
                         .param("end_time", "2026-05-01T00:00:00"))
                 .andExpect(status().isBadRequest())
@@ -239,7 +255,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100")
+
                         .param("start_time", "not-a-date"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
@@ -257,7 +273,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.listRequestLogs(eq(100L), eq(1L), any(ApiRequestLogQuery.class))).thenReturn(pageVO);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].prompt").doesNotExist())
                 .andExpect(jsonPath("$.data.items[0].messages").doesNotExist())
@@ -282,7 +298,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.getRequestLogDetail(100L, 1L, "req-001")).thenReturn(detail);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs/req-001")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -298,7 +314,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.getRequestLogDetail(100L, 1L, "nonexistent")).thenReturn(null);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs/nonexistent")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -312,7 +328,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.getRequestLogDetail(100L, 1L, "req-001")).thenReturn(detail);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs/req-001")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.prompt").doesNotExist())
                 .andExpect(jsonPath("$.data.messages").doesNotExist())
@@ -344,7 +360,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.getHitChunkSummaries(100L, 1L, 6L, "req-001")).thenReturn(summaries);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs/req-001/hit-chunks")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data").isArray());
@@ -362,7 +378,7 @@ class ApiRequestLogAdminControllerTest {
                 .thenReturn(new ApiRequestLogEntity());
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs/req-002/hit-chunks")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data").isArray())
@@ -378,7 +394,7 @@ class ApiRequestLogAdminControllerTest {
                 .thenReturn(null);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs/missing/hit-chunks")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
 
@@ -391,7 +407,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs/req-001/hit-chunks")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
 
@@ -405,7 +421,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findById(1L)).thenReturn(otherUserApp);
 
         mockMvc.perform(get("/api/admin/apps/1/request-logs/req-001/hit-chunks")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
 
@@ -436,7 +452,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.getOutputPreview(100L, 1L, "req-001")).thenReturn(preview);
 
         mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType("application/json")
                         .content("""
                                 {
@@ -473,7 +489,7 @@ class ApiRequestLogAdminControllerTest {
         when(apiRequestLogService.getOutputPreview(100L, 1L, "req-001")).thenReturn(preview);
 
         mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType("application/json")
                         .content("""
                                 {
@@ -499,7 +515,7 @@ class ApiRequestLogAdminControllerTest {
                 .thenReturn(entity);
 
         mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType("application/json")
                         .content("""
                                 {
@@ -526,7 +542,7 @@ class ApiRequestLogAdminControllerTest {
 
         String longReason = "x".repeat(257);
         mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType("application/json")
                         .content("""
                                 {
@@ -550,7 +566,7 @@ class ApiRequestLogAdminControllerTest {
                 .thenReturn(null);
 
         mockMvc.perform(post("/api/admin/apps/1/request-logs/missing/output-preview/access")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType("application/json")
                         .content("""
                                 {
@@ -572,7 +588,7 @@ class ApiRequestLogAdminControllerTest {
         when(appService.findById(1L)).thenReturn(otherUserApp);
 
         mockMvc.perform(post("/api/admin/apps/1/request-logs/req-001/output-preview/access")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType("application/json")
                         .content("""
                                 {

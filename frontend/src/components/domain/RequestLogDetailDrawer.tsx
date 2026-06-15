@@ -17,7 +17,6 @@ interface RequestLogDetailDrawerProps {
   open: boolean
   appId: number
   requestId: string | null
-  adminUserId: number
   onClose: () => void
 }
 
@@ -35,7 +34,6 @@ export default function RequestLogDetailDrawer({
   open,
   appId,
   requestId,
-  adminUserId,
   onClose,
 }: RequestLogDetailDrawerProps) {
   const { t } = useI18n()
@@ -73,7 +71,7 @@ export default function RequestLogDetailDrawer({
     setReadinessError(null)
     setReadinessLoading(true)
 
-    getRequestLogDetail(appId, requestId, adminUserId)
+    getRequestLogDetail(appId, requestId)
       .then((res) => {
         if (cancelled) return
         if (res.code !== 'OK') {
@@ -90,7 +88,7 @@ export default function RequestLogDetailDrawer({
         if (!cancelled) setLoading(false)
       })
 
-    getAppReadiness(appId, adminUserId)
+    getAppReadiness(appId)
       .then((res) => {
         if (cancelled) return
         if (res.code !== 'OK') {
@@ -107,18 +105,18 @@ export default function RequestLogDetailDrawer({
         if (!cancelled) setReadinessLoading(false)
       })
 
-    loadHitChunks(appId, requestId, adminUserId, () => cancelled, setChunks, setChunksLoading, setChunksError)
+    loadHitChunks(appId, requestId, () => cancelled, setChunks, setChunksLoading, setChunksError)
 
     return () => {
       cancelled = true
     }
-  }, [open, appId, requestId, adminUserId])
+  }, [open, appId, requestId])
 
   function handleRetryHitChunks() {
     if (!requestId) return
     setChunksError(null)
     setChunksLoading(true)
-    loadHitChunks(appId, requestId, adminUserId, () => false, setChunks, setChunksLoading, setChunksError)
+    loadHitChunks(appId, requestId, () => false, setChunks, setChunksLoading, setChunksError)
   }
 
   const diagnostic = useMemo(() => {
@@ -261,12 +259,11 @@ export default function RequestLogDetailDrawer({
             readinessError={readinessError}
           />
 
-          {appId && adminUserId && requestId && (
+          {appId && requestId && (
             <OutputPreviewModal
               open={previewModalOpen}
               appId={appId}
               requestId={requestId}
-              adminUserId={adminUserId}
               onClose={() => setPreviewModalOpen(false)}
             />
           )}
@@ -279,7 +276,6 @@ export default function RequestLogDetailDrawer({
 async function loadHitChunks(
   appId: number,
   requestId: string,
-  adminUserId: number,
   isCancelled: () => boolean,
   setChunks: (c: HitChunkSummaryVO[]) => void,
   setChunksLoading: (v: boolean) => void,
@@ -287,7 +283,7 @@ async function loadHitChunks(
 ) {
   setChunksLoading(true)
   try {
-    const res = await getHitChunks(appId, requestId, adminUserId)
+    const res = await getHitChunks(appId, requestId)
     if (isCancelled()) return
     if (res.code !== 'OK') {
       setChunksError(res.message)

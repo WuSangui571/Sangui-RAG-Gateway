@@ -2,6 +2,7 @@ package com.sangui.raggateway.knowledge;
 
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.response.ApiResponse;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import com.sangui.raggateway.knowledge.dto.CreateKnowledgeBaseDTO;
 import com.sangui.raggateway.knowledge.vo.KnowledgeBaseVO;
 import org.slf4j.Logger;
@@ -26,10 +27,8 @@ public class KnowledgeBaseAdminController {
     }
 
     @PostMapping
-    public ApiResponse<KnowledgeBaseVO> create(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @RequestBody CreateKnowledgeBaseDTO dto) {
-        validateUserId(userId);
+    public ApiResponse<KnowledgeBaseVO> create(@RequestBody CreateKnowledgeBaseDTO dto) {
+        Long userId = getRequiredUserId();
         try {
             KnowledgeBaseEntity entity = knowledgeBaseService.create(
                     userId, dto.getName(), dto.getEmbeddingModel(), dto.getEmbeddingDimension());
@@ -40,10 +39,8 @@ public class KnowledgeBaseAdminController {
     }
 
     @GetMapping
-    public ApiResponse<List<KnowledgeBaseVO>> list(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @RequestParam(required = false) String status) {
-        validateUserId(userId);
+    public ApiResponse<List<KnowledgeBaseVO>> list(@RequestParam(required = false) String status) {
+        Long userId = getRequiredUserId();
         if (status != null && !status.isBlank() && !KnowledgeBaseStatus.isValid(status)) {
             throw new BusinessException("INVALID_REQUEST", "Invalid status filter");
         }
@@ -53,10 +50,8 @@ public class KnowledgeBaseAdminController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<KnowledgeBaseVO> detail(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long id) {
-        validateUserId(userId);
+    public ApiResponse<KnowledgeBaseVO> detail(@PathVariable Long id) {
+        Long userId = getRequiredUserId();
 
         KnowledgeBaseEntity entity = knowledgeBaseService.findByIdAndUserId(id, userId);
         if (entity == null) {
@@ -69,9 +64,11 @@ public class KnowledgeBaseAdminController {
         return ApiResponse.success(KnowledgeBaseVO.from(entity));
     }
 
-    private void validateUserId(Long userId) {
+    private Long getRequiredUserId() {
+        Long userId = AdminAuthContextHolder.getUserId();
         if (userId == null || userId <= 0) {
-            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
+            throw new BusinessException("UNAUTHORIZED", "Authentication required", HttpStatus.UNAUTHORIZED);
         }
+        return userId;
     }
 }

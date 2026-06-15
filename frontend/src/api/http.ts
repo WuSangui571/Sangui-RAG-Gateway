@@ -2,6 +2,21 @@ import type { ApiResponse } from '../types/common'
 
 const BASE_URL = '/api'
 
+let authToken: string | null = null
+let unauthorizedHandler: (() => void) | null = null
+
+export function setAuthToken(token: string | null): void {
+  authToken = token
+}
+
+export function getAuthToken(): string | null {
+  return authToken
+}
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler
+}
+
 export class ApiError extends Error {
   code: string
   status: number
@@ -20,10 +35,10 @@ function buildUrl(path: string): string {
   return url.toString()
 }
 
-function buildHeaders(adminUserId?: number, extra?: Record<string, string>): Record<string, string> {
+function buildHeaders(extra?: Record<string, string>): Record<string, string> {
   const headers: Record<string, string> = { ...extra }
-  if (adminUserId !== undefined) {
-    headers['X-Admin-User-Id'] = String(adminUserId)
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`
   }
   return headers
 }
@@ -35,6 +50,9 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
       body = await response.json() as ApiResponse<unknown>
     } catch {
       // ignore parse failure
+    }
+    if (response.status === 401 && !response.url.endsWith('/api/admin/auth/login')) {
+      unauthorizedHandler?.()
     }
     throw new ApiError(
       body?.code || 'NETWORK_ERROR',
@@ -48,7 +66,6 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
 export async function apiGet<T>(
   path: string,
   params?: Record<string, string | number | undefined>,
-  adminUserId?: number,
 ): Promise<ApiResponse<T>> {
   const url = new URL(buildUrl(path))
   if (params) {
@@ -59,7 +76,7 @@ export async function apiGet<T>(
     })
   }
   const response = await fetch(url.toString(), {
-    headers: buildHeaders(adminUserId),
+    headers: buildHeaders(),
   })
   return handleResponse<T>(response)
 }
@@ -67,11 +84,10 @@ export async function apiGet<T>(
 export async function apiPost<T>(
   path: string,
   body?: unknown,
-  adminUserId?: number,
 ): Promise<ApiResponse<T>> {
   const response = await fetch(buildUrl(path), {
     method: 'POST',
-    headers: buildHeaders(adminUserId, { 'Content-Type': 'application/json' }),
+    headers: buildHeaders({ 'Content-Type': 'application/json' }),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
   return handleResponse<T>(response)
@@ -80,11 +96,10 @@ export async function apiPost<T>(
 export async function apiPut<T>(
   path: string,
   body?: unknown,
-  adminUserId?: number,
 ): Promise<ApiResponse<T>> {
   const response = await fetch(buildUrl(path), {
     method: 'PUT',
-    headers: buildHeaders(adminUserId, { 'Content-Type': 'application/json' }),
+    headers: buildHeaders({ 'Content-Type': 'application/json' }),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
   return handleResponse<T>(response)
@@ -93,11 +108,10 @@ export async function apiPut<T>(
 export async function apiUpload<T>(
   path: string,
   formData: FormData,
-  adminUserId?: number,
 ): Promise<ApiResponse<T>> {
   const response = await fetch(buildUrl(path), {
     method: 'POST',
-    headers: buildHeaders(adminUserId),
+    headers: buildHeaders(),
     body: formData,
   })
   return handleResponse<T>(response)

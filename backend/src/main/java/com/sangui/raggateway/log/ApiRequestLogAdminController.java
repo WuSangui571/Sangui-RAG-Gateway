@@ -4,6 +4,7 @@ import com.sangui.raggateway.app.AppEntity;
 import com.sangui.raggateway.app.AppService;
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.response.ApiResponse;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import com.sangui.raggateway.log.vo.ApiRequestLogDetailVO;
 import com.sangui.raggateway.log.vo.ApiRequestLogPageVO;
 import com.sangui.raggateway.log.vo.ApiRequestLogVO;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -48,7 +48,6 @@ public class ApiRequestLogAdminController {
 
     @GetMapping
     public ApiResponse<ApiRequestLogPageVO<ApiRequestLogVO>> listRequestLogs(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long appId,
             @RequestParam(required = false) Integer page,
             @RequestParam(name = "page_size", required = false) Integer pageSize,
@@ -56,7 +55,7 @@ public class ApiRequestLogAdminController {
             @RequestParam(name = "error_code", required = false) String errorCode,
             @RequestParam(name = "start_time", required = false) String startTime,
             @RequestParam(name = "end_time", required = false) String endTime) {
-        validateUserId(userId);
+        Long userId = getRequiredUserId();
         validateAppOwnership(userId, appId);
         validateListParams(page, pageSize, status);
 
@@ -78,10 +77,9 @@ public class ApiRequestLogAdminController {
 
     @GetMapping("/{requestId}")
     public ApiResponse<ApiRequestLogDetailVO> getRequestLogDetail(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long appId,
             @PathVariable String requestId) {
-        validateUserId(userId);
+        Long userId = getRequiredUserId();
         validateAppOwnership(userId, appId);
 
         ApiRequestLogDetailVO detail = apiRequestLogService.getRequestLogDetail(userId, appId, requestId);
@@ -93,10 +91,9 @@ public class ApiRequestLogAdminController {
 
     @GetMapping("/{requestId}/hit-chunks")
     public ApiResponse<List<HitChunkSummaryVO>> getHitChunks(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long appId,
             @PathVariable String requestId) {
-        validateUserId(userId);
+        Long userId = getRequiredUserId();
         AppEntity app = validateAppOwnership(userId, appId);
 
         Long knowledgeBaseId = app.getDefaultKnowledgeBaseId();
@@ -113,11 +110,10 @@ public class ApiRequestLogAdminController {
 
     @PostMapping("/{requestId}/output-preview/access")
     public ApiResponse<RequestLogOutputPreviewVO> accessOutputPreview(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long appId,
             @PathVariable String requestId,
             @RequestBody RequestLogOutputAccessDTO dto) {
-        validateUserId(userId);
+        Long userId = getRequiredUserId();
         validateAppOwnership(userId, appId);
 
         ApiRequestLogEntity logEntity = apiRequestLogService.findByRequestIdAndUserAndApp(userId, appId, requestId);
@@ -163,10 +159,12 @@ public class ApiRequestLogAdminController {
         return app;
     }
 
-    private void validateUserId(Long userId) {
+    private Long getRequiredUserId() {
+        Long userId = AdminAuthContextHolder.getUserId();
         if (userId == null || userId <= 0) {
-            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
+            throw new BusinessException("UNAUTHORIZED", "Authentication required", HttpStatus.UNAUTHORIZED);
         }
+        return userId;
     }
 
     private void validateListParams(Integer page, Integer pageSize, String status) {

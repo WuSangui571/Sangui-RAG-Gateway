@@ -37,7 +37,7 @@ export default function ApiKeyPage() {
   const fetchApps = useCallback(async () => {
     if (adminUserId === null) return
     try {
-      const res = await listApps(undefined, adminUserId)
+      const res = await listApps(undefined)
       if (res.code === 'OK') {
         setApps(res.data)
       } else {
@@ -65,7 +65,7 @@ export default function ApiKeyPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await listApiKeys(activeAppId, adminUserId)
+      const res = await listApiKeys(activeAppId)
       if (res.code !== 'OK') {
         setError(res.message)
         setKeys([])
@@ -96,7 +96,7 @@ export default function ApiKeyPage() {
       const values = await form.validateFields()
       setSubmitting(true)
       setError(null)
-      const res = await createApiKey(activeAppId, { name: values.name, expires_at: expiresAtIso }, adminUserId)
+      const res = await createApiKey(activeAppId, { name: values.name, expires_at: expiresAtIso })
       if (res.code !== 'OK') {
         setError(res.message)
       } else {
@@ -117,7 +117,7 @@ export default function ApiKeyPage() {
   async function handleDisable(id: number) {
     if (adminUserId === null) return
     try {
-      const res = await disableApiKey(id, adminUserId)
+      const res = await disableApiKey(id)
       if (res.code !== 'OK') setError(res.message)
       else fetchKeys()
     } catch (e: unknown) {
@@ -130,7 +130,7 @@ export default function ApiKeyPage() {
   async function handleEnable(id: number) {
     if (adminUserId === null) return
     try {
-      const res = await enableApiKey(id, adminUserId)
+      const res = await enableApiKey(id)
       if (res.code !== 'OK') setError(res.message)
       else fetchKeys()
     } catch (e: unknown) {
@@ -141,7 +141,7 @@ export default function ApiKeyPage() {
   async function handleRevoke(id: number) {
     if (adminUserId === null) return
     try {
-      const res = await revokeApiKey(id, adminUserId)
+      const res = await revokeApiKey(id)
       if (res.code !== 'OK') setError(res.message)
       else fetchKeys()
     } catch (e: unknown) {

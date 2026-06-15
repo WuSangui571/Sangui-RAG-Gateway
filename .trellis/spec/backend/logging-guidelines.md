@@ -53,7 +53,7 @@ complete private document content
 complete augmented prompt
 large user messages
 embedding vectors
-authorization headers (including X-Admin-User-Id in production when it becomes real auth)
+authorization headers, bearer tokens, admin JWTs, passwords, and password hashes
 raw uploaded file contents
 upstream admin API key plaintext from create/update DTOs
 ```
@@ -372,7 +372,7 @@ App switch management endpoint:
 
 ```http
 PUT /api/admin/apps/{appId}/request-log-output-capture
-X-Admin-User-Id: <userId>
+Authorization: Bearer <admin-jwt>
 Content-Type: application/json
 
 {
@@ -408,7 +408,7 @@ Normal detail endpoint:
 
 ```http
 GET /api/admin/apps/{appId}/request-logs/{requestId}
-X-Admin-User-Id: <userId>
+Authorization: Bearer <admin-jwt>
 ```
 
 May return metadata only:
@@ -428,7 +428,7 @@ Explicit preview endpoint:
 
 ```http
 POST /api/admin/apps/{appId}/request-logs/{requestId}/output-preview/access
-X-Admin-User-Id: <userId>
+Authorization: Bearer <admin-jwt>
 Content-Type: application/json
 
 {

@@ -201,6 +201,39 @@ backend/src/main/resources/db/migration/V2__create_app_api_key_tables.sql
 | `created_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`. |
 | `updated_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`; services must update it when mutating the row. |
 
+### Implemented Admin User Baseline
+
+The Admin user schema is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V12__create_admin_user_table.sql
+```
+
+`sys_user` columns:
+
+| Column | Type | Required | Notes |
+|---|---:|---|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `username` | `VARCHAR(255)` | yes | Unique login name. |
+| `password_hash` | `VARCHAR(255)` | yes | BCrypt hash of the password. Never store plaintext passwords. |
+| `status` | `VARCHAR(32)` | yes | Application enum values: `ACTIVE`, `DISABLED`. |
+| `created_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`. |
+| `updated_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`. |
+
+Required indexes and constraints:
+
+```text
+PRIMARY KEY sys_user(id)
+unique idx_sys_user_username on sys_user(username)
+```
+
+Bootstrap boundary:
+
+- `V12__create_admin_user_table.sql` creates only the `sys_user` schema and unique username index.
+- Production migrations must not hardcode a default admin password or reusable secret.
+- Local development may create the first admin explicitly with a BCrypt hash inserted into `sys_user(username, password_hash, status)`.
+- Required validation: `UserServiceTest` covers username/id lookup and active/disabled status; `PasswordHasherTest` covers BCrypt hash/verify behavior.
+
 Required indexes and constraints:
 
 ```text
@@ -499,7 +532,7 @@ rag_request_log_output_access_audit
 | Column | Type | Required | Notes |
 |---|---|---:|---|
 | `id` | `BIGSERIAL` | yes | Primary key. |
-| `user_id` | `BIGINT` | yes | Admin caller from `X-Admin-User-Id`. |
+| `user_id` | `BIGINT` | yes | Admin caller from validated admin JWT context. |
 | `app_id` | `BIGINT` | yes | App boundary. |
 | `request_log_id` | `BIGINT` | no | Null only when the request log was missing. |
 | `request_id` | `VARCHAR(64)` | yes | Attempted request id. |

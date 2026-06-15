@@ -2,6 +2,7 @@ package com.sangui.raggateway.document;
 
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.response.ApiResponse;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import com.sangui.raggateway.document.config.DocumentProperties;
 import com.sangui.raggateway.document.vo.DocumentVO;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
@@ -27,8 +28,8 @@ public class DocumentAdminController {
     private final DocumentProperties documentProperties;
 
     public DocumentAdminController(DocumentService documentService,
-                                   KnowledgeBaseService knowledgeBaseService,
-                                   DocumentProperties documentProperties) {
+                                    KnowledgeBaseService knowledgeBaseService,
+                                    DocumentProperties documentProperties) {
         this.documentService = documentService;
         this.knowledgeBaseService = knowledgeBaseService;
         this.documentProperties = documentProperties;
@@ -36,10 +37,9 @@ public class DocumentAdminController {
 
     @PostMapping("/api/admin/knowledge-bases/{knowledgeBaseId}/documents")
     public ApiResponse<DocumentVO> upload(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long knowledgeBaseId,
             @RequestParam("file") MultipartFile file) {
-        validateUserId(userId);
+        Long userId = getRequiredUserId();
 
         KnowledgeBaseEntity kb = knowledgeBaseService.findByIdAndUserId(knowledgeBaseId, userId);
         if (kb == null) {
@@ -84,10 +84,9 @@ public class DocumentAdminController {
 
     @GetMapping("/api/admin/knowledge-bases/{knowledgeBaseId}/documents")
     public ApiResponse<List<DocumentVO>> listDocuments(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long knowledgeBaseId,
             @RequestParam(required = false) String status) {
-        validateUserId(userId);
+        Long userId = getRequiredUserId();
 
         KnowledgeBaseEntity kb = knowledgeBaseService.findByIdAndUserId(knowledgeBaseId, userId);
         if (kb == null) {
@@ -108,10 +107,8 @@ public class DocumentAdminController {
     }
 
     @GetMapping("/api/admin/documents/{documentId}")
-    public ApiResponse<DocumentVO> getDocument(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long documentId) {
-        validateUserId(userId);
+    public ApiResponse<DocumentVO> getDocument(@PathVariable Long documentId) {
+        Long userId = getRequiredUserId();
 
         DocumentEntity doc = documentService.findByIdAndUserId(documentId, userId);
         if (doc == null) {
@@ -124,9 +121,11 @@ public class DocumentAdminController {
         return ApiResponse.success(DocumentVO.from(doc));
     }
 
-    private void validateUserId(Long userId) {
+    private Long getRequiredUserId() {
+        Long userId = AdminAuthContextHolder.getUserId();
         if (userId == null || userId <= 0) {
-            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
+            throw new BusinessException("UNAUTHORIZED", "Authentication required", HttpStatus.UNAUTHORIZED);
         }
+        return userId;
     }
 }

@@ -1,10 +1,13 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { Layout, Menu, Input, Button, Space, Typography, Select, theme } from 'antd'
 import { SunOutlined, MoonOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useI18n } from '../../app/i18n'
 import { UIPreferenceContext } from '../../app/providers/UIPreferenceProvider'
 import type { I18nKey } from '../../app/i18n/dict'
+import { login, getCurrentUser } from '../../api/auth'
+import { setAuthToken, setUnauthorizedHandler } from '../../api/http'
+import type { AdminUserVO } from '../../types/auth'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -22,16 +25,20 @@ const PAGE_KEY_TO_I18N: Record<PageKey, I18nKey> = {
 
 export interface ShellContextValue {
   adminUserId: number | null
+  currentUser: AdminUserVO | null
   selectedAppId: number | null
   setSelectedAppId: (id: number | null) => void
   navigateTo: (page: PageKey) => void
+  logout: () => void
 }
 
 export const ShellContext = createContext<ShellContextValue>({
   adminUserId: null,
+  currentUser: null,
   selectedAppId: null,
   setSelectedAppId: () => {},
   navigateTo: () => {},
+  logout: () => {},
 })
 
 export function useShell(): ShellContextValue {
@@ -47,21 +54,62 @@ export default function AdminShell({ children }: AdminShellProps) {
   const { themeMode, setThemeMode, setLocale } = useContext(UIPreferenceContext)
   const { token } = theme.useToken()
 
-  const [adminUserIdInput, setAdminUserIdInput] = useState('')
-  const [adminUserId, setAdminUserId] = useState<number | null>(null)
-  const [connectError, setConnectError] = useState<string | null>(null)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [loginError, setLoginError] = useState<string | null>(null)
+  const [loggingIn, setLoggingIn] = useState(false)
+  const [currentUser, setCurrentUser] = useState<AdminUserVO | null>(null)
   const [currentPage, setCurrentPage] = useState<PageKey>('model-configs')
   const [selectedAppId, setSelectedAppId] = useState<number | null>(null)
 
-  function handleConnect() {
-    const num = Number(adminUserIdInput)
-    if (!adminUserIdInput || !Number.isFinite(num) || num <= 0) {
-      setConnectError(t('app.errorUserId'))
+  const handleLogin = useCallback(async () => {
+    if (!username.trim() || !password) {
+      setLoginError(t('app.errorCredentials'))
       return
     }
-    setConnectError(null)
-    setAdminUserId(num)
-  }
+    setLoginError(null)
+    setLoggingIn(true)
+    try {
+      const res = await login({ username: username.trim(), password })
+      const data = res.data
+      setAuthToken(data.access_token)
+      setCurrentUser(data.user)
+    } catch (e: unknown) {
+      const err = e as { status?: number; message?: string }
+      if (err.status === 401) {
+        setLoginError(t('app.errorInvalidCredentials'))
+      } else {
+        setLoginError(err.message || t('app.errorLoginFailed'))
+      }
+      setAuthToken(null)
+    } finally {
+      setLoggingIn(false)
+    }
+  }, [username, password, t])
+
+  const handleLogout = useCallback(() => {
+    setAuthToken(null)
+    setCurrentUser(null)
+    setSelectedAppId(null)
+    setUsername('')
+    setPassword('')
+    setLoginError(null)
+  }, [])
+
+  useEffect(() => {
+    setUnauthorizedHandler(handleLogout)
+    return () => setUnauthorizedHandler(null)
+  }, [handleLogout])
+
+  useEffect(() => {
+    if (currentUser) {
+      getCurrentUser().then(res => {
+        setCurrentUser(res.data)
+      }).catch(() => {
+        handleLogout()
+      })
+    }
+  }, [])
 
   const menuItems: MenuProps['items'] = useMemo(() => {
     const entries = Object.entries(PAGE_KEY_TO_I18N) as [PageKey, I18nKey][]
@@ -76,15 +124,17 @@ export default function AdminShell({ children }: AdminShellProps) {
   }
 
   const shellValue = useMemo<ShellContextValue>(() => ({
-    adminUserId,
+    adminUserId: currentUser ? currentUser.id : null,
+    currentUser,
     selectedAppId,
     setSelectedAppId,
     navigateTo: (page) => setCurrentPage(page),
-  }), [adminUserId, selectedAppId])
+    logout: handleLogout,
+  }), [currentUser, selectedAppId, handleLogout])
 
   const shellTitle = t('app.title')
 
-  if (adminUserId === null) {
+  if (!currentUser) {
     return (
       <div
         data-testid="login-wrapper"
@@ -102,23 +152,29 @@ export default function AdminShell({ children }: AdminShellProps) {
             {shellTitle}
           </Typography.Title>
           <Space direction="vertical" style={{ width: '100%' }}>
-            <Text>{t('app.enterUserId')}</Text>
             <Input
-              value={adminUserIdInput}
-              onChange={(e) => { setAdminUserIdInput(e.target.value); setConnectError(null) }}
-              placeholder={t('app.placeholderUserId')}
-              type="number"
-              status={connectError ? 'error' : undefined}
-              onPressEnter={handleConnect}
+              value={username}
+              onChange={(e) => { setUsername(e.target.value); setLoginError(null) }}
+              placeholder={t('app.placeholderUsername')}
+              autoComplete="username"
+              onPressEnter={handleLogin}
             />
-            {connectError && <Text type="danger">{connectError}</Text>}
+            <Input.Password
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setLoginError(null) }}
+              placeholder={t('app.placeholderPassword')}
+              autoComplete="current-password"
+              onPressEnter={handleLogin}
+            />
+            {loginError && <Text type="danger">{loginError}</Text>}
             <Button
               type="primary"
               block
-              onClick={handleConnect}
-              disabled={!adminUserIdInput || !Number.isFinite(Number(adminUserIdInput)) || Number(adminUserIdInput) <= 0}
+              onClick={handleLogin}
+              loading={loggingIn}
+              disabled={!username.trim() || !password}
             >
-              {t('app.connect')}
+              {t('app.login')}
             </Button>
           </Space>
         </div>
@@ -135,7 +191,7 @@ export default function AdminShell({ children }: AdminShellProps) {
           </div>
           <div style={{ padding: '0 16px 8px' }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              User #{adminUserId}
+              {currentUser.username}
             </Text>
           </div>
           <Menu
@@ -169,8 +225,8 @@ export default function AdminShell({ children }: AdminShellProps) {
               {selectedAppId !== null && (
                 <Text type="secondary">App #{selectedAppId}</Text>
               )}
-              <Button size="small" onClick={() => setAdminUserId(null)}>
-                {t('app.switchUser')}
+              <Button size="small" onClick={handleLogout}>
+                {t('app.logout')}
               </Button>
             </Space>
           </Header>

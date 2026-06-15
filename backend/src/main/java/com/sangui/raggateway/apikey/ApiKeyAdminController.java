@@ -3,6 +3,7 @@ package com.sangui.raggateway.apikey;
 import com.sangui.raggateway.apikey.vo.ApiKeyVO;
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.response.ApiResponse;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -23,10 +24,8 @@ public class ApiKeyAdminController {
     }
 
     @PostMapping("/{id}/disable")
-    public ApiResponse<ApiKeyVO> disableKey(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long id) {
-        validateUserId(userId);
+    public ApiResponse<ApiKeyVO> disableKey(@PathVariable Long id) {
+        Long userId = getRequiredUserId();
 
         ApiKeyEntity key = apiKeyService.findById(id);
         if (key == null) {
@@ -44,10 +43,8 @@ public class ApiKeyAdminController {
     }
 
     @PostMapping("/{id}/revoke")
-    public ApiResponse<ApiKeyVO> revokeKey(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long id) {
-        validateUserId(userId);
+    public ApiResponse<ApiKeyVO> revokeKey(@PathVariable Long id) {
+        Long userId = getRequiredUserId();
 
         ApiKeyEntity key = apiKeyService.findById(id);
         if (key == null) {
@@ -65,10 +62,8 @@ public class ApiKeyAdminController {
     }
 
     @PostMapping("/{id}/enable")
-    public ApiResponse<ApiKeyVO> enableKey(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long id) {
-        validateUserId(userId);
+    public ApiResponse<ApiKeyVO> enableKey(@PathVariable Long id) {
+        Long userId = getRequiredUserId();
 
         ApiKeyEntity key = apiKeyService.findById(id);
         if (key == null) {
@@ -85,9 +80,11 @@ public class ApiKeyAdminController {
         return ApiResponse.success(ApiKeyVO.from(updated));
     }
 
-    private void validateUserId(Long userId) {
+    private Long getRequiredUserId() {
+        Long userId = AdminAuthContextHolder.getUserId();
         if (userId == null || userId <= 0) {
-            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
+            throw new BusinessException("UNAUTHORIZED", "Authentication required", HttpStatus.UNAUTHORIZED);
         }
+        return userId;
     }
 }

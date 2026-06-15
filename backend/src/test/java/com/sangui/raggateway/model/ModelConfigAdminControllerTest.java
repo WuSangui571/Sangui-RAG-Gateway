@@ -1,9 +1,12 @@
 package com.sangui.raggateway.model;
 
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
+import com.sangui.raggateway.common.security.AdminAuthContext;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import com.sangui.raggateway.model.dto.CreateModelConfigDTO;
 import com.sangui.raggateway.model.dto.UpdateModelConfigDTO;
 import com.sangui.raggateway.model.vo.ModelConfigVO;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,13 +54,23 @@ class ModelConfigAdminControllerTest {
                 .build();
     }
 
+    @BeforeEach
+    void setUpAuthContext() {
+        AdminAuthContextHolder.set(new AdminAuthContext(100L, "testuser"));
+    }
+
+    @AfterEach
+    void tearDownAuthContext() {
+        AdminAuthContextHolder.clear();
+    }
+
     @Test
     void shouldCreateConfigAndReturnMaskedVO() throws Exception {
         when(modelConfigService.createAdminConfig(eq(100L), any(CreateModelConfigDTO.class)))
                 .thenReturn(createTestVO(10L, 100L, "sk-...cret", "ENABLED"));
 
         mockMvc.perform(post("/api/admin/model-configs")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -89,6 +102,8 @@ class ModelConfigAdminControllerTest {
 
     @Test
     void shouldRejectCreateWithoutAdminUserIdHeader() throws Exception {
+        AdminAuthContextHolder.clear();
+
         mockMvc.perform(post("/api/admin/model-configs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -100,15 +115,16 @@ class ModelConfigAdminControllerTest {
                                     "chat_model": "gpt-4o-mini"
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 
     @Test
     void shouldRejectCreateWithNonPositiveUserId() throws Exception {
+        AdminAuthContextHolder.clear();
+
         mockMvc.perform(post("/api/admin/model-configs")
-                        .header("X-Admin-User-Id", "0")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -119,8 +135,8 @@ class ModelConfigAdminControllerTest {
                                     "chat_model": "gpt-4o-mini"
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 
         verifyNoInteractions(modelConfigService);
     }
@@ -133,7 +149,7 @@ class ModelConfigAdminControllerTest {
                 .thenReturn(createTestVO(10L, 100L, "sk-...cret", "ENABLED"));
 
         mockMvc.perform(get("/api/admin/model-configs/10")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(10))
@@ -147,7 +163,7 @@ class ModelConfigAdminControllerTest {
         when(modelConfigService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(get("/api/admin/model-configs/999")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -158,7 +174,7 @@ class ModelConfigAdminControllerTest {
         when(modelConfigService.findById(10L)).thenReturn(otherUserEntity);
 
         mockMvc.perform(get("/api/admin/model-configs/10")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.data").doesNotExist());
@@ -170,7 +186,7 @@ class ModelConfigAdminControllerTest {
                 .thenReturn(List.of(createTestVO(10L, 100L, "sk-...cret", "ENABLED")));
 
         mockMvc.perform(get("/api/admin/model-configs")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data[0].id").value(10))
@@ -183,7 +199,7 @@ class ModelConfigAdminControllerTest {
                 .thenReturn(List.of(createTestVO(10L, 100L, "sk-...cret", "ENABLED")));
 
         mockMvc.perform(get("/api/admin/model-configs?status=ENABLED")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].status").value("ENABLED"));
     }
@@ -191,7 +207,7 @@ class ModelConfigAdminControllerTest {
     @Test
     void shouldRejectInvalidStatusFilter() throws Exception {
         mockMvc.perform(get("/api/admin/model-configs?status=INVALID")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
@@ -204,7 +220,7 @@ class ModelConfigAdminControllerTest {
                 .thenReturn(createTestVO(10L, 100L, "sk-...cret", "ENABLED"));
 
         mockMvc.perform(put("/api/admin/model-configs/10")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -221,7 +237,7 @@ class ModelConfigAdminControllerTest {
         when(modelConfigService.findById(10L)).thenReturn(otherUserEntity);
 
         mockMvc.perform(put("/api/admin/model-configs/10")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -240,7 +256,7 @@ class ModelConfigAdminControllerTest {
                 .thenReturn(createTestVO(10L, 100L, "sk-...cret", "DISABLED"));
 
         mockMvc.perform(post("/api/admin/model-configs/10/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.status").value("DISABLED"));
@@ -252,7 +268,7 @@ class ModelConfigAdminControllerTest {
         when(modelConfigService.findById(10L)).thenReturn(otherUserEntity);
 
         mockMvc.perform(post("/api/admin/model-configs/10/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
@@ -266,7 +282,7 @@ class ModelConfigAdminControllerTest {
                 .thenReturn(createTestVO(10L, 100L, "sk-...cret", "ENABLED"));
 
         mockMvc.perform(post("/api/admin/model-configs/10/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.status").value("ENABLED"));
@@ -278,7 +294,7 @@ class ModelConfigAdminControllerTest {
         when(modelConfigService.findById(10L)).thenReturn(otherUserEntity);
 
         mockMvc.perform(post("/api/admin/model-configs/10/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
@@ -293,7 +309,7 @@ class ModelConfigAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("Cannot enable model config without an upstream API key"));
 
         mockMvc.perform(post("/api/admin/model-configs/10/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
@@ -304,7 +320,7 @@ class ModelConfigAdminControllerTest {
                 .thenReturn(List.of(createTestVO(10L, 100L, "sk-...cret", "ENABLED")));
 
         mockMvc.perform(get("/api/admin/model-configs")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("sk-upstream"))))
                 .andExpect(content().string(not(containsString("v1:"))))
@@ -317,7 +333,7 @@ class ModelConfigAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("name is required"));
 
         mockMvc.perform(post("/api/admin/model-configs")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -339,7 +355,7 @@ class ModelConfigAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING."));
 
         mockMvc.perform(post("/api/admin/model-configs")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -364,7 +380,7 @@ class ModelConfigAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING."));
 
         mockMvc.perform(post("/api/admin/model-configs/check")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

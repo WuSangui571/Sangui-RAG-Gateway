@@ -107,6 +107,7 @@ The request body is limited to `request_log_output_capture_enabled: boolean`. Th
 | Contract | Required behavior |
 |----------|-------------------|
 | API key boundary | Gateway auth resolves `app_id`, `user_id`, and `api_key_id`; downstream logic uses that context. |
+| Admin auth boundary | Admin APIs require `Authorization: Bearer <admin-jwt>`; `/v1/*` app API key auth must not accept admin JWTs, and `/api/admin/**` must not accept app API keys as admin credentials. |
 | Knowledge-base boundary | Retrieval only uses the app-bound KB and same user. |
 | SQL boundary | Vector retrieval filters tenant/KB in SQL, not after Java ranking. |
 | Prompt boundary | RAG context is reference material and cannot override system safety or reveal internals. |
@@ -120,6 +121,7 @@ The request body is limited to `request_log_output_capture_enabled: boolean`. Th
 
 | Scenario | Expected behavior | Assertion point |
 |----------|-------------------|-----------------|
+| Admin API missing, non-Bearer, invalid, or expired JWT | 401 `UNAUTHORIZED`; no admin auth context set; no controller business method runs | `AdminAuthFilterTest`, admin controller tests |
 | App key for app A tries to retrieve app B KB | No chunks returned; request fails according to binding/readiness contract | Retrieval/service test |
 | Admin user guesses another user's app or KB ID | 403/404 according to admin contract; no data leak | Controller/service test |
 | Request-log detail requested cross-user | 403 `FORBIDDEN`; no log row returned | Request-log API test |
@@ -135,10 +137,12 @@ The request body is limited to `request_log_output_capture_enabled: boolean`. Th
 
 | Case | Expected result |
 |------|-----------------|
+| Good | Admin user logs in with username/password, receives a signed expiring JWT, and Admin APIs derive user identity from `AdminAuthContextHolder`. |
 | Good | Retrieval, prompt, logs, and hit chunk APIs all use app/user/KB boundaries and return only safe evidence. |
 | Good | Output preview capture is globally and app disabled by default; when enabled, only bounded redacted preview is stored and explicit access is audited. |
 | Base | No KB evidence or denied access: the gateway fails clearly or says evidence is insufficient without leaking internals. |
 | Bad | Context contains another app's data, logs persist full prompts, errors expose SQL or provider bodies, or evidence APIs return full chunk content by default. |
+| Bad | Admin APIs trust `X-Admin-User-Id`, public `/v1/*` accepts admin JWTs, or Admin `/api/admin/**` accepts `sk-*` app API keys. |
 | Bad | Request-log list/detail exposes `output_preview`, preview access bypasses app ownership, raw SSE is persisted, or audit rows store preview content. |
 
 ## 7. Wrong vs Correct

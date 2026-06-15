@@ -111,7 +111,7 @@ export default function SmokeTestPage() {
   const fetchApps = useCallback(async () => {
     if (adminUserId === null) return
     try {
-      const res = await listApps(undefined, adminUserId)
+      const res = await listApps(undefined)
       if (res.code === 'OK') {
         setApps(res.data)
         setLoadError(null)
@@ -139,7 +139,7 @@ export default function SmokeTestPage() {
   const fetchKeys = useCallback(async () => {
     if (activeAppId === null || adminUserId === null) return
     try {
-      const res = await listApiKeys(activeAppId, adminUserId)
+      const res = await listApiKeys(activeAppId)
       if (res.code === 'OK') {
         setKeys(res.data.filter(k => k.status === 'ACTIVE'))
         setLoadError(null)
@@ -162,7 +162,7 @@ export default function SmokeTestPage() {
     setReadinessLoading(true)
     setReadinessError(null)
     try {
-      const res = await getAppReadiness(activeAppId, adminUserId)
+      const res = await getAppReadiness(activeAppId)
       if (res.code === 'OK') {
         setReadiness(res.data)
       } else {
@@ -298,7 +298,7 @@ export default function SmokeTestPage() {
     setRequestLog({ status: 'running', listRow: null, detail: null, hitChunks: null, error: null, subStep: 'list' })
 
     try {
-      const listRes = await listRequestLogs(activeAppId, { page: 1, page_size: 5, status: 'success' }, adminUserId)
+      const listRes = await listRequestLogs(activeAppId, { page: 1, page_size: 5, status: 'success' })
       if (listRes.code !== 'OK') {
         setRequestLog({ status: 'fail', listRow: null, detail: null, hitChunks: null, error: `List: ${listRes.message}`, subStep: 'list' })
         return
@@ -335,7 +335,7 @@ export default function SmokeTestPage() {
 
       setRequestLog(prev => ({ ...prev, listRow: matchedLog, subStep: 'detail' }))
 
-      const detailRes = await getRequestLogDetail(activeAppId, matchedLog.request_id, adminUserId)
+      const detailRes = await getRequestLogDetail(activeAppId, matchedLog.request_id)
       if (detailRes.code !== 'OK') {
         setRequestLog(prev => ({ ...prev, status: 'fail', error: `Detail: ${detailRes.message}`, subStep: 'detail' }))
         return
@@ -358,7 +358,7 @@ export default function SmokeTestPage() {
 
       setRequestLog(prev => ({ ...prev, detail, subStep: 'hit-chunks' }))
 
-      const chunksRes = await getHitChunks(activeAppId, matchedLog.request_id, adminUserId)
+      const chunksRes = await getHitChunks(activeAppId, matchedLog.request_id)
       if (chunksRes.code !== 'OK') {
         setRequestLog(prev => ({ ...prev, status: 'fail', error: `Hit-chunks: ${chunksRes.message}`, subStep: 'hit-chunks' }))
         return

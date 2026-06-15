@@ -29,7 +29,6 @@ export default function App() {
           case 'request-logs':
             return <RequestLogListPage
               persistentAppId={ctx.selectedAppId ?? undefined}
-              persistentAdminUserId={ctx.adminUserId ?? undefined}
             />
           default:
             return <ModelConfigPage />

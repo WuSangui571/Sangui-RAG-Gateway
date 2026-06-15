@@ -1,6 +1,9 @@
 package com.sangui.raggateway.apikey;
 
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
+import com.sangui.raggateway.common.security.AdminAuthContext;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +38,16 @@ class ApiKeyAdminControllerTest {
                 .build();
     }
 
+    @BeforeEach
+    void setUpAuthContext() {
+        AdminAuthContextHolder.set(new AdminAuthContext(100L, "testuser"));
+    }
+
+    @AfterEach
+    void tearDownAuthContext() {
+        AdminAuthContextHolder.clear();
+    }
+
     // ---- Disable ----
 
     @Test
@@ -46,7 +59,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.disable(10L, 100L)).thenReturn(disabled);
 
         mockMvc.perform(post("/api/admin/api-keys/10/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(10))
@@ -60,7 +73,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(post("/api/admin/api-keys/999/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -71,7 +84,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.findById(10L)).thenReturn(otherUserKey);
 
         mockMvc.perform(post("/api/admin/api-keys/10/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.data").doesNotExist());
@@ -85,7 +98,7 @@ class ApiKeyAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("Revoked key cannot be disabled"));
 
         mockMvc.perform(post("/api/admin/api-keys/10/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
@@ -102,7 +115,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.revoke(10L, 100L)).thenReturn(revoked);
 
         mockMvc.perform(post("/api/admin/api-keys/10/revoke")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(10))
@@ -117,7 +130,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(post("/api/admin/api-keys/999/revoke")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -128,7 +141,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.findById(10L)).thenReturn(otherUserKey);
 
         mockMvc.perform(post("/api/admin/api-keys/10/revoke")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.data").doesNotExist());
@@ -138,19 +151,22 @@ class ApiKeyAdminControllerTest {
 
     @Test
     void shouldRejectMissingAdminHeaderForDisable() throws Exception {
+        AdminAuthContextHolder.clear();
+
         mockMvc.perform(post("/api/admin/api-keys/10/disable"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 
         verifyNoInteractions(apiKeyService);
     }
 
     @Test
     void shouldRejectNonPositiveAdminHeaderForRevoke() throws Exception {
-        mockMvc.perform(post("/api/admin/api-keys/10/revoke")
-                        .header("X-Admin-User-Id", "0"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        AdminAuthContextHolder.clear();
+
+        mockMvc.perform(post("/api/admin/api-keys/10/revoke"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 
         verifyNoInteractions(apiKeyService);
     }
@@ -166,7 +182,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.disable(10L, 100L)).thenReturn(disabled);
 
         mockMvc.perform(post("/api/admin/api-keys/10/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("\"key\""))))
                 .andExpect(content().string(not(containsString("\"key_hash\""))));
@@ -183,7 +199,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.enable(10L, 100L)).thenReturn(enabled);
 
         mockMvc.perform(post("/api/admin/api-keys/10/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(10))
@@ -197,7 +213,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(post("/api/admin/api-keys/999/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -208,7 +224,7 @@ class ApiKeyAdminControllerTest {
         when(apiKeyService.findById(10L)).thenReturn(otherUserKey);
 
         mockMvc.perform(post("/api/admin/api-keys/10/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.data").doesNotExist());
@@ -222,7 +238,7 @@ class ApiKeyAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("Revoked key cannot be enabled"));
 
         mockMvc.perform(post("/api/admin/api-keys/10/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
@@ -235,7 +251,7 @@ class ApiKeyAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("Expired key cannot be enabled"));
 
         mockMvc.perform(post("/api/admin/api-keys/10/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }

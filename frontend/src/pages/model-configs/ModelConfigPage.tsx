@@ -70,7 +70,7 @@ export default function ModelConfigPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await listModelConfigs(statusFilter, adminUserId, capabilityFilter)
+      const res = await listModelConfigs(statusFilter, capabilityFilter)
       if (res.code !== 'OK') {
         setError(res.message)
         setConfigs([])
@@ -105,7 +105,7 @@ export default function ModelConfigPage() {
         embedding_model: needsEmbeddingModel(createCapability) ? (values.embedding_model || '') : null,
         embedding_dimension: needsEmbeddingModel(createCapability) ? (values.embedding_dimension ?? null) : null,
       }
-      const res = await createModelConfig(dto, adminUserId)
+      const res = await createModelConfig(dto)
       if (res.code !== 'OK') {
         setError(res.message)
       } else {
@@ -131,7 +131,7 @@ export default function ModelConfigPage() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          const res = await disableModelConfig(record.id, adminUserId)
+          const res = await disableModelConfig(record.id)
           if (res.code !== 'OK') setError(res.message)
           else fetchConfigs()
         } catch (e: unknown) {
@@ -144,7 +144,7 @@ export default function ModelConfigPage() {
   async function handleEnable(id: number) {
     if (adminUserId === null) return
     try {
-      const res = await enableModelConfig(id, adminUserId)
+      const res = await enableModelConfig(id)
       if (res.code !== 'OK') setError(res.message)
       else fetchConfigs()
     } catch (e: unknown) {
@@ -190,7 +190,7 @@ export default function ModelConfigPage() {
 
       setEditSubmitting(true)
       setError(null)
-      const res = await updateModelConfig(editingId, dto, adminUserId)
+      const res = await updateModelConfig(editingId, dto)
       if (res.code !== 'OK') {
         setError(res.message)
       } else {
@@ -224,7 +224,7 @@ export default function ModelConfigPage() {
       setCheckResult(null)
       setCheckResultConfig(record)
       setCheckResultOpen(false)
-      const res = await checkSavedModelConfig(record.id, {}, adminUserId)
+      const res = await checkSavedModelConfig(record.id, {})
       if (res.code !== 'OK') {
         setError(res.message)
         setCheckResult(null)
@@ -262,7 +262,7 @@ export default function ModelConfigPage() {
         setChecking(false)
         return
       }
-      const res = await checkUnsavedModelConfig(request, adminUserId)
+      const res = await checkUnsavedModelConfig(request)
       if (res.code !== 'OK') {
         setError(res.message)
         setCheckResult(null)

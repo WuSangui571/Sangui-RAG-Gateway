@@ -7,10 +7,13 @@ import com.sangui.raggateway.apikey.dto.CreateApiKeyResult;
 import com.sangui.raggateway.app.vo.AppReadinessCheckVO;
 import com.sangui.raggateway.app.vo.AppReadinessVO;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
+import com.sangui.raggateway.common.security.AdminAuthContext;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import com.sangui.raggateway.model.ModelConfigService;
 import com.sangui.raggateway.knowledge.KnowledgeBaseService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,6 +68,16 @@ class AppAdminControllerTest {
                 .build();
     }
 
+    @BeforeEach
+    void setUpAuthContext() {
+        AdminAuthContextHolder.set(new AdminAuthContext(100L, "testuser"));
+    }
+
+    @AfterEach
+    void tearDownAuthContext() {
+        AdminAuthContextHolder.clear();
+    }
+
     // ---- Create App ----
 
     @Test
@@ -73,7 +86,7 @@ class AppAdminControllerTest {
         when(appService.create(eq("Demo App"), eq(100L))).thenReturn(app);
 
         mockMvc.perform(post("/api/admin/apps")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -93,7 +106,7 @@ class AppAdminControllerTest {
     @Test
     void shouldRejectCreateAppWithBlankName() throws Exception {
         mockMvc.perform(post("/api/admin/apps")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -109,7 +122,7 @@ class AppAdminControllerTest {
     @Test
     void shouldRejectCreateAppWithNullBody() throws Exception {
         mockMvc.perform(post("/api/admin/apps")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("null"))
                 .andExpect(status().isBadRequest())
@@ -126,7 +139,7 @@ class AppAdminControllerTest {
         when(appService.listByUserId(eq(100L), isNull())).thenReturn(List.of(app));
 
         mockMvc.perform(get("/api/admin/apps")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data[0].id").value(1))
@@ -139,7 +152,7 @@ class AppAdminControllerTest {
         when(appService.listByUserId(eq(100L), eq("ENABLED"))).thenReturn(List.of(app));
 
         mockMvc.perform(get("/api/admin/apps?status=ENABLED")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].status").value("ENABLED"));
     }
@@ -147,7 +160,7 @@ class AppAdminControllerTest {
     @Test
     void shouldRejectInvalidAppStatusFilter() throws Exception {
         mockMvc.perform(get("/api/admin/apps?status=INVALID")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
@@ -160,7 +173,7 @@ class AppAdminControllerTest {
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
 
         mockMvc.perform(get("/api/admin/apps/1")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -173,7 +186,7 @@ class AppAdminControllerTest {
         when(appService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(get("/api/admin/apps/999")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -185,7 +198,7 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(otherUserApp);
 
         mockMvc.perform(get("/api/admin/apps/1")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"))
                 .andExpect(jsonPath("$.data").doesNotExist());
@@ -204,7 +217,7 @@ class AppAdminControllerTest {
                 .thenReturn(result);
 
         mockMvc.perform(post("/api/admin/apps/1/api-keys")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -226,7 +239,7 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(otherUserApp);
 
         mockMvc.perform(post("/api/admin/apps/1/api-keys")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -245,7 +258,7 @@ class AppAdminControllerTest {
         when(appService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(post("/api/admin/apps/999/api-keys")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -262,7 +275,7 @@ class AppAdminControllerTest {
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
 
         mockMvc.perform(post("/api/admin/apps/1/api-keys")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -276,7 +289,7 @@ class AppAdminControllerTest {
     @Test
     void shouldRejectCreateKeyWithNullBody() throws Exception {
         mockMvc.perform(post("/api/admin/apps/1/api-keys")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("null"))
                 .andExpect(status().isBadRequest())
@@ -294,7 +307,7 @@ class AppAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("expiresAt must be in the future"));
 
         mockMvc.perform(post("/api/admin/apps/1/api-keys")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -317,7 +330,7 @@ class AppAdminControllerTest {
         when(apiKeyService.listByAppIdAndUserId(1L, 100L)).thenReturn(List.of(keyEntity));
 
         mockMvc.perform(get("/api/admin/apps/1/api-keys")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data[0].key_prefix").value("sk-sang-abc12345"))
@@ -332,7 +345,7 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(otherUserApp);
 
         mockMvc.perform(get("/api/admin/apps/1/api-keys")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
 
@@ -343,6 +356,7 @@ class AppAdminControllerTest {
 
     @Test
     void shouldRejectMissingAdminUserIdHeader() throws Exception {
+        AdminAuthContextHolder.clear();
         mockMvc.perform(post("/api/admin/apps")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -350,25 +364,10 @@ class AppAdminControllerTest {
                                     "name": "Demo App"
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
-    @Test
-    void shouldRejectNonPositiveAdminUserId() throws Exception {
-        mockMvc.perform(post("/api/admin/apps")
-                        .header("X-Admin-User-Id", "0")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "name": "Demo App"
-                                }
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
-
-        verifyNoInteractions(appService);
-    }
 
     // ---- Existing bind model config tests (preserved) ----
 
@@ -385,7 +384,7 @@ class AppAdminControllerTest {
         when(appService.bindDefaultModelConfig(1L, 10L, 100L)).thenReturn(updated);
 
         mockMvc.perform(put("/api/admin/apps/1/default-model-config")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -407,7 +406,7 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(app);
 
         mockMvc.perform(put("/api/admin/apps/1/default-model-config")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -419,7 +418,7 @@ class AppAdminControllerTest {
     @Test
     void shouldRejectNullBindModelConfigBody() throws Exception {
         mockMvc.perform(put("/api/admin/apps/1/default-model-config")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("null"))
                 .andExpect(status().isBadRequest())
@@ -438,7 +437,7 @@ class AppAdminControllerTest {
         when(modelConfigService.findById(10L)).thenReturn(otherUserConfig);
 
         mockMvc.perform(put("/api/admin/apps/1/default-model-config")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -459,7 +458,7 @@ class AppAdminControllerTest {
         when(modelConfigService.isChatCapable(modelConfig)).thenReturn(true);
 
         mockMvc.perform(put("/api/admin/apps/1/default-model-config")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -484,7 +483,7 @@ class AppAdminControllerTest {
         when(appService.bindDefaultKnowledgeBase(1L, 20L, 100L)).thenReturn(updated);
 
         mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -506,7 +505,7 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(app);
 
         mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -522,7 +521,7 @@ class AppAdminControllerTest {
         when(knowledgeBaseService.findById(20L)).thenReturn(null);
 
         mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -543,7 +542,7 @@ class AppAdminControllerTest {
         when(knowledgeBaseService.findById(20L)).thenReturn(otherUserKb);
 
         mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -565,7 +564,7 @@ class AppAdminControllerTest {
         when(knowledgeBaseService.findById(20L)).thenReturn(kb);
 
         mockMvc.perform(put("/api/admin/apps/1/knowledge-base")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -588,7 +587,7 @@ class AppAdminControllerTest {
         when(appService.disableApp(1L, 100L)).thenReturn(disabled);
 
         mockMvc.perform(post("/api/admin/apps/1/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -603,7 +602,7 @@ class AppAdminControllerTest {
         when(appService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(post("/api/admin/apps/999/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -615,7 +614,7 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(otherUserApp);
 
         mockMvc.perform(post("/api/admin/apps/1/disable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
@@ -628,7 +627,7 @@ class AppAdminControllerTest {
         when(appService.enableApp(1L, 100L)).thenReturn(enabled);
 
         mockMvc.perform(post("/api/admin/apps/1/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -643,7 +642,7 @@ class AppAdminControllerTest {
         when(appService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(post("/api/admin/apps/999/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -655,7 +654,7 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(otherUserApp);
 
         mockMvc.perform(post("/api/admin/apps/1/enable")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
@@ -672,7 +671,7 @@ class AppAdminControllerTest {
         when(appService.updateOutputCapture(1L, true, 100L)).thenReturn(updated);
 
         mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -695,7 +694,7 @@ class AppAdminControllerTest {
         when(appService.updateOutputCapture(1L, false, 100L)).thenReturn(updated);
 
         mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -710,7 +709,7 @@ class AppAdminControllerTest {
     @Test
     void shouldRejectOutputCaptureWithNullBody() throws Exception {
         mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("null"))
                 .andExpect(status().isBadRequest())
@@ -720,7 +719,7 @@ class AppAdminControllerTest {
     @Test
     void shouldRejectOutputCaptureWithMissingField() throws Exception {
         mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -732,7 +731,7 @@ class AppAdminControllerTest {
         when(appService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(put("/api/admin/apps/999/request-log-output-capture")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -749,7 +748,7 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(otherUserApp);
 
         mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -767,7 +766,7 @@ class AppAdminControllerTest {
         when(appService.updateOutputCapture(1L, true, 100L)).thenReturn(null);
 
         mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -788,7 +787,7 @@ class AppAdminControllerTest {
         when(appService.updateOutputCapture(1L, true, 100L)).thenReturn(updated);
 
         mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -804,35 +803,11 @@ class AppAdminControllerTest {
                 .andExpect(content().string(not(containsString("\"stack_trace\""))));
     }
 
-    @Test
-    void shouldRejectOutputCaptureWithNonNumericUserId() throws Exception {
-        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
-                        .header("X-Admin-User-Id", "abc")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "request_log_output_capture_enabled": true
-                                }
-                                """))
-                .andExpect(status().isBadRequest());
-    }
+
 
     @Test
-    void shouldRejectOutputCaptureWithNonPositiveUserId() throws Exception {
-        mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
-                        .header("X-Admin-User-Id", "0")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "request_log_output_capture_enabled": true
-                                }
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
-    }
-
-    @Test
-    void shouldRejectOutputCaptureWithMissingUserId() throws Exception {
+    void shouldRejectOutputCaptureWithoutAuthContext() throws Exception {
+        AdminAuthContextHolder.clear();
         mockMvc.perform(put("/api/admin/apps/1/request-log-output-capture")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -840,8 +815,8 @@ class AppAdminControllerTest {
                                     "request_log_output_capture_enabled": true
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test
@@ -850,7 +825,7 @@ class AppAdminControllerTest {
         when(appService.listByUserId(eq(100L), isNull())).thenReturn(List.of(app));
 
         mockMvc.perform(get("/api/admin/apps")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].request_log_output_capture_enabled").value(false));
     }
@@ -861,7 +836,7 @@ class AppAdminControllerTest {
         when(appService.create(eq("Demo App"), eq(100L))).thenReturn(app);
 
         mockMvc.perform(post("/api/admin/apps")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -884,7 +859,7 @@ class AppAdminControllerTest {
         when(appService.assembleReadiness(1L, 100L)).thenReturn(readiness);
 
         mockMvc.perform(get("/api/admin/apps/1/readiness")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.app_id").value(1))
@@ -901,7 +876,7 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(createApp(1L, 200L));
 
         mockMvc.perform(get("/api/admin/apps/1/readiness")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
@@ -912,25 +887,19 @@ class AppAdminControllerTest {
         when(appService.findById(1L)).thenReturn(null);
 
         mockMvc.perform(get("/api/admin/apps/1/readiness")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
 
     @Test
     void shouldRejectReadinessWithMissingUserId() throws Exception {
+        AdminAuthContextHolder.clear();
         mockMvc.perform(get("/api/admin/apps/1/readiness"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
-    @Test
-    void shouldRejectReadinessWithNegativeUserId() throws Exception {
-        mockMvc.perform(get("/api/admin/apps/1/readiness")
-                        .header("X-Admin-User-Id", "-1"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
-    }
 
     @Test
     void shouldNotContainForbiddenFieldsInReadinessResponse() throws Exception {
@@ -942,7 +911,7 @@ class AppAdminControllerTest {
         when(appService.assembleReadiness(1L, 100L)).thenReturn(readiness);
 
         mockMvc.perform(get("/api/admin/apps/1/readiness")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("\"api_key\""))))
                 .andExpect(content().string(not(containsString("\"key_hash\""))))
@@ -959,7 +928,7 @@ class AppAdminControllerTest {
         when(appService.listByUserId(eq(100L), isNull())).thenReturn(List.of(app));
 
         mockMvc.perform(get("/api/admin/apps")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("\"key\""))))
                 .andExpect(content().string(not(containsString("\"key_hash\""))));

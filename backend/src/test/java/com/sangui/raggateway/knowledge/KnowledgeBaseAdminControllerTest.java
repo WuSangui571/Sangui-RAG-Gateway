@@ -1,6 +1,9 @@
 package com.sangui.raggateway.knowledge;
 
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
+import com.sangui.raggateway.common.security.AdminAuthContext;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +43,16 @@ class KnowledgeBaseAdminControllerTest {
                 .build();
     }
 
+    @BeforeEach
+    void setUpAuthContext() {
+        AdminAuthContextHolder.set(new AdminAuthContext(100L, "testuser"));
+    }
+
+    @AfterEach
+    void tearDownAuthContext() {
+        AdminAuthContextHolder.clear();
+    }
+
     @Test
     void shouldCreateKnowledgeBase() throws Exception {
         KnowledgeBaseEntity entity = createKb(1L, 100L, "Product Docs");
@@ -47,7 +60,7 @@ class KnowledgeBaseAdminControllerTest {
                 .thenReturn(entity);
 
         mockMvc.perform(post("/api/admin/knowledge-bases")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -72,7 +85,7 @@ class KnowledgeBaseAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("name is required"));
 
         mockMvc.perform(post("/api/admin/knowledge-bases")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -91,7 +104,7 @@ class KnowledgeBaseAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("embeddingModel is required"));
 
         mockMvc.perform(post("/api/admin/knowledge-bases")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -110,7 +123,7 @@ class KnowledgeBaseAdminControllerTest {
                 .thenThrow(new IllegalArgumentException("embeddingDimension must be positive"));
 
         mockMvc.perform(post("/api/admin/knowledge-bases")
-                        .header("X-Admin-User-Id", "100")
+
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -129,7 +142,7 @@ class KnowledgeBaseAdminControllerTest {
         when(knowledgeBaseService.listByUserId(eq(100L), isNull())).thenReturn(List.of(entity));
 
         mockMvc.perform(get("/api/admin/knowledge-bases")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data[0].id").value(1))
@@ -142,7 +155,7 @@ class KnowledgeBaseAdminControllerTest {
         when(knowledgeBaseService.listByUserId(eq(100L), eq("EMPTY"))).thenReturn(List.of(entity));
 
         mockMvc.perform(get("/api/admin/knowledge-bases?status=EMPTY")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].status").value("EMPTY"));
     }
@@ -150,7 +163,7 @@ class KnowledgeBaseAdminControllerTest {
     @Test
     void shouldRejectInvalidStatusFilter() throws Exception {
         mockMvc.perform(get("/api/admin/knowledge-bases?status=INVALID")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
@@ -161,7 +174,7 @@ class KnowledgeBaseAdminControllerTest {
         when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(entity);
 
         mockMvc.perform(get("/api/admin/knowledge-bases/1")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -174,7 +187,7 @@ class KnowledgeBaseAdminControllerTest {
         when(knowledgeBaseService.findById(999L)).thenReturn(null);
 
         mockMvc.perform(get("/api/admin/knowledge-bases/999")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -186,13 +199,15 @@ class KnowledgeBaseAdminControllerTest {
         when(knowledgeBaseService.findById(1L)).thenReturn(otherKb);
 
         mockMvc.perform(get("/api/admin/knowledge-bases/1")
-                        .header("X-Admin-User-Id", "100"))
+                        )
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
 
     @Test
     void shouldRejectMissingAdminUserIdHeader() throws Exception {
+        AdminAuthContextHolder.clear();
+
         mockMvc.perform(post("/api/admin/knowledge-bases")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -202,14 +217,15 @@ class KnowledgeBaseAdminControllerTest {
                                     "embedding_dimension": 1536
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
     @Test
     void shouldRejectNonPositiveAdminUserId() throws Exception {
+        AdminAuthContextHolder.clear();
+
         mockMvc.perform(post("/api/admin/knowledge-bases")
-                        .header("X-Admin-User-Id", "0")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -218,8 +234,8 @@ class KnowledgeBaseAdminControllerTest {
                                     "embedding_dimension": 1536
                                 }
                                 """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
         verifyNoInteractions(knowledgeBaseService);
     }
 

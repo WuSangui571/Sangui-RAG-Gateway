@@ -11,7 +11,6 @@ interface OutputPreviewModalProps {
   open: boolean
   appId: number
   requestId: string
-  adminUserId: number
   onClose: () => void
 }
 
@@ -19,7 +18,6 @@ export default function OutputPreviewModal({
   open,
   appId,
   requestId,
-  adminUserId,
   onClose,
 }: OutputPreviewModalProps) {
   const { t } = useI18n()
@@ -40,7 +38,7 @@ export default function OutputPreviewModal({
   function handleAccess() {
     setLoading(true)
     setError(null)
-    accessOutputPreview(appId, requestId, adminUserId, {
+    accessOutputPreview(appId, requestId, {
       confirm_access: true,
       reason: reason.trim() || undefined,
     })

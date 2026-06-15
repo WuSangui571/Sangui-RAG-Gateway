@@ -72,6 +72,23 @@ Global stores must not become a cache of every backend entity. Prefer per-page f
 
 Store authentication state separately from domain data.
 
+## Admin Auth State
+
+The minimal admin auth state is owned by the shell/auth layer, currently:
+
+```text
+frontend/src/components/layout/AdminShell.tsx
+frontend/src/api/http.ts
+```
+
+Rules:
+
+- Store only the admin access token/session marker and safe `AdminUserVO` metadata (`id`, `username`, `status`).
+- Do not store passwords, password hashes, app API keys, upstream keys, request logs, prompts, output previews, or document content in global auth state.
+- Logout must clear the token, current user, selected app, password field, and transient login errors.
+- Page refresh may return to the login screen when no persisted token exists; if token persistence is added later, reload must verify it with `GET /api/admin/auth/me` before restoring current user.
+- API clients receive auth only through the central HTTP helper; page components must not pass or synthesize `adminUserId` parameters.
+
 ## Server State Refresh
 
 For mutation flows:

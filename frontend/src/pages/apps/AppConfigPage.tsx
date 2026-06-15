@@ -43,7 +43,7 @@ export default function AppConfigPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await listApps(undefined, adminUserId)
+      const res = await listApps(undefined)
       if (res.code !== 'OK') {
         setError(res.message)
         setApps([])
@@ -68,7 +68,7 @@ export default function AppConfigPage() {
       const values = await form.validateFields()
       setSubmitting(true)
       setError(null)
-      const res = await createApp({ name: values.name }, adminUserId)
+      const res = await createApp({ name: values.name })
       if (res.code !== 'OK') {
         setError(res.message)
       } else {
@@ -88,7 +88,7 @@ export default function AppConfigPage() {
     if (adminUserId === null) return
     setBindModelAppId(appId)
     try {
-      const res = await listChatCapableConfigs(adminUserId)
+      const res = await listChatCapableConfigs()
       if (res.code === 'OK') {
         setModelConfigs(res.data)
       } else {
@@ -105,7 +105,7 @@ export default function AppConfigPage() {
   async function handleBindModel() {
     if (bindModelAppId === null || selectedModelConfigId === null || adminUserId === null) return
     try {
-      const res = await bindDefaultModelConfig(bindModelAppId, { model_config_id: selectedModelConfigId }, adminUserId)
+      const res = await bindDefaultModelConfig(bindModelAppId, { model_config_id: selectedModelConfigId })
       if (res.code !== 'OK') {
         setError(res.message)
       } else {
@@ -121,7 +121,7 @@ export default function AppConfigPage() {
     if (adminUserId === null) return
     setBindKbAppId(appId)
     try {
-      const res = await listKnowledgeBases(undefined, adminUserId)
+      const res = await listKnowledgeBases(undefined)
       if (res.code === 'OK') {
         setKbList(res.data.filter(kb => kb.status === 'READY'))
       } else {
@@ -138,7 +138,7 @@ export default function AppConfigPage() {
   async function handleBindKb() {
     if (bindKbAppId === null || selectedKbId === null || adminUserId === null) return
     try {
-      const res = await bindDefaultKnowledgeBase(bindKbAppId, { knowledge_base_id: selectedKbId }, adminUserId)
+      const res = await bindDefaultKnowledgeBase(bindKbAppId, { knowledge_base_id: selectedKbId })
       if (res.code !== 'OK') {
         setError(res.message)
       } else {
@@ -159,7 +159,7 @@ export default function AppConfigPage() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          const res = await disableApp(app.id, adminUserId)
+          const res = await disableApp(app.id)
           if (res.code !== 'OK') {
             setError(res.message)
           } else {
@@ -175,7 +175,7 @@ export default function AppConfigPage() {
   async function handleEnableApp(app: AppVO) {
     if (adminUserId === null) return
     try {
-      const res = await enableApp(app.id, adminUserId)
+      const res = await enableApp(app.id)
       if (res.code !== 'OK') {
         setError(res.message)
       } else {
@@ -199,7 +199,7 @@ export default function AppConfigPage() {
   async function doUpdateCapture(app: AppVO, enabled: boolean) {
     if (adminUserId === null) return
     try {
-      const res = await updateAppOutputCapture(app.id, { request_log_output_capture_enabled: enabled }, adminUserId)
+      const res = await updateAppOutputCapture(app.id, { request_log_output_capture_enabled: enabled })
       if (res.code !== 'OK') {
         setError(res.message)
       } else {

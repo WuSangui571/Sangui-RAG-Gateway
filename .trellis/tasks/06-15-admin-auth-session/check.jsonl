@@ -1,0 +1,28 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis/tasks/06-15-admin-auth-session/prd.md", "reason": "Authoritative PRD for Admin login/session auth scope, contracts, risks, and tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project-level user, tenant, API key, Admin Console, and gateway boundary"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Auth/user/common.security module placement and backend layering rules"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "sys_user table, tenant-safe user_id columns, migrations, indexes, and secret storage rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin ApiResponse vs public OpenAI error shape and 401/403/404 matrix"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "No password/token/Authorization logging and safe auth/request context fields"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend auth, tenant isolation, regression test expectations"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend auth/api/types/page organization"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Auth token/current user global state boundary and secret clearing rules"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Typed auth DTO/VO and API contract alignment rules"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Login visual smoke, secret safety, frontend validation expectations"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Tenant and secret boundaries for Admin observability and public gateway separation"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API DB frontend auth contract checklist"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicated user-id parsing; use shared auth context"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/GatewayAuthFilter.java", "reason": "Existing servlet filter auth pattern with context set/clear and direct 401 response"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/GatewayAuthConfig.java", "reason": "Existing filter registration pattern for public /v1 auth"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/GatewayRequestContextHolder.java", "reason": "Existing ThreadLocal request context holder pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java", "reason": "Largest Admin controller currently trusting X-Admin-User-Id; key replacement target"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigAdminController.java", "reason": "Admin model config owner checks and check endpoints needing auth context"}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyAdminController.java", "reason": "API key mutation controller needing auth context with 403 preservation"}
+{"file": "backend/src/main/java/com/sangui/raggateway/knowledge/KnowledgeBaseAdminController.java", "reason": "KB Admin controller identity-source replacement target"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentAdminController.java", "reason": "Document upload/list/detail identity-source replacement target"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java", "reason": "Request-log/detail/hit-chunk/output-preview identity-source replacement target"}
+{"file": "frontend/src/api/http.ts", "reason": "Central frontend X-Admin-User-Id injection point to replace with Authorization token"}
+{"file": "frontend/src/components/layout/AdminShell.tsx", "reason": "Temporary user-id entry shell to replace with real login/logout state"}
+{"file": "frontend/src/App.tsx", "reason": "Page wiring currently passes adminUserId to request-log page"}

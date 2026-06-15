@@ -46,7 +46,7 @@ export default function KnowledgeBasePage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await listKnowledgeBases(undefined, adminUserId)
+      const res = await listKnowledgeBases(undefined)
       if (res.code !== 'OK') {
         setError(res.message)
         setKbs([])
@@ -70,7 +70,7 @@ export default function KnowledgeBasePage() {
     setDocsLoading(true)
     setDocsError(null)
     try {
-      const res = await listDocuments(selectedKbId, undefined, adminUserId)
+      const res = await listDocuments(selectedKbId, undefined)
       if (res.code !== 'OK') {
         setDocsError(res.message)
         setDocuments([])
@@ -129,7 +129,7 @@ export default function KnowledgeBasePage() {
         name: values.name,
         embedding_model: values.embedding_model,
         embedding_dimension: values.embedding_dimension,
-      }, adminUserId)
+      })
       if (res.code !== 'OK') {
         setError(res.message)
       } else {
@@ -148,7 +148,7 @@ export default function KnowledgeBasePage() {
   async function loadEmbeddingConfigs() {
     if (adminUserId === null) return
     try {
-      const res = await listModelConfigs('ENABLED', adminUserId, 'EMBEDDING')
+      const res = await listModelConfigs('ENABLED', 'EMBEDDING')
       if (res.code === 'OK') {
         setEmbeddingConfigs(res.data.filter(c =>
           c.embedding_model && c.embedding_dimension && c.embedding_dimension > 0))
@@ -171,7 +171,7 @@ export default function KnowledgeBasePage() {
     if (selectedKbId === null || adminUserId === null) return
     setDocsError(null)
     try {
-      const res = await uploadDocument(selectedKbId, file, adminUserId)
+      const res = await uploadDocument(selectedKbId, file)
       if (res.code !== 'OK') {
         setDocsError(t('knowledge.uploadFailed', { message: res.message }))
       } else {

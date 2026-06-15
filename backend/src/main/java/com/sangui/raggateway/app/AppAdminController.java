@@ -16,6 +16,7 @@ import com.sangui.raggateway.apikey.vo.ApiKeyCreateVO;
 import com.sangui.raggateway.apikey.vo.ApiKeyVO;
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.response.ApiResponse;
+import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.knowledge.KnowledgeBaseService;
 import com.sangui.raggateway.knowledge.KnowledgeBaseStatus;
@@ -50,9 +51,8 @@ public class AppAdminController {
     }
 
     @PostMapping
-    public ApiResponse<AppVO> createApp(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @RequestBody CreateAppDTO dto) {
+    public ApiResponse<AppVO> createApp(@RequestBody CreateAppDTO dto) {
+        Long userId = AdminAuthContextHolder.getUserId();
         validateUserId(userId);
         if (dto == null || dto.getName() == null || dto.getName().isBlank()) {
             throw new BusinessException("INVALID_REQUEST", "name is required");
@@ -63,9 +63,8 @@ public class AppAdminController {
     }
 
     @GetMapping
-    public ApiResponse<List<AppVO>> listApps(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @RequestParam(required = false) String status) {
+    public ApiResponse<List<AppVO>> listApps(@RequestParam(required = false) String status) {
+        Long userId = AdminAuthContextHolder.getUserId();
         validateUserId(userId);
         if (status != null && !status.isBlank()) {
             try {
@@ -81,9 +80,8 @@ public class AppAdminController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<AppVO> getApp(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long id) {
+    public ApiResponse<AppVO> getApp(@PathVariable Long id) {
+        Long userId = AdminAuthContextHolder.getUserId();
         validateUserId(userId);
 
         AppEntity app = appService.findByIdAndUserId(id, userId);
@@ -98,9 +96,8 @@ public class AppAdminController {
     }
 
     @GetMapping("/{appId}/readiness")
-    public ApiResponse<AppReadinessVO> getReadiness(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long appId) {
+    public ApiResponse<AppReadinessVO> getReadiness(@PathVariable Long appId) {
+        Long userId = AdminAuthContextHolder.getUserId();
         validateUserId(userId);
 
         AppEntity app = appService.findByIdAndUserId(appId, userId);
@@ -118,9 +115,9 @@ public class AppAdminController {
 
     @PostMapping("/{appId}/api-keys")
     public ApiResponse<ApiKeyCreateVO> createApiKey(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long appId,
             @RequestBody CreateApiKeyDTO dto) {
+        Long userId = AdminAuthContextHolder.getUserId();
         validateUserId(userId);
 
         AppEntity app = appService.findByIdAndUserId(appId, userId);
@@ -141,9 +138,8 @@ public class AppAdminController {
     }
 
     @GetMapping("/{appId}/api-keys")
-    public ApiResponse<List<ApiKeyVO>> listApiKeys(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long appId) {
+    public ApiResponse<List<ApiKeyVO>> listApiKeys(@PathVariable Long appId) {
+        Long userId = AdminAuthContextHolder.getUserId();
         validateUserId(userId);
 
         AppEntity app = appService.findByIdAndUserId(appId, userId);
@@ -162,12 +158,10 @@ public class AppAdminController {
 
     @PutMapping("/{appId}/default-model-config")
     public ApiResponse<BindAppDefaultModelConfigVO> bindDefaultModelConfig(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long appId,
             @RequestBody BindAppDefaultModelConfigDTO dto) {
-        if (userId == null || userId <= 0) {
-            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
-        }
+        Long userId = AdminAuthContextHolder.getUserId();
+        validateUserId(userId);
 
         AppEntity app = appService.findById(appId);
         if (app == null) {
@@ -206,9 +200,8 @@ public class AppAdminController {
     }
 
     @PostMapping("/{id}/disable")
-    public ApiResponse<AppVO> disableApp(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long id) {
+    public ApiResponse<AppVO> disableApp(@PathVariable Long id) {
+        Long userId = AdminAuthContextHolder.getUserId();
         validateUserId(userId);
 
         AppEntity app = appService.disableApp(id, userId);
@@ -223,9 +216,8 @@ public class AppAdminController {
     }
 
     @PostMapping("/{id}/enable")
-    public ApiResponse<AppVO> enableApp(
-            @RequestHeader("X-Admin-User-Id") Long userId,
-            @PathVariable Long id) {
+    public ApiResponse<AppVO> enableApp(@PathVariable Long id) {
+        Long userId = AdminAuthContextHolder.getUserId();
         validateUserId(userId);
 
         AppEntity app = appService.enableApp(id, userId);
@@ -241,12 +233,10 @@ public class AppAdminController {
 
     @PutMapping("/{appId}/knowledge-base")
     public ApiResponse<BindAppDefaultKnowledgeBaseVO> bindDefaultKnowledgeBase(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long appId,
             @RequestBody BindAppDefaultKnowledgeBaseDTO dto) {
-        if (userId == null || userId <= 0) {
-            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
-        }
+        Long userId = AdminAuthContextHolder.getUserId();
+        validateUserId(userId);
 
         AppEntity app = appService.findById(appId);
         if (app == null) {
@@ -286,12 +276,10 @@ public class AppAdminController {
 
     @PutMapping("/{appId}/request-log-output-capture")
     public ApiResponse<AppVO> updateOutputCapture(
-            @RequestHeader("X-Admin-User-Id") Long userId,
             @PathVariable Long appId,
             @RequestBody UpdateAppOutputCaptureDTO dto) {
-        if (userId == null || userId <= 0) {
-            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
-        }
+        Long userId = AdminAuthContextHolder.getUserId();
+        validateUserId(userId);
 
         if (dto == null || dto.getRequestLogOutputCaptureEnabled() == null) {
             throw new BusinessException("INVALID_REQUEST", "request_log_output_capture_enabled is required");
@@ -319,7 +307,7 @@ public class AppAdminController {
 
     private void validateUserId(Long userId) {
         if (userId == null || userId <= 0) {
-            throw new BusinessException("INVALID_REQUEST", "X-Admin-User-Id must be a positive long");
+            throw new BusinessException("UNAUTHORIZED", "Authentication required", HttpStatus.UNAUTHORIZED);
         }
     }
 }

@@ -8,21 +8,20 @@ import { listRequestLogs } from '../../api/request-logs'
 import { ApiError } from '../../api/http'
 import RequestLogStatusTag from '../../components/domain/RequestLogStatusTag'
 import RequestLogDetailDrawer from '../../components/domain/RequestLogDetailDrawer'
+import { useShell } from '../../components/layout/AdminShell'
 import { useI18n } from '../../app/i18n'
 
-const { Title } = Typography
+const { Title, Text } = Typography
 
 interface RequestLogListPageProps {
   persistentAppId?: number
-  persistentAdminUserId?: number
 }
 
-export default function RequestLogListPage({ persistentAppId, persistentAdminUserId }: RequestLogListPageProps) {
+export default function RequestLogListPage({ persistentAppId }: RequestLogListPageProps) {
   const { t } = useI18n()
+  const { adminUserId } = useShell()
   const [appId, setAppId] = useState<string>('')
-  const [adminUserId, setAdminUserId] = useState<string>('')
   const [submittedAppId, setSubmittedAppId] = useState<number | null>(null)
-  const [submittedAdminUserId, setSubmittedAdminUserId] = useState<number | null>(null)
   const autoConnectDone = useRef(false)
 
   const [filters, setFilters] = useState<RequestLogListParams>({
@@ -42,14 +41,14 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
   const [detailRequestId, setDetailRequestId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
 
-  const canQuery = submittedAppId !== null && submittedAdminUserId !== null
+  const canQuery = submittedAppId !== null && adminUserId !== null
 
   const fetchLogs = useCallback(async () => {
-    if (submittedAppId === null || submittedAdminUserId === null) return
+    if (submittedAppId === null || adminUserId === null) return
     setLoading(true)
     setError(null)
     try {
-      const res = await listRequestLogs(submittedAppId, filters, submittedAdminUserId)
+      const res = await listRequestLogs(submittedAppId, filters)
       if (res.code !== 'OK') {
         setError(res.message)
         setData([])
@@ -66,17 +65,15 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
     } finally {
       setLoading(false)
     }
-  }, [canQuery, submittedAppId, submittedAdminUserId, filters])
+  }, [submittedAppId, adminUserId, filters])
 
   useEffect(() => {
     if (autoConnectDone.current) return
-    if (persistentAppId !== undefined && persistentAdminUserId !== undefined
-      && persistentAppId > 0 && persistentAdminUserId > 0) {
+    if (persistentAppId !== undefined && persistentAppId > 0) {
       autoConnectDone.current = true
       setSubmittedAppId(persistentAppId)
-      setSubmittedAdminUserId(persistentAdminUserId)
     }
-  }, [persistentAppId, persistentAdminUserId])
+  }, [persistentAppId])
 
   useEffect(() => {
     fetchLogs()
@@ -84,13 +81,10 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
 
   function handleConnect() {
     const appIdNum = Number(appId)
-    const adminUserIdNum = Number(adminUserId)
-    if (!appId || !adminUserId || !Number.isFinite(appIdNum) || !Number.isFinite(adminUserIdNum)
-      || appIdNum <= 0 || adminUserIdNum <= 0) {
+    if (!appId || !Number.isFinite(appIdNum) || appIdNum <= 0) {
       return
     }
     setSubmittedAppId(appIdNum)
-    setSubmittedAdminUserId(adminUserIdNum)
     setFilters(prev => ({ ...prev, page: 1 }))
     setError(null)
   }
@@ -194,6 +188,14 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
     },
   ], [t])
 
+  if (adminUserId === null) {
+    return (
+      <div style={{ maxWidth: 480, margin: '80px auto', padding: 24 }}>
+        <Text type="secondary">{t('request-log.title')} — please log in first.</Text>
+      </div>
+    )
+  }
+
   if (!canQuery) {
     return (
       <div style={{ maxWidth: 480, margin: '80px auto', padding: 24 }}>
@@ -210,22 +212,11 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
               onPressEnter={handleConnect}
             />
           </Form.Item>
-          <Form.Item label={t('request-log.adminUserId')} required>
-            <Input
-              value={adminUserId}
-              onChange={e => setAdminUserId(e.target.value)}
-              placeholder={t('request-log.enterUserId')}
-              type="number"
-              onPressEnter={handleConnect}
-            />
-          </Form.Item>
           <Button
             type="primary"
             block
             onClick={handleConnect}
-            disabled={!appId || !adminUserId
-              || !Number.isFinite(Number(appId)) || !Number.isFinite(Number(adminUserId))
-              || Number(appId) <= 0 || Number(adminUserId) <= 0}
+            disabled={!appId || !Number.isFinite(Number(appId)) || Number(appId) <= 0}
           >
             {t('request-log.connect')}
           </Button>
@@ -319,12 +310,11 @@ export default function RequestLogListPage({ persistentAppId, persistentAdminUse
         scroll={{ x: 1100 }}
       />
 
-      {submittedAppId !== null && submittedAdminUserId !== null && (
+      {submittedAppId !== null && (
         <RequestLogDetailDrawer
           open={detailOpen}
           appId={submittedAppId}
           requestId={detailRequestId}
-          adminUserId={submittedAdminUserId}
           onClose={closeDetail}
         />
       )}

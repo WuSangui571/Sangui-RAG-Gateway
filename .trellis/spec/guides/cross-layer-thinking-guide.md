@@ -65,6 +65,20 @@ frontend form
   -> frontend display
 ```
 
+Admin auth flow:
+
+```text
+frontend login form
+  -> POST /api/admin/auth/login { username, password }
+  -> password hash verification against sys_user
+  -> AdminJwtService signs expiring token with rag.gateway.secret-key
+  -> frontend stores token/current safe user metadata in shell state
+  -> frontend HTTP helper sends Authorization: Bearer <admin-jwt>
+  -> AdminAuthFilter validates token and active user
+  -> AdminAuthContextHolder exposes userId to Admin controllers
+  -> services keep owner-scoped queries and 403/404 distinction
+```
+
 For each arrow, define:
 
 - Input format.
@@ -85,6 +99,7 @@ Before coding, write down:
 - Environment variables.
 - Error codes and HTTP statuses.
 - Test cases for success and failure.
+- For Admin auth, record the exact identity source (`Authorization: Bearer <admin-jwt>`), login/me DTO/VO fields, token expiry property, and bootstrap boundary for the first `sys_user`.
 
 For OpenAI-compatible endpoints, distinguish:
 
@@ -195,3 +210,4 @@ After implementation:
 - [ ] Database migrations match entity/model changes.
 - [ ] Logs contain safe IDs and omit secrets/content.
 - [ ] README/specs are updated if behavior changed.
+- [ ] Cross-layer auth changes keep public `/v1/*` app API key auth separate from Admin `/api/admin/**` JWT auth.
