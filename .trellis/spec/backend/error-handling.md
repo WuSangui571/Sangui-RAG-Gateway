@@ -563,3 +563,44 @@ Required tests:
 cd backend
 mvn -q "-Dtest=ApiRequestLogAdminControllerTest" test
 ```
+
+## Admin App Output Capture Switch API Error Codes
+
+The app-level request-log output capture switch is managed through the app Admin API and uses the normal `ApiResponse<AppVO>` envelope:
+
+```http
+PUT /api/admin/apps/{appId}/request-log-output-capture
+X-Admin-User-Id: <userId>
+Content-Type: application/json
+
+{
+  "request_log_output_capture_enabled": true
+}
+```
+
+Response `data` is `AppVO` and must include `request_log_output_capture_enabled` as a boolean. Existing rows with a null entity value are normalized to `false` in the VO.
+
+Validation and error matrix:
+
+| Scenario | HTTP | Code | Required behavior |
+|---|---:|---|---|
+| Missing `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by header validation. |
+| Non-numeric `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | Caught by Spring type conversion. |
+| Non-positive `X-Admin-User-Id` | 400 | `INVALID_REQUEST` | No app mutation. |
+| Malformed JSON body | 400 | `INVALID_REQUEST` | Body content is not echoed. |
+| Null body or missing `request_log_output_capture_enabled` | 400 | `INVALID_REQUEST` | No app mutation. |
+| App does not exist | 404 | `NOT_FOUND` | No app mutation. |
+| App belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no app mutation. |
+| Owned app, switch `true` or `false` | 200 | `OK` | Persist requested boolean, update `updated_at`, return `AppVO`. |
+
+Secret-safe response rules:
+
+- App list/detail/create/update responses may expose only the boolean switch state, never `output_preview`.
+- The switch endpoint must not return prompts, messages, raw answers, provider bodies, raw SSE payloads, API keys, key hashes, encrypted upstream keys, chunk content, embeddings, stack traces, or environment values.
+
+Required tests:
+
+```bash
+cd backend
+mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest,OutputCapturePolicyTest" test
+```

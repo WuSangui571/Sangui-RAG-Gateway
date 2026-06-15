@@ -475,6 +475,70 @@ class AppServiceTest {
         assertThat(result).isNull();
     }
 
+    // ---- Output Capture ----
+
+    @Test
+    void shouldCreateAppWithOutputCaptureDefaultFalse() {
+        ArgumentCaptor<AppEntity> captor = ArgumentCaptor.forClass(AppEntity.class);
+        appService.create("Test App", 100L);
+
+        verify(appMapper).insert(captor.capture());
+        AppEntity created = captor.getValue();
+        assertThat(created.getRequestLogOutputCaptureEnabled()).isNull();
+    }
+
+    @Test
+    void shouldUpdateOutputCaptureToTrue() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        AppEntity result = appService.updateOutputCapture(1L, true, 100L);
+
+        assertThat(result).isNotNull();
+        ArgumentCaptor<AppEntity> captor = ArgumentCaptor.forClass(AppEntity.class);
+        verify(appMapper).updateById(captor.capture());
+        AppEntity updated = captor.getValue();
+        assertThat(updated.getRequestLogOutputCaptureEnabled()).isTrue();
+        assertThat(updated.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    void shouldUpdateOutputCaptureToFalse() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setUserId(100L);
+        app.setRequestLogOutputCaptureEnabled(true);
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(app);
+
+        AppEntity result = appService.updateOutputCapture(1L, false, 100L);
+
+        assertThat(result).isNotNull();
+        ArgumentCaptor<AppEntity> captor = ArgumentCaptor.forClass(AppEntity.class);
+        verify(appMapper).updateById(captor.capture());
+        AppEntity updated = captor.getValue();
+        assertThat(updated.getRequestLogOutputCaptureEnabled()).isFalse();
+    }
+
+    @Test
+    void shouldReturnNullWhenUpdateOutputCaptureForCrossUserApp() {
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        AppEntity result = appService.updateOutputCapture(1L, true, 100L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldReturnNullWhenUpdateOutputCaptureForMissingApp() {
+        when(appMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        AppEntity result = appService.updateOutputCapture(999L, true, 100L);
+
+        assertThat(result).isNull();
+    }
+
     // ---- Readiness ----
 
     @Test

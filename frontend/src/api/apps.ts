@@ -3,6 +3,7 @@ import type {
   AppVO, CreateAppDTO, AppReadinessVO,
   BindAppDefaultModelConfigDTO, BindAppDefaultModelConfigVO,
   BindAppDefaultKnowledgeBaseDTO, BindAppDefaultKnowledgeBaseVO,
+  UpdateAppOutputCaptureDTO,
 } from '../types/app'
 import { apiGet, apiPost, apiPut } from './http'
 
@@ -64,4 +65,12 @@ export function enableApp(
   adminUserId: number,
 ): Promise<ApiResponse<AppVO>> {
   return apiPost<AppVO>(`/admin/apps/${id}/enable`, undefined, adminUserId)
+}
+
+export function updateAppOutputCapture(
+  appId: number,
+  dto: UpdateAppOutputCaptureDTO,
+  adminUserId: number,
+): Promise<ApiResponse<AppVO>> {
+  return apiPut<AppVO>(`/admin/apps/${appId}/request-log-output-capture`, dto, adminUserId)
 }

@@ -147,6 +147,11 @@ const dict = {
     'apps.failedLoadModel': '加载模型配置失败',
     'apps.failedLoadKb': '加载知识库失败',
     'apps.networkError': '网络错误',
+    'apps.outputCapture': '输出捕获',
+    'apps.outputCaptureEnableTitle': '启用输出捕获',
+    'apps.outputCaptureEnableContent': '确认对 "{appName}" 启用输出捕获？启用后，当全局输出捕获开关也同样开启时，本应用的 API 请求回答将以脱敏截断形式被捕获并保存。预览内容仍仅通过显式审计访问路径获取，仅用于运维诊断，不构成完整回答存储。',
+    'apps.outputCaptureEnableOk': '确认启用',
+    'apps.outputCaptureRiskWarning': '此操作将允许对本应用的 API 回答进行脱敏截断捕获，用于运维诊断。预览内容仍受显式审计访问保护。',
 
     'api-keys.selectApp': '选择应用：',
     'api-keys.selectPlaceholder': '选择一个应用',
@@ -589,6 +594,11 @@ const dict = {
     'apps.failedLoadModel': 'Failed to load model configs',
     'apps.failedLoadKb': 'Failed to load knowledge bases',
     'apps.networkError': 'Network error',
+    'apps.outputCapture': 'Output Capture',
+    'apps.outputCaptureEnableTitle': 'Enable Output Capture',
+    'apps.outputCaptureEnableContent': 'Enable output capture for "{appName}"? When enabled, API responses for this app will be captured as bounded, redacted previews only when the global output capture switch is also on. Preview content remains accessible only through explicit audited access and is for operational diagnosis, not full answer storage.',
+    'apps.outputCaptureEnableOk': 'Enable',
+    'apps.outputCaptureRiskWarning': 'This will allow bounded, redacted answer previews to be captured for operational diagnosis. Previews are still protected by explicit audited access.',
 
     'api-keys.selectApp': 'Select App:',
     'api-keys.selectPlaceholder': 'Select an app',

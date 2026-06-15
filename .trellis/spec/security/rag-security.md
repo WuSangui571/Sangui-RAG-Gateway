@@ -94,6 +94,14 @@ POST /api/admin/apps/{appId}/request-logs/{requestId}/output-preview/access
 
 It must be bounded, deterministically redacted, explicitly confirmed with `confirm_access=true`, tenant-scoped by app ownership before any request-log lookup, and audited without storing preview content.
 
+App-level output capture opt-in is managed only through:
+
+```http
+PUT /api/admin/apps/{appId}/request-log-output-capture
+```
+
+The request body is limited to `request_log_output_capture_enabled: boolean`. The endpoint must verify app ownership before mutation, must return 403 for cross-user access, and must return only `AppVO` metadata. It must not return preview content or any raw prompt/answer/request-log body. Effective capture still requires both the global switch and this app switch.
+
 ## 4. Contracts
 
 | Contract | Required behavior |
@@ -106,6 +114,7 @@ It must be bounded, deterministically redacted, explicitly confirmed with `confi
 | Log boundary | Request logs hold safe operational fields only. |
 | Error boundary | Errors are compatible and safe; no internals or secrets. |
 | Output preview boundary | Preview content is default-off, app-opt-in, bounded/redacted, expired by retention, and returned only through explicit audited access. |
+| App output capture switch boundary | App owners may toggle only their own app-level boolean switch; the management API exposes metadata only and never exposes preview content. |
 
 ## 5. Validation & Error Matrix
 
@@ -116,6 +125,7 @@ It must be bounded, deterministically redacted, explicitly confirmed with `confi
 | Request-log detail requested cross-user | 403 `FORBIDDEN`; no log row returned | Request-log API test |
 | Output preview requested cross-user | 403 `FORBIDDEN`; app ownership check happens before request-log query | Request-log output access controller test |
 | Output preview requested without confirmation | 400 `INVALID_REQUEST`; audit `DENIED`; no preview returned | Request-log output access controller test |
+| App output capture switch requested cross-user | 403 `FORBIDDEN`; no app row update; response contains no preview content | App controller/service test |
 | Hit chunks include IDs from another KB | Only current app-bound KB chunks are returned | Hit chunk service test |
 | User asks for keys or full prompt | Prompt safety instruction refuses; logs omit secrets | Prompt/security test |
 | Provider error includes request content | Client and logs receive only safe normalized error | Upstream client test |

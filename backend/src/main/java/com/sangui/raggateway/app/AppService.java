@@ -138,6 +138,18 @@ public class AppService {
     }
 
     @Transactional
+    public AppEntity updateOutputCapture(Long appId, boolean enabled, Long userId) {
+        AppEntity app = findByIdAndUserId(appId, userId);
+        if (app == null) {
+            return null;
+        }
+        app.setRequestLogOutputCaptureEnabled(enabled);
+        app.setUpdatedAt(LocalDateTime.now());
+        appMapper.updateById(app);
+        return app;
+    }
+
+    @Transactional
     public AppEntity disableApp(Long id, Long userId) {
         AppEntity app = findByIdAndUserId(id, userId);
         if (app == null) {

@@ -20,6 +20,8 @@ public class AppVO {
     private LocalDateTime createdAt;
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
+    @JsonProperty("request_log_output_capture_enabled")
+    private Boolean requestLogOutputCaptureEnabled;
 
     public static AppVO from(AppEntity entity) {
         AppVO vo = new AppVO();
@@ -29,6 +31,7 @@ public class AppVO {
         vo.status = entity.getStatus();
         vo.defaultModelConfigId = entity.getDefaultModelConfigId();
         vo.defaultKnowledgeBaseId = entity.getDefaultKnowledgeBaseId();
+        vo.requestLogOutputCaptureEnabled = Boolean.TRUE.equals(entity.getRequestLogOutputCaptureEnabled());
         vo.createdAt = entity.getCreatedAt();
         vo.updatedAt = entity.getUpdatedAt();
         return vo;
@@ -64,5 +67,9 @@ public class AppVO {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Boolean getRequestLogOutputCaptureEnabled() {
+        return requestLogOutputCaptureEnabled;
     }
 }

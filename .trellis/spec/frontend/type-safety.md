@@ -192,6 +192,7 @@ export interface AppVO {
   status: AppStatus;
   default_model_config_id: number | null;
   default_knowledge_base_id: number | null;
+  request_log_output_capture_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -210,6 +211,22 @@ export interface BindAppDefaultKnowledgeBaseVO {
   default_knowledge_base_id: number;
 }
 ```
+
+App output capture switch management uses a focused DTO and API client:
+
+```ts
+export interface UpdateAppOutputCaptureDTO {
+  request_log_output_capture_enabled: boolean;
+}
+
+updateAppOutputCapture(
+  appId: number,
+  dto: UpdateAppOutputCaptureDTO,
+  adminUserId: number,
+): Promise<ApiResponse<AppVO>>
+```
+
+The frontend endpoint path is `/admin/apps/{appId}/request-log-output-capture`, which maps to backend `/api/admin/apps/{appId}/request-log-output-capture`. The App management page may render this as an Ant Design `Switch`, but enabling from `false` to `true` must show an explicit risk confirmation before the API call. Disabling may call the API directly. The page must not render or persist `output_preview`, raw answers, prompts, request messages, provider bodies, raw SSE payloads, chunk content, embeddings, keys, hashes, encrypted upstream keys, stack traces, or environment values.
 
 ## Request Log Observability Types
 
