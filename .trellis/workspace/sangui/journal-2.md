@@ -1604,3 +1604,49 @@ acknowledgement switches.
 ### Next Steps
 
 - None - task complete
+
+
+## Session 61: Object Storage And File Lifecycle
+
+**Date**: 2026-06-16
+**Task**: Object Storage And File Lifecycle
+**Branch**: `feature/object-storage-file-lifecycle`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Commit | 9f55944e feat: object storage and file lifecycle |
+| Task | Object Storage And File Lifecycle |
+| Result | Added storage backend abstraction delete contract, S3-compatible object storage boundary, document delete API, knowledge-base delete API, production guard support for object storage, deployment/docs/spec synchronization, and regression tests. |
+| Main modules | document storage/config/service/controller; knowledge-base service/controller; production config guard; deployment env/Compose; README; Trellis backend/RAG/security specs. |
+| Codex review fixes | Corrected delete NOT_FOUND/FORBIDDEN HTTP status mapping; made S3 headObject 404 idempotent; added object storage unit tests without MinIO dependency; added DocumentConfig validation tests; added document/KB delete lifecycle tests; replaced reusable object-storage credential examples with placeholders; synced executable spec contracts. |
+| Updated implementation files | backend/pom.xml; ProductionConfigGuard.java; DocumentAdminController.java; DocumentService.java; DocumentConfig.java; StorageProperties.java; FileStorageService.java; LocalFileStorageService.java; ObjectFileStorageService.java; KnowledgeBaseAdminController.java; KnowledgeBaseService.java; application.yml. |
+| Updated tests | ProductionConfigGuardTest; DocumentConfigTest; LocalFileStorageServiceTest; ObjectFileStorageServiceTest; DocumentServiceTest; DocumentAdminControllerTest; KnowledgeBaseServiceTest; KnowledgeBaseAdminControllerTest. |
+| Updated docs/spec/deploy | .env.example; deploy/docker-compose.yml; README.md; .trellis/spec/sangui-rag-gateway.md; .trellis/spec/backend/error-handling.md; .trellis/spec/backend/logging-guidelines.md; .trellis/spec/backend/quality-guidelines.md; .trellis/spec/rag/document-ingestion.md; .trellis/spec/security/rag-security.md. |
+| Verification | mvn -q -DskipTests compile passed; targeted storage/config/delete/production tests passed; mvn -q test passed with 652 tests, 0 failures, 0 errors, 0 skipped; git diff --check passed; docker compose --env-file .env.example -f deploy/docker-compose.yml config passed. |
+| Manual validation | Human confirmed manual testing and committed the feature. |
+| Boundaries | No frontend UI changes; no DB migration; no MQ/async lifecycle job; no object-storage browser/download/signed URL feature; real MinIO/S3 smoke remains an environment-level follow-up if needed. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9f55944e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
