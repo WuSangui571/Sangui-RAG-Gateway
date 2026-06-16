@@ -36,6 +36,9 @@ rag:
       default-completion-token-reservation: ${RAG_API_KEY_LIMITS_DEFAULT_COMPLETION_TOKEN_RESERVATION:1024}
   admin-auth:
     jwt-expiration-seconds: ${RAG_ADMIN_AUTH_JWT_EXPIRATION_SECONDS:86400}
+  production-guard:
+    allow-local-file-storage: ${RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE:false}
+    allow-output-capture: ${RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE:false}
   request-log:
     output-capture:
       enabled: false

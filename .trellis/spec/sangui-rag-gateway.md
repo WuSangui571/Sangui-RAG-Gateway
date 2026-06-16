@@ -583,6 +583,8 @@ RAG_RETRIEVAL_DEFAULT_SIMILARITY_THRESHOLD
 RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS
 RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHARS
 RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS
+RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE
+RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE
 RAG_API_KEY_LIMITS_ENABLED
 RAG_API_KEY_LIMITS_DEFAULT_REQUESTS_PER_MINUTE
 RAG_API_KEY_LIMITS_DEFAULT_TOKENS_PER_MINUTE
@@ -597,6 +599,66 @@ Secret rules:
 - Real `.env`, generated app API keys, upstream provider keys, Maven `target`, frontend `dist`, `node_modules`, and uploaded knowledge files must not be committed.
 - Provider keys remain configured through Admin model config workflows and encrypted at rest; Docker images must not bake provider keys through `ARG`, `ENV`, copied files, or README examples.
 - `backend/settings.xml` is part of the backend Docker build contract and may contain public Maven mirror metadata only; it must not contain repository credentials, tokens, or private repository URLs.
+
+### Implemented Production Config Guardrails
+
+Production-like startup is guarded by:
+
+```text
+backend/src/main/java/com/sangui/raggateway/common/config/ProductionConfigGuard.java
+backend/src/main/java/com/sangui/raggateway/common/config/ProductionGuardProperties.java
+backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java
+```
+
+The guard runs during Spring context initialization and inspects `Environment.getActiveProfiles()`. It applies only when an active profile is exactly `prod` or `production`, case-insensitive. It must not apply to `dev` or `test` alone. Production-like profiles must not be combined with `dev` or `test`.
+
+Configuration contract:
+
+| Environment variable | Spring property | Production-like requirement |
+|---|---|---|
+| `SPRING_PROFILES_ACTIVE` | `spring.profiles.active` | `prod` or `production` activates the guard; `prod,dev` and `production,test` fail startup. |
+| `RAG_GATEWAY_SECRET_KEY` | `rag.gateway.secret-key` | Required, non-blank, at least 32 characters, and not `local-dev-change-me`. |
+| `SPRING_DATASOURCE_URL` | `spring.datasource.url` | Must not be `jdbc:postgresql://localhost:5432/sangui_rag_gateway`. |
+| `SPRING_DATASOURCE_USERNAME` | `spring.datasource.username` | Must not be `sangui`. |
+| `SPRING_DATASOURCE_PASSWORD` | `spring.datasource.password` | Required, non-blank, and must not be `sangui_password`. |
+| `SPRING_DATA_REDIS_HOST` | `spring.data.redis.host` | Must not be `localhost` or `127.0.0.1` when Redis port is `6379`. |
+| `SPRING_DATA_REDIS_PORT` | `spring.data.redis.port` | `6379` is allowed only with a non-local Redis host such as `redis`. |
+| `FILE_STORAGE_TYPE` | `rag.gateway.storage.type` | `local` requires `rag.production-guard.allow-local-file-storage=true`. |
+| `RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE` | `rag.production-guard.allow-local-file-storage` | Explicit production acknowledgement for local filesystem storage. Default `false`. |
+| `RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE` | `rag.production-guard.allow-output-capture` | Explicit production acknowledgement for global output capture. Default `false`. |
+| n/a | `rag.request-log.output-capture.enabled` | `true` requires `rag.production-guard.allow-output-capture=true`. |
+
+Deployment file contract:
+
+| File | Requirement |
+|---|---|
+| `.env.example` | Lists both `RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE=false` and `RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE=false`. |
+| `backend/src/main/resources/application.yml` | Binds both acknowledgement properties under `rag.production-guard`. |
+| `deploy/docker-compose.yml` | Passes both acknowledgement variables into the backend service environment. |
+
+Validation matrix:
+
+| Scenario | Expected result |
+|---|---|
+| `dev`, `test`, or no production-like profile | Guard is inactive; local defaults can start. |
+| `prod` with strong secret, non-default DB credentials, Redis service host, output capture disabled, and non-local storage or acknowledged local storage | Context starts. |
+| `prod` with blank, short, or placeholder `rag.gateway.secret-key` | Startup fails with a safe `IllegalStateException` naming `rag.gateway.secret-key` without echoing the value. |
+| `prod` with default datasource URL, username, blank password, or default password | Startup fails with a safe message naming the unsafe datasource property without echoing the password. |
+| `prod` with `localhost:6379` or `127.0.0.1:6379` Redis | Startup fails visibly; Redis failures must not be silently bypassed. |
+| `prod` with `rag.gateway.storage.type=local` and no acknowledgement | Startup fails and names `rag.production-guard.allow-local-file-storage`. |
+| `prod` with global output capture enabled and no acknowledgement | Startup fails and names `rag.production-guard.allow-output-capture`. |
+| `prod,dev` or `production,test` | Startup fails and names the incompatible profile combination. |
+
+Required checks after changing this contract:
+
+```bash
+cd backend
+mvn -q "-Dtest=ProductionConfigGuardTest,ProductionContextSmokeTest" test
+mvn -q "-Dtest=ProductionConfigGuardTest,RequestLogOutputCleanupSchedulerTest" test
+mvn -q -DskipTests compile
+```
+
+Also run `git diff --check` when `.env.example`, README, Compose, or spec files change.
 
 CI baseline:
 

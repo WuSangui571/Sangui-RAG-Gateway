@@ -1,0 +1,21 @@
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project deployment env keys, Docker Compose defaults, secret rules, production/local baseline."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Places startup guard and properties under common.config; resource layout guidance."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Secret key env contract, DB/API key storage safety, Redis/rate-limit config validation baseline."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Safe startup/error messages must not leak secrets or internals."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Output capture sensitivity, default-off contract, forbidden env/secret logging fields."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend validation and test expectations for security/config changes."}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Redis/rate-limit failures must be visible and not silently bypassed."}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Secret/env/log safety boundaries for keys, request logs, and output capture."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Environment variables and Docker Compose contracts require cross-layer validation."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Search and reuse existing config/property/test patterns instead of duplicate guard logic."}
+{"file": "backend/src/test/java/com/sangui/raggateway/ProductionContextSmokeTest.java", "reason": "Existing ApplicationContextRunner production smoke pattern and secret failure assertions."}
+{"file": "backend/src/main/resources/application.yml", "reason": "Global env-backed defaults for secret, storage, Redis-independent output capture, and limits."}
+{"file": "backend/src/main/resources/application-dev.yml", "reason": "Dev profile default datasource, Redis, logging, and local secret behavior to preserve."}
+{"file": "backend/src/test/resources/application-test.yml", "reason": "Test profile exclusions that must not be broken by production guard wiring."}
+{"file": "deploy/docker-compose.yml", "reason": "Compose service-name DB/Redis contract and current fallback defaults."}
+{"file": ".env.example", "reason": "Safe local env defaults; update only if new production acknowledgement env keys are introduced."}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/EncryptionConfig.java", "reason": "Current secret-key wiring for upstream API key encryption."}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/AdminAuthConfig.java", "reason": "Current secret-key wiring for admin JWT signing."}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/ApiKeyLimitProperties.java", "reason": "Existing @ConfigurationProperties + @Validated startup validation pattern."}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/OutputCaptureProperties.java", "reason": "Existing high-sensitive output capture properties and validation pattern."}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/RequestLogOutputCleanupSchedulerTest.java", "reason": "Existing config binding failure test style for invalid output capture config."}

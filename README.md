@@ -895,6 +895,8 @@ npm run build
 | `RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS` | `5` | Max chunks in RAG context |
 | `RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHARS` | `12000` | Max characters in RAG context |
 | `RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS` | `3000` | Max characters per chunk in context |
+| `RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE` | `false` | Explicitly allow local filesystem storage in `prod`/`production` profiles |
+| `RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE` | `false` | Explicitly allow global request-log output capture in `prod`/`production` profiles |
 | `RAG_API_KEY_LIMITS_ENABLED` | `true` | Enable API-key scoped gateway rate limits |
 | `RAG_API_KEY_LIMITS_DEFAULT_REQUESTS_PER_MINUTE` | `60` | Default requests per minute per API key |
 | `RAG_API_KEY_LIMITS_DEFAULT_TOKENS_PER_MINUTE` | `60000` | Default estimated tokens per minute per API key |
@@ -902,7 +904,7 @@ npm run build
 | `RAG_API_KEY_LIMITS_DEFAULT_DAILY_TOKEN_QUOTA` | `1000000` | Default daily estimated token quota per API key |
 | `RAG_API_KEY_LIMITS_DEFAULT_COMPLETION_TOKEN_RESERVATION` | `1024` | Completion token reservation when `max_tokens` is omitted |
 
-Inside Docker Compose, the backend service automatically uses `postgres` and `redis` as hostnames. The `.env.example` contains safe local development defaults. For deployment, override secrets through environment variables or a deployment `.env` file.
+Inside Docker Compose, the backend service automatically uses `postgres` and `redis` as hostnames. The `.env.example` contains safe local development defaults. For deployment, override secrets through environment variables or a deployment `.env` file. Production-like profiles (`prod` or `production`) fail startup when local defaults are still active; set the two `RAG_PRODUCTION_ALLOW_*` variables to `true` only as an explicit operational acknowledgement.
 
 ## Secret and Provider Key Handling
 
