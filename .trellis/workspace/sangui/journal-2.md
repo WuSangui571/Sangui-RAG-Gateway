@@ -1440,3 +1440,46 @@ Implemented API-key scoped Redis-backed request and token limits for /v1/chat/co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 58: Production Context Smoke Test
+
+**Date**: 2026-06-16
+**Task**: Production Context Smoke Test
+**Branch**: `feature/production-context-smoke`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Commit | `628fadfb test:production context smoke` |
+| Task | Production Context Smoke Test |
+| Main changes | Added backend test-scope production-context smoke coverage using `ProductionContextSmokeTest`; covered gateway auth filter registration, API key limit property binding, encryption/admin secret startup checks, and blank secret negative cases. |
+| Codex review fix | Changed nested test helper configs to `@TestConfiguration` so the new smoke test does not pollute unrelated `@SpringBootTest` contexts with duplicate `objectMapper` beans. |
+| Updated files | `.trellis/tasks/06-16-production-context-smoke-test/*`; `backend/src/test/java/com/sangui/raggateway/ProductionContextSmokeTest.java` |
+| Validation | `mvn -q -DskipTests compile` passed; `mvn -q "-Dtest=ProductionContextSmokeTest" test` passed; `mvn -q "-Dtest=ProductionContextSmokeTest,SanguiRagGatewayApplicationTests,GlobalExceptionHandlerIntegrationTest" test` passed; `mvn -q test-compile` passed; `mvn -q test` passed within 60 seconds. |
+| Result | User reported manual testing complete and committed the code. Task archived after commit. |
+| Boundary | This session records a narrow backend test-scope smoke. It does not add runtime behavior, database schema, frontend, Docker, or Testcontainers changes. The smoke remains config-level; full Redis/PostgreSQL/Testcontainers production-context coverage can be planned separately if needed. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `628fadfb` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
