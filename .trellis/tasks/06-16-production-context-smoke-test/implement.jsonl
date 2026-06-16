@@ -1,0 +1,27 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, deployment env contract, API-key/Redis/secret baseline, OpenAI-compatible gateway scope"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend package boundaries and test placement conventions"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Datasource/Flyway/MyBatis and API-key limiter configuration contracts"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Gateway auth, /v1/chat/completions errors, rate-limit failure and admin auth contract"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe logging and rate-limit observability constraints"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend validation commands and forbidden fallback patterns"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "No silent Redis/upstream fallback; visible gateway failures and timeout boundaries"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "API key, admin JWT, Redis limiter, secret and tenant boundaries"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer checklist for env/config/auth/cache/gateway boundaries"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Retrieval service dependency chain and no cross-tenant retrieval boundary"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "RAG prompt/service chain boundary; no prompt behavior changes"}
+{"file": "backend\\src\\test\\resources\\application-test.yml", "reason": "Existing test profile excludes Redis/JDBC/Flyway/MyBatis and must not be used as production smoke evidence"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\SanguiRagGatewayApplicationTests.java", "reason": "Current contextLoads uses test profile and misses !test production beans"}
+{"file": "backend\\src\\main\\resources\\application.yml", "reason": "Production default properties, blank secret-key, Redis/API-key limit/env contracts"}
+{"file": "backend\\src\\main\\resources\\application-dev.yml", "reason": "Dev-only secret placeholder and local infra properties; do not turn into production fallback"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\GatewayAuthConfig.java", "reason": "GatewayAuthFilter and /v1/* registration active only under !test"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\AdminAuthConfig.java", "reason": "AdminJwtService production secret dependency active only under !test"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\EncryptionConfig.java", "reason": "UpstreamApiKeyEncryptor production secret dependency active only under !test"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\ApiKeyLimitProperties.java", "reason": "Validated API-key limiter defaults that should fail on non-positive config"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyRateLimitService.java", "reason": "Real Redis-backed limiter requiring StringRedisTemplate under !test"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Production /v1/chat/completions bean and limiter/service dependency chain"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayService.java", "reason": "OpenAI gateway service dependency chain through app, encryption, retrieval and upstream client"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalService.java", "reason": "Retrieval dependency chain through embedding client/model config and mapper"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\embedding\\OpenAiCompatibleEmbeddingClient.java", "reason": "Production embedding client bean and timeout configuration"}
+{"file": "backend\\pom.xml", "reason": "Available Spring Redis/JDBC/Flyway/MyBatis dependencies and test-scope dependency boundary"}
