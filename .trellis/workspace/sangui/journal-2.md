@@ -1483,3 +1483,73 @@ Implemented API-key scoped Redis-backed request and token limits for /v1/chat/co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 59: Output Capture Scheduled Cleanup
+
+**Date**: 2026-06-16
+**Task**: Output Capture Scheduled Cleanup
+**Branch**: `feature/app-output-capture-management`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Detail |
+|------|--------|
+| Commit | 7f6271f8 feat:output capture scheduled cleanup |
+| Task | Output Capture Scheduled Cleanup |
+| Branch | feature/app-output-capture-management |
+| Result | Completed scheduled cleanup for request-log output previews after manual testing and commit. |
+
+**Main Changes**:
+- Added `RequestLogOutputCleanupScheduler` as a thin scheduled orchestrator for expired output previews.
+- Added `SchedulingConfig` with `@EnableScheduling` and `!test` profile isolation.
+- Added `cleanup-fixed-delay-ms` to output-capture configuration and bound it through `OutputCaptureProperties`.
+- Added positive-value validation for `cleanupFixedDelayMs` with `@Min(1)`.
+- Added scheduler tests for enabled invocation, disabled skip, zero expired behavior, and invalid non-positive delay binding.
+- Updated backend logging spec with the scheduled cleanup contract and required scheduler test.
+
+**Updated Files**:
+- `.trellis/spec/backend/logging-guidelines.md`
+- `.trellis/tasks/06-16-output-capture-scheduled-cleanup/*`
+- `backend/src/main/java/com/sangui/raggateway/common/config/SchedulingConfig.java`
+- `backend/src/main/java/com/sangui/raggateway/log/OutputCaptureProperties.java`
+- `backend/src/main/java/com/sangui/raggateway/log/RequestLogOutputCleanupScheduler.java`
+- `backend/src/main/resources/application.yml`
+- `backend/src/test/java/com/sangui/raggateway/log/RequestLogOutputCleanupSchedulerTest.java`
+
+**Validation**:
+- `mvn -q "-Dtest=RequestLogOutputCleanupSchedulerTest,ApiRequestLogOutputServiceTest,OutputCapturePolicyTest" test` -> PASS
+- `mvn -q -DskipTests compile` -> PASS
+- `mvn -q test` -> PASS
+- `git diff --check` -> PASS, only CRLF working-copy warnings
+- Human manual testing completed before record-session.
+
+**Boundaries**:
+- No database schema change.
+- No frontend change.
+- No app switch API/UI reimplementation.
+- No request-log output preview access API change.
+- Scheduler logs only safe count metadata and does not log preview content.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7f6271f8` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
