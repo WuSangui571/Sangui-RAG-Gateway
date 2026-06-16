@@ -20,6 +20,7 @@ This task only records the spec. It does not implement safety models, classifier
 
 - Retrieval SQL must carry `app_id` through resolved app context and must filter by `user_id` and `knowledge_base_id` at the database boundary.
 - An app API key can access only the app it is bound to and the knowledge base that app is allowed to use.
+- App API keys are protected by API-key scoped Redis request/token limits before retrieval, embedding, or upstream chat calls.
 - RAG context can only come from the current app's bound knowledge base.
 - Cross-app, cross-user, and cross-knowledge-base retrieval are forbidden.
 - User-facing responses must never return complete internal prompts.
@@ -107,6 +108,7 @@ The request body is limited to `request_log_output_capture_enabled: boolean`. Th
 | Contract | Required behavior |
 |----------|-------------------|
 | API key boundary | Gateway auth resolves `app_id`, `user_id`, and `api_key_id`; downstream logic uses that context. |
+| API key cost boundary | Runtime rate-limit/quota counters are scoped by `api_key_id` only. Redis keys, logs, and errors must never include plaintext app keys, key hashes, key prefixes, prompts, request bodies, or upstream keys. |
 | Admin auth boundary | Admin APIs require `Authorization: Bearer <admin-jwt>`; `/v1/*` app API key auth must not accept admin JWTs, and `/api/admin/**` must not accept app API keys as admin credentials. |
 | Knowledge-base boundary | Retrieval only uses the app-bound KB and same user. |
 | SQL boundary | Vector retrieval filters tenant/KB in SQL, not after Java ranking. |
@@ -122,6 +124,9 @@ The request body is limited to `request_log_output_capture_enabled: boolean`. Th
 | Scenario | Expected behavior | Assertion point |
 |----------|-------------------|-----------------|
 | Admin API missing, non-Bearer, invalid, or expired JWT | 401 `UNAUTHORIZED`; no admin auth context set; no controller business method runs | `AdminAuthFilterTest`, admin controller tests |
+| App API key exceeds rate/token limit | 429 OpenAI-compatible `rate_limit_exceeded`; no retrieval, embedding, or upstream call; safe request log only | `OpenAiChatCompletionsControllerTest`, `ApiKeyRateLimitServiceTest` |
+| Redis limiter is unavailable | 500 OpenAI-compatible `internal_error`; no silent bypass and no sensitive values in response | `ApiKeyRateLimitServiceTest`, controller test |
+| Invalid chat payload under valid app key | 400 `invalid_request`; limiter is not called and quota is not consumed | `OpenAiChatCompletionsControllerTest` |
 | App key for app A tries to retrieve app B KB | No chunks returned; request fails according to binding/readiness contract | Retrieval/service test |
 | Admin user guesses another user's app or KB ID | 403/404 according to admin contract; no data leak | Controller/service test |
 | Request-log detail requested cross-user | 403 `FORBIDDEN`; no log row returned | Request-log API test |

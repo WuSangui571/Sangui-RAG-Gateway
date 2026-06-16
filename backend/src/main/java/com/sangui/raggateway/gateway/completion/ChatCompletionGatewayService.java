@@ -219,7 +219,7 @@ public class ChatCompletionGatewayService {
         );
     }
 
-    void validateRequest(OpenAiChatCompletionRequest request) {
+    public void validateRequest(OpenAiChatCompletionRequest request) {
         if (request == null) {
             logValidationFailed(null);
             throw new GatewayException(ERR_MESSAGE_EMPTY_MESSAGES, ERR_TYPE, ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);

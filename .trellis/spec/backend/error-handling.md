@@ -60,10 +60,19 @@ The controller reuses `GatewayRequestContextHolder`; it does not re-authenticate
 - **400** `invalid_request` for malformed JSON, null body, missing/empty `messages`, missing `role`, unsupported role, missing `content`, or `stream=true`.
 - **401** `invalid_api_key` for authentication failures from `GatewayAuthFilter`; a defensive missing-context guard may return the same shape but must not parse or validate tokens in the controller.
 - **409** `model_config_not_ready` when the authenticated app has no enabled default model config, no encrypted upstream key, or an undecryptable upstream key.
+- **429** `rate_limit_exceeded` when the authenticated app API key exceeds request or token limits. The response must use `type=rate_limit_error`, `code=rate_limit_exceeded`, and message `Rate limit exceeded for this API key.`.
 - **502** `upstream_error` for upstream non-2xx, network errors, or invalid upstream success bodies.
 - **504** `upstream_timeout` for upstream timeout.
+- **500** `internal_error` with OpenAI-compatible shape when the Redis rate-limit service is unavailable. Do not silently bypass rate limits.
 
 Gateway chat errors must not expose raw request messages, authorization headers, plaintext upstream keys, encrypted upstream keys, provider error bodies, or stack traces.
+
+Rate-limit validation order:
+
+- Malformed JSON and invalid chat payloads must fail before limiter reservation, so invalid requests do not consume quota.
+- Auth failures are handled by `GatewayAuthFilter` and must not call the limiter.
+- Authenticated 429 failures should persist a safe request-log row with `status=failure` and `error_code=rate_limit_exceeded`.
+- Redis limiter failures should persist a safe request-log row when the request reached the controller boundary, then return OpenAI-compatible `500 internal_error`.
 
 ## Gateway HTTP Status Mapping
 

@@ -241,9 +241,13 @@ app_id
 limit_type
 window
 request_id
+user_id
+error_code
 ```
 
-Do not log the raw key.
+For `/v1/chat/completions`, the completed request log for rate-limit rejection must use `status=failure` and `error_code=rate_limit_exceeded`. Redis limiter failures must log only safe IDs and error class metadata.
+
+Do not log the raw key, key hash, key prefix, authorization header, prompt/messages, provider key, provider raw body, Redis internal key values containing anything except `api_key_id`, or stack traces in client responses.
 
 ## Metrics
 

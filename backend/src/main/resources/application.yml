@@ -27,6 +27,13 @@ rag:
       default-max-context-chunks: ${RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS:5}
       default-max-context-chars: ${RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHARS:12000}
       default-max-single-chunk-chars: ${RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS:3000}
+    api-key-limits:
+      enabled: ${RAG_API_KEY_LIMITS_ENABLED:true}
+      default-requests-per-minute: ${RAG_API_KEY_LIMITS_DEFAULT_REQUESTS_PER_MINUTE:60}
+      default-tokens-per-minute: ${RAG_API_KEY_LIMITS_DEFAULT_TOKENS_PER_MINUTE:60000}
+      default-daily-request-quota: ${RAG_API_KEY_LIMITS_DEFAULT_DAILY_REQUEST_QUOTA:1000}
+      default-daily-token-quota: ${RAG_API_KEY_LIMITS_DEFAULT_DAILY_TOKEN_QUOTA:1000000}
+      default-completion-token-reservation: ${RAG_API_KEY_LIMITS_DEFAULT_COMPLETION_TOKEN_RESERVATION:1024}
   admin-auth:
     jwt-expiration-seconds: ${RAG_ADMIN_AUTH_JWT_EXPIRATION_SECONDS:86400}
   request-log:

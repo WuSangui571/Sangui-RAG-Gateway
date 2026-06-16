@@ -895,6 +895,12 @@ npm run build
 | `RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS` | `5` | Max chunks in RAG context |
 | `RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHARS` | `12000` | Max characters in RAG context |
 | `RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS` | `3000` | Max characters per chunk in context |
+| `RAG_API_KEY_LIMITS_ENABLED` | `true` | Enable API-key scoped gateway rate limits |
+| `RAG_API_KEY_LIMITS_DEFAULT_REQUESTS_PER_MINUTE` | `60` | Default requests per minute per API key |
+| `RAG_API_KEY_LIMITS_DEFAULT_TOKENS_PER_MINUTE` | `60000` | Default estimated tokens per minute per API key |
+| `RAG_API_KEY_LIMITS_DEFAULT_DAILY_REQUEST_QUOTA` | `1000` | Default daily request quota per API key |
+| `RAG_API_KEY_LIMITS_DEFAULT_DAILY_TOKEN_QUOTA` | `1000000` | Default daily estimated token quota per API key |
+| `RAG_API_KEY_LIMITS_DEFAULT_COMPLETION_TOKEN_RESERVATION` | `1024` | Completion token reservation when `max_tokens` is omitted |
 
 Inside Docker Compose, the backend service automatically uses `postgres` and `redis` as hostnames. The `.env.example` contains safe local development defaults. For deployment, override secrets through environment variables or a deployment `.env` file.
 

@@ -1,0 +1,24 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-15-api-key-rate-limit-quota\\prd.md", "reason": "Task PRD with API contract, error matrix, scope boundaries, and tests"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project API key, rate limit, gateway, Redis, and security product boundary"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend package ownership and layering for apikey/gateway/common/log modules"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "API key schema, Redis role, migrations, tenant and key storage rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "OpenAI-compatible 429 rate_limit_exceeded and gateway/auth error shapes"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe rate-limit logging fields and forbidden prompt/key/provider content"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend validation, regression tests, and forbidden patterns"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Pre-upstream guardrail, safe failure behavior, and request-log failure rules"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "API key boundary, secret-safe Redis/log/error behavior"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API/DB/Redis/security checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Search and reuse before adding limiter/auth abstractions"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Conditional Admin API/frontend DTO alignment if productized"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Existing app API key auth filter and context setup pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayRequestContext.java", "reason": "Safe per-request app/user/apiKey/requestId context fields"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyEntity.java", "reason": "Existing API key entity to extend or use for policy fields"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyService.java", "reason": "Existing API key validation, create, and last_used update service"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Current request_id, streaming/non-streaming, request-log, and GatewayException boundary"}
+{"file": "backend\\src\\main\\resources\\application.yml", "reason": "Existing rag.gateway property namespace and Redis-capable config surface"}
+{"file": "backend\\src\\test\\resources\\application-test.yml", "reason": "Test profile excludes Redis auto-config; limiter tests need mocks/fakes"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilterTest.java", "reason": "Auth regression and no-secret OpenAI error assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsControllerTest.java", "reason": "Controller OpenAI-compatible response and request-log assertion patterns"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyServiceTest.java", "reason": "API key service validation and mutation test style"}

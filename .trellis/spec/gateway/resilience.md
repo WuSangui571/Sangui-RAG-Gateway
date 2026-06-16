@@ -23,6 +23,8 @@ This task only records the spec. It does not implement retry, fallback, circuit 
 - Upstream errors must not become uncontrolled generic `500` responses.
 - Public gateway errors must use the OpenAI-compatible error shape.
 - Request logs must record upstream error or timeout status when the request reaches the logging boundary.
+- API-key rate limiting is a pre-upstream guardrail for `POST /v1/chat/completions`; rejected requests must not call retrieval, embedding, or upstream chat.
+- Redis rate-limit outages must fail visibly with an OpenAI-compatible gateway error. They must not silently bypass enforcement.
 - Logs must never print complete upstream API keys, app API keys, authorization headers, full prompts, full documents, vectors, provider raw bodies, or stack traces in client responses.
 - Embedding failure during ingestion must put the document into `FAILED` or an explicit retryable state, not `READY`.
 - Chat upstream failure must persist a safe failure summary in request logs where feasible.
@@ -50,6 +52,7 @@ upstream_timeout
 embedding_failed
 knowledge_base_not_ready
 model_config_not_ready
+rate_limit_exceeded
 internal_error
 ```
 
@@ -83,6 +86,8 @@ hit_chunk_ids
 | Request log | Persist safe failure status and error code when the controller/logging boundary is reached. |
 | Secret safety | Logs and responses omit keys, raw provider bodies, full prompts, documents, vectors, and stack traces. |
 | Ingestion status | Embedding failures cannot be silently swallowed or marked ready. |
+| Rate-limit preflight | Valid chat payloads are checked against API-key limits before embedding/retrieval/upstream calls. |
+| Rate-limit reservation | Request counters count accepted attempts; token counters reserve estimated tokens before upstream work and reconcile or release explicitly. |
 
 ## 5. Validation & Error Matrix
 
@@ -93,6 +98,9 @@ hit_chunk_ids
 | Upstream network failure | 502 | `upstream_error` | Safe message and log exception class only |
 | Upstream malformed success body | 502 | `upstream_error` | No provider body in response/log |
 | Embedding timeout or provider failure | 502 or document `FAILED` | `embedding_failed` | No upstream chat call for query embedding failure |
+| API key request/token limit exceeded | 429 | `rate_limit_exceeded` | OpenAI-compatible JSON, safe request log, no upstream/retrieval call |
+| Redis limiter unavailable | 500 | `internal_error` | OpenAI-compatible JSON, safe request log where possible, no silent pass-through |
+| Invalid chat payload | 400 | `invalid_request` | Validate before limiter; no quota consumed |
 | Request log insert failure | Gateway response unchanged | n/a | Log safe request ID and exception class only |
 | Client disconnect during stream | stream closes | n/a | Cancel upstream and log as cancellation, not internal error |
 

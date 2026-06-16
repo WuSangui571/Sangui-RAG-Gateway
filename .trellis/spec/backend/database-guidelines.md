@@ -198,8 +198,42 @@ backend/src/main/resources/db/migration/V2__create_app_api_key_tables.sql
 | `expires_at` | `TIMESTAMP` | no | `NULL` means no expiry. |
 | `last_used_at` | `TIMESTAMP` | no | Updated after successful `/v1/*` authentication. |
 | `revoked_at` | `TIMESTAMP` | no | Set when revoke behavior is implemented. |
+| `requests_per_minute` | `INTEGER` | no | Added by `V13__add_api_key_rate_limit_quota.sql`. Null means use `rag.gateway.api-key-limits.default-requests-per-minute`; positive values override the default. |
+| `tokens_per_minute` | `INTEGER` | no | Added by `V13__add_api_key_rate_limit_quota.sql`. Null means use `rag.gateway.api-key-limits.default-tokens-per-minute`; positive values override the default. |
+| `daily_request_quota` | `INTEGER` | no | Added by `V13__add_api_key_rate_limit_quota.sql`. Null means use `rag.gateway.api-key-limits.default-daily-request-quota`; positive values override the default. |
+| `daily_token_quota` | `INTEGER` | no | Added by `V13__add_api_key_rate_limit_quota.sql`. Null means use `rag.gateway.api-key-limits.default-daily-token-quota`; positive values override the default. |
 | `created_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`. |
 | `updated_at` | `TIMESTAMP` | yes | Defaults to `CURRENT_TIMESTAMP`; services must update it when mutating the row. |
+
+API key limit configuration:
+
+```yaml
+rag:
+  gateway:
+    api-key-limits:
+      enabled: true
+      default-requests-per-minute: 60
+      default-tokens-per-minute: 60000
+      default-daily-request-quota: 1000
+      default-daily-token-quota: 1000000
+      default-completion-token-reservation: 1024
+```
+
+Validation contract:
+
+- All configured default limits and the default completion reservation must be `>= 1`; invalid values must fail startup through configuration validation.
+- Existing keys with null limit columns are still protected by configured defaults.
+- `ApiKeyRateLimitService` must use `api_key_id` only in Redis keys. It must never use plaintext keys, key hashes, key prefixes, prompts, messages, provider keys, or request bodies.
+- The Admin API/frontend productized edit path for these four fields is deferred; until that path exists, values may be managed by SQL/manual seed while runtime enforcement still applies.
+
+Redis counter keys:
+
+```text
+rag:api-key-limit:{apiKeyId}:rpm:{yyyyMMddHHmm}
+rag:api-key-limit:{apiKeyId}:tpm:{yyyyMMddHHmm}
+rag:api-key-limit:{apiKeyId}:daily-requests:{yyyyMMdd}
+rag:api-key-limit:{apiKeyId}:daily-tokens:{yyyyMMdd}
+```
 
 ### Implemented Admin User Baseline
 
@@ -268,6 +302,10 @@ Validation cases:
 | Lookup by key hash | Unique lookup returns at most one row | Unique index exists or mapper/service behavior is covered. |
 | Successful auth metadata update | `last_used_at` and `updated_at` move together | `ApiKeyServiceTest` or persistence test. |
 | Invalid status literal | Must fail service validation unless application enum explicitly accepts it | `isValid` test for non-`ACTIVE` status. |
+| Null API key limit fields | Runtime limiter uses explicit configured defaults | `ApiKeyRateLimitServiceTest`. |
+| Non-positive configured defaults | Startup/configuration validation fails visibly | `ApiKeyRateLimitServiceTest` or Spring binding validation test. |
+| Redis limiter rejection | Lua check rejects without incrementing counters for the rejected attempt | `ApiKeyRateLimitServiceTest` or Redis integration test. |
+| Token reservation reconciliation | Reconciliation/release adjusts the same minute/day windows that received the preflight reservation | `ApiKeyRateLimitServiceTest` and controller tests. |
 
 Run these checks after changing this schema or the matching services:
 
@@ -275,6 +313,7 @@ Run these checks after changing this schema or the matching services:
 cd backend
 mvn -q -DskipTests compile
 mvn -q "-Dtest=ApiKeyGeneratorTest,ApiKeyHasherTest,ApiKeyServiceTest,GatewayAuthFilterTest" test
+mvn -q "-Dtest=ApiKeyRateLimitServiceTest,OpenAiChatCompletionsControllerTest" test
 mvn test
 ```
 

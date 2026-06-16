@@ -1,7 +1,10 @@
 package com.sangui.raggateway.gateway.openai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sangui.raggateway.apikey.ApiKeyRateLimitResult;
+import com.sangui.raggateway.apikey.ApiKeyRateLimitService;
 import com.sangui.raggateway.app.AppService;
+import com.sangui.raggateway.common.config.ApiKeyLimitProperties;
 import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
@@ -32,8 +35,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -57,6 +64,12 @@ class OpenAiChatCompletionsControllerTest {
     @Mock
     private OutputCapturePolicy outputCapturePolicy;
 
+    @Mock
+    private ApiKeyRateLimitService rateLimitService;
+
+    @Mock
+    private ApiKeyLimitProperties rateLimitProperties;
+
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private MockMvc mockMvc;
@@ -69,7 +82,7 @@ class OpenAiChatCompletionsControllerTest {
     void setUp() {
         OpenAiChatCompletionsController controller = new OpenAiChatCompletionsController(
                 chatCompletionGatewayService, apiRequestLogService, upstreamClient, objectMapper,
-                appService, outputCapturePolicy);
+                appService, outputCapturePolicy, rateLimitService, rateLimitProperties);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -493,5 +506,183 @@ class OpenAiChatCompletionsControllerTest {
                 .andExpect(jsonPath("$.error.code").value("invalid_api_key"))
                 .andExpect(jsonPath("$.error.type").value("invalid_request_error"))
                 .andExpect(jsonPath("$.code").doesNotExist());
+    }
+
+    @Test
+    void shouldReturn429WhenRateLimitExceeded() throws Exception {
+        setContext();
+        when(rateLimitProperties.isEnabled()).thenReturn(true);
+        when(rateLimitService.checkAndReserve(any(), anyInt(), any()))
+                .thenReturn(ApiKeyRateLimitResult.rejected("rpm", 0, 60000, 30L));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.error.code").value("rate_limit_exceeded"))
+                .andExpect(jsonPath("$.error.type").value("rate_limit_error"))
+                .andExpect(jsonPath("$.error.message").value("Rate limit exceeded for this API key."))
+                .andExpect(jsonPath("$.code").doesNotExist())
+                .andExpect(jsonPath("$.message").doesNotExist())
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
+                ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
+        verify(apiRequestLogService).record(captor.capture());
+        com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
+        assertThat(command.getStatus()).isEqualTo("failure");
+        assertThat(command.getErrorCode()).isEqualTo("rate_limit_exceeded");
+        assertThat(command.getUserId()).isEqualTo(USER_ID);
+        assertThat(command.getAppId()).isEqualTo(APP_ID);
+        assertThat(command.getApiKeyId()).isEqualTo(API_KEY_ID);
+    }
+
+    @Test
+    void shouldNotCallUpstreamWhenRateLimited() throws Exception {
+        setContext();
+        when(rateLimitProperties.isEnabled()).thenReturn(true);
+        when(rateLimitService.checkAndReserve(any(), anyInt(), any()))
+                .thenReturn(ApiKeyRateLimitResult.rejected("tpm", 60, 0, 30L));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isTooManyRequests());
+
+        verify(chatCompletionGatewayService, never()).processChatCompletion(any());
+    }
+
+    @Test
+    void shouldProceedWhenRateLimitAllowed() throws Exception {
+        setContext();
+        when(rateLimitProperties.isEnabled()).thenReturn(true);
+        when(rateLimitService.checkAndReserve(any(), anyInt(), any()))
+                .thenReturn(ApiKeyRateLimitResult.allowed(59, 59900));
+        when(chatCompletionGatewayService.processChatCompletion(any())).thenReturn(createSuccessResult());
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        verify(rateLimitService).reconcileTokens(eq(API_KEY_ID), any(ApiKeyRateLimitResult.class), eq(2));
+    }
+
+    @Test
+    void shouldReleaseReservationOnUpstreamFailure() throws Exception {
+        setContext();
+        when(rateLimitProperties.isEnabled()).thenReturn(true);
+        when(rateLimitService.checkAndReserve(any(), anyInt(), any()))
+                .thenReturn(ApiKeyRateLimitResult.allowed(59, 59900));
+        when(chatCompletionGatewayService.processChatCompletion(any()))
+                .thenThrow(new GatewayException("Upstream service is unavailable",
+                        "server_error", "upstream_error", org.springframework.http.HttpStatus.BAD_GATEWAY));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isBadGateway());
+
+        verify(rateLimitService).releaseReservation(eq(API_KEY_ID), any(ApiKeyRateLimitResult.class));
+    }
+
+    @Test
+    void shouldValidateBeforeRateLimit() throws Exception {
+        setContext();
+        doThrow(new GatewayException("messages must be a non-empty array.",
+                "invalid_request_error", "invalid_request", HttpStatus.BAD_REQUEST))
+                .when(chatCompletionGatewayService).validateRequest(any(OpenAiChatCompletionRequest.class));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": []
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("invalid_request"));
+
+        verify(rateLimitService, never()).checkAndReserve(any(), anyInt(), any());
+        ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
+                ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
+        verify(apiRequestLogService).record(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo("failure");
+        assertThat(captor.getValue().getErrorCode()).isEqualTo("invalid_request");
+    }
+
+    @Test
+    void shouldSkipRateLimitWhenDisabled() throws Exception {
+        setContext();
+        when(rateLimitProperties.isEnabled()).thenReturn(false);
+        when(chatCompletionGatewayService.processChatCompletion(any())).thenReturn(createSuccessResult());
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        verify(rateLimitService, never()).checkAndReserve(any(), anyInt(), any());
+    }
+
+    @Test
+    void shouldNotExposeInternalDetailsInRateLimitResponse() throws Exception {
+        setContext();
+        when(rateLimitProperties.isEnabled()).thenReturn(true);
+        when(rateLimitService.checkAndReserve(any(), anyInt(), any()))
+                .thenReturn(ApiKeyRateLimitResult.rejected("daily_requests", 0, 100000, 3600L));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(content().string(not(containsString("sk-"))))
+                .andExpect(content().string(not(containsString("api_key"))))
+                .andExpect(content().string(not(containsString("Exception"))))
+                .andExpect(content().string(not(containsString("java."))))
+                .andExpect(content().string(not(containsString("redis"))));
     }
 }

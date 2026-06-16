@@ -54,6 +54,19 @@ Before completing backend work, verify:
 - [ ] Request logs avoid full prompts and document content.
 - [ ] New database fields have migration notes and indexes where needed.
 - [ ] Tests cover both success and relevant failure paths.
+- [ ] API-key rate limits validate request payloads before quota reservation, so malformed or invalid requests do not consume quota.
+- [ ] Redis limiter failures are visible OpenAI-compatible failures, not silent bypasses or admin-envelope responses.
+- [ ] Token reservation reconciliation and release use the same minute/day Redis windows as the preflight reservation.
+
+API key rate-limit regression checks:
+
+```bash
+cd backend
+mvn -q "-Dtest=ApiKeyServiceTest,GatewayAuthFilterTest,ApiKeyRateLimitServiceTest" test
+mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test
+mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test
+mvn -q -DskipTests compile
+```
 
 ## RAG Pipeline Quality
 

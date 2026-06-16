@@ -21,6 +21,10 @@ public class ApiKeyEntity {
     private LocalDateTime lastUsedAt;
     private LocalDateTime revokedAt;
     private LocalDateTime createdAt;
+    private Integer requestsPerMinute;
+    private Integer tokensPerMinute;
+    private Integer dailyRequestQuota;
+    private Integer dailyTokenQuota;
     private LocalDateTime updatedAt;
 
     public Long getId() {
@@ -113,6 +117,38 @@ public class ApiKeyEntity {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Integer getRequestsPerMinute() {
+        return requestsPerMinute;
+    }
+
+    public void setRequestsPerMinute(Integer requestsPerMinute) {
+        this.requestsPerMinute = requestsPerMinute;
+    }
+
+    public Integer getTokensPerMinute() {
+        return tokensPerMinute;
+    }
+
+    public void setTokensPerMinute(Integer tokensPerMinute) {
+        this.tokensPerMinute = tokensPerMinute;
+    }
+
+    public Integer getDailyRequestQuota() {
+        return dailyRequestQuota;
+    }
+
+    public void setDailyRequestQuota(Integer dailyRequestQuota) {
+        this.dailyRequestQuota = dailyRequestQuota;
+    }
+
+    public Integer getDailyTokenQuota() {
+        return dailyTokenQuota;
+    }
+
+    public void setDailyTokenQuota(Integer dailyTokenQuota) {
+        this.dailyTokenQuota = dailyTokenQuota;
     }
 
     public void setUpdatedAt(LocalDateTime updatedAt) {

@@ -1,8 +1,11 @@
 package com.sangui.raggateway.gateway.openai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sangui.raggateway.apikey.ApiKeyRateLimitResult;
+import com.sangui.raggateway.apikey.ApiKeyRateLimitService;
 import com.sangui.raggateway.app.AppEntity;
 import com.sangui.raggateway.app.AppService;
+import com.sangui.raggateway.common.config.ApiKeyLimitProperties;
 import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.response.OpenAiErrorResponse;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
@@ -42,19 +45,25 @@ public class OpenAiChatCompletionsController {
     private final ObjectMapper objectMapper;
     private final AppService appService;
     private final OutputCapturePolicy outputCapturePolicy;
+    private final ApiKeyRateLimitService rateLimitService;
+    private final ApiKeyLimitProperties rateLimitProperties;
 
     public OpenAiChatCompletionsController(ChatCompletionGatewayService chatCompletionGatewayService,
                                            ApiRequestLogService apiRequestLogService,
                                            OpenAiCompatibleUpstreamClient upstreamClient,
                                            ObjectMapper objectMapper,
                                            AppService appService,
-                                           OutputCapturePolicy outputCapturePolicy) {
+                                           OutputCapturePolicy outputCapturePolicy,
+                                           ApiKeyRateLimitService rateLimitService,
+                                           ApiKeyLimitProperties rateLimitProperties) {
         this.chatCompletionGatewayService = chatCompletionGatewayService;
         this.apiRequestLogService = apiRequestLogService;
         this.upstreamClient = upstreamClient;
         this.objectMapper = objectMapper;
         this.appService = appService;
         this.outputCapturePolicy = outputCapturePolicy;
+        this.rateLimitService = rateLimitService;
+        this.rateLimitProperties = rateLimitProperties;
     }
 
     @PostMapping("/v1/chat/completions")
@@ -70,13 +79,60 @@ public class OpenAiChatCompletionsController {
         int messagesCount = request != null && request.getMessages() != null ? request.getMessages().size() : 0;
         long start = System.currentTimeMillis();
 
+        try {
+            chatCompletionGatewayService.validateRequest(request);
+        } catch (GatewayException e) {
+            recordGatewayFailure(context, requestId, messagesCount, start, e);
+            throw e;
+        }
+
         if (Boolean.TRUE.equals(request.getStream())) {
             return handleStreamCompletion(request, context, requestId, messagesCount, start);
+        }
+
+        int messagesChars = computeMessagesCharCount(request);
+        ApiKeyRateLimitResult reservation = null;
+        if (rateLimitProperties.isEnabled()) {
+            ApiKeyRateLimitResult limitResult;
+            try {
+                limitResult = rateLimitService.checkAndReserve(
+                        context.getApiKeyId(), messagesChars, request.getMaxTokens());
+            } catch (GatewayException e) {
+                recordGatewayFailure(context, requestId, messagesCount, start, e);
+                throw e;
+            }
+            if (!limitResult.isAllowed()) {
+                long latencyMs = System.currentTimeMillis() - start;
+                log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=failure error_code=rate_limit_exceeded limit_type={} messages_count={} latency_ms={}",
+                        requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
+                        limitResult.getLimitType(), messagesCount, latencyMs);
+
+                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                        .requestId(requestId)
+                        .userId(context.getUserId())
+                        .appId(context.getAppId())
+                        .apiKeyId(context.getApiKeyId())
+                        .status("failure")
+                        .errorCode("rate_limit_exceeded")
+                        .latencyMs(latencyMs)
+                        .messagesCount(messagesCount)
+                        .outputCaptureStatus(outputCapturePolicy.getDisabledStatus())
+                        .build());
+
+                throw new GatewayException("Rate limit exceeded for this API key.",
+                        "rate_limit_error", "rate_limit_exceeded", HttpStatus.TOO_MANY_REQUESTS);
+            }
+            reservation = limitResult;
         }
 
         try {
             ChatCompletionResult result = chatCompletionGatewayService.processChatCompletion(request);
             long latencyMs = System.currentTimeMillis() - start;
+
+            if (reservation != null && result.getTotalTokens() != null) {
+                rateLimitService.reconcileTokens(context.getApiKeyId(), reservation, result.getTotalTokens());
+            }
+
             log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=success messages_count={} latency_ms={}",
                     requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
                     messagesCount, latencyMs);
@@ -112,6 +168,10 @@ public class OpenAiChatCompletionsController {
             return ResponseEntity.ok(result.getResponse());
         } catch (GatewayException e) {
             long latencyMs = System.currentTimeMillis() - start;
+            if (reservation != null) {
+                rateLimitService.releaseReservation(context.getApiKeyId(), reservation);
+            }
+
             log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=failure error_code={} messages_count={} latency_ms={}",
                     requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
                     e.getCode(), messagesCount, latencyMs);
@@ -135,10 +195,48 @@ public class OpenAiChatCompletionsController {
     private SseEmitter handleStreamCompletion(OpenAiChatCompletionRequest request,
                                                GatewayRequestContext context,
                                                String requestId, int messagesCount, long start) {
+        int messagesChars = computeMessagesCharCount(request);
+        ApiKeyRateLimitResult reservation = null;
+        if (rateLimitProperties.isEnabled()) {
+            ApiKeyRateLimitResult limitResult;
+            try {
+                limitResult = rateLimitService.checkAndReserve(
+                        context.getApiKeyId(), messagesChars, request.getMaxTokens());
+            } catch (GatewayException e) {
+                recordGatewayFailure(context, requestId, messagesCount, start, e);
+                throw e;
+            }
+            if (!limitResult.isAllowed()) {
+                long latencyMs = System.currentTimeMillis() - start;
+                log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=failure error_code=rate_limit_exceeded limit_type={} messages_count={} latency_ms={}",
+                        requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
+                        limitResult.getLimitType(), messagesCount, latencyMs);
+
+                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                        .requestId(requestId)
+                        .userId(context.getUserId())
+                        .appId(context.getAppId())
+                        .apiKeyId(context.getApiKeyId())
+                        .status("failure")
+                        .errorCode("rate_limit_exceeded")
+                        .latencyMs(latencyMs)
+                        .messagesCount(messagesCount)
+                        .outputCaptureStatus(outputCapturePolicy.getDisabledStatus())
+                        .build());
+
+                throw new GatewayException("Rate limit exceeded for this API key.",
+                        "rate_limit_error", "rate_limit_exceeded", HttpStatus.TOO_MANY_REQUESTS);
+            }
+            reservation = limitResult;
+        }
+
         ChatCompletionStreamPreparation prep;
         try {
             prep = chatCompletionGatewayService.prepareStreamCompletion(request);
         } catch (GatewayException e) {
+            if (reservation != null) {
+                rateLimitService.releaseReservation(context.getApiKeyId(), reservation);
+            }
             long latencyMs = System.currentTimeMillis() - start;
             log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=failure error_code={} messages_count={} latency_ms={}",
                     requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
@@ -262,7 +360,7 @@ public class OpenAiChatCompletionsController {
         });
 
         waitForStreamReady(streamReady, context, requestId, messagesCount, start, model, providerName,
-                prep.getQuestionSummary(), prep.getHitChunkIds());
+                prep.getQuestionSummary(), prep.getHitChunkIds(), reservation);
         return emitter;
     }
 
@@ -274,7 +372,8 @@ public class OpenAiChatCompletionsController {
                                     String model,
                                     String providerName,
                                     String questionSummary,
-                                    String hitChunkIds) {
+                                    String hitChunkIds,
+                                    ApiKeyRateLimitResult reservation) {
         try {
             streamReady.join();
         } catch (CompletionException e) {
@@ -290,6 +389,10 @@ public class OpenAiChatCompletionsController {
                         HttpStatus.BAD_GATEWAY,
                         cause
                 );
+            }
+
+            if (reservation != null) {
+                rateLimitService.releaseReservation(context.getApiKeyId(), reservation);
             }
 
             long latencyMs = System.currentTimeMillis() - start;
@@ -317,6 +420,26 @@ public class OpenAiChatCompletionsController {
         }
     }
 
+    private void recordGatewayFailure(GatewayRequestContext context, String requestId, int messagesCount,
+                                      long start, GatewayException e) {
+        long latencyMs = System.currentTimeMillis() - start;
+        log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=failure error_code={} messages_count={} latency_ms={}",
+                requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
+                e.getCode(), messagesCount, latencyMs);
+
+        apiRequestLogService.record(CreateRequestLogCommand.builder()
+                .requestId(requestId)
+                .userId(context.getUserId())
+                .appId(context.getAppId())
+                .apiKeyId(context.getApiKeyId())
+                .status("failure")
+                .errorCode(e.getCode())
+                .latencyMs(latencyMs)
+                .messagesCount(messagesCount)
+                .outputCaptureStatus(outputCapturePolicy.getDisabledStatus())
+                .build());
+    }
+
     private void sendSseError(SseEmitter emitter, String message, String type, String code) {
         try {
             OpenAiErrorResponse errorResponse = OpenAiErrorResponse.of(message, type, code);
@@ -328,6 +451,19 @@ public class OpenAiChatCompletionsController {
             emitter.complete();
         } catch (Exception ignored) {
         }
+    }
+
+    private int computeMessagesCharCount(OpenAiChatCompletionRequest request) {
+        if (request == null || request.getMessages() == null) {
+            return 0;
+        }
+        int total = 0;
+        for (var msg : request.getMessages()) {
+            if (msg != null && msg.getContent() != null) {
+                total += msg.getContent().length();
+            }
+        }
+        return total;
     }
 
     private OutputCapturePolicy.OutputCaptureResult resolveCaptureResult(Long appId,
