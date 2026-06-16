@@ -1553,3 +1553,54 @@ Implemented API-key scoped Redis-backed request and token limits for /v1/chat/co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 60: Production Config Guardrails
+
+**Date**: 2026-06-16
+**Task**: Production Config Guardrails
+**Branch**: `feature/production-config-guardrails`
+
+### Summary
+
+Recorded the completed Production Config Guardrails task after manual testing
+and commit `c1563b8c`. The work added startup-time production guardrails for
+dangerous local defaults, plus deployment/spec documentation for the new
+acknowledgement switches.
+
+### Main Changes
+
+| Item | Details |
+|---|---|
+| Commit | `c1563b8c feat:production config guardrails` |
+| Main modules | Backend startup config guard, deployment environment contract, Trellis/README config documentation |
+| Core implementation | Added `ProductionConfigGuard` and `ProductionGuardProperties`. The guard applies to `prod` / `production` profiles and rejects weak gateway secrets, local datasource defaults, local Redis defaults, unacknowledged local file storage, unacknowledged output capture, and incompatible `prod,dev` / `production,test` profile combinations. |
+| Codex check fixes | Switched profile detection to `Environment.getActiveProfiles()`, added coverage for profiles activated through the Spring environment, passed the two new `RAG_PRODUCTION_ALLOW_*` variables through `deploy/docker-compose.yml`, and documented the executable contract in README and `.trellis/spec/sangui-rag-gateway.md`. |
+| Updated files | `.env.example`; `.trellis/spec/sangui-rag-gateway.md`; `README.md`; `backend/src/main/resources/application.yml`; `deploy/docker-compose.yml`; `backend/src/main/java/com/sangui/raggateway/common/config/ProductionConfigGuard.java`; `backend/src/main/java/com/sangui/raggateway/common/config/ProductionGuardProperties.java`; `backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java` |
+| Validation | `mvn -q "-Dtest=ProductionConfigGuardTest,ProductionContextSmokeTest" test` passed; `mvn -q "-Dtest=ProductionConfigGuardTest,RequestLogOutputCleanupSchedulerTest" test` passed; `mvn -q -DskipTests compile` passed; `mvn -q test` passed with 630 tests, 0 failures, 0 errors, 0 skipped; `git diff --check` clean except line-ending warnings; `docker compose --env-file .env.example -f deploy/docker-compose.yml config` passed and rendered both production acknowledgement env vars. |
+| Result | Production Config Guardrails passed manual testing, was committed, and the Trellis task was archived. |
+| Boundary | No API, database, frontend payload, object storage, secret manager, rate-limit runtime, or request-log preview behavior changes. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c1563b8c` | (see git log) |
+
+### Testing
+
+- [OK] `mvn -q "-Dtest=ProductionConfigGuardTest,ProductionContextSmokeTest" test`
+- [OK] `mvn -q "-Dtest=ProductionConfigGuardTest,RequestLogOutputCleanupSchedulerTest" test`
+- [OK] `mvn -q -DskipTests compile`
+- [OK] `mvn -q test` (630 tests, 0 failures, 0 errors, 0 skipped)
+- [OK] `git diff --check` (only line-ending warnings)
+- [OK] `docker compose --env-file .env.example -f deploy/docker-compose.yml config`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
