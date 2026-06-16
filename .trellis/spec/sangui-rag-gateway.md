@@ -2189,3 +2189,70 @@ Admin model-config creation accepts only `CHAT` or `EMBEDDING`. Split-provider r
 **Runtime evidence recording:** When committing demo acceptance evidence, use the durable [Runtime Evidence Checklist Template](../../docs/runtime-evidence-checklist.md). The current task also keeps a task-local review copy at `../tasks/06-10-demo-smoke-runtime-evidence-checklist-finalization/runtime-evidence-checklist.md`. The template records only safe metadata with `<redacted>` placeholders and Good/Base/Bad recording rules. The README contains the canonical comprehensive Safe Evidence Fields and Forbidden Output Fields lists that apply to all recordings.
 
 **Long-term rule:** README.md safe/forbidden field lists are the durable project rule. This spec rule describes the automation contract; the README defines the evidence contract that also applies to manual runs, task-local templates, and committed evidence.
+
+## Implemented Object Storage and File Lifecycle Baseline
+
+The document storage abstraction now supports deployment-level backend selection:
+
+```text
+backend/src/main/java/com/sangui/raggateway/document/storage/FileStorageService.java
+backend/src/main/java/com/sangui/raggateway/document/storage/LocalFileStorageService.java
+backend/src/main/java/com/sangui/raggateway/document/storage/ObjectFileStorageService.java
+backend/src/main/java/com/sangui/raggateway/document/config/StorageProperties.java
+backend/src/main/java/com/sangui/raggateway/document/config/DocumentConfig.java
+```
+
+Storage configuration:
+
+| Env var | Spring property | Contract |
+|---|---|---|
+| `FILE_STORAGE_TYPE` | `rag.gateway.storage.type` | Allowed values: `local`, `object`; default `local`; unknown values fail startup/config creation visibly. |
+| `FILE_STORAGE_LOCAL_PATH` | `rag.gateway.storage.local-path` | Local root for dev/test; never expose absolute paths in API responses. |
+| `FILE_STORAGE_OBJECT_ENDPOINT` | `rag.gateway.storage.object.endpoint` | Required when `type=object`; S3-compatible endpoint. |
+| `FILE_STORAGE_OBJECT_BUCKET` | `rag.gateway.storage.object.bucket` | Required when `type=object`; deployment metadata, not an API response field. |
+| `FILE_STORAGE_OBJECT_ACCESS_KEY` | `rag.gateway.storage.object.access-key` | Required when `type=object`; secret, never logged or returned. |
+| `FILE_STORAGE_OBJECT_SECRET_KEY` | `rag.gateway.storage.object.secret-key` | Required when `type=object`; secret, never logged or returned. |
+| `FILE_STORAGE_OBJECT_REGION` | `rag.gateway.storage.object.region` | Defaults deliberately to `us-east-1` when blank. |
+| `FILE_STORAGE_OBJECT_PATH_STYLE_ACCESS` | `rag.gateway.storage.object.path-style-access` | Defaults `true` for MinIO compatibility. |
+
+Storage contract:
+
+```java
+StoredFile save(String ownerType, Long ownerId, String originalFilename, InputStream inputStream);
+void delete(String storageKey);
+```
+
+- `save` returns an opaque logical storage key shaped like `knowledge/{knowledgeBaseId}/{uuid}/{safeName}`.
+- Duplicate uploads must create distinct UUID-based keys; filename overwrite and content deduplication are not implemented.
+- `delete` is idempotent for missing local files or S3 objects.
+- Cleanup failures are visible exceptions; callers must not silently report success.
+- Logs may include `storageKey`, document ID, KB ID, and size, but not credentials, signed URLs, absolute local paths, or file content.
+
+Admin delete APIs:
+
+```http
+DELETE /api/admin/documents/{documentId}
+DELETE /api/admin/knowledge-bases/{id}
+```
+
+Both use `Authorization: Bearer <admin-jwt>` and derive the owner from `AdminAuthContextHolder`. Missing resources return `404 NOT_FOUND`; cross-user resources return `403 FORBIDDEN`; KB deletion rejects app-bound knowledge bases with `409 KNOWLEDGE_BASE_IN_USE`. Successful document deletion removes storage, embeddings, chunks, and document row, then updates KB status to `EMPTY`, `READY`, or `FAILED`. Successful KB deletion checks app references, cleans every document storage key idempotently, removes embeddings/chunks/documents, and deletes the KB row.
+
+Production guard update:
+
+- `prod` with `rag.gateway.storage.type=object` is accepted without `rag.production-guard.allow-local-file-storage=true`.
+- `prod` with `rag.gateway.storage.type=local` still requires explicit local-storage acknowledgement.
+- Unknown storage type fails visibly.
+
+Required validation after changing this baseline:
+
+```bash
+cd backend
+mvn -q "-Dtest=LocalFileStorageServiceTest,ObjectFileStorageServiceTest,DocumentConfigTest" test
+mvn -q "-Dtest=DocumentServiceTest,DocumentAdminControllerTest" test
+mvn -q "-Dtest=KnowledgeBaseServiceTest,KnowledgeBaseAdminControllerTest" test
+mvn -q "-Dtest=ProductionConfigGuardTest,ProductionContextSmokeTest" test
+mvn -q -DskipTests compile
+mvn -q test
+git diff --check
+docker compose --env-file .env.example -f deploy/docker-compose.yml config
+```

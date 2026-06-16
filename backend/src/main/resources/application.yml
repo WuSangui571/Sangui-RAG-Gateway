@@ -17,6 +17,13 @@ rag:
     storage:
       type: ${FILE_STORAGE_TYPE:local}
       local-path: ${FILE_STORAGE_LOCAL_PATH:./data/uploads}
+      object:
+        endpoint: ${FILE_STORAGE_OBJECT_ENDPOINT:}
+        bucket: ${FILE_STORAGE_OBJECT_BUCKET:}
+        access-key: ${FILE_STORAGE_OBJECT_ACCESS_KEY:}
+        secret-key: ${FILE_STORAGE_OBJECT_SECRET_KEY:}
+        region: ${FILE_STORAGE_OBJECT_REGION:us-east-1}
+        path-style-access: ${FILE_STORAGE_OBJECT_PATH_STYLE_ACCESS:true}
     document:
       chunk-size: ${RAG_DOCUMENT_CHUNK_SIZE:800}
       chunk-overlap: ${RAG_DOCUMENT_CHUNK_OVERLAP:100}

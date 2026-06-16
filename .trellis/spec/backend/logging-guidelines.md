@@ -507,3 +507,51 @@ mvn -q "-Dtest=ApiRequestLogOutputServiceTest,OutputCapturePolicyTest" test
 mvn -q "-Dtest=RequestLogOutputCleanupSchedulerTest" test
 mvn -q "-Dtest=ApiRequestLogAdminControllerTest,OpenAiChatCompletionsControllerTest" test
 ```
+
+## Document Storage Lifecycle Logs
+
+Document storage save/delete logs may include only safe operational identifiers:
+
+```text
+storageKey
+document_id
+knowledge_base_id
+user_id
+size
+backend type
+cleanup result
+exception class
+```
+
+Forbidden in storage lifecycle logs:
+
+```text
+FILE_STORAGE_OBJECT_ACCESS_KEY
+FILE_STORAGE_OBJECT_SECRET_KEY
+object access key value
+object secret key value
+Authorization header
+signed URL
+absolute local filesystem path
+raw uploaded file content
+chunk content
+embedding vectors
+provider response body
+```
+
+Implemented log events:
+
+```text
+LocalFileStorageService: "File saved: storageKey={}, size={}"
+LocalFileStorageService: "File deleted: storageKey={}"
+LocalFileStorageService: "File already absent, cleanup complete: storageKey={}"
+ObjectFileStorageService: "ObjectFileStorageService initialized"
+ObjectFileStorageService: "File saved: storageKey={}, size={}"
+ObjectFileStorageService: "Object deleted: storageKey={}"
+ObjectFileStorageService: "Object already absent, cleanup complete: storageKey={}"
+DocumentService: "Document deleted: id={}, kbId={}, storageKey={}"
+DocumentService: "Document deleted in KB cleanup: id={}, kbId={}, storageKey={}"
+DocumentService: "Knowledge base deleted: id={}, userId={}"
+```
+
+Storage cleanup failures must be logged as failures and rethrown; do not convert them to success or silently continue.

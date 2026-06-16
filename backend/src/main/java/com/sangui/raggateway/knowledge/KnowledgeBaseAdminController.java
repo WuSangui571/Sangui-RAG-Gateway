@@ -3,6 +3,7 @@ package com.sangui.raggateway.knowledge;
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.response.ApiResponse;
 import com.sangui.raggateway.common.security.AdminAuthContextHolder;
+import com.sangui.raggateway.document.DocumentService;
 import com.sangui.raggateway.knowledge.dto.CreateKnowledgeBaseDTO;
 import com.sangui.raggateway.knowledge.vo.KnowledgeBaseVO;
 import org.slf4j.Logger;
@@ -21,9 +22,12 @@ public class KnowledgeBaseAdminController {
     private static final Logger log = LoggerFactory.getLogger(KnowledgeBaseAdminController.class);
 
     private final KnowledgeBaseService knowledgeBaseService;
+    private final DocumentService documentService;
 
-    public KnowledgeBaseAdminController(KnowledgeBaseService knowledgeBaseService) {
+    public KnowledgeBaseAdminController(KnowledgeBaseService knowledgeBaseService,
+                                         DocumentService documentService) {
         this.knowledgeBaseService = knowledgeBaseService;
+        this.documentService = documentService;
     }
 
     @PostMapping
@@ -62,6 +66,13 @@ public class KnowledgeBaseAdminController {
             throw new BusinessException("NOT_FOUND", "Knowledge base not found", HttpStatus.NOT_FOUND);
         }
         return ApiResponse.success(KnowledgeBaseVO.from(entity));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        Long userId = getRequiredUserId();
+        documentService.deleteKnowledgeBase(userId, id);
+        return ApiResponse.success(null);
     }
 
     private Long getRequiredUserId() {

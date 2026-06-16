@@ -159,3 +159,52 @@ The following are valid later enhancements, not V0.2 beta requirements:
 - Excel or CSV specialized parsing
 - Text-to-SQL or Table QA as separate extension capabilities
 - embedding fine-tuning after enough data and evaluation sets exist
+
+## 11. File Lifecycle and Explicit Deletion
+
+Original uploaded files are durable ingestion artifacts. Parse or embedding failure keeps the stored original and marks the document `FAILED`; cleanup happens only through explicit document or knowledge-base deletion.
+
+Storage abstraction:
+
+```java
+StoredFile save(String ownerType, Long ownerId, String originalFilename, InputStream inputStream);
+void delete(String storageKey);
+```
+
+Deletion flow:
+
+```text
+document delete
+  -> admin auth context
+  -> document ownership check
+  -> storage delete (idempotent missing file/object)
+  -> delete embeddings
+  -> delete chunks
+  -> delete document row
+  -> recalculate knowledge-base status
+```
+
+```text
+knowledge-base delete
+  -> admin auth context
+  -> knowledge-base ownership check
+  -> reject if same-user app references KB
+  -> for each document: storage delete, embeddings delete, chunks delete, document delete
+  -> delete knowledge-base row
+```
+
+Status after document delete:
+
+| Remaining documents | KB status |
+|---|---|
+| none | `EMPTY` |
+| at least one `READY` document | `READY` |
+| only failed/non-ready documents | `FAILED` |
+
+Good/base/bad cases:
+
+| Case | Expected result |
+|---|---|
+| Good | Deleting an owned document removes the stored original, vectors, chunks, and document row, and updates KB status from remaining documents. |
+| Base | Missing storage object/file is treated as cleanup-complete so retries can proceed after partial external cleanup. |
+| Bad | Cross-user delete attempts storage cleanup, storage cleanup failure reports success, or parse/embedding failure silently deletes the original before explicit deletion. |

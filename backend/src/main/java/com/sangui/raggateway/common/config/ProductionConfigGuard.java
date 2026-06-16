@@ -26,6 +26,8 @@ public class ProductionConfigGuard implements InitializingBean {
     private static final String DEFAULT_REDIS_PORT = "6379";
 
     private static final String LOCAL_STORAGE_TYPE = "local";
+    private static final String OBJECT_STORAGE_TYPE = "object";
+    private static final Set<String> KNOWN_STORAGE_TYPES = Set.of(LOCAL_STORAGE_TYPE, OBJECT_STORAGE_TYPE);
 
     private final Environment environment;
     private final ProductionGuardProperties guardProperties;
@@ -118,7 +120,12 @@ public class ProductionConfigGuard implements InitializingBean {
 
     private void validateFileStorage() {
         String storageType = environment.getProperty("rag.gateway.storage.type", "");
-        if (LOCAL_STORAGE_TYPE.equals(storageType.trim().toLowerCase())
+        String normalized = storageType.trim().toLowerCase();
+        if (!KNOWN_STORAGE_TYPES.contains(normalized)) {
+            throw new IllegalStateException(
+                    "Unknown storage type: " + storageType + ". Allowed values: local, object");
+        }
+        if (LOCAL_STORAGE_TYPE.equals(normalized)
                 && !guardProperties.isAllowLocalFileStorage()) {
             throw new IllegalStateException(
                     "Local file storage (rag.gateway.storage.type=local) requires explicit acknowledgement "

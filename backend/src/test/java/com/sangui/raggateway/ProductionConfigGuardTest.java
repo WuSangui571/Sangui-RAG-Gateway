@@ -21,7 +21,7 @@ class ProductionConfigGuardTest {
             "spring.datasource.password=prod_password",
             "spring.data.redis.host=redis",
             "spring.data.redis.port=6379",
-            "rag.gateway.storage.type=s3",
+            "rag.gateway.storage.type=object",
             "rag.request-log.output-capture.enabled=false"
     };
 

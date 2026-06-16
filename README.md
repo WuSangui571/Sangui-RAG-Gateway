@@ -23,8 +23,9 @@ Let existing business systems gain private-document RAG capability with low modi
   - API key management (create, list, disable, revoke, one-time display)
   - Model config management (create, update, detail, list, disable, enable, encrypted upstream key storage)
   - App-to-model-config binding
-  - Knowledge base management (create, list, detail)
+  - Knowledge base management (create, list, detail, delete)
   - Document upload (txt, md, markdown) with sync parsing, chunking, embedding, and status tracking
+  - Document delete with storage cleanup
   - App-to-knowledge-base binding with retrieval configuration
   - Request log observability (list, detail, hit chunk summaries, filtering)
 - Upstream API key encryption (AES-256-GCM)
@@ -41,7 +42,7 @@ Let existing business systems gain private-document RAG capability with low modi
 - Redis-based rate limit and quota enforcement
 - Asynchronous document processing
 - Rerank and hybrid retrieval
-- MinIO for production file storage
+- MinIO / S3-compatible object storage for production file storage
 
 ## Local Dependencies
 
@@ -138,6 +139,8 @@ All admin APIs require the temporary identity header `X-Admin-User-Id: <positive
 | Enable model config | `POST` | `/api/admin/model-configs/{id}/enable` |
 | Bind app default model config | `PUT` | `/api/admin/apps/{appId}/default-model-config` |
 | Bind app default knowledge base | `PUT` | `/api/admin/apps/{appId}/knowledge-base` |
+| Delete document | `DELETE` | `/api/admin/documents/{documentId}` |
+| Delete knowledge base | `DELETE` | `/api/admin/knowledge-bases/{id}` |
 | Create API key | `POST` | `/api/admin/apps/{appId}/api-keys` |
 | List API keys | `GET` | `/api/admin/apps/{appId}/api-keys` |
 | Disable API key | `POST` | `/api/admin/api-keys/{id}/disable` |
@@ -885,8 +888,14 @@ npm run build
 | `SPRING_DATA_REDIS_HOST` | `localhost` | Redis host (uses service name `redis` inside Compose) |
 | `SPRING_DATA_REDIS_PORT` | `6379` | Redis port |
 | `RAG_GATEWAY_SECRET_KEY` | `local-dev-change-me` | AES encryption master key (override in production) |
-| `FILE_STORAGE_TYPE` | `local` | Storage backend type |
+| `FILE_STORAGE_TYPE` | `local` | Storage backend type (`local` or `object`) |
 | `FILE_STORAGE_LOCAL_PATH` | `./data/uploads` | Upload storage path |
+| `FILE_STORAGE_OBJECT_ENDPOINT` | (none) | S3-compatible object storage endpoint |
+| `FILE_STORAGE_OBJECT_BUCKET` | (none) | Object storage bucket name |
+| `FILE_STORAGE_OBJECT_ACCESS_KEY` | (none) | Object storage access key (secret) |
+| `FILE_STORAGE_OBJECT_SECRET_KEY` | (none) | Object storage secret key (secret) |
+| `FILE_STORAGE_OBJECT_REGION` | `us-east-1` | Object storage region |
+| `FILE_STORAGE_OBJECT_PATH_STYLE_ACCESS` | `true` | Path-style access for MinIO compatibility |
 | `RAG_DOCUMENT_CHUNK_SIZE` | `800` | Chunk size for text splitting |
 | `RAG_DOCUMENT_CHUNK_OVERLAP` | `100` | Chunk overlap |
 | `RAG_DOCUMENT_MAX_FILE_SIZE_BYTES` | `1048576` | Max upload file size |

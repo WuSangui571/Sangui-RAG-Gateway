@@ -3,6 +3,7 @@ package com.sangui.raggateway.knowledge;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.common.security.AdminAuthContext;
 import com.sangui.raggateway.common.security.AdminAuthContextHolder;
+import com.sangui.raggateway.document.DocumentService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -31,12 +33,15 @@ class KnowledgeBaseAdminControllerTest {
 
     @Mock
     private KnowledgeBaseService knowledgeBaseService;
+    @Mock
+    private DocumentService documentService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        KnowledgeBaseAdminController controller = new KnowledgeBaseAdminController(knowledgeBaseService);
+        KnowledgeBaseAdminController controller = new KnowledgeBaseAdminController(
+                knowledgeBaseService, documentService);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -237,6 +242,27 @@ class KnowledgeBaseAdminControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
         verifyNoInteractions(knowledgeBaseService);
+    }
+
+    @Test
+    void shouldDeleteKnowledgeBaseSuccessfully() throws Exception {
+        mockMvc.perform(delete("/api/admin/knowledge-bases/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        verify(documentService).deleteKnowledgeBase(100L, 1L);
+    }
+
+    @Test
+    void shouldRejectMissingAdminUserIdForKnowledgeBaseDelete() throws Exception {
+        AdminAuthContextHolder.clear();
+
+        mockMvc.perform(delete("/api/admin/knowledge-bases/1"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
+        verify(documentService, never()).deleteKnowledgeBase(anyLong(), anyLong());
     }
 
     private KnowledgeBaseEntity createKb(Long id, Long userId, String name) {

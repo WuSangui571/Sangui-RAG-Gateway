@@ -1,6 +1,8 @@
 package com.sangui.raggateway.knowledge;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sangui.raggateway.common.exception.BusinessException;
+import com.sangui.raggateway.app.AppMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -8,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +25,8 @@ class KnowledgeBaseServiceTest {
 
     @Mock
     private KnowledgeBaseMapper knowledgeBaseMapper;
+    @Mock
+    private AppMapper appMapper;
 
     @Captor
     private ArgumentCaptor<KnowledgeBaseEntity> entityCaptor;
@@ -30,7 +35,7 @@ class KnowledgeBaseServiceTest {
 
     @BeforeEach
     void setUp() {
-        knowledgeBaseService = new KnowledgeBaseService(knowledgeBaseMapper);
+        knowledgeBaseService = new KnowledgeBaseService(knowledgeBaseMapper, appMapper);
     }
 
     @Test
@@ -153,5 +158,33 @@ class KnowledgeBaseServiceTest {
 
         verify(knowledgeBaseMapper).updateById(entityCaptor.capture());
         assertThat(entityCaptor.getValue().getStatus()).isEqualTo(KnowledgeBaseStatus.READY.name());
+    }
+
+    @Test
+    void shouldAllowDeleteWhenKnowledgeBaseIsNotReferencedByApps() {
+        when(appMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        knowledgeBaseService.checkNotReferencedByAnyApp(1L, 100L);
+
+        verify(appMapper).selectCount(any(LambdaQueryWrapper.class));
+    }
+
+    @Test
+    void shouldRejectDeleteWhenKnowledgeBaseIsReferencedByApps() {
+        when(appMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(2L);
+
+        assertThatThrownBy(() -> knowledgeBaseService.checkNotReferencedByAnyApp(1L, 100L))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("KNOWLEDGE_BASE_IN_USE");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(ex.getMessage()).contains("referenced by 2 app");
+                });
+    }
+
+    @Test
+    void shouldDeleteKnowledgeBaseRow() {
+        knowledgeBaseService.deleteKbRow(1L);
+
+        verify(knowledgeBaseMapper).deleteById(1L);
     }
 }

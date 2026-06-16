@@ -121,6 +121,13 @@ public class DocumentAdminController {
         return ApiResponse.success(DocumentVO.from(doc));
     }
 
+    @DeleteMapping("/api/admin/documents/{documentId}")
+    public ApiResponse<Void> deleteDocument(@PathVariable Long documentId) {
+        Long userId = getRequiredUserId();
+        documentService.deleteDocument(userId, documentId);
+        return ApiResponse.success(null);
+    }
+
     private Long getRequiredUserId() {
         Long userId = AdminAuthContextHolder.getUserId();
         if (userId == null || userId <= 0) {

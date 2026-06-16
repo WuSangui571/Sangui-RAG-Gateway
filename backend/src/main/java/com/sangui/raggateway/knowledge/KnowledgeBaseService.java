@@ -1,6 +1,8 @@
 package com.sangui.raggateway.knowledge;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sangui.raggateway.app.AppEntity;
+import com.sangui.raggateway.app.AppMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -17,9 +19,11 @@ public class KnowledgeBaseService {
     private static final Logger log = LoggerFactory.getLogger(KnowledgeBaseService.class);
 
     private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final AppMapper appMapper;
 
-    public KnowledgeBaseService(KnowledgeBaseMapper knowledgeBaseMapper) {
+    public KnowledgeBaseService(KnowledgeBaseMapper knowledgeBaseMapper, AppMapper appMapper) {
         this.knowledgeBaseMapper = knowledgeBaseMapper;
+        this.appMapper = appMapper;
     }
 
     @Transactional
@@ -89,5 +93,24 @@ public class KnowledgeBaseService {
             knowledgeBaseMapper.updateById(entity);
             log.info("Knowledge base status updated: id={}, status={}", id, status);
         }
+    }
+
+    public void checkNotReferencedByAnyApp(Long kbId, Long userId) {
+        LambdaQueryWrapper<AppEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AppEntity::getDefaultKnowledgeBaseId, kbId);
+        wrapper.eq(AppEntity::getUserId, userId);
+        Long count = appMapper.selectCount(wrapper);
+        if (count != null && count > 0) {
+            throw new com.sangui.raggateway.common.exception.BusinessException(
+                    "KNOWLEDGE_BASE_IN_USE",
+                    "Knowledge base is referenced by " + count + " app(s) and cannot be deleted",
+                    org.springframework.http.HttpStatus.CONFLICT);
+        }
+    }
+
+    @Transactional
+    public void deleteKbRow(Long id) {
+        knowledgeBaseMapper.deleteById(id);
+        log.info("Knowledge base row deleted: id={}", id);
     }
 }

@@ -1,0 +1,33 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-16-object-storage-file-lifecycle\\prd.md", "reason": "Primary PRD with storage config, lifecycle, API, validation, and test matrix"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project storage/deployment/security contract and production guard context"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend package boundaries for document storage/config/service/controller changes"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Document/chunk/embedding schema and tenant-safe delete/update rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin API error envelope and safe document lifecycle error matrix"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe document/storage lifecycle logging rules"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required targeted backend tests and regression checks"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Document status transitions and failure semantics"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Forbidden response/log fields including storage_path and internal paths"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer env/API/DB/security checklist for storage lifecycle"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend DocumentVO/type contract if API client/types must sync"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\storage\\FileStorageService.java", "reason": "Existing storage abstraction seam to extend"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\storage\\LocalFileStorageService.java", "reason": "Existing local storage implementation and key shape"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\config\\DocumentConfig.java", "reason": "Current storage bean selection and document config"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Current upload/parse/embed lifecycle and future delete lifecycle owner"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentAdminController.java", "reason": "Current document admin API and delete endpoint location"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\knowledge\\KnowledgeBaseService.java", "reason": "Current KB service and future KB delete lifecycle owner"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\knowledge\\KnowledgeBaseAdminController.java", "reason": "Current KB admin API and delete endpoint location"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\ProductionConfigGuard.java", "reason": "Production guard interaction with local/object storage"}
+{"file": "backend\\src\\main\\resources\\application.yml", "reason": "Storage property defaults and binding surface"}
+{"file": ".env.example", "reason": "Deployment env contract to sync"}
+{"file": "deploy\\docker-compose.yml", "reason": "Compose env pass-through contract to sync"}
+{"file": "README.md", "reason": "User-facing storage/deployment/security documentation to sync"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\storage\\LocalFileStorageServiceTest.java", "reason": "Existing storage tests to extend"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Lifecycle tests to extend"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentAdminControllerTest.java", "reason": "Document API contract tests to extend"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\knowledge\\KnowledgeBaseServiceTest.java", "reason": "KB lifecycle tests to extend"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\knowledge\\KnowledgeBaseAdminControllerTest.java", "reason": "KB API contract tests to extend"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\ProductionConfigGuardTest.java", "reason": "Production storage guard regression tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\ProductionContextSmokeTest.java", "reason": "Production context smoke binding checks"}

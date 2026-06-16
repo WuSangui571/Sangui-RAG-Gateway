@@ -1,6 +1,7 @@
 package com.sangui.raggateway.document;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.document.chunk.TextChunker;
 import com.sangui.raggateway.document.config.DocumentProperties;
 import com.sangui.raggateway.document.parser.DocumentParser;
@@ -17,6 +18,7 @@ import com.sangui.raggateway.model.ModelConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -365,6 +367,101 @@ public class DocumentService {
                 ? KnowledgeBaseStatus.READY.name()
                 : KnowledgeBaseStatus.FAILED.name();
         knowledgeBaseService.updateStatus(knowledgeBaseId, nextStatus);
+    }
+
+    public void deleteDocument(Long userId, Long documentId) {
+        DocumentEntity doc = findByIdAndUserId(documentId, userId);
+        if (doc == null) {
+            DocumentEntity any = findById(documentId);
+            if (any != null) {
+                throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+            }
+            throw new BusinessException("NOT_FOUND", "Document not found", HttpStatus.NOT_FOUND);
+        }
+
+        String storageKey = doc.getStoragePath();
+        if (storageKey != null && !storageKey.isBlank()) {
+            fileStorageService.delete(storageKey);
+        }
+
+        Long kbId = doc.getKnowledgeBaseId();
+
+        LambdaQueryWrapper<DocumentChunkEmbeddingEntity> embeddingWrapper = new LambdaQueryWrapper<>();
+        embeddingWrapper.eq(DocumentChunkEmbeddingEntity::getDocumentId, documentId);
+        documentChunkEmbeddingMapper.delete(embeddingWrapper);
+
+        LambdaQueryWrapper<DocumentChunkEntity> chunkWrapper = new LambdaQueryWrapper<>();
+        chunkWrapper.eq(DocumentChunkEntity::getDocumentId, documentId);
+        documentChunkMapper.delete(chunkWrapper);
+
+        documentMapper.deleteById(documentId);
+        log.info("Document deleted: id={}, kbId={}, storageKey={}", documentId, kbId, storageKey);
+
+        updateKbStatusAfterDocumentChange(userId, kbId);
+    }
+
+    public void deleteKnowledgeBase(Long userId, Long kbId) {
+        com.sangui.raggateway.knowledge.KnowledgeBaseEntity kb = knowledgeBaseService.findByIdAndUserId(kbId, userId);
+        if (kb == null) {
+            KnowledgeBaseEntity any = knowledgeBaseService.findById(kbId);
+            if (any != null) {
+                throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+            }
+            throw new BusinessException("NOT_FOUND", "Knowledge base not found", HttpStatus.NOT_FOUND);
+        }
+
+        knowledgeBaseService.checkNotReferencedByAnyApp(kbId, userId);
+
+        LambdaQueryWrapper<DocumentEntity> docWrapper = new LambdaQueryWrapper<>();
+        docWrapper.eq(DocumentEntity::getKnowledgeBaseId, kbId);
+        java.util.List<DocumentEntity> documents = documentMapper.selectList(docWrapper);
+
+        for (DocumentEntity doc : documents) {
+            String storageKey = doc.getStoragePath();
+            if (storageKey != null && !storageKey.isBlank()) {
+                fileStorageService.delete(storageKey);
+            }
+
+            LambdaQueryWrapper<DocumentChunkEmbeddingEntity> embeddingWrapper = new LambdaQueryWrapper<>();
+            embeddingWrapper.eq(DocumentChunkEmbeddingEntity::getDocumentId, doc.getId());
+            documentChunkEmbeddingMapper.delete(embeddingWrapper);
+
+            LambdaQueryWrapper<DocumentChunkEntity> chunkWrapper = new LambdaQueryWrapper<>();
+            chunkWrapper.eq(DocumentChunkEntity::getDocumentId, doc.getId());
+            documentChunkMapper.delete(chunkWrapper);
+
+            documentMapper.deleteById(doc.getId());
+            log.info("Document deleted in KB cleanup: id={}, kbId={}, storageKey={}",
+                    doc.getId(), kbId, storageKey);
+        }
+
+        knowledgeBaseService.deleteKbRow(kbId);
+        log.info("Knowledge base deleted: id={}, userId={}", kbId, userId);
+    }
+
+    private void updateKbStatusAfterDocumentChange(Long userId, Long kbId) {
+        LambdaQueryWrapper<DocumentEntity> allWrapper = new LambdaQueryWrapper<>();
+        allWrapper.eq(DocumentEntity::getUserId, userId);
+        allWrapper.eq(DocumentEntity::getKnowledgeBaseId, kbId);
+        Long totalCount = documentMapper.selectCount(allWrapper);
+
+        if (totalCount == null || totalCount == 0) {
+            knowledgeBaseService.updateStatus(kbId, KnowledgeBaseStatus.EMPTY.name());
+            return;
+        }
+
+        LambdaQueryWrapper<DocumentEntity> readyWrapper = new LambdaQueryWrapper<>();
+        readyWrapper.eq(DocumentEntity::getUserId, userId);
+        readyWrapper.eq(DocumentEntity::getKnowledgeBaseId, kbId);
+        readyWrapper.eq(DocumentEntity::getStatus, DocumentStatus.READY.name());
+        Long readyCount = documentMapper.selectCount(readyWrapper);
+
+        if (readyCount != null && readyCount > 0) {
+            knowledgeBaseService.updateStatus(kbId, KnowledgeBaseStatus.READY.name());
+            return;
+        }
+
+        knowledgeBaseService.updateStatus(kbId, KnowledgeBaseStatus.FAILED.name());
     }
 
     private String escapeJson(String value) {

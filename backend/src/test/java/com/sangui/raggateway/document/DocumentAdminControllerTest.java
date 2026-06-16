@@ -312,6 +312,27 @@ class DocumentAdminControllerTest {
     }
 
     @Test
+    void shouldDeleteDocumentSuccessfully() throws Exception {
+        mockMvc.perform(delete("/api/admin/documents/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("OK"))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        verify(documentService).deleteDocument(100L, 10L);
+    }
+
+    @Test
+    void shouldRejectMissingAdminUserIdForDocumentDelete() throws Exception {
+        AdminAuthContextHolder.clear();
+
+        mockMvc.perform(delete("/api/admin/documents/10"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
+        verify(documentService, never()).deleteDocument(anyLong(), anyLong());
+    }
+
+    @Test
     void shouldUploadWithChineseOriginalFilename() throws Exception {
         KnowledgeBaseEntity kb = createKb(1L, 100L);
         when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);

@@ -651,3 +651,30 @@ Admin APIs (`/api/admin/**`) use the `ApiResponse` envelope. Authentication is h
 - Admin controllers derive `userId` from `AdminAuthContextHolder.getUserId()`, set by `AdminAuthFilter` after JWT validation.
 - `X-Admin-User-Id` header is no longer trusted or required.
 - `/v1/*` gateway auth (`GatewayAuthFilter` + app API keys) is unchanged; `/v1/*` does not accept admin JWT.
+
+## Document and Knowledge Base Delete Error Matrix
+
+The storage lifecycle delete endpoints use the admin `ApiResponse` envelope:
+
+```http
+DELETE /api/admin/documents/{documentId}
+DELETE /api/admin/knowledge-bases/{id}
+```
+
+Validation and error matrix:
+
+| Scenario | HTTP | Code | Required behavior |
+|---|---:|---|---|
+| Missing, non-Bearer, invalid, or expired admin JWT | 401 | `UNAUTHORIZED` | Caught before controller mutation; no storage cleanup or DB mutation. |
+| Document ID does not exist | 404 | `NOT_FOUND` | No storage cleanup. |
+| Document belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no storage cleanup. |
+| Document storage delete fails | 500 | `INTERNAL_ERROR` | Failure is visible; embeddings/chunks/document rows are not deleted by the normal path. |
+| Document storage object/file is already missing | 200 | `OK` | Treat as cleanup complete and continue DB cleanup. |
+| Owned document delete succeeds | 200 | `OK` | Response data is `null`; no `storage_path` or storage metadata is returned. |
+| Knowledge base ID does not exist | 404 | `NOT_FOUND` | No storage cleanup. |
+| Knowledge base belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no storage cleanup. |
+| Knowledge base is referenced by any same-user app | 409 | `KNOWLEDGE_BASE_IN_USE` | Reject explicitly; do not rely on FK errors or clear app bindings silently. |
+| Knowledge base storage cleanup fails for any document | 500 | `INTERNAL_ERROR` | Failure is visible; remaining cleanup does not report success. |
+| Owned unreferenced knowledge base delete succeeds | 200 | `OK` | Response data is `null`; storage internals are not returned. |
+
+Messages must name the boundary only and must not include credentials, object endpoint, bucket values, absolute local paths, stack traces, raw SQL, or uploaded content.

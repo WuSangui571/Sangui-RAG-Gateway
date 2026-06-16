@@ -190,3 +190,44 @@ The following are valid later enhancements, not current hard dependencies:
 - audit log
 
 Safety models must be explicit, configurable, observable, and documented. They must not become hidden fallbacks that silently alter request outcomes without traceability.
+
+## 10. Storage Secret and Lifecycle Boundary
+
+Storage internals are deployment metadata and must not become API, frontend, request-log, or evidence fields.
+
+Forbidden response/log/doc example fields for document storage:
+
+```text
+storage_path
+object endpoint value in API responses
+bucket value in API responses
+FILE_STORAGE_OBJECT_ACCESS_KEY value
+FILE_STORAGE_OBJECT_SECRET_KEY value
+object access key value
+object secret key value
+signed URL
+absolute local filesystem path
+uploaded file content
+chunk content
+embedding vector
+```
+
+Allowed safe metadata:
+
+```text
+document_id
+knowledge_base_id
+user_id
+storageKey (opaque logical key in server logs only)
+file size
+backend type
+cleanup result
+```
+
+Delete security rules:
+
+- Admin document and KB delete APIs derive `userId` from `AdminAuthContextHolder`.
+- Missing resources return `404`; cross-user resources return `403` with generic `Access denied`.
+- Ownership checks must happen before storage cleanup or DB mutation.
+- KB deletion must reject app-bound KBs explicitly with `409 KNOWLEDGE_BASE_IN_USE` unless a future task defines and tests a safe unbind/cascade contract.
+- Cleanup failures must be visible; hidden fallbacks or mock-success paths are forbidden.

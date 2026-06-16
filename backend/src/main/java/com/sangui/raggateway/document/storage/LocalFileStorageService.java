@@ -49,4 +49,26 @@ public class LocalFileStorageService implements FileStorageService {
             throw new RuntimeException("Failed to save file: " + storageKey, e);
         }
     }
+
+    @Override
+    public void delete(String storageKey) {
+        if (storageKey == null || storageKey.isBlank()) {
+            throw new IllegalArgumentException("storageKey must not be blank");
+        }
+        Path targetPath = rootPath.resolve(storageKey).normalize();
+        if (!targetPath.startsWith(rootPath)) {
+            throw new IllegalArgumentException("Path traversal detected for storageKey: " + storageKey);
+        }
+        try {
+            boolean deleted = Files.deleteIfExists(targetPath);
+            if (deleted) {
+                log.info("File deleted: storageKey={}", storageKey);
+            } else {
+                log.info("File already absent, cleanup complete: storageKey={}", storageKey);
+            }
+        } catch (IOException e) {
+            log.error("Failed to delete file: storageKey={}", storageKey, e);
+            throw new RuntimeException("Failed to delete file: " + storageKey, e);
+        }
+    }
 }

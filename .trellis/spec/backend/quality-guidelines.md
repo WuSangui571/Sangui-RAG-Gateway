@@ -225,3 +225,26 @@ Regression tests must still pass:
 mvn -q "-Dtest=AppAdminControllerTest,DocumentAdminControllerTest,RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test
 mvn test
 ```
+
+## Object Storage and Delete Lifecycle Tests
+
+Required targeted tests after changing storage backend selection or delete lifecycle:
+
+```bash
+cd backend
+mvn -q "-Dtest=LocalFileStorageServiceTest,ObjectFileStorageServiceTest,DocumentConfigTest" test
+mvn -q "-Dtest=DocumentServiceTest,DocumentAdminControllerTest" test
+mvn -q "-Dtest=KnowledgeBaseServiceTest,KnowledgeBaseAdminControllerTest" test
+mvn -q "-Dtest=ProductionConfigGuardTest,ProductionContextSmokeTest" test
+```
+
+Tested areas:
+
+- Local storage keeps UUID-based non-guessable keys, path traversal protection, and idempotent delete.
+- Object storage uses the same opaque logical key shape, calls S3 put/delete APIs, and treats `NoSuchKey` or S3 `404` from `headObject` as cleanup-complete.
+- Object storage non-404 S3 failures remain visible exceptions.
+- `DocumentConfig` selects only `local` or `object`, rejects unknown types, and names missing object config properties without echoing secret values.
+- Document delete returns `404` for missing documents, `403` for cross-user documents, and never calls storage cleanup before ownership is verified.
+- Successful document delete attempts storage cleanup before deleting embeddings, chunks, and document rows, then updates KB status.
+- Knowledge-base delete rejects same-user app references with `409 KNOWLEDGE_BASE_IN_USE`.
+- Delete API responses do not expose `storage_path`, object endpoint, bucket, access key, secret key, or absolute local paths.

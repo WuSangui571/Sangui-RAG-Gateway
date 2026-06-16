@@ -1,6 +1,7 @@
 package com.sangui.raggateway.document;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.document.chunk.TextChunker;
 import com.sangui.raggateway.document.config.DocumentProperties;
 import com.sangui.raggateway.document.parser.DocumentParser;
@@ -19,10 +20,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
@@ -622,6 +625,58 @@ class DocumentServiceTest {
         var vo = com.sangui.raggateway.document.vo.DocumentVO.from(doc);
         assertThat(vo.getId()).isEqualTo(10L);
         assertThat(vo.getOriginalFilename()).isEqualTo("test.md");
+    }
+
+    @Test
+    void shouldDeleteDocumentAfterOwnershipCheckAndStorageCleanup() {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        doc.setStoragePath("knowledge/1/uuid/test.md");
+        when(documentMapper.selectOne(any())).thenReturn(doc);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        documentService.deleteDocument(100L, 10L);
+
+        InOrder inOrder = inOrder(fileStorageService, documentChunkEmbeddingMapper, documentChunkMapper, documentMapper);
+        inOrder.verify(fileStorageService).delete("knowledge/1/uuid/test.md");
+        inOrder.verify(documentChunkEmbeddingMapper).delete(any(LambdaQueryWrapper.class));
+        inOrder.verify(documentChunkMapper).delete(any(LambdaQueryWrapper.class));
+        inOrder.verify(documentMapper).deleteById(10L);
+        verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.EMPTY.name());
+    }
+
+    @Test
+    void shouldReturn404ForDeleteMissingDocumentWithoutStorageCleanup() {
+        when(documentMapper.selectOne(any())).thenReturn(null);
+        when(documentMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> documentService.deleteDocument(100L, 999L))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("NOT_FOUND");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+                });
+
+        verify(fileStorageService, never()).delete(anyString());
+        verify(documentChunkEmbeddingMapper, never()).delete(any());
+        verify(documentChunkMapper, never()).delete(any());
+        verify(documentMapper, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void shouldReturn403ForDeleteCrossUserDocumentWithoutStorageCleanup() {
+        DocumentEntity otherDoc = createDoc(10L, 200L, 1L, "test.md");
+        when(documentMapper.selectOne(any())).thenReturn(null);
+        when(documentMapper.selectById(10L)).thenReturn(otherDoc);
+
+        assertThatThrownBy(() -> documentService.deleteDocument(100L, 10L))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("FORBIDDEN");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.FORBIDDEN);
+                });
+
+        verify(fileStorageService, never()).delete(anyString());
+        verify(documentChunkEmbeddingMapper, never()).delete(any());
+        verify(documentChunkMapper, never()).delete(any());
+        verify(documentMapper, never()).deleteById(anyLong());
     }
 
     private KnowledgeBaseEntity createKb(Long id, Long userId, String embeddingModel, int dimension) {
