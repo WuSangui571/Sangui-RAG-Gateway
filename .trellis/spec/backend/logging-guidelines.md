@@ -362,8 +362,24 @@ rag:
       preview-max-chars: 1000
       retention-days: 7
       cleanup-enabled: true
+      cleanup-fixed-delay-ms: 3600000
       reason-max-chars: 256
 ```
+
+Scheduled cleanup contract:
+
+```text
+backend/src/main/java/com/sangui/raggateway/log/RequestLogOutputCleanupScheduler.java
+method: runCleanup()
+schedule: rag.request-log.output-capture.cleanup-fixed-delay-ms
+default: 3600000
+```
+
+`cleanup-fixed-delay-ms` must be positive and is bound through `OutputCaptureProperties`.
+Invalid non-positive values must fail configuration binding visibly. When
+`cleanup-enabled=false`, `runCleanup()` returns without calling
+`ApiRequestLogService.cleanupExpiredOutputPreviews()`. When enabled, it calls
+only that cleanup service method and logs the expired preview count.
 
 Effective capture rule:
 
@@ -488,5 +504,6 @@ Required tests:
 cd backend
 mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest,OutputCapturePolicyTest" test
 mvn -q "-Dtest=ApiRequestLogOutputServiceTest,OutputCapturePolicyTest" test
+mvn -q "-Dtest=RequestLogOutputCleanupSchedulerTest" test
 mvn -q "-Dtest=ApiRequestLogAdminControllerTest,OpenAiChatCompletionsControllerTest" test
 ```

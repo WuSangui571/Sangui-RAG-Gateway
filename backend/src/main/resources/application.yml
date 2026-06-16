@@ -42,4 +42,5 @@ rag:
       preview-max-chars: 1000
       retention-days: 7
       cleanup-enabled: true
+      cleanup-fixed-delay-ms: 3600000
       reason-max-chars: 256

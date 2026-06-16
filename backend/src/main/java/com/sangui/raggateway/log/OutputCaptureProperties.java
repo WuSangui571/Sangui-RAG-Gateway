@@ -1,16 +1,21 @@
 package com.sangui.raggateway.log;
 
+import jakarta.validation.constraints.Min;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 @Component
 @ConfigurationProperties(prefix = "rag.request-log.output-capture")
+@Validated
 public class OutputCaptureProperties {
 
     private boolean enabled = false;
     private int previewMaxChars = 1000;
     private int retentionDays = 7;
     private boolean cleanupEnabled = true;
+    @Min(1)
+    private long cleanupFixedDelayMs = 3600000;
     private int reasonMaxChars = 256;
 
     public boolean isEnabled() {
@@ -43,6 +48,14 @@ public class OutputCaptureProperties {
 
     public void setCleanupEnabled(boolean cleanupEnabled) {
         this.cleanupEnabled = cleanupEnabled;
+    }
+
+    public long getCleanupFixedDelayMs() {
+        return cleanupFixedDelayMs;
+    }
+
+    public void setCleanupFixedDelayMs(long cleanupFixedDelayMs) {
+        this.cleanupFixedDelayMs = cleanupFixedDelayMs;
     }
 
     public int getReasonMaxChars() {

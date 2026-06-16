@@ -1,0 +1,27 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-16-output-capture-scheduled-cleanup\\prd.md", "reason": "Task PRD with corrected scope, scheduler contract, config fields, boundaries, and tests"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-15-app-output-capture-switch-management\\prd.md", "reason": "Completed baseline for app-level output capture switch API/UI; do not duplicate"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-15-request-log-output-observability-policy\\prd.md", "reason": "Original output preview policy including retention cleanup semantics"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary and request-log/output observability contract"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend scheduler/config/service placement and layering"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Existing request-log output schema and cleanup contract"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin output capture switch and preview access error boundaries"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe output preview observability, config defaults, and forbidden fields"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend test and completion expectations"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Existing frontend app switch contract for baseline verification"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "No preview/app switch persistence in frontend global storage"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend checks only if frontend files are touched"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Output preview security boundary and forbidden fields"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Request-log behavior must remain visible and safe"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Config/API/DTO/test contract alignment"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Existing cleanupExpiredOutputPreviews service method to schedule"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogMapper.java", "reason": "Existing expired preview select/update mapper contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\OutputCaptureProperties.java", "reason": "Existing output-capture config binding; add schedule interval here if using typed properties"}
+{"file": "backend\\src\\main\\resources\\application.yml", "reason": "Existing output-capture defaults; add cleanup schedule property"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\SanguiRagGatewayApplication.java", "reason": "Current application class has no scheduling enablement"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogOutputServiceTest.java", "reason": "Existing cleanup service unit tests to keep or strengthen"}
+{"file": "frontend\\src\\types\\app.ts", "reason": "Already includes app output capture switch DTO/VO; baseline only"}
+{"file": "frontend\\src\\api\\apps.ts", "reason": "Already includes updateAppOutputCapture; baseline only"}
+{"file": "frontend\\src\\pages\\apps\\AppConfigPage.tsx", "reason": "Already renders app output capture switch and risk confirmation; baseline only"}

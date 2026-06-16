@@ -1,0 +1,22 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-16-output-capture-scheduled-cleanup\\prd.md", "reason": "Acceptance criteria, forbidden scope, expected files, and required tests"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-15-app-output-capture-switch-management\\prd.md", "reason": "Verify app switch behavior remains baseline and is not duplicated"}
+{"file": ".trellis\\tasks\\archive\\2026-06\\06-15-request-log-output-observability-policy\\prd.md", "reason": "Verify cleanup semantics match original output preview policy"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Check cleanup preserves rows and metadata while expiring preview content"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Check scheduler logs only safe metadata and no preview content"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check app/request-log output API boundaries remain unchanged"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend tests and review checklist"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Check frontend app switch type contract if frontend files are touched"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Security boundary review for output preview and forbidden fields"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer config/test contract review"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Review scheduled trigger uses existing cleanup service without changing semantics"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogMapper.java", "reason": "Review cleanup SQL contract remains scoped to expired previews"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\OutputCaptureProperties.java", "reason": "Review config binding/defaults for cleanup schedule"}
+{"file": "backend\\src\\main\\resources\\application.yml", "reason": "Review cleanup config names/defaults"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogOutputServiceTest.java", "reason": "Review existing and strengthened cleanup assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppServiceTest.java", "reason": "Regression if app switch files are touched"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\app\\AppAdminControllerTest.java", "reason": "Regression if app switch endpoint/files are touched"}
+{"file": "frontend\\src\\types\\app.ts", "reason": "Regression if frontend app switch types are touched"}
+{"file": "frontend\\src\\api\\apps.ts", "reason": "Regression if frontend app switch API client is touched"}
+{"file": "frontend\\src\\pages\\apps\\AppConfigPage.tsx", "reason": "Regression if frontend App page is touched"}
