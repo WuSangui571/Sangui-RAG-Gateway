@@ -644,7 +644,7 @@ Closed the last V0.2 release-candidate blocker by confirming the fresh demo key 
 
 ### Summary
 
-(Add summary)
+Fresh demo key cleanup evidence was confirmed, the V0.2 release-readiness record was updated to release-candidate ready, and the task was archived after human testing.
 
 ### Main Changes
 
@@ -695,7 +695,16 @@ Closed the last V0.2 release-candidate blocker by confirming the fresh demo key 
 
 ### Testing
 
-- [OK] (Add test results)
+- [OK] `mvn -q "-Dtest=DocumentProcessingTaskServiceTest,DocumentProcessingWorkerTest" test`
+- [OK] `mvn -q "-Dtest=DocumentServiceTest,DocumentAdminControllerTest" test`
+- [OK] `mvn -q "-Dtest=KnowledgeBaseServiceTest,KnowledgeBaseAdminControllerTest" test`
+- [OK] `mvn -q "-Dtest=LocalFileStorageServiceTest,ObjectFileStorageServiceTest,DocumentConfigTest,ProductionConfigGuardTest,ProductionContextSmokeTest" test`
+- [OK] `mvn -q "-Dtest=RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test`
+- [OK] `mvn -q -DskipTests compile`
+- [OK] `cmd /c npm run typecheck`
+- [OK] `cmd /c npm run build`
+- [OK] `git diff --check`
+- [WARN] `mvn -q test` was attempted with the 60s backend unit-test timeout and did not complete before timeout.
 
 ### Status
 
@@ -1642,6 +1651,62 @@ acknowledgement switches.
 ### Testing
 
 - [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 62: Async Document Processing
+
+**Date**: 2026-06-18
+**Task**: Async Document Processing
+**Branch**: `feature/async-document-processing`
+
+### Summary
+
+Completed async document processing after manual validation and commit `6e3c9fe8`. The implementation moved upload out of the synchronous parse/embed path, added a durable processing task state machine, exposed retry and task observability, updated frontend polling/retry behavior, and synced Trellis specs with the new cross-layer contract.
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | 6e3c9fe8 feat:async-document-processing |
+| Task | Archived async-document-processing-task after manual testing and commit confirmation. |
+| Backend | Added durable async document processing task model, migration V14, task service, worker, scheduler, upload enqueue flow, retry endpoint, storage read abstraction, and delete/KB-delete processing boundaries. |
+| Frontend | Added processing task fields/types, retry API, task status display, retry action, and polling based on document/task non-terminal state. |
+| Codex fixes | Fixed attempt_count semantics on worker claim, wired retryBackoffMs, reset attempts on explicit retry, closed storage read streams, made storage read failure update document/task/KB consistently, removed sensitive exception messages from task errors/logs, and removed redundant delete branch. |
+| Specs | Synced sangui-rag-gateway, RAG ingestion, DB, error-handling, frontend type-safety, and state-management specs with async processing contracts. |
+| Validation passed | mvn -q "-Dtest=DocumentProcessingTaskServiceTest,DocumentProcessingWorkerTest" test; mvn -q "-Dtest=DocumentServiceTest,DocumentAdminControllerTest" test; mvn -q "-Dtest=KnowledgeBaseServiceTest,KnowledgeBaseAdminControllerTest" test; mvn -q "-Dtest=LocalFileStorageServiceTest,ObjectFileStorageServiceTest,DocumentConfigTest,ProductionConfigGuardTest,ProductionContextSmokeTest" test; mvn -q "-Dtest=RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test; mvn -q -DskipTests compile; cmd /c npm run typecheck; cmd /c npm run build; git diff --check. |
+| Validation limits | Full backend mvn -q test was attempted with a 60s hard timeout and did not complete before timeout; targeted backend, gateway regression, compile, frontend typecheck/build passed. |
+| Manual validation | Human confirmed manual testing passed and code was committed before record-session. |
+| Boundaries | No commit/push by Codex for implementation; no new task started; record-session only after manual acceptance. |
+
+Updated files include backend document processing classes, V14 migration, document storage services, document admin/service/tests, frontend document API/types/page/status/i18n files, and Trellis specs.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6e3c9fe8` | (see git log) |
+
+### Testing
+
+- [OK] `mvn -q "-Dtest=DocumentProcessingTaskServiceTest,DocumentProcessingWorkerTest" test`
+- [OK] `mvn -q "-Dtest=DocumentServiceTest,DocumentAdminControllerTest" test`
+- [OK] `mvn -q "-Dtest=KnowledgeBaseServiceTest,KnowledgeBaseAdminControllerTest" test`
+- [OK] `mvn -q "-Dtest=LocalFileStorageServiceTest,ObjectFileStorageServiceTest,DocumentConfigTest,ProductionConfigGuardTest,ProductionContextSmokeTest" test`
+- [OK] `mvn -q "-Dtest=RetrievalServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test`
+- [OK] `mvn -q -DskipTests compile`
+- [OK] `cmd /c npm run typecheck`
+- [OK] `cmd /c npm run build`
+- [OK] `git diff --check`
+- [WARN] `mvn -q test` was attempted with the 60s backend unit-test timeout and did not complete before timeout.
 
 ### Status
 
