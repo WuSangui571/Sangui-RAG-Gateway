@@ -128,7 +128,48 @@ This hides the actual boundary and risks leaking secrets or private prompt data.
 Classify timeout, upstream error, malformed response, and network failure; return a safe OpenAI-compatible error; persist safe request-log metadata; let failures remain visible.
 ```
 
-## 8. Future Enhancement Roadmap
+## 8. Runtime Streaming Smoke Test
+
+### 8.1 Command
+
+```bash
+cd backend
+mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest" test
+```
+
+Test class: `backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsRuntimeSmokeTest.java`
+
+### 8.2 Contract
+
+The runtime smoke uses `@SpringBootTest(webEnvironment = RANDOM_PORT)` with a dedicated embedded servlet container configuration that imports `OpenAiChatCompletionsController`, `GatewayAuthConfig`, `GlobalExceptionHandler`, and mock/stub collaborators. No PostgreSQL, Redis, Flyway, MyBatis, Docker, provider keys, or external upstream providers are required. The test uses Java 21 `java.net.http.HttpClient` as a real HTTP client against `localhost:{port}`.
+
+### 8.3 Covered Scenarios
+
+| Scenario | Stream behavior | Request-log assertion | Reservation assertion |
+|---|---|---|---|
+| Normal `[DONE]` | HTTP 200, `text/event-stream`, `data:` lines, final `[DONE]` | `status=success`, `error_code=null`, `output_capture_status=STREAMING_UNSUPPORTED` | No `releaseReservation`, no `reconcileTokens` |
+| Client disconnect | Client reads first line, closes stream; server finishes without error | `status=cancelled`, `error_code=client_cancelled` | `releaseReservation` exactly once |
+| Emitter timeout | Short `emitter-timeout-seconds=3`; upstream hangs after `onStreamReady` | `status=cancelled`, `error_code=stream_timeout` | `releaseReservation` exactly once |
+| Post-start upstream failure | `onStreamReady` called, then upstream throws `GatewayException` | `status=failure`, `error_code=upstream_error` | `releaseReservation` exactly once |
+
+### 8.4 Good / Base / Bad
+
+| Case | Expected result |
+|---|---|
+| Good | All four streaming terminal cases pass; request-log commands captured exactly once per request; `releaseReservation` called exactly once on cancel/timeout/failure; normal success does not release; all rows use `STREAMING_UNSUPPORTED`; no forbidden fields asserted or logged. |
+| Base | Environment cannot run Docker but the `RANDOM_PORT` smoke still passes without PostgreSQL, Redis, or external providers. Local smoke evidence is recorded separately from external/manual smoke. |
+| Bad | Test uses MockMvc only; disconnect is faked by throwing `IOException` without HTTP client; duplicate request-log writes; reservation release called more than once; raw SSE, prompt, key, or provider body content persisted or asserted. |
+
+### 8.5 Failure Boundaries
+
+- Client-disconnect smoke must close the `InputStream` from `HttpResponse.BodyHandlers.ofInputStream()`, not just throw `IOException` inside the mock.
+- After an SSE send `IOException` returns `CANCELLED`, the controller must record `cancelled/client_cancelled` and release the reservation without calling `SseEmitter.complete()` on the already-unusable response.
+- A response-write `IOException` for `/v1/chat/completions` with `Accept: text/event-stream` is a client disconnect signal; `GlobalExceptionHandler` must log it at INFO with safe metadata and must not convert it into a generic unexpected-error stack trace.
+- Emitter-timeout smoke must let the real `SseEmitter` timeout fire; do not invoke the timeout callback directly.
+- The timeout callback must explicitly complete the `SseEmitter` after recording `cancelled/stream_timeout`, otherwise the servlet async timeout can be dispatched as a generic 500 even though the request-log row is correct.
+- Post-start upstream failure must throw after `onStreamReady`; pre-start failure before `onStreamReady` is covered by existing `OpenAiChatCompletionsControllerTest`.
+
+## 9. Future Enhancement Roadmap
 
 The following are valid later enhancements, not V0.2 beta requirements:
 

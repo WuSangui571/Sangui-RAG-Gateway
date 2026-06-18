@@ -1940,3 +1940,46 @@ Commit: `cc4e6d6f fix:增强流式请求终态观测`
 ### Next Steps
 
 - None - task complete
+
+
+## Session 66: Streaming disconnect runtime smoke closeout
+
+**Date**: 2026-06-18
+**Task**: Streaming disconnect runtime smoke closeout
+**Branch**: `feature/streaming-disconnect-runtime-smoke`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| ?? | ?? |
+|---|---|
+| ?? | `21f80850 fix:???????????` |
+| ???? | Backend gateway streaming lifecycle, global exception handling, runtime smoke test, Trellis backend/gateway specs |
+| ???? | ??? `streaming-disconnect-runtime-smoke`????? embedded servlet container + `java.net.http.HttpClient` runtime smoke????? `[DONE]`???????emitter timeout?post-start upstream failure?Codex check ????? runtime smoke ????? SseEmitter timeout 500 ???????????????????? |
+| ???? | `OpenAiChatCompletionsController` ? timeout terminal record ??? complete emitter???????? `CANCELLED` ??? complete ???? response?`GlobalExceptionHandler` ? `/v1/chat/completions` + `Accept: text/event-stream` ? response-write `IOException` ?????????INFO ???? + ?????? generic unexpected-error? |
+| ???? | `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java`; `backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java`; `backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsRuntimeSmokeTest.java`; `backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java`; `.trellis/spec/backend/quality-guidelines.md`; `.trellis/spec/gateway/resilience.md` |
+| ???? | `cd backend; mvn -q -DskipTests compile test-compile` ???`cd backend; mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest" test` ???`cd backend; mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest,OpenAiChatCompletionsControllerTest,OpenAiCompatibleUpstreamClientTest" test` ???`cd backend; mvn -q "-Dtest=ApiKeyRateLimitServiceTest,ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test` ???`cd backend; mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test` ???`cd backend; mvn -q test` ? 60 ????????`git diff --check` ??? |
+| ???? | ?????????????? |
+| ?? | ?? DB migration?frontend?public DTO/API ???Docker/Redis/MQ ???runtime smoke ???? embedded servlet ??????? Nginx/frontend proxy ????? provider smoke? |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `21f80850` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.io.IOException;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -57,6 +59,11 @@ class GlobalExceptionHandlerTest {
         @PostMapping("/v1/unimplemented-chat")
         void throwNoResourceForUnimplementedV1Route() throws NoResourceFoundException {
             throw new NoResourceFoundException(HttpMethod.POST, "/v1/unimplemented-chat");
+        }
+
+        @PostMapping("/v1/chat/completions")
+        void throwStreamingIOException() throws IOException {
+            throw new IOException("client disconnected while writing stream");
         }
 
         @GetMapping("/favicon.ico")
@@ -177,6 +184,17 @@ class GlobalExceptionHandlerTest {
                 .andExpect(content().string(not(containsString("Missing quotes"))))
                 .andExpect(content().string(not(containsString("JsonParseException"))))
                 .andExpect(content().string(not(containsString("java."))));
+    }
+
+    @Test
+    void shouldTreatStreamingIOExceptionAsClientDisconnect() throws Exception {
+        mockMvc.perform(post("/v1/chat/completions")
+                        .accept(MediaType.TEXT_EVENT_STREAM))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""))
+                .andExpect(content().string(not(containsString("INTERNAL_ERROR"))))
+                .andExpect(content().string(not(containsString("IOException"))))
+                .andExpect(content().string(not(containsString("client disconnected"))));
     }
 
     @Test

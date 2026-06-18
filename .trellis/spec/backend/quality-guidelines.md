@@ -50,7 +50,7 @@ Before completing backend work, verify:
 - [ ] Vector retrieval is scoped in SQL, not filtered after retrieval in Java.
 - [ ] Document status transitions are explicit and failure states are persisted.
 - [ ] Upstream HTTP calls have timeouts and normalized error handling.
-- [ ] Streaming requests cancel upstream calls when clients disconnect (tested via `SseEmitter` send `IOException` handling in `OpenAiCompatibleUpstreamClient`).
+- [ ] Streaming requests cancel upstream calls when clients disconnect (unit-tested via `SseEmitter` send `IOException` handling in `OpenAiCompatibleUpstreamClient`; runtime smoke verified via `OpenAiChatCompletionsRuntimeSmokeTest` with real embedded servlet container and HTTP client).
 - [ ] Request logs avoid full prompts and document content.
 - [ ] New database fields have migration notes and indexes where needed.
 - [ ] Tests cover both success and relevant failure paths.
@@ -64,9 +64,23 @@ API key rate-limit regression checks:
 cd backend
 mvn -q "-Dtest=ApiKeyServiceTest,GatewayAuthFilterTest,ApiKeyRateLimitServiceTest" test
 mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test
+mvn -q "-Dtest=OpenAiCompatibleUpstreamClientTest" test
 mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test
 mvn -q -DskipTests compile
 ```
+
+Streaming runtime smoke verification:
+
+```bash
+cd backend
+mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest" test
+mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest,OpenAiChatCompletionsControllerTest,OpenAiCompatibleUpstreamClientTest" test
+mvn -q "-Dtest=ApiKeyRateLimitServiceTest,ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test
+mvn -q -DskipTests compile
+git diff --check
+```
+
+The runtime smoke uses `@SpringBootTest(webEnvironment = RANDOM_PORT)` with a real embedded servlet container and Java 21 `java.net.http.HttpClient`. It does not require PostgreSQL, Redis, Docker, or external providers. It covers normal streaming `[DONE]`, client disconnect, emitter timeout, and post-start upstream failure. Every streaming row asserts `output_capture_status=STREAMING_UNSUPPORTED`. Reservation release is asserted exactly once for disconnect, timeout, and failure; normal success does not release. Backend unit tests must run with a hard timeout of 60 seconds per command when feasible.
 
 ## RAG Pipeline Quality
 

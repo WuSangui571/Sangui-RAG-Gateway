@@ -315,6 +315,7 @@ public class OpenAiChatCompletionsController {
                         .retrievalEvidence(prep.getRetrievalEvidence())
                         .outputCaptureStatus("STREAMING_UNSUPPORTED")
                         .build());
+                completeEmitter(emitter, requestId, "stream_timeout");
             }
         });
 
@@ -364,7 +365,6 @@ public class OpenAiChatCompletionsController {
                     if (reservationHolder[0] != null) {
                         rateLimitService.releaseReservation(apiKeyId, reservationHolder[0]);
                     }
-                    emitter.complete();
                     log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=cancelled error_code=client_cancelled messages_count={} latency_ms={}",
                             requestId, appId, apiKeyId, userId, messagesCount, latencyMs);
 
@@ -584,6 +584,15 @@ public class OpenAiChatCompletionsController {
         } catch (Exception e) {
             log.info("gateway.chat.sse_complete_failed request_id={} error_code={} error_class={}",
                     requestId, code, e.getClass().getSimpleName());
+        }
+    }
+
+    private void completeEmitter(SseEmitter emitter, String requestId, String errorCode) {
+        try {
+            emitter.complete();
+        } catch (Exception e) {
+            log.info("gateway.chat.sse_complete_failed request_id={} error_code={} error_class={}",
+                    requestId, errorCode, e.getClass().getSimpleName());
         }
     }
 

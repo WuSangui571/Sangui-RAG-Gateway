@@ -1,0 +1,18 @@
+{"file": ".trellis/tasks/06-18-streaming-disconnect-runtime-smoke/prd.md", "reason": "Primary task contract: runtime streaming smoke scope, matrix, acceptance criteria"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project OpenAI-compatible streaming, request-log, safe evidence, and product boundary"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Gateway error shape and streaming terminal status contract"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe request-log fields and streaming output-capture status contract"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Request-log schema and API-key reservation persistence contracts"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required backend streaming and rate-limit validation checks"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Upstream timeout/error normalization and streaming failure boundaries"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Secret-safe observability and API-key cost boundary"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer streaming/request-log checklist"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicate lifecycle logic; search existing patterns first"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java", "reason": "Current SseEmitter lifecycle, terminal guard, request-log writes, reservation release points"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java", "reason": "Current upstream SSE read loop and cancellation outcome"}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyRateLimitService.java", "reason": "Reservation check/release/reconcile API and Redis key boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Request-log command mapping and safe persistence"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java", "reason": "Existing MockMvc streaming and reservation tests to preserve"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java", "reason": "Existing upstream SSE unit patterns to preserve"}
+{"file": "scripts/demo-smoke.ps1", "reason": "Existing runtime smoke evidence style and safe output constraints"}
+{"file": "docs/runtime-evidence-checklist.md", "reason": "Metadata-only runtime evidence recording contract"}
