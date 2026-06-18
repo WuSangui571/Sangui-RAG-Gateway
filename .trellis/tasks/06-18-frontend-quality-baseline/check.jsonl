@@ -1,0 +1,24 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Check product boundary and CI/frontend command contract after implementation."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Verify lint/test/typecheck/build/visual smoke and frontend UX/security completion checklist."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Check tests and code keep typed DTO/VO unions aligned without any/secret fields."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Review new test/config locations and import boundaries."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check representative pages preserve clear admin component behavior."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Verify tests do not introduce broad global stores or persisted sensitive data."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Check loading/error/data/refresh behavior and no swallowed API errors."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Review new test utilities for useful reuse without over-abstraction."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Confirm no unintended backend/API/DTO/DB/auth contract drift."}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Check request-log/output-preview security boundary remains intact."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Verify normal request-log surfaces render safe operational metadata only."}
+{"file": "frontend/package.json", "reason": "Verify scripts and dependencies are minimal and correctly wired."}
+{"file": "frontend/vite.config.ts", "reason": "Check Vite/Vitest config does not break dev/build proxy behavior."}
+{"file": "frontend/playwright.config.ts", "reason": "Verify visual smoke remains Chromium-only and independent of backend services."}
+{"file": ".github/workflows/ci.yml", "reason": "Check CI order, caches, and artifact policy remain safe."}
+{"file": "frontend/src/App.tsx", "reason": "Verify default route fallback and page mapping remain stable."}
+{"file": "frontend/src/components/layout/AdminShell.tsx", "reason": "Check unauthenticated/authenticated navigation and auth-state tests."}
+{"file": "frontend/src/pages/request-logs/RequestLogListPage.tsx", "reason": "Check request-log list tests cover safe metadata and forbidden field absence."}
+{"file": "frontend/src/pages/model-configs/ModelConfigPage.tsx", "reason": "Check model-config page tests do not reintroduce CHAT_EMBEDDING or unsafe key handling."}
+{"file": "frontend/src/pages/apps/AppConfigPage.tsx", "reason": "Check output capture enable still requires explicit confirmation and no preview content appears."}
+{"file": "frontend/src/api/http.ts", "reason": "Check no page bypasses typed API/http boundary."}
+{"file": "frontend/src/app/i18n/dict.ts", "reason": "Check new labels keep zh-CN/en-US key parity."}

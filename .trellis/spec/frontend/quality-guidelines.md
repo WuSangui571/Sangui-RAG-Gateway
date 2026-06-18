@@ -4,6 +4,44 @@
 
 ## Testing Expectations
 
+### Lint Baseline
+
+Run ESLint with TypeScript and React hooks rules:
+
+```bash
+cd frontend
+cmd /c npm run lint
+```
+
+The lint command (`eslint . --ext .ts,.tsx`) covers TypeScript, React hooks, and unused variable detection. Rules are strict enough to catch regressions without broad style churn. Lint must be run and pass before committing frontend changes.
+
+### Unit/Component Test Baseline
+
+Run unit and component tests with Vitest and React Testing Library:
+
+```bash
+cd frontend
+cmd /c npm run test
+```
+
+Test configuration:
+- Runner: Vitest with `jsdom` environment.
+- Test location: `frontend/src/**/*.test.{ts,tsx}`.
+- Setup file: `frontend/src/test/setup.ts` (imports `@testing-library/jest-dom/vitest` matchers).
+- Tests mock typed API client boundaries; no live backend, Docker, provider keys, app API keys, or admin JWTs required.
+
+Coverage scope:
+- AdminShell: unauthenticated guard, login success/failure, authenticated navigation across all PageKey menu items.
+- RequestLogListPage: unauthenticated guard, no-app-guard, loading/empty/error states, safe-rendering assertions (forbidden fields absent from DOM).
+- ModelConfigPage: initial load with typed API client, loading/empty/error states.
+- AppConfigPage: initial load with typed API client, loading/empty/error states, output-capture enable confirmation modal, output-capture disable direct path.
+
+What remains visual/e2e/manual:
+- Visual theme baseline: `npm run test:visual` (Playwright Chromium).
+- Full end-to-end admin workflows (login → create → configure → verify).
+- Cross-page workflows such as secret → smoke test.
+- Browser-specific layout and responsive behavior.
+
 ### Visual Smoke (Automated Browser Baseline)
 
 Run the automated visual smoke baseline for the Admin unauthenticated login page:
@@ -46,12 +84,14 @@ Implementation files:
 - `frontend/playwright.config.ts`
 - `frontend/tests/visual/admin-login-theme-smoke.spec.ts`
 
-### CI Visual Smoke Contract
+### CI Frontend Job Contract
 
 The frontend CI job in `.github/workflows/ci.yml` must run these commands from `frontend/`:
 
 ```bash
 npm ci
+npm run lint
+npm run test
 npx playwright install chromium
 npm run typecheck
 npm run build
@@ -89,7 +129,11 @@ Do not upload on success. Do not upload or cache `.env`, `frontend/dist/`, `fron
 
 ```bash
 cd frontend
-npx playwright install chromium   # one-time setup
+cmd /c npm run lint               # ESLint with TypeScript + React hooks
+cmd /c npm run test               # Vitest unit/component tests
+cmd /c npm run typecheck          # TypeScript check
+cmd /c npm run build              # Production build
+npx playwright install chromium   # one-time setup for visual smoke
 cmd /c npm run test:visual        # start Vite and run Playwright
 ```
 

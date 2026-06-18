@@ -18,11 +18,13 @@ import com.sangui.raggateway.log.CreateRequestLogCommand;
 import com.sangui.raggateway.log.OutputCapturePolicy;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
 import com.sangui.raggateway.gateway.upstream.StreamCompletionOutcome;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -75,7 +77,8 @@ public class OpenAiChatCompletionsController {
 
     @PostMapping("/v1/chat/completions")
     public Object chatCompletions(@RequestBody OpenAiChatCompletionRequest request,
-                                  @RequestHeader(value = "X-Sangui-Return-Citations", required = false) String returnCitationsHeader) {
+                                  @RequestHeader(value = "X-Sangui-Return-Citations", required = false) String returnCitationsHeader,
+                                  HttpServletResponse servletResponse) {
         GatewayRequestContext context = GatewayRequestContextHolder.get();
         if (context == null) {
             throw new GatewayException("Invalid API key.", "invalid_request_error", "invalid_api_key", HttpStatus.UNAUTHORIZED);
@@ -97,7 +100,8 @@ public class OpenAiChatCompletionsController {
         }
 
         if (Boolean.TRUE.equals(request.getStream())) {
-            return handleStreamCompletion(request, context, requestId, messagesCount, start, returnCitations);
+            return handleStreamCompletion(request, context, requestId, messagesCount, start, returnCitations,
+                    servletResponse);
         }
 
         int messagesChars = computeMessagesCharCount(request);
@@ -211,7 +215,8 @@ public class OpenAiChatCompletionsController {
     private SseEmitter handleStreamCompletion(OpenAiChatCompletionRequest request,
                                                 GatewayRequestContext context,
                                                 String requestId, int messagesCount, long start,
-                                                boolean returnCitations) {
+                                                boolean returnCitations,
+                                                HttpServletResponse servletResponse) {
         int messagesChars = computeMessagesCharCount(request);
         ApiKeyRateLimitResult[] reservationHolder = new ApiKeyRateLimitResult[1];
         if (rateLimitProperties.isEnabled()) {
@@ -483,6 +488,7 @@ public class OpenAiChatCompletionsController {
 
         waitForStreamReady(streamReady, context, requestId, messagesCount, start, model, providerName,
                 prep.getQuestionSummary(), prep.getHitChunkIds(), prep.getRetrievalEvidence(), reservationHolder[0]);
+        servletResponse.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
         return emitter;
     }
 

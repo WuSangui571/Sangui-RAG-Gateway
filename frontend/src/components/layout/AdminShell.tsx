@@ -5,7 +5,7 @@ import type { MenuProps } from 'antd'
 import { useI18n } from '../../app/i18n'
 import { UIPreferenceContext } from '../../app/providers/UIPreferenceProvider'
 import type { I18nKey } from '../../app/i18n/dict'
-import { login, getCurrentUser } from '../../api/auth'
+import { login } from '../../api/auth'
 import { setAuthToken, setUnauthorizedHandler } from '../../api/http'
 import type { AdminUserVO } from '../../types/auth'
 
@@ -100,16 +100,6 @@ export default function AdminShell({ children }: AdminShellProps) {
     setUnauthorizedHandler(handleLogout)
     return () => setUnauthorizedHandler(null)
   }, [handleLogout])
-
-  useEffect(() => {
-    if (currentUser) {
-      getCurrentUser().then(res => {
-        setCurrentUser(res.data)
-      }).catch(() => {
-        handleLogout()
-      })
-    }
-  }, [])
 
   const menuItems: MenuProps['items'] = useMemo(() => {
     const entries = Object.entries(PAGE_KEY_TO_I18N) as [PageKey, I18nKey][]

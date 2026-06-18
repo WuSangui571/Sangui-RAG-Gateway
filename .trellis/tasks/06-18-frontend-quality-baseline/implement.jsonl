@@ -1,0 +1,24 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product boundary: admin console remains lightweight RAG gateway configuration UI, not a broader platform."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Primary frontend quality baseline: existing visual smoke, new lint/test command contract, UX/security testing expectations."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Typed API contracts, status unions, request-log/output-preview forbidden fields, and i18n parity rules."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend test/config files should follow existing React/Vite/admin directory boundaries."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Component tests must assert explicit loading, empty, error, disabled, and safe admin UI states."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Shell/auth/page state, one-time secrets, and request-log data must not enter persistent/global state."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Use typed API clients and visible error handling; avoid raw fetch in pages/components."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicated test helpers and repeated route/page mocks when establishing baseline."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Although no API changes are expected, keep admin auth, secret, and request-log boundaries explicit."}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Request-log tests must assert safe metadata only and forbidden fields are not rendered."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe observability field list for request-log UI tests and forbidden prompt/key/provider-body fields."}
+{"file": "frontend/package.json", "reason": "Existing frontend scripts show typecheck/build/visual only; implement lint and unit test scripts here."}
+{"file": "frontend/vite.config.ts", "reason": "Existing Vite React config may be reused or extended carefully for Vitest if chosen."}
+{"file": "frontend/playwright.config.ts", "reason": "Existing visual smoke config must stay intact while adding separate unit/component tests."}
+{"file": ".github/workflows/ci.yml", "reason": "Frontend CI currently runs npm ci, Playwright install, typecheck, build, visual smoke; add lint and test steps."}
+{"file": "frontend/src/App.tsx", "reason": "Current route contract is AdminShell PageKey switch; route baseline tests should follow it without adding react-router."}
+{"file": "frontend/src/components/layout/AdminShell.tsx", "reason": "Shell owns auth guard, menu navigation, selected app, unauthorized logout, and login screen."}
+{"file": "frontend/src/pages/request-logs/RequestLogListPage.tsx", "reason": "Representative request-log page for no-app/loading/error/empty/safe-rendering tests."}
+{"file": "frontend/src/pages/model-configs/ModelConfigPage.tsx", "reason": "Representative model-config page for loading/error/empty and capability/check baseline tests."}
+{"file": "frontend/src/pages/apps/AppConfigPage.tsx", "reason": "Representative app page for output-capture confirmation and list state tests."}
+{"file": "frontend/src/api/http.ts", "reason": "Central admin auth token injection and 401 unauthorized handler; useful for tests/mocks."}
+{"file": "frontend/src/app/i18n/dict.ts", "reason": "Typed i18n dictionary with locale parity; new test-visible labels may need both locales."}

@@ -4,12 +4,11 @@ import type { Locale } from '../i18n/dict'
 
 const THEME_KEY = 'sangui-admin-theme'
 const LOCALE_KEY = 'sangui-admin-locale'
-const VALID_THEMES = ['dark', 'light'] as const
 const DARK_APP_BACKGROUND = '#141414'
 const LIGHT_APP_BACKGROUND = '#f5f5f5'
 const APP_BACKGROUND_CSS_VAR = '--sangui-admin-page-bg'
 
-type ThemeMode = typeof VALID_THEMES[number]
+type ThemeMode = 'dark' | 'light'
 
 function isValidTheme(v: string | null): v is ThemeMode {
   return v === 'dark' || v === 'light'

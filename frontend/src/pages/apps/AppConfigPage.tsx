@@ -295,7 +295,7 @@ export default function AppConfigPage() {
         onCancel={() => { setCreateOpen(false); form.resetFields() }}
         onOk={handleCreate}
         confirmLoading={submitting}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           <Form.Item name="name" label={t('apps.column.name')} rules={[{ required: true, message: t('apps.nameRequired') }]}>

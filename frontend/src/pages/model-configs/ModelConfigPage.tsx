@@ -417,7 +417,7 @@ export default function ModelConfigPage() {
         onCancel={() => { setCreateOpen(false); form.resetFields(); setCreateCapability('CHAT') }}
         onOk={handleCreate}
         confirmLoading={submitting}
-        destroyOnClose
+        destroyOnHidden
         width={560}
       >
         <Form form={form} layout="vertical" initialValues={{ provider_name: 'openai-compatible' }}>
@@ -465,7 +465,7 @@ export default function ModelConfigPage() {
         onCancel={() => { setEditOpen(false); editForm.resetFields(); setEditingId(null) }}
         onOk={handleEditSubmit}
         confirmLoading={editSubmitting}
-        destroyOnClose
+        destroyOnHidden
         width={560}
       >
         <Form form={editForm} layout="vertical">
@@ -513,7 +513,7 @@ export default function ModelConfigPage() {
         onCancel={() => { setCheckOpen(false); setCheckResult(null) }}
         onOk={handleRunCheck}
         confirmLoading={checking}
-        destroyOnClose
+        destroyOnHidden
         width={640}
         okText={t('model-config.checkRun')}
       >
