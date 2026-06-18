@@ -1789,3 +1789,79 @@ Updated files include backend document processing classes, V14 migration, docume
 ### Next Steps
 
 - None - task complete
+
+
+## Session 64: Streaming Robustness Closeout
+
+**Date**: 2026-06-18
+**Task**: Streaming Robustness Closeout
+**Branch**: `feature/streaming-robustness`
+
+### Summary
+
+Archived the completed streaming robustness task after manual testing and commit `cc4e6d6f`.
+
+### Main Changes
+
+## Streaming Robustness Closeout
+
+Commit: `cc4e6d6f fix:增强流式请求终态观测`
+
+### Main Changes
+
+- Hardened OpenAI-compatible streaming lifecycle for `/v1/chat/completions` with deterministic terminal handling for success, upstream post-start failure, client cancellation, and gateway-owned emitter timeout.
+- Added `StreamCompletionOutcome` so upstream `SseEmitter.send(...)` `IOException` is returned as `CANCELLED` instead of being indistinguishable from success.
+- Updated controller terminal-state handling with a single `AtomicBoolean` guard so request logs and token reservation release happen once per streaming request.
+- Released token reservations on streaming cancellation, post-start upstream failure, missing `[DONE]`, timeout, and unexpected background failure while keeping the conservative reservation for successful streaming completion.
+- Persisted `cancelled/client_cancelled` and `cancelled/stream_timeout` request-log rows with safe metadata only and `output_capture_status=STREAMING_UNSUPPORTED`.
+- Added bounded SSE emitter timeout config: `rag.gateway.streaming.emitter-timeout-seconds: 300`.
+- Aligned request-log `cancelled` status across backend list filter validation, frontend TypeScript types, status tag display, status filter dropdown, and i18n.
+- Synced executable Trellis specs for backend logging/error/database/quality, gateway resilience, frontend type safety, and project-level request-log contracts.
+
+### Updated Areas
+
+- Backend streaming controller: `OpenAiChatCompletionsController`.
+- Upstream SSE client: `OpenAiCompatibleUpstreamClient`, `StreamCompletionOutcome`.
+- Request-log admin validation: `ApiRequestLogAdminController`.
+- Frontend request-log status surfaces: `request-log.ts`, `RequestLogStatusTag.tsx`, `RequestLogListPage.tsx`, `dict.ts`.
+- Tests: `OpenAiChatCompletionsControllerTest`, `OpenAiCompatibleUpstreamClientTest`, `ApiRequestLogAdminControllerTest`.
+- Specs: `.trellis/spec/backend/*`, `.trellis/spec/gateway/resilience.md`, `.trellis/spec/frontend/type-safety.md`, `.trellis/spec/sangui-rag-gateway.md`.
+
+### Verification Recorded
+
+- DeepSeek reported backend targeted tests passing before Codex takeover: `OpenAiChatCompletionsControllerTest`, `OpenAiCompatibleUpstreamClientTest`, `ChatCompletionGatewayServiceTest`, `ApiRequestLogAdminControllerTest`, `ApiRequestLogServiceTest`, `ApiKeyRateLimitServiceTest`, plus `mvn -q -DskipTests compile`.
+- Codex ran `cmd /c npm run typecheck`: passed.
+- Codex ran `cmd /c npm run build`: passed with only the existing Vite large-chunk warning.
+- Codex ran `git diff --check`: passed.
+- Codex scanned changed files for `console.log`, `debugger`, `TODO`, and empty ignored catch blocks: no final hits.
+- Codex attempted backend Maven targeted tests, but Maven dependency resolution for `spring-boot-starter-parent:3.4.5` required network access to `alimaven` and was blocked by sandbox permissions; the escalation request was rejected by the automatic approval review.
+- Human reported manual testing completed and code committed before this record-session run.
+
+### Result And Boundaries
+
+- Trellis task `06-18-streaming-robustness` was archived after manual acceptance and commit.
+- No new public request payload fields, provider fallback, metrics dashboard, streaming citation events, database migration, or frontend redesign were introduced.
+- Request logs remain metadata-only; raw prompts, messages, SSE payloads, provider bodies, keys, stack traces, storage paths, and embeddings remain forbidden.
+- Remaining manual risk: real servlet-container client disconnect behavior should be watched in an environment smoke because MockMvc cannot fully reproduce `SseEmitter.onError` disconnect timing.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cc4e6d6f` | (see git log) |
+
+### Testing
+
+- [OK] Frontend `cmd /c npm run typecheck`
+- [OK] Frontend `cmd /c npm run build`
+- [OK] Repository `git diff --check`
+- [WARN] Backend Maven targeted tests were attempted by Codex but blocked by sandboxed dependency resolution and rejected escalation; DeepSeek's earlier targeted backend test report and human manual testing were recorded above.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
