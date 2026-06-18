@@ -26,13 +26,16 @@ public class DocumentAdminController {
     private final DocumentService documentService;
     private final KnowledgeBaseService knowledgeBaseService;
     private final DocumentProperties documentProperties;
+    private final DocumentProcessingTaskService taskService;
 
     public DocumentAdminController(DocumentService documentService,
                                     KnowledgeBaseService knowledgeBaseService,
-                                    DocumentProperties documentProperties) {
+                                    DocumentProperties documentProperties,
+                                    DocumentProcessingTaskService taskService) {
         this.documentService = documentService;
         this.knowledgeBaseService = knowledgeBaseService;
         this.documentProperties = documentProperties;
+        this.taskService = taskService;
     }
 
     @PostMapping("/api/admin/knowledge-bases/{knowledgeBaseId}/documents")
@@ -70,10 +73,11 @@ public class DocumentAdminController {
 
         try {
             byte[] fileContent = file.getBytes();
-            DocumentEntity doc = documentService.uploadAndProcess(
+            DocumentEntity doc = documentService.uploadAndEnqueue(
                     userId, knowledgeBaseId, originalFilename,
                     file.getContentType(), fileContent);
-            return ApiResponse.success(DocumentVO.from(doc));
+            DocumentProcessingTaskEntity task = taskService.findByDocumentId(doc.getId());
+            return ApiResponse.success(DocumentVO.from(doc, task));
         } catch (IllegalArgumentException e) {
             throw new BusinessException("INVALID_REQUEST", e.getMessage());
         } catch (IOException e) {
@@ -102,7 +106,10 @@ public class DocumentAdminController {
         }
 
         List<DocumentEntity> documents = documentService.listByKnowledgeBase(userId, knowledgeBaseId, status);
-        List<DocumentVO> vos = documents.stream().map(DocumentVO::from).toList();
+        List<DocumentVO> vos = documents.stream().map(doc -> {
+            DocumentProcessingTaskEntity task = taskService.findByDocumentId(doc.getId());
+            return DocumentVO.from(doc, task);
+        }).toList();
         return ApiResponse.success(vos);
     }
 
@@ -118,7 +125,8 @@ public class DocumentAdminController {
             }
             throw new BusinessException("NOT_FOUND", "Document not found", HttpStatus.NOT_FOUND);
         }
-        return ApiResponse.success(DocumentVO.from(doc));
+        DocumentProcessingTaskEntity task = taskService.findByDocumentId(documentId);
+        return ApiResponse.success(DocumentVO.from(doc, task));
     }
 
     @DeleteMapping("/api/admin/documents/{documentId}")
@@ -126,6 +134,14 @@ public class DocumentAdminController {
         Long userId = getRequiredUserId();
         documentService.deleteDocument(userId, documentId);
         return ApiResponse.success(null);
+    }
+
+    @PostMapping("/api/admin/documents/{documentId}/processing-task/retry")
+    public ApiResponse<DocumentVO> retryDocument(@PathVariable Long documentId) {
+        Long userId = getRequiredUserId();
+        DocumentEntity doc = documentService.retryDocument(userId, documentId);
+        DocumentProcessingTaskEntity task = taskService.findByDocumentId(documentId);
+        return ApiResponse.success(DocumentVO.from(doc, task));
     }
 
     private Long getRequiredUserId() {

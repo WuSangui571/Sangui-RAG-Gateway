@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sangui.raggateway.document.DocumentUploadRules;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -47,6 +48,23 @@ public class LocalFileStorageService implements FileStorageService {
             return new StoredFile(storageKey, fileSize);
         } catch (IOException e) {
             throw new RuntimeException("Failed to save file: " + storageKey, e);
+        }
+    }
+
+    @Override
+    public InputStream read(String storageKey) {
+        if (storageKey == null || storageKey.isBlank()) {
+            throw new IllegalArgumentException("storageKey must not be blank");
+        }
+        Path targetPath = rootPath.resolve(storageKey).normalize();
+        if (!targetPath.startsWith(rootPath)) {
+            throw new IllegalArgumentException("Path traversal detected for storageKey: " + storageKey);
+        }
+        try {
+            byte[] bytes = Files.readAllBytes(targetPath);
+            return new ByteArrayInputStream(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read file: " + storageKey, e);
         }
     }
 

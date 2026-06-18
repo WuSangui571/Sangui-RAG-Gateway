@@ -3,6 +3,7 @@ package com.sangui.raggateway.document;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.document.chunk.TextChunker;
+import com.sangui.raggateway.document.config.DocumentProcessingProperties;
 import com.sangui.raggateway.document.config.DocumentProperties;
 import com.sangui.raggateway.document.parser.DocumentParser;
 import com.sangui.raggateway.document.parser.ParsedDocument;
@@ -46,6 +47,8 @@ public class DocumentService {
     private final TextChunker textChunker;
     private final List<DocumentParser> parsers;
     private final DocumentProperties documentProperties;
+    private final DocumentProcessingTaskService taskService;
+    private final DocumentProcessingProperties processingProperties;
 
     public DocumentService(DocumentMapper documentMapper,
                            DocumentChunkMapper documentChunkMapper,
@@ -57,7 +60,9 @@ public class DocumentService {
                            TransactionTemplate transactionTemplate,
                            TextChunker textChunker,
                            List<DocumentParser> parsers,
-                           DocumentProperties documentProperties) {
+                           DocumentProperties documentProperties,
+                           DocumentProcessingTaskService taskService,
+                           DocumentProcessingProperties processingProperties) {
         this.documentMapper = documentMapper;
         this.documentChunkMapper = documentChunkMapper;
         this.documentChunkEmbeddingMapper = documentChunkEmbeddingMapper;
@@ -69,6 +74,8 @@ public class DocumentService {
         this.textChunker = textChunker;
         this.parsers = parsers;
         this.documentProperties = documentProperties;
+        this.taskService = taskService;
+        this.processingProperties = processingProperties;
     }
 
     public DocumentEntity uploadAndProcess(Long userId, Long knowledgeBaseId,
@@ -80,6 +87,50 @@ public class DocumentService {
             return doc;
         }
         return embedAndFinalize(userId, knowledgeBaseId, doc);
+    }
+
+    public DocumentEntity uploadAndEnqueue(Long userId, Long knowledgeBaseId,
+                                            String originalFilename, String contentType,
+                                            byte[] fileContent) {
+        if (!DocumentUploadRules.isSupportedFilename(originalFilename)) {
+            throw new IllegalArgumentException("Unsupported file type: " + originalFilename + ". Only .txt, .md, and .markdown files are supported.");
+        }
+        if (!DocumentUploadRules.isSupportedContentType(contentType)) {
+            throw new IllegalArgumentException("Unsupported content type");
+        }
+        if (fileContent == null || fileContent.length == 0) {
+            throw new IllegalArgumentException("File must not be empty");
+        }
+        if (fileContent.length > documentProperties.getMaxFileSizeBytes()) {
+            throw new IllegalArgumentException("File exceeds max-file-size-bytes");
+        }
+
+        String safeFilename = DocumentUploadRules.sanitizeFilename(originalFilename);
+        String displayBasename = DocumentUploadRules.extractDisplayBasename(originalFilename);
+
+        InputStream storageStream = new ByteArrayInputStream(fileContent);
+        StoredFile storedFile = fileStorageService.save("knowledge", knowledgeBaseId, safeFilename, storageStream);
+
+        DocumentEntity doc = new DocumentEntity();
+        doc.setUserId(userId);
+        doc.setKnowledgeBaseId(knowledgeBaseId);
+        doc.setOriginalFilename(displayBasename);
+        doc.setContentType(contentType);
+        doc.setFileSize(storedFile.getFileSize());
+        doc.setStoragePath(storedFile.getStoragePath());
+        doc.setStatus(DocumentStatus.UPLOADED.name());
+        doc.setChunkCount(0);
+        doc.setCreatedAt(LocalDateTime.now());
+        doc.setUpdatedAt(LocalDateTime.now());
+        documentMapper.insert(doc);
+        log.info("Document created: id={}, kbId={}, filename={}, status=UPLOADED",
+                doc.getId(), knowledgeBaseId, displayBasename);
+
+        taskService.createTask(userId, knowledgeBaseId, doc.getId(), processingProperties.getMaxAttempts());
+
+        knowledgeBaseService.updateStatus(knowledgeBaseId, KnowledgeBaseStatus.PROCESSING.name());
+
+        return doc;
     }
 
     @Transactional
@@ -122,6 +173,11 @@ public class DocumentService {
 
         knowledgeBaseService.updateStatus(knowledgeBaseId, KnowledgeBaseStatus.PROCESSING.name());
 
+        return parseDocumentContent(doc, userId, knowledgeBaseId, displayBasename, contentType, fileContent);
+    }
+
+    DocumentEntity parseDocumentContent(DocumentEntity doc, Long userId, Long knowledgeBaseId,
+                                         String displayBasename, String contentType, byte[] fileContent) {
         doc.setStatus(DocumentStatus.PARSING.name());
         doc.setUpdatedAt(LocalDateTime.now());
         documentMapper.updateById(doc);
@@ -182,7 +238,135 @@ public class DocumentService {
         }
     }
 
-    private DocumentEntity embedAndFinalize(Long userId, Long knowledgeBaseId, DocumentEntity doc) {
+    public void processDocument(DocumentProcessingTaskEntity task) {
+        Long docId = task.getDocumentId();
+        Long userId = task.getUserId();
+        Long kbId = task.getKnowledgeBaseId();
+        Long taskId = task.getId();
+
+        DocumentEntity doc = findById(docId);
+        if (doc == null) {
+            log.error("Document not found for task: taskId={}, docId={}", taskId, docId);
+            taskService.transitionToFailed(taskId, "Document not found");
+            return;
+        }
+
+        byte[] fileContent;
+        try (InputStream storageStream = fileStorageService.read(doc.getStoragePath())) {
+            fileContent = storageStream.readAllBytes();
+        } catch (Exception e) {
+            log.error("Failed to read file from storage: taskId={}, docId={}, storageKey={}, errorClass={}",
+                    taskId, docId, doc.getStoragePath(), e.getClass().getSimpleName());
+            DocumentProcessingTaskEntity current = taskService.findById(taskId);
+            int attempt = current != null && current.getAttemptCount() != null ? current.getAttemptCount() : task.getAttemptCount();
+            int maxAttempts = current != null && current.getMaxAttempts() != null ? current.getMaxAttempts() : task.getMaxAttempts();
+            String errorMessage = "Failed to read file from storage: " + e.getClass().getSimpleName();
+            if (attempt < maxAttempts) {
+                taskService.transitionToRetryable(taskId, errorMessage);
+                markFailed(doc, errorMessage);
+                updateKnowledgeBaseAfterFailure(userId, kbId);
+            } else {
+                taskService.transitionToFailed(taskId, errorMessage);
+                markFailed(doc, errorMessage);
+                updateKnowledgeBaseAfterFailure(userId, kbId);
+            }
+            return;
+        }
+
+        doc = parseDocumentContent(doc, userId, kbId,
+                doc.getOriginalFilename(), doc.getContentType(), fileContent);
+
+        if (DocumentStatus.FAILED.name().equals(doc.getStatus())) {
+            int currentAttempt = task.getAttemptCount() != null ? task.getAttemptCount() : 0;
+            int maxAttempts = task.getMaxAttempts() != null ? task.getMaxAttempts() : processingProperties.getMaxAttempts();
+            if (currentAttempt < maxAttempts) {
+                taskService.transitionToRetryable(taskId, doc.getErrorMessage());
+            } else {
+                taskService.transitionToFailed(taskId, doc.getErrorMessage());
+            }
+            return;
+        }
+
+        doc = embedAndFinalize(userId, kbId, doc);
+
+        if (DocumentStatus.READY.name().equals(doc.getStatus())) {
+            taskService.transitionToSucceeded(taskId);
+        } else {
+            int currentAttempt = task.getAttemptCount() != null ? task.getAttemptCount() : 0;
+            int maxAttempts = task.getMaxAttempts() != null ? task.getMaxAttempts() : processingProperties.getMaxAttempts();
+            if (currentAttempt < maxAttempts) {
+                taskService.transitionToRetryable(taskId, doc.getErrorMessage());
+            } else {
+                taskService.transitionToFailed(taskId, doc.getErrorMessage());
+            }
+        }
+    }
+
+    public DocumentEntity retryDocument(Long userId, Long documentId) {
+        DocumentEntity doc = findByIdAndUserId(documentId, userId);
+        if (doc == null) {
+            DocumentEntity any = findById(documentId);
+            if (any != null) {
+                throw new BusinessException("FORBIDDEN", "Access denied", HttpStatus.FORBIDDEN);
+            }
+            throw new BusinessException("NOT_FOUND", "Document not found", HttpStatus.NOT_FOUND);
+        }
+
+        DocumentProcessingTaskEntity task = taskService.findByDocumentId(documentId);
+
+        if (task == null) {
+            throw new BusinessException("INVALID_REQUEST",
+                    "No processing task found for document", HttpStatus.BAD_REQUEST);
+        }
+
+        if (DocumentProcessingTaskStatus.PROCESSING.name().equals(task.getStatus())) {
+            throw new BusinessException("DOCUMENT_PROCESSING",
+                    "Document is currently being processed", HttpStatus.CONFLICT);
+        }
+
+        if (DocumentProcessingTaskStatus.PENDING.name().equals(task.getStatus())
+                || DocumentProcessingTaskStatus.RETRYABLE.name().equals(task.getStatus())) {
+            return doc;
+        }
+
+        if (DocumentProcessingTaskStatus.SUCCEEDED.name().equals(task.getStatus())
+                && DocumentStatus.READY.name().equals(doc.getStatus())) {
+            throw new BusinessException("INVALID_REQUEST",
+                    "Document is already processed successfully", HttpStatus.BAD_REQUEST);
+        }
+
+        if (DocumentProcessingTaskStatus.FAILED.name().equals(task.getStatus())) {
+            clearChunksAndEmbeddings(documentId);
+
+            doc.setStatus(DocumentStatus.UPLOADED.name());
+            doc.setErrorMessage(null);
+            doc.setChunkCount(0);
+            doc.setUpdatedAt(LocalDateTime.now());
+            documentMapper.updateById(doc);
+
+            taskService.resetForRetry(task.getId());
+
+            knowledgeBaseService.updateStatus(doc.getKnowledgeBaseId(), KnowledgeBaseStatus.PROCESSING.name());
+
+            log.info("Document retry queued: docId={}, taskId={}", documentId, task.getId());
+            return doc;
+        }
+
+        throw new BusinessException("INVALID_REQUEST",
+                "Cannot retry document in current state", HttpStatus.BAD_REQUEST);
+    }
+
+    void clearChunksAndEmbeddings(Long documentId) {
+        LambdaQueryWrapper<DocumentChunkEmbeddingEntity> embeddingWrapper = new LambdaQueryWrapper<>();
+        embeddingWrapper.eq(DocumentChunkEmbeddingEntity::getDocumentId, documentId);
+        documentChunkEmbeddingMapper.delete(embeddingWrapper);
+
+        LambdaQueryWrapper<DocumentChunkEntity> chunkWrapper = new LambdaQueryWrapper<>();
+        chunkWrapper.eq(DocumentChunkEntity::getDocumentId, documentId);
+        documentChunkMapper.delete(chunkWrapper);
+    }
+
+    DocumentEntity embedAndFinalize(Long userId, Long knowledgeBaseId, DocumentEntity doc) {
         KnowledgeBaseEntity kb = knowledgeBaseService.findByIdAndUserId(knowledgeBaseId, userId);
         if (kb == null) {
             markFailed(doc, "Knowledge base not found");
@@ -357,7 +541,7 @@ public class DocumentService {
         return message.substring(0, 500);
     }
 
-    private void updateKnowledgeBaseAfterFailure(Long userId, Long knowledgeBaseId) {
+    void updateKnowledgeBaseAfterFailure(Long userId, Long knowledgeBaseId) {
         LambdaQueryWrapper<DocumentEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DocumentEntity::getUserId, userId);
         wrapper.eq(DocumentEntity::getKnowledgeBaseId, knowledgeBaseId);
@@ -379,6 +563,17 @@ public class DocumentService {
             throw new BusinessException("NOT_FOUND", "Document not found", HttpStatus.NOT_FOUND);
         }
 
+        DocumentProcessingTaskEntity task = taskService.findByDocumentId(documentId);
+        if (task != null && DocumentProcessingTaskStatus.PROCESSING.name().equals(task.getStatus())) {
+            throw new BusinessException("DOCUMENT_PROCESSING",
+                    "Document is currently being processed and cannot be deleted", HttpStatus.CONFLICT);
+        }
+
+        if (task != null && (DocumentProcessingTaskStatus.PENDING.name().equals(task.getStatus())
+                || DocumentProcessingTaskStatus.RETRYABLE.name().equals(task.getStatus()))) {
+            taskService.cancelTask(task.getId());
+        }
+
         String storageKey = doc.getStoragePath();
         if (storageKey != null && !storageKey.isBlank()) {
             fileStorageService.delete(storageKey);
@@ -386,13 +581,7 @@ public class DocumentService {
 
         Long kbId = doc.getKnowledgeBaseId();
 
-        LambdaQueryWrapper<DocumentChunkEmbeddingEntity> embeddingWrapper = new LambdaQueryWrapper<>();
-        embeddingWrapper.eq(DocumentChunkEmbeddingEntity::getDocumentId, documentId);
-        documentChunkEmbeddingMapper.delete(embeddingWrapper);
-
-        LambdaQueryWrapper<DocumentChunkEntity> chunkWrapper = new LambdaQueryWrapper<>();
-        chunkWrapper.eq(DocumentChunkEntity::getDocumentId, documentId);
-        documentChunkMapper.delete(chunkWrapper);
+        clearChunksAndEmbeddings(documentId);
 
         documentMapper.deleteById(documentId);
         log.info("Document deleted: id={}, kbId={}, storageKey={}", documentId, kbId, storageKey);
@@ -401,7 +590,7 @@ public class DocumentService {
     }
 
     public void deleteKnowledgeBase(Long userId, Long kbId) {
-        com.sangui.raggateway.knowledge.KnowledgeBaseEntity kb = knowledgeBaseService.findByIdAndUserId(kbId, userId);
+        KnowledgeBaseEntity kb = knowledgeBaseService.findByIdAndUserId(kbId, userId);
         if (kb == null) {
             KnowledgeBaseEntity any = knowledgeBaseService.findById(kbId);
             if (any != null) {
@@ -412,9 +601,17 @@ public class DocumentService {
 
         knowledgeBaseService.checkNotReferencedByAnyApp(kbId, userId);
 
+        if (taskService.hasProcessingTask(kbId)) {
+            throw new BusinessException("DOCUMENT_PROCESSING",
+                    "A document in this knowledge base is currently being processed", HttpStatus.CONFLICT);
+        }
+
+        List<DocumentProcessingTaskEntity> queuedTasks = taskService.findPendingOrRetryableByKbId(kbId);
+        taskService.cancelTasks(queuedTasks);
+
         LambdaQueryWrapper<DocumentEntity> docWrapper = new LambdaQueryWrapper<>();
         docWrapper.eq(DocumentEntity::getKnowledgeBaseId, kbId);
-        java.util.List<DocumentEntity> documents = documentMapper.selectList(docWrapper);
+        List<DocumentEntity> documents = documentMapper.selectList(docWrapper);
 
         for (DocumentEntity doc : documents) {
             String storageKey = doc.getStoragePath();
@@ -422,13 +619,7 @@ public class DocumentService {
                 fileStorageService.delete(storageKey);
             }
 
-            LambdaQueryWrapper<DocumentChunkEmbeddingEntity> embeddingWrapper = new LambdaQueryWrapper<>();
-            embeddingWrapper.eq(DocumentChunkEmbeddingEntity::getDocumentId, doc.getId());
-            documentChunkEmbeddingMapper.delete(embeddingWrapper);
-
-            LambdaQueryWrapper<DocumentChunkEntity> chunkWrapper = new LambdaQueryWrapper<>();
-            chunkWrapper.eq(DocumentChunkEntity::getDocumentId, doc.getId());
-            documentChunkMapper.delete(chunkWrapper);
+            clearChunksAndEmbeddings(doc.getId());
 
             documentMapper.deleteById(doc.getId());
             log.info("Document deleted in KB cleanup: id={}, kbId={}, storageKey={}",

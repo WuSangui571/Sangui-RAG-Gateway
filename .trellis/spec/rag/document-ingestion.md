@@ -133,16 +133,22 @@ Current hard rules:
 - Document processing must have explicit states.
 - Failures must persist bounded `error_message`.
 - Repeated processing must avoid dirty chunks.
-- Large-document handling should leave clear async extension points.
+- Upload requests must not parse, chunk, or embed before returning. They validate ownership/input, save the original file, create the `rag_document` row with `UPLOADED`, create one durable processing task with `PENDING`, set the knowledge base to `PROCESSING`, and return observable state.
+- `rag_document_processing_task` is the durable retry/recovery source of truth. Task statuses are `PENDING`, `PROCESSING`, `SUCCEEDED`, `RETRYABLE`, `FAILED`, and `CANCELED`.
+- A lightweight in-process scheduler/worker may poll the database; Kafka, RabbitMQ, Redis Streams, or another MQ are not required for the baseline.
+- The worker must claim tasks with a conditional database update, read the original file through `FileStorageService.read(...)`, and persist document transitions before long-running parser or embedding work.
+- `PROCESSING` tasks must carry `locked_by` and `locked_at`; stale `PROCESSING` tasks must recover to `RETRYABLE` while attempts remain or `FAILED` when exhausted.
+- `attempt_count` counts processing attempts started by worker claim. Explicit retry of a terminal `FAILED` task resets the task to `PENDING` and clears prior attempt/error scheduling state.
+- Retry/reprocessing must clear old chunks and embeddings before producing new active rows.
+- Task and document errors must be bounded and admin-safe. Do not persist provider raw bodies, chunk content, stack traces, storage absolute paths, credentials, vectors, prompts, or uploaded file content.
 
 Future roadmap only:
 
-- async task queue
 - batch embedding
 - concurrent workers
-- retry with backoff
 - document processing progress
-- ingestion task cancellation
+- external queue-backed ingestion
+- replacement/reprocess semantics for already `READY` documents
 
 ## 10. Future Enhancement Roadmap
 
@@ -168,6 +174,7 @@ Storage abstraction:
 
 ```java
 StoredFile save(String ownerType, Long ownerId, String originalFilename, InputStream inputStream);
+InputStream read(String storageKey);
 void delete(String storageKey);
 ```
 
@@ -177,6 +184,8 @@ Deletion flow:
 document delete
   -> admin auth context
   -> document ownership check
+  -> reject if processing task is PROCESSING
+  -> cancel PENDING/RETRYABLE task when present
   -> storage delete (idempotent missing file/object)
   -> delete embeddings
   -> delete chunks
@@ -189,6 +198,8 @@ knowledge-base delete
   -> admin auth context
   -> knowledge-base ownership check
   -> reject if same-user app references KB
+  -> reject if any owned document has a PROCESSING task
+  -> cancel PENDING/RETRYABLE tasks under the KB
   -> for each document: storage delete, embeddings delete, chunks delete, document delete
   -> delete knowledge-base row
 ```
@@ -207,4 +218,4 @@ Good/base/bad cases:
 |---|---|
 | Good | Deleting an owned document removes the stored original, vectors, chunks, and document row, and updates KB status from remaining documents. |
 | Base | Missing storage object/file is treated as cleanup-complete so retries can proceed after partial external cleanup. |
-| Bad | Cross-user delete attempts storage cleanup, storage cleanup failure reports success, or parse/embedding failure silently deletes the original before explicit deletion. |
+| Bad | Cross-user delete attempts storage cleanup, storage cleanup failure reports success, a processing worker races with deletion, or parse/embedding failure silently deletes the original before explicit deletion. |

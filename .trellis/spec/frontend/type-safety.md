@@ -186,6 +186,14 @@ export type DocumentStatus =
   | 'READY'
   | 'FAILED';
 
+export type DocumentProcessingTaskStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'SUCCEEDED'
+  | 'RETRYABLE'
+  | 'FAILED'
+  | 'CANCELED';
+
 export interface DocumentVO {
   id: number;
   user_id: number;
@@ -198,6 +206,12 @@ export interface DocumentVO {
   error_message: string | null;
   created_at: string;
   updated_at: string;
+  processing_task_id: number | null;
+  processing_task_status: DocumentProcessingTaskStatus | null;
+  processing_attempt_count: number | null;
+  processing_next_attempt_at: string | null;
+  processing_started_at: string | null;
+  processing_finished_at: string | null;
 }
 
 export interface KnowledgeBaseVO {
@@ -213,6 +227,13 @@ export interface KnowledgeBaseVO {
 ```
 
 Note: `DocumentVO` does not expose `storage_path`. All fields use snake_case as produced by backend `@JsonProperty`.
+
+Async document-processing UI rules:
+
+- Poll document server state while `DocumentStatus` is non-terminal or `processing_task_status` is `PENDING`, `PROCESSING`, or `RETRYABLE`.
+- Show explicit retry action only for failed documents with terminal failed task state.
+- Keep retry as a server mutation through `POST /admin/documents/{documentId}/processing-task/retry`; the frontend must not fabricate task state locally.
+- Legacy rows may have null processing task fields and must render that absence explicitly instead of treating it as success.
 
 ## AppVO with Default Knowledge Base
 

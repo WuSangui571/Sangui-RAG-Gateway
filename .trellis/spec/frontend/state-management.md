@@ -104,10 +104,11 @@ For document upload:
 
 ```text
 upload file
-create document record
-show processing state
-poll until READY or FAILED
-allow retry or re-upload when supported
+create document record and durable processing task
+show document status plus processing task status
+poll while document status is non-terminal or task status is PENDING/PROCESSING/RETRYABLE
+stop polling on terminal document/task state
+allow explicit retry only through the backend retry endpoint when the task is FAILED
 ```
 
 ## Secret State

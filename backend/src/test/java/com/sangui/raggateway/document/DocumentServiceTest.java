@@ -3,6 +3,7 @@ package com.sangui.raggateway.document;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.document.chunk.TextChunker;
+import com.sangui.raggateway.document.config.DocumentProcessingProperties;
 import com.sangui.raggateway.document.config.DocumentProperties;
 import com.sangui.raggateway.document.parser.DocumentParser;
 import com.sangui.raggateway.document.parser.ParsedDocument;
@@ -65,6 +66,8 @@ class DocumentServiceTest {
     private TextChunker textChunker;
     @Mock
     private DocumentParser documentParser;
+    @Mock
+    private DocumentProcessingTaskService taskService;
 
     @Captor
     private ArgumentCaptor<DocumentChunkEmbeddingEntity> embeddingCaptor;
@@ -74,12 +77,14 @@ class DocumentServiceTest {
     @BeforeEach
     void setUp() {
         DocumentProperties documentProperties = new DocumentProperties();
+        DocumentProcessingProperties processingProperties = new DocumentProcessingProperties();
         documentService = new DocumentService(
                 documentMapper, documentChunkMapper, documentChunkEmbeddingMapper,
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 transactionTemplate(),
-                textChunker, List.of(documentParser), documentProperties);
+                textChunker, List.of(documentParser), documentProperties,
+                taskService, processingProperties);
 
         AtomicLong docIdCounter = new AtomicLong(10L);
         doAnswer(inv -> {
@@ -347,12 +352,14 @@ class DocumentServiceTest {
     void shouldRejectOversizedFileBeforeStorage() {
         DocumentProperties documentProperties = new DocumentProperties();
         documentProperties.setMaxFileSizeBytes(3);
+        DocumentProcessingProperties processingProperties = new DocumentProcessingProperties();
         DocumentService limitedService = new DocumentService(
                 documentMapper, documentChunkMapper, documentChunkEmbeddingMapper,
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 transactionTemplate(),
-                textChunker, List.of(documentParser), documentProperties);
+                textChunker, List.of(documentParser), documentProperties,
+                taskService, processingProperties);
 
         assertThatThrownBy(() -> limitedService.uploadAndProcess(
                 100L, 1L, "test.md", "text/markdown", "test".getBytes(StandardCharsets.UTF_8)))
@@ -677,6 +684,131 @@ class DocumentServiceTest {
         verify(documentChunkEmbeddingMapper, never()).delete(any());
         verify(documentChunkMapper, never()).delete(any());
         verify(documentMapper, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void shouldUploadAndEnqueueWithoutParsingOrEmbedding() throws Exception {
+        byte[] fileContent = "Hello World".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/test.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+
+        DocumentEntity result = documentService.uploadAndEnqueue(
+                100L, 1L, "test.md", "text/markdown", fileContent);
+
+        assertThat(result.getStatus()).isEqualTo(DocumentStatus.UPLOADED.name());
+        assertThat(result.getChunkCount()).isEqualTo(0);
+        verify(taskService).createTask(100L, 1L, result.getId(), 3);
+        verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.PROCESSING.name());
+        verifyNoInteractions(textChunker);
+        verifyNoInteractions(embeddingClient);
+    }
+
+    @Test
+    void shouldMarkDocumentFailedWhenStoredFileReadFails() {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        doc.setStatus(DocumentStatus.UPLOADED.name());
+        doc.setStoragePath("knowledge/1/uuid/test.md");
+        when(documentMapper.selectById(10L)).thenReturn(doc);
+        when(fileStorageService.read("knowledge/1/uuid/test.md"))
+                .thenThrow(new RuntimeException("absolute path C:\\secret\\test.md"));
+
+        DocumentProcessingTaskEntity task = createTaskEntity(20L, 10L, DocumentProcessingTaskStatus.PROCESSING.name());
+        task.setAttemptCount(1);
+        when(taskService.findById(20L)).thenReturn(task);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        documentService.processDocument(task);
+
+        assertThat(doc.getStatus()).isEqualTo(DocumentStatus.FAILED.name());
+        assertThat(doc.getErrorMessage()).isEqualTo("Failed to read file from storage: RuntimeException");
+        verify(taskService).transitionToRetryable(20L, "Failed to read file from storage: RuntimeException");
+        verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.FAILED.name());
+        verifyNoInteractions(textChunker);
+        verifyNoInteractions(embeddingClient);
+    }
+
+    @Test
+    void shouldRetryFailedDocument() {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        doc.setStatus(DocumentStatus.FAILED.name());
+        doc.setErrorMessage("Old error");
+        when(documentMapper.selectOne(any())).thenReturn(doc);
+
+        DocumentProcessingTaskEntity task = createTaskEntity(20L, 10L, DocumentProcessingTaskStatus.FAILED.name());
+        when(taskService.findByDocumentId(10L)).thenReturn(task);
+
+        DocumentEntity result = documentService.retryDocument(100L, 10L);
+
+        assertThat(result.getStatus()).isEqualTo(DocumentStatus.UPLOADED.name());
+        assertThat(result.getErrorMessage()).isNull();
+        verify(taskService).resetForRetry(20L);
+        verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.PROCESSING.name());
+    }
+
+    @Test
+    void shouldRejectRetryOnProcessingTask() {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        when(documentMapper.selectOne(any())).thenReturn(doc);
+
+        DocumentProcessingTaskEntity task = createTaskEntity(20L, 10L, DocumentProcessingTaskStatus.PROCESSING.name());
+        when(taskService.findByDocumentId(10L)).thenReturn(task);
+
+        assertThatThrownBy(() -> documentService.retryDocument(100L, 10L))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("DOCUMENT_PROCESSING");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT);
+                });
+    }
+
+    @Test
+    void shouldRejectDeleteWhileProcessing() {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        when(documentMapper.selectOne(any())).thenReturn(doc);
+
+        DocumentProcessingTaskEntity task = createTaskEntity(20L, 10L, DocumentProcessingTaskStatus.PROCESSING.name());
+        when(taskService.findByDocumentId(10L)).thenReturn(task);
+
+        assertThatThrownBy(() -> documentService.deleteDocument(100L, 10L))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("DOCUMENT_PROCESSING");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.CONFLICT);
+                });
+
+        verify(fileStorageService, never()).delete(anyString());
+        verify(documentMapper, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void shouldCancelPendingTaskOnDelete() {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        doc.setStoragePath("knowledge/1/uuid/test.md");
+        when(documentMapper.selectOne(any())).thenReturn(doc);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentProcessingTaskEntity task = createTaskEntity(20L, 10L, DocumentProcessingTaskStatus.PENDING.name());
+        when(taskService.findByDocumentId(10L)).thenReturn(task);
+
+        documentService.deleteDocument(100L, 10L);
+
+        verify(taskService).cancelTask(20L);
+        verify(fileStorageService).delete("knowledge/1/uuid/test.md");
+        verify(documentMapper).deleteById(10L);
+    }
+
+    private DocumentProcessingTaskEntity createTaskEntity(Long id, Long documentId, String status) {
+        DocumentProcessingTaskEntity task = new DocumentProcessingTaskEntity();
+        task.setId(id);
+        task.setUserId(100L);
+        task.setKnowledgeBaseId(1L);
+        task.setDocumentId(documentId);
+        task.setStatus(status);
+        task.setAttemptCount(0);
+        task.setMaxAttempts(3);
+        task.setCreatedAt(LocalDateTime.now());
+        task.setUpdatedAt(LocalDateTime.now());
+        return task;
     }
 
     private KnowledgeBaseEntity createKb(Long id, Long userId, String embeddingModel, int dimension) {

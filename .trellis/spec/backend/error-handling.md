@@ -425,20 +425,22 @@ UPLOADED/PARSING/PARSED/EMBEDDING -> FAILED
 
 Store a bounded error message suitable for admin display. Full stack traces belong in server logs only.
 
-### Embedding Failure Behavior
+### Async Processing Failure Behavior
 
-Embedding failures are handled inline during document ingestion, not via separate error endpoints:
+Upload returns after durable task enqueue; parser, chunking, and embedding failures are persisted by the worker:
 
 | Scenario | API response | Document status | KB status | Vectors persisted |
 |---|---|---|---|---|
-| Missing/disabled/mismatched embedding config | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` if prior ready docs exist | no |
-| Embedding dimension mismatch with KB | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
-| Provider returns wrong count or dimension | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
-| Provider non-2xx or network error | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
-| Provider timeout | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
-| Upstream key decrypt failure | 200 `DocumentVO.status=FAILED` | `FAILED` | `FAILED` or `READY` | no |
+| Valid upload | 200 `DocumentVO.status=UPLOADED`, `processing_task_status=PENDING` | `UPLOADED` | `PROCESSING` | no work before response |
+| Parser failure or no readable text | later list/detail shows task `RETRYABLE` or `FAILED` | `FAILED` | `FAILED` or `READY` if prior ready docs exist | no |
+| Missing/disabled/mismatched embedding config | later list/detail shows task `RETRYABLE` or `FAILED` | `FAILED` | `FAILED` or `READY` if prior ready docs exist | no |
+| Embedding dimension mismatch with KB | later list/detail shows task `RETRYABLE` or `FAILED` | `FAILED` | `FAILED` or `READY` | no |
+| Provider returns wrong count or dimension | later list/detail shows task `RETRYABLE` or `FAILED` | `FAILED` | `FAILED` or `READY` | no |
+| Provider non-2xx, timeout, or network error | later list/detail shows task `RETRYABLE` or `FAILED` | `FAILED` | `FAILED` or `READY` | no |
+| Stored original cannot be read | later list/detail shows task `RETRYABLE` or `FAILED` | `FAILED` | `FAILED` or `READY` | no |
+| Worker succeeds | later list/detail shows task `SUCCEEDED` | `READY` | `READY` | yes |
 
-`error_message` is bounded to 512 characters. Provider raw bodies, upstream keys, and stack traces are never exposed in `error_message`.
+`error_message` and `last_error_message` are bounded to 512 characters. Provider raw bodies, upstream keys, storage absolute paths, and stack traces are never exposed in either field.
 
 ## Forbidden Patterns
 
@@ -468,10 +470,16 @@ The knowledge base and document admin endpoints use the `ApiResponse` envelope w
 | Missing multipart file | 400 | `INVALID_REQUEST` | No document row. |
 | Empty multipart file | 400 | `INVALID_REQUEST` | No document row. |
 | Unsupported filename | 400 | `INVALID_REQUEST` | No document row. |
-| Parse/chunk failure after document row | 200 | `OK` with `DocumentVO.status=FAILED` | Bounded `error_message`. |
+| Upload valid supported file | 200 | `OK` with `DocumentVO.status=UPLOADED` and `processing_task_status=PENDING` | Original file saved, document/task rows created, KB becomes `PROCESSING`, no parse/embed before response. |
 | Invalid document status filter | 400 | `INVALID_REQUEST` | Do not echo arbitrary input. |
 | Get missing document | 404 | `NOT_FOUND` | Safe admin envelope. |
 | Get cross-user document | 403 | `FORBIDDEN` | Generic access denied. |
+| Retry missing document | 404 | `NOT_FOUND` | Safe admin envelope. |
+| Retry cross-user document | 403 | `FORBIDDEN` | Generic access denied. |
+| Retry document with `PROCESSING` task | 409 | `DOCUMENT_PROCESSING` | No task or chunk mutation. |
+| Retry `PENDING` or `RETRYABLE` task | 200 | `OK` | Idempotently returns current queued/retryable state. |
+| Retry `SUCCEEDED` and `READY` document | 400 | `INVALID_REQUEST` | No implicit replacement/reprocess. |
+| Retry `FAILED` task | 200 | `OK` | Clears old chunks/embeddings, resets document to `UPLOADED`, resets task to `PENDING`, and sets KB `PROCESSING`. |
 
 ## RAG Retrieval Error Codes
 
@@ -668,12 +676,16 @@ Validation and error matrix:
 | Missing, non-Bearer, invalid, or expired admin JWT | 401 | `UNAUTHORIZED` | Caught before controller mutation; no storage cleanup or DB mutation. |
 | Document ID does not exist | 404 | `NOT_FOUND` | No storage cleanup. |
 | Document belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no storage cleanup. |
+| Document has `PROCESSING` task | 409 | `DOCUMENT_PROCESSING` | No storage cleanup or DB deletion while worker may be reading/writing. |
+| Document has `PENDING` or `RETRYABLE` task | 200 | `OK` | Task is canceled before storage/chunk/document cleanup. |
 | Document storage delete fails | 500 | `INTERNAL_ERROR` | Failure is visible; embeddings/chunks/document rows are not deleted by the normal path. |
 | Document storage object/file is already missing | 200 | `OK` | Treat as cleanup complete and continue DB cleanup. |
 | Owned document delete succeeds | 200 | `OK` | Response data is `null`; no `storage_path` or storage metadata is returned. |
 | Knowledge base ID does not exist | 404 | `NOT_FOUND` | No storage cleanup. |
 | Knowledge base belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no storage cleanup. |
 | Knowledge base is referenced by any same-user app | 409 | `KNOWLEDGE_BASE_IN_USE` | Reject explicitly; do not rely on FK errors or clear app bindings silently. |
+| Knowledge base has any `PROCESSING` document task | 409 | `DOCUMENT_PROCESSING` | No partial cleanup. |
+| Knowledge base has queued/retryable document tasks only | 200 | `OK` | Tasks are canceled before normal cleanup. |
 | Knowledge base storage cleanup fails for any document | 500 | `INTERNAL_ERROR` | Failure is visible; remaining cleanup does not report success. |
 | Owned unreferenced knowledge base delete succeeds | 200 | `OK` | Response data is `null`; storage internals are not returned. |
 

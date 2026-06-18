@@ -1,0 +1,24 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-16-async-document-processing-task\\prd.md", "reason": "Task PRD with async ingestion API, DB, worker, retry, delete boundary, and test contract"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project product boundary and implemented object storage/file lifecycle baseline"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend package and layer responsibility rules for new worker/task service classes"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Migration, status enum, tenant boundary, and short transaction rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin API error envelope and document/KB error matrix"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe document processing/storage log fields and forbidden sensitive data"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend ingestion/storage/regression tests"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Document ingestion state machine, async trigger, retry and delete lifecycle boundaries"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Embedding failure visibility, retry/fallback boundary, no silent pass-through"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Tenant/storage/evidence/error safety boundaries"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend document/task status type alignment"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Document processing status as server state and polling boundary"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Operational status UX and frontend validation expectations"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API/DB/frontend/test contract checklist"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Current synchronous upload-parse-embed implementation to split without duplicating pipeline logic"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentAdminController.java", "reason": "Current upload/list/detail/delete admin API boundary"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentStatus.java", "reason": "Current document status enum and status filter validation"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\storage\\FileStorageService.java", "reason": "Storage abstraction currently lacks read/open method required by async worker"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\knowledge\\KnowledgeBaseService.java", "reason": "Current KB status update and app-reference delete guard"}
+{"file": "frontend\\src\\types\\document.ts", "reason": "Current frontend DocumentStatus terminal-state typing"}
+{"file": "frontend\\src\\pages\\knowledge\\KnowledgeBasePage.tsx", "reason": "Current upload flow and polling while document status is non-terminal"}

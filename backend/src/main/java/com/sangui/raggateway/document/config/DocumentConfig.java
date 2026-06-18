@@ -22,7 +22,7 @@ import java.net.URI;
 import java.util.Locale;
 
 @Configuration
-@EnableConfigurationProperties({DocumentProperties.class, StorageProperties.class})
+@EnableConfigurationProperties({DocumentProperties.class, StorageProperties.class, DocumentProcessingProperties.class})
 @Profile("!test")
 public class DocumentConfig {
 

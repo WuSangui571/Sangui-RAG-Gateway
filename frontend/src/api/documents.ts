@@ -1,6 +1,6 @@
 import type { ApiResponse } from '../types/common'
 import type { DocumentVO } from '../types/document'
-import { apiGet, apiUpload } from './http'
+import { apiGet, apiPost, apiUpload } from './http'
 
 export function uploadDocument(
   knowledgeBaseId: number,
@@ -22,4 +22,8 @@ export function listDocuments(
 
 export function getDocumentDetail(documentId: number): Promise<ApiResponse<DocumentVO>> {
   return apiGet<DocumentVO>(`/admin/documents/${documentId}`)
+}
+
+export function retryDocument(documentId: number): Promise<ApiResponse<DocumentVO>> {
+  return apiPost<DocumentVO>(`/admin/documents/${documentId}/processing-task/retry`, {})
 }

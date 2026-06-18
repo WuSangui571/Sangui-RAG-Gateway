@@ -3,9 +3,12 @@ package com.sangui.raggateway.document.storage;
 import com.sangui.raggateway.document.DocumentUploadRules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -56,6 +59,19 @@ public class ObjectFileStorageService implements FileStorageService {
 
         log.info("File saved: storageKey={}, size={}", storageKey, bytes.length);
         return new StoredFile(storageKey, bytes.length);
+    }
+
+    @Override
+    public InputStream read(String storageKey) {
+        if (storageKey == null || storageKey.isBlank()) {
+            throw new IllegalArgumentException("storageKey must not be blank");
+        }
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(storageKey)
+                .build();
+        ResponseInputStream<GetObjectResponse> response = s3Client.getObject(request);
+        return response;
     }
 
     @Override

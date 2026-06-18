@@ -46,6 +46,14 @@ rag:
   production-guard:
     allow-local-file-storage: ${RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE:false}
     allow-output-capture: ${RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE:false}
+  document-processing:
+    worker:
+      enabled: true
+      poll-fixed-delay-ms: 5000
+      stale-processing-timeout-ms: 900000
+      max-attempts: 3
+      retry-backoff-ms: 60000
+      worker-id: ${HOSTNAME:local}
   request-log:
     output-capture:
       enabled: false

@@ -2,12 +2,12 @@ import { Tag } from 'antd'
 import type { ModelConfigStatus } from '../../types/model-config'
 import type { AppStatus } from '../../types/app'
 import type { KnowledgeBaseStatus } from '../../types/knowledge'
-import type { DocumentStatus } from '../../types/document'
+import type { DocumentStatus, DocumentProcessingTaskStatus } from '../../types/document'
 import type { ApiKeyStatus } from '../../types/api-key'
 import { useI18n } from '../../app/i18n'
 import type { I18nKey } from '../../app/i18n/dict'
 
-export type StatusType = ModelConfigStatus | AppStatus | KnowledgeBaseStatus | DocumentStatus | ApiKeyStatus | 'success' | 'failure'
+export type StatusType = ModelConfigStatus | AppStatus | KnowledgeBaseStatus | DocumentStatus | DocumentProcessingTaskStatus | ApiKeyStatus | 'success' | 'failure'
 
 const STATUS_COLORS: Record<string, string> = {
   ENABLED: 'green',
@@ -23,6 +23,10 @@ const STATUS_COLORS: Record<string, string> = {
   PARSING: 'blue',
   PARSED: 'blue',
   EMBEDDING: 'blue',
+  PENDING: 'blue',
+  SUCCEEDED: 'green',
+  RETRYABLE: 'orange',
+  CANCELED: 'default',
   success: 'green',
   failure: 'red',
 }

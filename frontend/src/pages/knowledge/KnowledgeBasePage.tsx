@@ -2,24 +2,30 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Table, Button, Modal, Form, Input, InputNumber, Select, Space, Typography, Alert, Upload,
 } from 'antd'
-import { UploadOutlined } from '@ant-design/icons'
+import { UploadOutlined, ReloadOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { KnowledgeBaseVO, KnowledgeBaseStatus, CreateKnowledgeBaseDTO } from '../../types/knowledge'
-import type { DocumentVO, DocumentStatus } from '../../types/document'
+import type { DocumentVO, DocumentStatus, DocumentProcessingTaskStatus } from '../../types/document'
 import type { ModelConfigVO } from '../../types/model-config'
-import { TERMINAL_DOCUMENT_STATUSES } from '../../types/document'
+import { TERMINAL_DOCUMENT_STATUSES, TASK_NON_TERMINAL_STATUSES } from '../../types/document'
 import { ApiError } from '../../api/http'
 import { listKnowledgeBases, createKnowledgeBase } from '../../api/knowledge'
 import { listModelConfigs } from '../../api/model-configs'
-import { uploadDocument, listDocuments } from '../../api/documents'
+import { uploadDocument, listDocuments, retryDocument } from '../../api/documents'
 import { useShell } from '../../components/layout/AdminShell'
 import StatusTag from '../../components/domain/StatusTag'
 import { useI18n } from '../../app/i18n'
 
 const ALLOWED_EXTENSIONS = ['.txt', '.md', '.markdown']
 
-function isNonTerminal(status: DocumentStatus): boolean {
-  return !TERMINAL_DOCUMENT_STATUSES.has(status)
+function isNonTerminal(doc: DocumentVO): boolean {
+  if (!TERMINAL_DOCUMENT_STATUSES.has(doc.status)) {
+    return true
+  }
+  if (doc.processing_task_status && TASK_NON_TERMINAL_STATUSES.has(doc.processing_task_status)) {
+    return true
+  }
+  return false
 }
 
 export default function KnowledgeBasePage() {
@@ -98,7 +104,7 @@ export default function KnowledgeBasePage() {
   }, [selectedKbId, fetchDocuments])
 
   useEffect(() => {
-    const hasPending = documents.some(d => isNonTerminal(d.status))
+    const hasPending = documents.some(d => isNonTerminal(d))
     if (!hasPending) {
       if (pollTimerRef.current !== null) {
         clearTimeout(pollTimerRef.current)
@@ -183,6 +189,22 @@ export default function KnowledgeBasePage() {
     }
   }
 
+  async function handleRetry(documentId: number) {
+    if (adminUserId === null) return
+    setDocsError(null)
+    try {
+      const res = await retryDocument(documentId)
+      if (res.code !== 'OK') {
+        setDocsError(t('knowledge.retryFailed', { message: res.message }))
+      } else {
+        fetchDocuments()
+        fetchKbs()
+      }
+    } catch (e: unknown) {
+      setDocsError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Retry failed'))
+    }
+  }
+
   function selectKb(kb: KnowledgeBaseVO) {
     setSelectedKbId(kb.id)
     setDocsError(null)
@@ -212,6 +234,13 @@ export default function KnowledgeBasePage() {
     },
     { title: t('knowledge.column.size'), dataIndex: 'file_size', key: 'file_size', width: 90, render: (v: number) => `${(v / 1024).toFixed(1)}KB` },
     { title: t('knowledge.column.status'), dataIndex: 'status', key: 'status', width: 110, render: (s: DocumentStatus) => <StatusTag status={s} /> },
+    {
+      title: t('knowledge.column.taskStatus'),
+      dataIndex: 'processing_task_status',
+      key: 'processing_task_status',
+      width: 110,
+      render: (s: string | null) => s ? <StatusTag status={s as DocumentProcessingTaskStatus} /> : '-',
+    },
     { title: t('knowledge.column.chunks'), dataIndex: 'chunk_count', key: 'chunk_count', width: 80 },
     {
       title: t('knowledge.column.error'),
@@ -219,6 +248,26 @@ export default function KnowledgeBasePage() {
       key: 'error_message',
       ellipsis: true,
       render: (v: string | null) => v ?? '-',
+    },
+    {
+      title: t('knowledge.column.actions'),
+      key: 'actions',
+      width: 80,
+      render: (_: unknown, record: DocumentVO) => {
+        if (record.status === 'FAILED' && record.processing_task_status === 'FAILED') {
+          return (
+            <Button
+              type="link"
+              size="small"
+              icon={<ReloadOutlined />}
+              onClick={() => handleRetry(record.id)}
+            >
+              {t('knowledge.retry')}
+            </Button>
+          )
+        }
+        return null
+      },
     },
   ]
 

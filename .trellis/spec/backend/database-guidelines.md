@@ -717,6 +717,44 @@ unique idx_rag_document_chunk_document_index on (document_id, chunk_index)
 
 Tenant rule: every admin query must include `user_id` or explicitly verify ownership before mutation/listing. `rag_document_chunk` carries `user_id` even before retrieval so future vector retrieval can enforce tenant boundaries in SQL.
 
+### Implemented Document Processing Task Schema
+
+The async document-processing task schema is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V14__create_document_processing_task_table.sql
+```
+
+`rag_document_processing_task` columns:
+
+| Column | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `BIGSERIAL` | yes | Primary key. |
+| `user_id` | `BIGINT` | yes | Tenant boundary duplicated from the document owner. |
+| `knowledge_base_id` | `BIGINT` | yes | FK to `rag_knowledge_base(id)`. |
+| `document_id` | `BIGINT` | yes | FK to `rag_document(id)`; unique in the current one-active-task-per-document model. |
+| `status` | `VARCHAR(32)` | yes | `PENDING`, `PROCESSING`, `SUCCEEDED`, `RETRYABLE`, `FAILED`, `CANCELED`. |
+| `attempt_count` | `INTEGER` | yes | Number of processing attempts started by worker claim. Starts at `0`; explicit retry resets it to `0`. |
+| `max_attempts` | `INTEGER` | yes | Configured attempt ceiling copied onto the task at creation. |
+| `last_error_message` | `VARCHAR(512)` | no | Bounded admin-safe message only. |
+| `locked_by` | `VARCHAR(128)` | no | Worker identifier while `PROCESSING`. |
+| `locked_at` | `TIMESTAMP` | no | Worker lock time for stale recovery. |
+| `next_attempt_at` | `TIMESTAMP` | no | Retry eligibility time for `RETRYABLE` tasks. |
+| `started_at` | `TIMESTAMP` | no | Current/last processing attempt start time. |
+| `finished_at` | `TIMESTAMP` | no | Terminal completion time. |
+| `created_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`. |
+| `updated_at` | `TIMESTAMP` | yes | Default `CURRENT_TIMESTAMP`; services update it on transitions. |
+
+Required indexes:
+
+```text
+unique idx_rag_doc_proc_task_document on (document_id)
+idx_rag_doc_proc_task_status_next on (status, next_attempt_at, created_at)
+idx_rag_doc_proc_task_user_kb_status on (user_id, knowledge_base_id, status)
+```
+
+Transaction boundary: task claim/state updates are short database transactions. Parser reads and embedding provider calls must not run inside a long-held task-claim transaction.
+
 ### Implemented Document Chunk Embedding Schema
 
 The chunk embedding vector table is introduced by:

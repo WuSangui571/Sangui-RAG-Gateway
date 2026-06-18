@@ -1670,14 +1670,14 @@ backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java
 #### Limitations
 
 - ANN vector index (HNSW/IVFFlat) is deferred until the retrieval metric is chosen.
-- Embedding is synchronous; no batching strategy beyond single-request embedding.
-- No retry or async embedding pipeline in this baseline.
+- Embedding is performed by the durable document-processing worker after upload enqueue.
+- External queue-backed ingestion and batch embedding remain future enhancements.
 
-The knowledge base creation/list/detail and document upload/list/detail admin APIs are implemented with tenant isolation and synchronous document processing.
+The knowledge base creation/list/detail and document upload/list/detail admin APIs are implemented with tenant isolation. Document upload is asynchronous: the request validates, stores the original file, creates `rag_document` and `rag_document_processing_task`, sets the KB to `PROCESSING`, and returns before parse/chunk/embed work starts.
 
 #### Admin API Endpoints
 
-All endpoints use `ApiResponse<T>` and require `X-Admin-User-Id` header:
+All endpoints use `ApiResponse<T>` and require `Authorization: Bearer <admin-jwt>`:
 
 ```http
 POST   /api/admin/knowledge-bases                        Create knowledge base
@@ -1686,6 +1686,7 @@ GET    /api/admin/knowledge-bases/{id}                   Detail knowledge base
 POST   /api/admin/knowledge-bases/{kbId}/documents        Upload txt/md/markdown file
 GET    /api/admin/knowledge-bases/{kbId}/documents?status=... List documents
 GET    /api/admin/documents/{documentId}                 Detail document
+POST   /api/admin/documents/{documentId}/processing-task/retry Retry failed document processing
 ```
 
 #### Knowledge Base Status
@@ -1710,11 +1711,11 @@ GET    /api/admin/documents/{documentId}                 Detail document
 
 #### Supported File Types
 
-`.txt`, `.md`, `.markdown` only. Processing is synchronous for the baseline.
+`.txt`, `.md`, `.markdown` only. Upload is asynchronous for the baseline; parsing, chunking, and embedding run through the in-process DB-backed worker/scheduler.
 
 #### Storage
 
-Local file storage under `rag.gateway.storage.local-path` (default `./data/uploads`). `FileStorageService` interface provides a future seam for MinIO. Storage paths are internal and not exposed in `DocumentVO` or admin responses.
+Local file storage under `rag.gateway.storage.local-path` (default `./data/uploads`) and object storage are supported through `FileStorageService`. The storage abstraction provides `save`, `read`, and `delete`; storage paths are internal and not exposed in `DocumentVO` or admin responses.
 
 #### Parsing and Chunking
 
@@ -1728,6 +1729,11 @@ Migration `V5__create_knowledge_document_tables.sql` introduces:
 - `rag_knowledge_base`: tenant-scoped with `user_id`, embedding model/dimension contract, status.
 - `rag_document`: metadata, `storage_path` (internal), status, chunk count, bounded `error_message`.
 - `rag_document_chunk`: content, `chunk_index`, `token_count` placeholder, `metadata` JSONB.
+
+Migration `V14__create_document_processing_task_table.sql` introduces:
+- `rag_document_processing_task`: durable task status, attempt counters, bounded last error, worker lock metadata, retry schedule, and lifecycle timestamps.
+- Status values: `PENDING`, `PROCESSING`, `SUCCEEDED`, `RETRYABLE`, `FAILED`, `CANCELED`.
+- Indexes for one task per document, eligible task polling, and user/KB/status lookup.
 
 #### Implemented Files (New)
 
