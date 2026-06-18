@@ -1,6 +1,10 @@
 package com.sangui.raggateway.gateway.completion;
 
 import com.sangui.raggateway.gateway.openai.OpenAiChatCompletionResponse;
+import com.sangui.raggateway.retrieval.Citation;
+import com.sangui.raggateway.retrieval.RetrievalEvidence;
+
+import java.util.List;
 
 public class ChatCompletionResult {
 
@@ -13,20 +17,24 @@ public class ChatCompletionResult {
     private final Integer totalTokens;
     private final String questionSummary;
     private final String hitChunkIds;
+    private final String retrievalEvidence;
+    private final List<Citation> citations;
     private final String assistantOutputContent;
     private final Integer completionLength;
 
     public ChatCompletionResult(OpenAiChatCompletionResponse response,
-                                String model,
-                                String providerName,
-                                long upstreamLatencyMs,
-                                Integer promptTokens,
-                                Integer completionTokens,
-                                Integer totalTokens,
-                                String questionSummary,
-                                String hitChunkIds,
-                                String assistantOutputContent,
-                                Integer completionLength) {
+                                 String model,
+                                 String providerName,
+                                 long upstreamLatencyMs,
+                                 Integer promptTokens,
+                                 Integer completionTokens,
+                                 Integer totalTokens,
+                                 String questionSummary,
+                                 String hitChunkIds,
+                                 String retrievalEvidence,
+                                 List<Citation> citations,
+                                 String assistantOutputContent,
+                                 Integer completionLength) {
         this.response = response;
         this.model = model;
         this.providerName = providerName;
@@ -36,6 +44,8 @@ public class ChatCompletionResult {
         this.totalTokens = totalTokens;
         this.questionSummary = questionSummary;
         this.hitChunkIds = hitChunkIds;
+        this.retrievalEvidence = retrievalEvidence;
+        this.citations = citations;
         this.assistantOutputContent = assistantOutputContent;
         this.completionLength = completionLength;
     }
@@ -74,6 +84,14 @@ public class ChatCompletionResult {
 
     public String getHitChunkIds() {
         return hitChunkIds;
+    }
+
+    public String getRetrievalEvidence() {
+        return retrievalEvidence;
+    }
+
+    public List<Citation> getCitations() {
+        return citations;
     }
 
     public String getAssistantOutputContent() {

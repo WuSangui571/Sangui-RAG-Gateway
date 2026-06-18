@@ -13,13 +13,16 @@ public class RagPromptBuilder {
             Use the context below when relevant to the question. If the context is not relevant,\s
             answer based on your general knowledge but note that you do not have specific information\s
             in the knowledge base.\s
-            Do not mention the context structure or chunk IDs in your answer.""";
+            Each context block is labeled with a citation tag such as [S1]. Use a citation tag in your\s
+            answer only when the statement is supported by that provided context. Do not fabricate citation\s
+            tags or sources that are not present in the provided context.""";
 
     private static final String RAG_INSTRUCTION_NO_HITS = """
             The knowledge base did not contain relevant information for this question.\s
             Inform the user that the knowledge base does not contain enough information\s
             to answer when the question requires private knowledge base facts.\s
-            Do not fabricate information pretending to come from the knowledge base.""";
+            Do not fabricate information pretending to come from the knowledge base.\s
+            Do not invent citation tags or sources.""";
 
     private RagPromptBuilder() {
     }
@@ -65,7 +68,14 @@ public class RagPromptBuilder {
         sb.append("\n\n---PRIVATE KNOWLEDGE BASE CONTEXT---\n");
         for (int i = 0; i < retrievalResult.getChunks().size(); i++) {
             RetrievalResult.RetrievedChunk chunk = retrievalResult.getChunks().get(i);
-            sb.append("[Chunk ").append(chunk.getChunkId()).append("]\n");
+            String citationId = chunk.getCitationId() != null ? chunk.getCitationId() : ("S" + (i + 1));
+            String source = chunk.getSourceFilename() != null ? chunk.getSourceFilename() : "unknown";
+            String chunkIndex = chunk.getChunkIndex() != null ? String.valueOf(chunk.getChunkIndex()) : "unknown";
+            sb.append("[").append(citationId).append("] source=\"").append(source).append("\"")
+                    .append(" document_id=").append(chunk.getDocumentId())
+                    .append(" chunk_index=").append(chunkIndex)
+                    .append(" similarity=").append(formatSimilarity(chunk.getSimilarity()))
+                    .append("\n");
             sb.append(chunk.getContent()).append("\n\n");
         }
         return sb.toString();
@@ -73,5 +83,9 @@ public class RagPromptBuilder {
 
     static String buildNoHitContext() {
         return RAG_INSTRUCTION_NO_HITS;
+    }
+
+    private static String formatSimilarity(double similarity) {
+        return String.format(java.util.Locale.ROOT, "%.3f", similarity);
     }
 }

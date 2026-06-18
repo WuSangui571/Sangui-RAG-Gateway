@@ -308,6 +308,44 @@ class ApiRequestLogAdminControllerTest {
     }
 
     @Test
+    void shouldReturnRetrievalEvidenceInDetailWhenPresent() throws Exception {
+        AppEntity app = createApp(1L, 100L);
+        when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
+
+        ApiRequestLogDetailVO detail = createDetailVO(1L, "req-001");
+        com.sangui.raggateway.log.vo.RetrievalEvidenceVO evidence = new com.sangui.raggateway.log.vo.RetrievalEvidenceVO();
+        evidence.setVersion(1);
+        evidence.setNoHits(false);
+        evidence.setRetrievalLatencyMs(42L);
+        evidence.setTopK(5);
+        evidence.setSimilarityThreshold(0.3);
+        evidence.setMaxContextChunks(5);
+        com.sangui.raggateway.log.vo.CitationVO citation = new com.sangui.raggateway.log.vo.CitationVO();
+        citation.setCitationId("S1");
+        citation.setChunkId(8L);
+        citation.setDocumentId(4L);
+        citation.setKnowledgeBaseId(2L);
+        citation.setSourceFilename("handbook.md");
+        citation.setChunkIndex(0);
+        citation.setSimilarity(0.842);
+        evidence.setCitations(List.of(citation));
+        detail.setRetrievalEvidence(evidence);
+
+        when(apiRequestLogService.getRequestLogDetail(100L, 1L, "req-001")).thenReturn(detail);
+
+        mockMvc.perform(get("/api/admin/apps/1/request-logs/req-001")
+                        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.retrieval_evidence.version").value(1))
+                .andExpect(jsonPath("$.data.retrieval_evidence.no_hits").value(false))
+                .andExpect(jsonPath("$.data.retrieval_evidence.citations[0].citation_id").value("S1"))
+                .andExpect(jsonPath("$.data.retrieval_evidence.citations[0].source_filename").value("handbook.md"))
+                .andExpect(jsonPath("$.data.retrieval_evidence.citations[0].content").doesNotExist())
+                .andExpect(jsonPath("$.data.retrieval_evidence.citations[0].chunk_content").doesNotExist())
+                .andExpect(jsonPath("$.data.retrieval_evidence.citations[0].embedding").doesNotExist());
+    }
+
+    @Test
     void shouldReturn404ForMissingRequestLog() throws Exception {
         AppEntity app = createApp(1L, 100L);
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);

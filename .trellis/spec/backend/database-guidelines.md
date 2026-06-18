@@ -894,3 +894,90 @@ List<DocumentChunkEntity> selectByIdsAndUserAndKb(...)
 The service checks null/empty hit IDs before mapper calls; the mapper also returns no rows for null/empty `ids` instead of generating invalid `IN ()` SQL.
 
 No new table required; existing `rag_request_log` and `rag_document_chunk` schemas are sufficient.
+
+### Implemented Source Citation Retrieval Evidence Schema
+
+The bounded retrieval evidence column is introduced by:
+
+```text
+backend/src/main/resources/db/migration/V15__add_request_log_retrieval_evidence.sql
+```
+
+`rag_request_log` additional column:
+
+| Column | Type | Required | Notes |
+|---|---|---:|---|
+| `retrieval_evidence` | `JSONB` | no | Safe retrieval evidence metadata for final injected chunks. Null for old rows and pre-retrieval failures. |
+
+`retrieval_evidence` stores metadata only:
+
+```text
+version
+no_hits
+retrieval_latency_ms
+top_k
+similarity_threshold
+max_context_chunks
+citations[]
+```
+
+Each citation may include only safe metadata:
+
+```text
+citation_id
+chunk_id
+document_id
+knowledge_base_id
+source_filename
+chunk_index
+similarity
+metadata.source
+metadata.parser
+content_chars
+injected_chars
+```
+
+Forbidden in `retrieval_evidence`:
+
+```text
+content
+chunk_content
+summary
+embedding
+prompt
+messages
+full_messages
+augmented_prompt
+api_key
+key_hash
+authorization
+upstream_api_key
+api_key_encrypted
+provider_response_body
+stack_trace
+storage_path
+raw_sse
+environment
+```
+
+Retrieval SQL that loads source filenames must keep tenant and knowledge-base scope at the SQL boundary. The filename join must not depend only on `document_id`; it must also keep the joined document in the same `user_id` and `knowledge_base_id` as the already-scoped embedding row.
+
+`hit_chunk_ids` remains the compatibility field. For successful RAG retrieval, its ID order must match `retrieval_evidence.citations[].chunk_id`.
+
+VO parsing contract:
+
+- Missing/null/blank `retrieval_evidence` maps to `null` for old rows.
+- Malformed `retrieval_evidence` fails visibly; it must not be silently treated as no-hit or success evidence.
+- Normal list/detail APIs may expose only the bounded metadata above.
+
+Required checks after changing this contract:
+
+```bash
+cd backend
+mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test
+mvn -q "-Dtest=ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test
+mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test
+mvn -q "-Dtest=RetrievalEvaluationServiceTest,RetrievalEvaluationAdminControllerTest" test
+mvn -q -DskipTests compile
+git diff --check
+```

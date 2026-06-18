@@ -1,0 +1,3 @@
+{"case_id":"case-001","query":"Sangui gateway default retrieval top k","expected_chunk_ids":[8],"expected_document_ids":[4],"required_source_filename":"handbook.md","min_expected_similarity":0.3,"no_hits":false}
+{"case_id":"case-002","query":"openai compatible chat completions streaming behavior","expected_chunk_ids":[12,13],"expected_document_ids":[5],"min_expected_similarity":0.3,"no_hits":false}
+{"case_id":"case-003","query":"knowledge base not ready error code","expected_chunk_ids":[],"expected_document_ids":[],"no_hits":true}

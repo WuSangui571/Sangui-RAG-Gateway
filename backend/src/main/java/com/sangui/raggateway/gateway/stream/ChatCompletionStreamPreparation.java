@@ -11,11 +11,13 @@ public class ChatCompletionStreamPreparation {
     private final String providerName;
     private final String questionSummary;
     private final String hitChunkIds;
+    private final String retrievalEvidence;
 
     public ChatCompletionStreamPreparation(String baseUrl, String apiKey,
-                                           UpstreamChatCompletionRequest upstreamRequest,
-                                           String model, String providerName,
-                                           String questionSummary, String hitChunkIds) {
+                                            UpstreamChatCompletionRequest upstreamRequest,
+                                            String model, String providerName,
+                                            String questionSummary, String hitChunkIds,
+                                            String retrievalEvidence) {
         this.baseUrl = baseUrl;
         this.apiKey = apiKey;
         this.upstreamRequest = upstreamRequest;
@@ -23,6 +25,7 @@ public class ChatCompletionStreamPreparation {
         this.providerName = providerName;
         this.questionSummary = questionSummary;
         this.hitChunkIds = hitChunkIds;
+        this.retrievalEvidence = retrievalEvidence;
     }
 
     public String getBaseUrl() {
@@ -51,5 +54,9 @@ public class ChatCompletionStreamPreparation {
 
     public String getHitChunkIds() {
         return hitChunkIds;
+    }
+
+    public String getRetrievalEvidence() {
+        return retrievalEvidence;
     }
 }

@@ -1,11 +1,17 @@
 package com.sangui.raggateway.log.vo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangui.raggateway.log.ApiRequestLogEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 
 public class ApiRequestLogDetailVO extends ApiRequestLogVO {
+
+    private static final Logger log = LoggerFactory.getLogger(ApiRequestLogDetailVO.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @JsonProperty("user_id")
     private Long userId;
@@ -23,6 +29,8 @@ public class ApiRequestLogDetailVO extends ApiRequestLogVO {
     private Boolean outputRedacted;
     @JsonProperty("output_retention_expires_at")
     private LocalDateTime outputRetentionExpiresAt;
+    @JsonProperty("retrieval_evidence")
+    private RetrievalEvidenceVO retrievalEvidence;
 
     public static ApiRequestLogDetailVO from(ApiRequestLogEntity entity) {
         ApiRequestLogDetailVO vo = new ApiRequestLogDetailVO();
@@ -37,7 +45,20 @@ public class ApiRequestLogDetailVO extends ApiRequestLogVO {
         vo.outputPreviewTruncated = entity.getOutputPreviewTruncated();
         vo.outputRedacted = entity.getOutputRedacted();
         vo.outputRetentionExpiresAt = entity.getOutputRetentionExpiresAt();
+        vo.retrievalEvidence = parseRetrievalEvidence(entity.getRetrievalEvidence());
         return vo;
+    }
+
+    private static RetrievalEvidenceVO parseRetrievalEvidence(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(raw, RetrievalEvidenceVO.class);
+        } catch (Exception e) {
+            log.error("Failed to parse retrieval_evidence JSONB value", e);
+            throw new IllegalArgumentException("Failed to parse retrieval_evidence: " + e.getMessage(), e);
+        }
     }
 
     private void setBaseFields(ApiRequestLogEntity entity) {
@@ -74,4 +95,6 @@ public class ApiRequestLogDetailVO extends ApiRequestLogVO {
     public void setOutputRedacted(Boolean outputRedacted) { this.outputRedacted = outputRedacted; }
     public LocalDateTime getOutputRetentionExpiresAt() { return outputRetentionExpiresAt; }
     public void setOutputRetentionExpiresAt(LocalDateTime outputRetentionExpiresAt) { this.outputRetentionExpiresAt = outputRetentionExpiresAt; }
+    public RetrievalEvidenceVO getRetrievalEvidence() { return retrievalEvidence; }
+    public void setRetrievalEvidence(RetrievalEvidenceVO retrievalEvidence) { this.retrievalEvidence = retrievalEvidence; }
 }

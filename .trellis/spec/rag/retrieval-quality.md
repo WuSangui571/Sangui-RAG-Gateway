@@ -74,6 +74,22 @@ Request-log retrieval fields:
 ```text
 question_summary: bounded prefix of last user message
 hit_chunk_ids: JSON array of final injected chunk IDs, or null/empty for no hits
+retrieval_evidence: JSON metadata object for final injected chunks, or null for old/pre-retrieval rows
+```
+
+Source citation retrieval fields:
+
+```text
+citation_id: stable per response/run label such as S1, not a database ID
+chunk_id: final injected rag_document_chunk.id
+document_id: safe document ID
+knowledge_base_id: app-bound KB ID
+source_filename: safe original filename or null, never storage_path
+chunk_index: chunk order within document or null
+similarity: bounded score metadata
+metadata: only source/parser when available
+content_chars: original chunk length metadata
+injected_chars: final injected length metadata
 ```
 
 ## 4. Contracts
@@ -86,6 +102,9 @@ hit_chunk_ids: JSON array of final injected chunk IDs, or null/empty for no hits
 | `topK` | Limits candidates, but does not mean all candidates must be injected. |
 | Context limit | Final injected chunks must fit the configured max context budget. |
 | Deduplication | Duplicate or repeated chunks should be removed before final context construction. |
+| Citation assignment | Citation IDs are assigned only after threshold, deduplication, max chunk count, total context budget, and per-chunk truncation are applied. |
+| Citation ordering | Citation order matches final prompt injection order and `hit_chunk_ids`. |
+| Source filename | Filename comes from same-user, same-KB document metadata. Missing filename stays null/unknown; do not fabricate. |
 | Logging | Persist safe hit IDs and safe summaries only; never full prompt or full document content. |
 | No-hit | Under `STRICT_RAG`, prompt context must state that no sufficient KB evidence was found. |
 
@@ -114,6 +133,8 @@ Similarity threshold guidance:
 | No chunks above threshold | `STRICT_RAG` no-hit context; no fabricated KB evidence | `RagPromptBuilderTest` |
 | Cross-user or cross-KB chunk exists | It is not returned because SQL is scoped | Mapper/service test |
 | Request log API returns hit chunks | Only safe fields and bounded summaries are exposed | Request-log admin API test |
+| Request log detail returns retrieval evidence | Only bounded citation metadata is exposed; malformed JSON fails visibly | Request-log service/admin API test |
+| Evaluation baseline run | Precision/recall/MRR and per-case hit/rank are computed from safe IDs only | Retrieval evaluation service/controller test |
 
 ## 6. Good/Base/Bad Cases
 
@@ -122,6 +143,7 @@ Similarity threshold guidance:
 | Good | Valid app key, ready KB, matching chunks: scoped chunks are retrieved, filtered, logged by ID, and injected within context limits. |
 | Base | No chunk clears threshold: upstream may still be called under `STRICT_RAG`, but the model is instructed to say the KB lacks sufficient evidence. |
 | Bad | Retrieval removes `user_id` or `knowledge_base_id`, logs full chunk content, injects all `topK` chunks without threshold/token limits, or silently passes through as normal chat under strict RAG. |
+| Bad | Citation metadata is generated from model answer text, exposes chunk content/storage paths, or assigns labels before final filtering. |
 
 ## 7. Wrong vs Correct
 

@@ -4,6 +4,9 @@ public class ChunkRow {
 
     private Long chunkId;
     private Long documentId;
+    private Long knowledgeBaseId;
+    private Integer chunkIndex;
+    private String sourceFilename;
     private String content;
     private String metadata;
     private Double similarity;
@@ -22,6 +25,30 @@ public class ChunkRow {
 
     public void setDocumentId(Long documentId) {
         this.documentId = documentId;
+    }
+
+    public Long getKnowledgeBaseId() {
+        return knowledgeBaseId;
+    }
+
+    public void setKnowledgeBaseId(Long knowledgeBaseId) {
+        this.knowledgeBaseId = knowledgeBaseId;
+    }
+
+    public Integer getChunkIndex() {
+        return chunkIndex;
+    }
+
+    public void setChunkIndex(Integer chunkIndex) {
+        this.chunkIndex = chunkIndex;
+    }
+
+    public String getSourceFilename() {
+        return sourceFilename;
+    }
+
+    public void setSourceFilename(String sourceFilename) {
+        this.sourceFilename = sourceFilename;
     }
 
     public String getContent() {

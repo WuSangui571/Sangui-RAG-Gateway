@@ -78,7 +78,7 @@ class RagPromptBuilderTest {
         List<OpenAiChatMessage> original = List.of(
                 new OpenAiChatMessage("user", "Unknown topic")
         );
-        RetrievalResult noHitResult = new RetrievalResult(List.of(), List.of(), true, 50L);
+        RetrievalResult noHitResult = new RetrievalResult(List.of(), List.of(), List.of(), null, true, 50L);
 
         List<OpenAiChatMessage> augmented = RagPromptBuilder.buildAugmentedMessages(original, noHitResult);
 
@@ -86,19 +86,38 @@ class RagPromptBuilderTest {
         assertThat(augmented.get(0).getRole()).isEqualTo("system");
         assertThat(augmented.get(0).getContent()).contains("knowledge base does not contain enough information");
         assertThat(augmented.get(0).getContent()).doesNotContain("PRIVATE KNOWLEDGE BASE CONTEXT");
+        assertThat(augmented.get(0).getContent()).contains("Do not invent citation tags or sources");
     }
 
     @Test
-    void shouldIncludeChunkContentInHitContext() {
+    void shouldUseSourceLabelsAndNoFabricationInstructionInHitContext() {
         RetrievalResult.RetrievedChunk chunk = new RetrievalResult.RetrievedChunk(
-                42L, 10L, "This is a relevant chunk.", null, 0.85);
-        RetrievalResult result = new RetrievalResult(List.of(chunk), List.of(42L), false, 50L);
+                42L, 10L, 20L, 3, "handbook.md", "This is a relevant chunk.", null, 0.842, 24, 24, "S1");
+        RetrievalResult result = new RetrievalResult(List.of(chunk), List.of(42L), List.of(), null, false, 50L);
 
         String context = RagPromptBuilder.buildHitContext(result);
 
         assertThat(context).contains("This is a relevant chunk.");
-        assertThat(context).contains("[Chunk 42]");
+        assertThat(context).contains("[S1] source=\"handbook.md\"");
+        assertThat(context).contains("document_id=10");
+        assertThat(context).contains("chunk_index=3");
+        assertThat(context).contains("similarity=0.842");
         assertThat(context).contains("PRIVATE KNOWLEDGE BASE CONTEXT");
+        assertThat(context).contains("Do not fabricate citation");
+        assertThat(context).contains("tags or sources");
+        assertThat(context).doesNotContain("[Chunk 42]");
+    }
+
+    @Test
+    void shouldFallbackToUnknownWhenSourceFilenameAbsent() {
+        RetrievalResult.RetrievedChunk chunk = new RetrievalResult.RetrievedChunk(
+                42L, 10L, null, null, null, "content", null, 0.85, 7, 7, "S1");
+        RetrievalResult result = new RetrievalResult(List.of(chunk), List.of(42L), List.of(), null, false, 50L);
+
+        String context = RagPromptBuilder.buildHitContext(result);
+
+        assertThat(context).contains("[S1] source=\"unknown\"");
+        assertThat(context).contains("chunk_index=unknown");
     }
 
     @Test
@@ -127,7 +146,7 @@ class RagPromptBuilderTest {
 
     private RetrievalResult createHitResult() {
         RetrievalResult.RetrievedChunk chunk = new RetrievalResult.RetrievedChunk(
-                1L, 10L, "chunk content", null, 0.85);
-        return new RetrievalResult(List.of(chunk), List.of(1L), false, 50L);
+                1L, 10L, 20L, 0, "handbook.md", "chunk content", null, 0.85, 13, 13, "S1");
+        return new RetrievalResult(List.of(chunk), List.of(1L), List.of(), null, false, 50L);
     }
 }

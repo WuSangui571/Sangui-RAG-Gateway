@@ -314,6 +314,30 @@ export interface ApiRequestLogVO {
 export interface ApiRequestLogDetailVO extends ApiRequestLogVO {
   user_id: number;
   updated_at: string;
+  retrieval_evidence: RetrievalEvidenceVO | null;
+}
+
+export interface CitationVO {
+  citation_id: string;
+  chunk_id: number;
+  document_id: number;
+  knowledge_base_id: number;
+  source_filename: string | null;
+  chunk_index: number | null;
+  similarity: number | null;
+  metadata: Record<string, unknown> | null;
+  content_chars: number | null;
+  injected_chars: number | null;
+}
+
+export interface RetrievalEvidenceVO {
+  version: number;
+  no_hits: boolean;
+  retrieval_latency_ms: number;
+  top_k: number;
+  similarity_threshold: number;
+  max_context_chunks: number;
+  citations: CitationVO[];
 }
 
 export interface ApiRequestLogPageVO<T> {
@@ -337,7 +361,7 @@ Forbidden fields never present in responses (do not type them):
 ```text
 prompt, messages, full_messages, augmented_prompt, api_key, key_hash, authorization,
 upstream_api_key, api_key_encrypted, chunk_content, embedding, provider_response_body,
-stack_trace
+stack_trace, storage_path, raw_sse, environment
 ```
 
 ### Request Log Output Preview Types
@@ -359,6 +383,7 @@ export type OutputCaptureStatus =
 export interface ApiRequestLogDetailVO extends ApiRequestLogVO {
   user_id: number;
   updated_at: string;
+  retrieval_evidence: RetrievalEvidenceVO | null;
   output_capture_status: OutputCaptureStatus;
   completion_length: number | null;
   output_preview_available: boolean;

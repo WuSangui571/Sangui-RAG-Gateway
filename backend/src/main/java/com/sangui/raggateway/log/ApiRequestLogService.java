@@ -176,6 +176,7 @@ public class ApiRequestLogService {
         entity.setMessagesCount(command.getMessagesCount());
         entity.setQuestionSummary(command.getQuestionSummary());
         entity.setHitChunkIds(command.getHitChunkIds());
+        entity.setRetrievalEvidence(command.getRetrievalEvidence());
         entity.setCompletionLength(command.getCompletionLength());
         entity.setOutputCaptureStatus(command.getOutputCaptureStatus());
         entity.setOutputPreview(command.getOutputPreview());

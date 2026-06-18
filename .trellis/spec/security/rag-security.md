@@ -51,8 +51,31 @@ usage
 messages_count
 question_summary
 hit_chunk_ids
+retrieval_evidence
 created_at
 updated_at
+```
+
+Allowed `retrieval_evidence` fields:
+
+```text
+version
+no_hits
+retrieval_latency_ms
+top_k
+similarity_threshold
+max_context_chunks
+citations[].citation_id
+citations[].chunk_id
+citations[].document_id
+citations[].knowledge_base_id
+citations[].source_filename
+citations[].chunk_index
+citations[].similarity
+citations[].metadata.source
+citations[].metadata.parser
+citations[].content_chars
+citations[].injected_chars
 ```
 
 Allowed hit chunk evidence fields:
@@ -114,6 +137,7 @@ The request body is limited to `request_log_output_capture_enabled: boolean`. Th
 | SQL boundary | Vector retrieval filters tenant/KB in SQL, not after Java ranking. |
 | Prompt boundary | RAG context is reference material and cannot override system safety or reveal internals. |
 | Evidence boundary | Admin hit chunks return safe metadata and bounded summary, not full chunk content. |
+| Retrieval evidence boundary | Request-log retrieval evidence returns metadata-only citations and never chunk content, prompts, storage paths, keys, embeddings, provider bodies, or raw SSE. |
 | Log boundary | Request logs hold safe operational fields only. |
 | Error boundary | Errors are compatible and safe; no internals or secrets. |
 | Output preview boundary | Preview content is default-off, app-opt-in, bounded/redacted, expired by retention, and returned only through explicit audited access. |
@@ -137,6 +161,7 @@ The request body is limited to `request_log_output_capture_enabled: boolean`. Th
 | User asks for keys or full prompt | Prompt safety instruction refuses; logs omit secrets | Prompt/security test |
 | Provider error includes request content | Client and logs receive only safe normalized error | Upstream client test |
 | Malformed `hit_chunk_ids` | Fails visibly; no silent fabricated evidence | Request-log service test |
+| Malformed `retrieval_evidence` | Fails visibly; no silent fabricated evidence | Request-log service/admin detail test |
 
 ## 6. Good/Base/Bad Cases
 

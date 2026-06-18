@@ -31,6 +31,7 @@ export interface ApiRequestLogDetailVO extends ApiRequestLogVO {
   output_preview_truncated: boolean
   output_redacted: boolean
   output_retention_expires_at: string | null
+  retrieval_evidence: RetrievalEvidenceVO | null
 }
 
 export interface ApiRequestLogPageVO<T> {
@@ -47,6 +48,29 @@ export interface HitChunkSummaryVO {
   source_filename: string | null
   chunk_index: number
   summary: string | null
+}
+
+export interface CitationVO {
+  citation_id: string
+  chunk_id: number
+  document_id: number
+  knowledge_base_id: number
+  source_filename: string | null
+  chunk_index: number | null
+  similarity: number | null
+  metadata: Record<string, unknown> | null
+  content_chars: number | null
+  injected_chars: number | null
+}
+
+export interface RetrievalEvidenceVO {
+  version: number
+  no_hits: boolean
+  retrieval_latency_ms: number
+  top_k: number
+  similarity_threshold: number
+  max_context_chunks: number
+  citations: CitationVO[]
 }
 
 export interface RequestLogListParams {

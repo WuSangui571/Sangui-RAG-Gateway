@@ -24,10 +24,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -67,11 +69,14 @@ public class OpenAiChatCompletionsController {
     }
 
     @PostMapping("/v1/chat/completions")
-    public Object chatCompletions(@RequestBody OpenAiChatCompletionRequest request) {
+    public Object chatCompletions(@RequestBody OpenAiChatCompletionRequest request,
+                                  @RequestHeader(value = "X-Sangui-Return-Citations", required = false) String returnCitationsHeader) {
         GatewayRequestContext context = GatewayRequestContextHolder.get();
         if (context == null) {
             throw new GatewayException("Invalid API key.", "invalid_request_error", "invalid_api_key", HttpStatus.UNAUTHORIZED);
         }
+
+        boolean returnCitations = isReturnCitations(returnCitationsHeader);
 
         String requestId = UUID.randomUUID().toString();
         context.setRequestId(requestId);
@@ -87,7 +92,7 @@ public class OpenAiChatCompletionsController {
         }
 
         if (Boolean.TRUE.equals(request.getStream())) {
-            return handleStreamCompletion(request, context, requestId, messagesCount, start);
+            return handleStreamCompletion(request, context, requestId, messagesCount, start, returnCitations);
         }
 
         int messagesChars = computeMessagesCharCount(request);
@@ -157,6 +162,7 @@ public class OpenAiChatCompletionsController {
                     .messagesCount(messagesCount)
                     .questionSummary(result.getQuestionSummary())
                     .hitChunkIds(result.getHitChunkIds())
+                    .retrievalEvidence(result.getRetrievalEvidence())
                     .completionLength(captureResult.getCompletionLength())
                     .outputCaptureStatus(captureResult.getOutputCaptureStatus())
                     .outputPreview(captureResult.getOutputPreview())
@@ -165,7 +171,12 @@ public class OpenAiChatCompletionsController {
                     .outputRetentionExpiresAt(captureResult.getOutputRetentionExpiresAt())
                     .build());
 
-            return ResponseEntity.ok(result.getResponse());
+            OpenAiChatCompletionResponse response = result.getResponse();
+            if (returnCitations) {
+                List<com.sangui.raggateway.retrieval.Citation> citations = result.getCitations();
+                response.setSanguiCitations(citations != null ? citations : List.of());
+            }
+            return ResponseEntity.ok(response);
         } catch (GatewayException e) {
             long latencyMs = System.currentTimeMillis() - start;
             if (reservation != null) {
@@ -193,8 +204,9 @@ public class OpenAiChatCompletionsController {
     }
 
     private SseEmitter handleStreamCompletion(OpenAiChatCompletionRequest request,
-                                               GatewayRequestContext context,
-                                               String requestId, int messagesCount, long start) {
+                                                GatewayRequestContext context,
+                                                String requestId, int messagesCount, long start,
+                                                boolean returnCitations) {
         int messagesChars = computeMessagesCharCount(request);
         ApiKeyRateLimitResult reservation = null;
         if (rateLimitProperties.isEnabled()) {
@@ -295,6 +307,7 @@ public class OpenAiChatCompletionsController {
                         .messagesCount(messagesCount)
                         .questionSummary(prep.getQuestionSummary())
                         .hitChunkIds(prep.getHitChunkIds())
+                        .retrievalEvidence(prep.getRetrievalEvidence())
                         .outputCaptureStatus("STREAMING_UNSUPPORTED")
                         .build());
             } catch (GatewayException e) {
@@ -321,6 +334,7 @@ public class OpenAiChatCompletionsController {
                         .messagesCount(messagesCount)
                         .questionSummary(prep.getQuestionSummary())
                         .hitChunkIds(prep.getHitChunkIds())
+                        .retrievalEvidence(prep.getRetrievalEvidence())
                         .outputCaptureStatus("STREAMING_UNSUPPORTED")
                         .build());
             } catch (Exception e) {
@@ -354,26 +368,28 @@ public class OpenAiChatCompletionsController {
                         .messagesCount(messagesCount)
                         .questionSummary(prep.getQuestionSummary())
                         .hitChunkIds(prep.getHitChunkIds())
+                        .retrievalEvidence(prep.getRetrievalEvidence())
                         .outputCaptureStatus("STREAMING_UNSUPPORTED")
                         .build());
             }
         });
 
         waitForStreamReady(streamReady, context, requestId, messagesCount, start, model, providerName,
-                prep.getQuestionSummary(), prep.getHitChunkIds(), reservation);
+                prep.getQuestionSummary(), prep.getHitChunkIds(), prep.getRetrievalEvidence(), reservation);
         return emitter;
     }
 
     private void waitForStreamReady(CompletableFuture<Void> streamReady,
-                                    GatewayRequestContext context,
-                                    String requestId,
-                                    int messagesCount,
-                                    long start,
-                                    String model,
-                                    String providerName,
-                                    String questionSummary,
-                                    String hitChunkIds,
-                                    ApiKeyRateLimitResult reservation) {
+                                     GatewayRequestContext context,
+                                     String requestId,
+                                     int messagesCount,
+                                     long start,
+                                     String model,
+                                     String providerName,
+                                     String questionSummary,
+                                     String hitChunkIds,
+                                     String retrievalEvidence,
+                                     ApiKeyRateLimitResult reservation) {
         try {
             streamReady.join();
         } catch (CompletionException e) {
@@ -413,6 +429,7 @@ public class OpenAiChatCompletionsController {
                     .messagesCount(messagesCount)
                     .questionSummary(questionSummary)
                     .hitChunkIds(hitChunkIds)
+                    .retrievalEvidence(retrievalEvidence)
                     .outputCaptureStatus("STREAMING_UNSUPPORTED")
                     .build());
 
@@ -464,6 +481,13 @@ public class OpenAiChatCompletionsController {
             }
         }
         return total;
+    }
+
+    private boolean isReturnCitations(String headerValue) {
+        if (headerValue == null || headerValue.isBlank()) {
+            return false;
+        }
+        return "true".equalsIgnoreCase(headerValue.trim());
     }
 
     private OutputCapturePolicy.OutputCaptureResult resolveCaptureResult(Long appId,

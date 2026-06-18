@@ -27,6 +27,7 @@ public class ApiRequestLogEntity {
     private Integer messagesCount;
     private String questionSummary;
     private String hitChunkIds;
+    private String retrievalEvidence;
     private Integer completionLength;
     private String outputCaptureStatus;
     private String outputPreview;
@@ -170,6 +171,14 @@ public class ApiRequestLogEntity {
 
     public void setHitChunkIds(String hitChunkIds) {
         this.hitChunkIds = hitChunkIds;
+    }
+
+    public String getRetrievalEvidence() {
+        return retrievalEvidence;
+    }
+
+    public void setRetrievalEvidence(String retrievalEvidence) {
+        this.retrievalEvidence = retrievalEvidence;
     }
 
     public Integer getCompletionLength() {

@@ -51,6 +51,13 @@ original messages
   + no-hit instruction when no valid context exists
 ```
 
+Source-citation context block shape:
+
+```text
+[S1] source="<safe filename or unknown>" document_id=<id> chunk_index=<index or unknown> similarity=<score>
+<bounded chunk content>
+```
+
 Recommended context controls:
 
 ```text
@@ -71,6 +78,8 @@ If the implementation currently uses lower recall-first thresholds or character-
 | Context separation | Knowledge-base context and user question are visibly separated in the augmented prompt. |
 | Chunk boundary | Each context block includes safe source metadata and content boundaries. |
 | Context budget | Final context respects max total and per-chunk limits. |
+| Citation labels | Use final retrieval citation IDs such as `[S1]`; do not use raw `[Chunk <id>]` labels. |
+| Citation no-fabrication | The RAG instruction tells the model to use citation labels only when supported by provided context and not invent labels or sources. |
 | No-hit behavior | `STRICT_RAG` no-hit prompt says there is no sufficient KB evidence. |
 | Structured output | Do not add strong JSON/schema instructions unless explicitly configured and supported. |
 | Secret safety | Never include keys, complete internal prompt, retrieval internals, or hidden rules in visible output. |
@@ -82,6 +91,7 @@ If the implementation currently uses lower recall-first thresholds or character-
 | User includes system prompt | It remains present; RAG context is added separately | Prompt builder test |
 | Multiple chunks returned | Most relevant chunks appear first, within context budget | Prompt builder/retrieval test |
 | Duplicate or low-score chunks | They are omitted from final context | Retrieval or prompt test |
+| Citation-aware context | Context includes `[S1]` source metadata and no-fabrication instructions | Prompt builder test |
 | No valid chunks under `STRICT_RAG` | Prompt tells model there is insufficient KB evidence | Prompt builder test |
 | User asks for system prompt, keys, hidden rules, or full context | Prompt rules instruct refusal; logs and responses do not expose secrets | Prompt builder/security test |
 | User asks for JSON | Gateway does not override or force JSON beyond user's original request unless a supported contract exists | Compatibility test |

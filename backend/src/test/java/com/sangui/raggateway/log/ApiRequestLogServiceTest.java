@@ -232,4 +232,41 @@ class ApiRequestLogServiceTest {
         assertThat(entity.getErrorCode()).isEqualTo("model_config_not_ready");
         assertThat(entity.getStatus()).isEqualTo("failure");
     }
+
+    @Test
+    void shouldPersistRetrievalEvidenceMetadataOnly() {
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class))).thenReturn(1);
+
+        String evidenceJson = """
+                {"version":1,"no_hits":false,"retrieval_latency_ms":42,"top_k":5,
+                 "similarity_threshold":0.3,"max_context_chunks":5,
+                 "citations":[{"citation_id":"S1","chunk_id":8,"document_id":4,"knowledge_base_id":2,
+                 "source_filename":"handbook.md","chunk_index":0,"similarity":0.842,
+                 "content_chars":612,"injected_chars":612}]}""";
+
+        service.record(CreateRequestLogCommand.builder()
+                .requestId("req-evidence-001")
+                .userId(100L)
+                .appId(1L)
+                .apiKeyId(30L)
+                .model("deepseek-v4-pro")
+                .providerName("sanguicode")
+                .status("success")
+                .latencyMs(900L)
+                .messagesCount(1)
+                .questionSummary("test")
+                .hitChunkIds("[8]")
+                .retrievalEvidence(evidenceJson)
+                .build());
+
+        ArgumentCaptor<ApiRequestLogEntity> captor = ArgumentCaptor.forClass(ApiRequestLogEntity.class);
+        verify(apiRequestLogMapper).insertRequestLog(captor.capture());
+        ApiRequestLogEntity entity = captor.getValue();
+
+        assertThat(entity.getRetrievalEvidence()).isEqualTo(evidenceJson);
+        assertThat(entity.getHitChunkIds()).isEqualTo("[8]");
+        assertThat(entity.getRetrievalEvidence()).doesNotContain("content\":")
+                .doesNotContain("prompt").doesNotContain("embedding")
+                .doesNotContain("api_key").doesNotContain("storage_path");
+    }
 }

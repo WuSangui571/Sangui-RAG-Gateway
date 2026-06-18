@@ -226,6 +226,29 @@ mvn -q "-Dtest=AppAdminControllerTest,DocumentAdminControllerTest,RetrievalServi
 mvn test
 ```
 
+## Source Citation and Retrieval Evaluation Tests
+
+Required targeted tests after changing citation/evidence/evaluation behavior:
+
+```bash
+cd backend
+mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test
+mvn -q "-Dtest=ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest,ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test
+mvn -q "-Dtest=RetrievalEvaluationServiceTest,RetrievalEvaluationAdminControllerTest" test
+mvn -q -DskipTests compile
+git diff --check
+```
+
+Tested areas:
+
+- Default `/v1/chat/completions` response omits `sangui_citations` and otherwise preserves OpenAI-compatible response serialization.
+- Opt-in non-streaming responses include bounded `sangui_citations` only.
+- `stream=true` does not emit P1 citation SSE events, but request logs still persist retrieval evidence.
+- Citation IDs and order match final injected chunks and `hit_chunk_ids`.
+- Request-log `retrieval_evidence` stores safe metadata only and malformed JSON fails visibly.
+- Retrieval SQL keeps user and knowledge-base scope when loading citation source filenames.
+- Retrieval evaluation reports safe precision/recall/MRR metadata without chunk content, prompts, embeddings, keys, storage paths, or provider raw bodies.
+
 ## Object Storage and Delete Lifecycle Tests
 
 Required targeted tests after changing storage backend selection or delete lifecycle:

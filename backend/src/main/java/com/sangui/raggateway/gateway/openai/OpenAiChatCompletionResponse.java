@@ -1,7 +1,9 @@
 package com.sangui.raggateway.gateway.openai;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.sangui.raggateway.retrieval.Citation;
 
 import java.util.List;
 
@@ -14,6 +16,10 @@ public class OpenAiChatCompletionResponse {
     private String model;
     private List<Choice> choices;
     private Usage usage;
+
+    @JsonProperty("sangui_citations")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<Citation> sanguiCitations;
 
     public String getId() {
         return id;
@@ -61,6 +67,14 @@ public class OpenAiChatCompletionResponse {
 
     public void setUsage(Usage usage) {
         this.usage = usage;
+    }
+
+    public List<Citation> getSanguiCitations() {
+        return sanguiCitations;
+    }
+
+    public void setSanguiCitations(List<Citation> sanguiCitations) {
+        this.sanguiCitations = sanguiCitations;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

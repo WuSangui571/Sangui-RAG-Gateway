@@ -1,5 +1,6 @@
 package com.sangui.raggateway.retrieval;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangui.raggateway.embedding.EmbeddingClient;
 import com.sangui.raggateway.embedding.EmbeddingException;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
@@ -65,7 +66,7 @@ class RetrievalServiceTest {
 
     @BeforeEach
     void setUp() {
-        retrievalService = new RetrievalService(retrievalMapper, modelConfigService, embeddingClient);
+        retrievalService = new RetrievalService(retrievalMapper, modelConfigService, embeddingClient, new ObjectMapper());
     }
 
     @Test
@@ -334,5 +335,107 @@ class RetrievalServiceTest {
         assertThat(result).endsWith("]");
         assertThat(result).contains("0.10000000");
         assertThat(result).contains("-0.300000");
+    }
+
+    @Test
+    void shouldAssignCitationIdsInFinalInjectionOrderMatchingHitChunkIds() {
+        KnowledgeBaseEntity kb = createReadyKb();
+        ModelConfigEntity config = createEmbeddingConfig();
+        when(modelConfigService.findEnabledEmbeddingConfig(USER_ID, "text-embedding-3-small", 1536))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("sk-test");
+        when(embeddingClient.embed(anyString(), eq("sk-test"), eq("text-embedding-3-small"),
+                eq(List.of("query")), eq(1536)))
+                .thenReturn(List.of(new float[1536]));
+
+        ChunkRow r1 = createRow(1L, "c1", 0.9);
+        r1.setKnowledgeBaseId(KB_ID);
+        r1.setChunkIndex(0);
+        r1.setSourceFilename("handbook.md");
+        ChunkRow r2 = createRow(2L, "c2", 0.8);
+        r2.setKnowledgeBaseId(KB_ID);
+        r2.setChunkIndex(1);
+        r2.setSourceFilename("guide.md");
+        when(retrievalMapper.retrieveChunks(anyString(), eq(USER_ID), eq(KB_ID), anyInt()))
+                .thenReturn(List.of(r1, r2));
+
+        RetrievalResult result = retrievalService.retrieve("query", kb, 5, 0.5, 5, 12000, 3000);
+
+        assertThat(result.getCitations()).hasSize(2);
+        assertThat(result.getCitations().get(0).getCitationId()).isEqualTo("S1");
+        assertThat(result.getCitations().get(1).getCitationId()).isEqualTo("S2");
+        assertThat(result.getCitations().get(0).getChunkId()).isEqualTo(1L);
+        assertThat(result.getCitations().get(1).getChunkId()).isEqualTo(2L);
+        assertThat(result.getHitChunkIds()).containsExactly(1L, 2L);
+        assertThat(result.getCitations().get(0).getSourceFilename()).isEqualTo("handbook.md");
+        assertThat(result.getCitations().get(0).getKnowledgeBaseId()).isEqualTo(KB_ID);
+        assertThat(result.getCitations().get(0).getChunkIndex()).isZero();
+    }
+
+    @Test
+    void shouldNotAssignCitationsForExcludedLowSimilarityChunk() {
+        KnowledgeBaseEntity kb = createReadyKb();
+        ModelConfigEntity config = createEmbeddingConfig();
+        when(modelConfigService.findEnabledEmbeddingConfig(USER_ID, "text-embedding-3-small", 1536))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("sk-test");
+        when(embeddingClient.embed(anyString(), eq("sk-test"), eq("text-embedding-3-small"),
+                eq(List.of("query")), eq(1536)))
+                .thenReturn(List.of(new float[1536]));
+
+        ChunkRow r1 = createRow(1L, "c1", 0.9);
+        ChunkRow low = createRow(2L, "c2", 0.5);
+        when(retrievalMapper.retrieveChunks(anyString(), eq(USER_ID), eq(KB_ID), anyInt()))
+                .thenReturn(List.of(r1, low));
+
+        RetrievalResult result = retrievalService.retrieve("query", kb, 5, 0.7, 5, 12000, 3000);
+
+        assertThat(result.getCitations()).hasSize(1);
+        assertThat(result.getCitations().get(0).getCitationId()).isEqualTo("S1");
+        assertThat(result.getCitations().get(0).getChunkId()).isEqualTo(1L);
+        assertThat(result.getHitChunkIds()).containsExactly(1L);
+    }
+
+    @Test
+    void shouldBuildNoHitEvidenceWithEmptyCitations() {
+        KnowledgeBaseEntity kb = createReadyKb();
+        ModelConfigEntity config = createEmbeddingConfig();
+        when(modelConfigService.findEnabledEmbeddingConfig(USER_ID, "text-embedding-3-small", 1536))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("sk-test");
+        when(embeddingClient.embed(anyString(), eq("sk-test"), eq("text-embedding-3-small"),
+                eq(List.of("query")), eq(1536)))
+                .thenReturn(List.of(new float[1536]));
+        when(retrievalMapper.retrieveChunks(anyString(), eq(USER_ID), eq(KB_ID), anyInt()))
+                .thenReturn(Collections.emptyList());
+
+        RetrievalResult result = retrievalService.retrieve("query", kb, 5, 0.7, 5, 12000, 3000);
+
+        assertThat(result.getEvidence()).isNotNull();
+        assertThat(result.getEvidence().isNoHits()).isTrue();
+        assertThat(result.getEvidence().getCitations()).isEmpty();
+        assertThat(result.getEvidence().getVersion()).isEqualTo(1);
+        assertThat(result.getEvidence().getTopK()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldFilterMetadataToSafeKeysOnly() {
+        KnowledgeBaseEntity kb = createReadyKb();
+        ModelConfigEntity config = createEmbeddingConfig();
+        when(modelConfigService.findEnabledEmbeddingConfig(USER_ID, "text-embedding-3-small", 1536))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("sk-test");
+        when(embeddingClient.embed(anyString(), eq("sk-test"), eq("text-embedding-3-small"),
+                eq(List.of("query")), eq(1536)))
+                .thenReturn(List.of(new float[1536]));
+
+        ChunkRow row = createRow(1L, "c1", 0.9);
+        row.setMetadata("{\"source\":\"handbook.md\",\"parser\":\"markdown\",\"secret\":\"leak\"}");
+        when(retrievalMapper.retrieveChunks(anyString(), eq(USER_ID), eq(KB_ID), anyInt()))
+                .thenReturn(List.of(row));
+
+        RetrievalResult result = retrievalService.retrieve("query", kb, 5, 0.5, 5, 12000, 3000);
+
+        assertThat(result.getCitations().get(0).getMetadata()).containsOnlyKeys("source", "parser");
     }
 }

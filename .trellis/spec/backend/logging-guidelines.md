@@ -322,6 +322,33 @@ Prompt builder does not produce structured logs; augmented prompt content is nev
 
 Never logged: full augmented prompts, chunk content, embedding vectors, provider raw bodies, or decrypted upstream keys.
 
+#### Request Log Retrieval Evidence Fields (Updated)
+
+`retrieval_evidence` is persisted for RAG requests when retrieval reaches the evidence boundary:
+
+| Field | Source | Bounds |
+|---|---|---|
+| `retrieval_evidence.version` | Evidence serializer | Current version is `1`. |
+| `retrieval_evidence.no_hits` | Final retrieval result | Boolean metadata only. |
+| `retrieval_evidence.retrieval_latency_ms` | Retrieval service timing | Numeric metadata only. |
+| `retrieval_evidence.top_k` | Effective retrieval configuration | Numeric metadata only. |
+| `retrieval_evidence.similarity_threshold` | Effective retrieval configuration | Numeric metadata only. |
+| `retrieval_evidence.max_context_chunks` | Effective retrieval configuration | Numeric metadata only. |
+| `retrieval_evidence.citations` | Final injected chunks | Safe citation metadata only. |
+
+Citation metadata may include `citation_id`, `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`, `similarity`, safe `metadata.source`, safe `metadata.parser`, `content_chars`, and `injected_chars`.
+
+Never persist or expose in retrieval evidence:
+
+```text
+content, chunk_content, summary, prompt, messages, full_messages,
+augmented_prompt, embedding, api_key, key_hash, authorization,
+upstream_api_key, api_key_encrypted, provider_response_body,
+stack_trace, storage_path, raw_sse, environment
+```
+
+Malformed `retrieval_evidence` in request-log detail parsing must fail visibly. Old rows without the column value return `null`, not fabricated success evidence.
+
 ## Admin Request Log API Safe Observability Fields
 
 The Admin request log API returns only safe operational fields for observability:

@@ -1,0 +1,52 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-18-source-citations-retrieval-evaluation\\prd.md", "reason": "P1 source citation and retrieval evaluation contract, acceptance criteria, boundaries, tests"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project product boundary, OpenAI-compatible gateway scope, RAG/request-log safety"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend module ownership for retrieval/rag/gateway/log/evaluation code"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Tenant-safe retrieval SQL, JSONB request-log fields, migration rules"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Gateway/admin error shapes and RAG retrieval error matrix"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe retrieval/request-log evidence fields and forbidden data"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend tests for retrieval, prompt, gateway, request logs"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Retrieval threshold, hit_chunk_ids, tenant scope, no-hit behavior"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Prompt context separation, source labels, no fabricated evidence"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Chunk identity, source metadata, async ingestion baseline"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Embedding/upstream failure normalization and request-log persistence"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Tenant, prompt, evidence, and observability security boundaries"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend admin page/component organization for request-log/eval UI"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Typed request-log/citation/evaluation DTO contract"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Server-state and secret-state frontend boundaries"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Admin detail/source citation component patterns"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Typed API client and data-fetching hook boundaries"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend safe display, typecheck/build expectations"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "API/DB/frontend/test alignment checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Avoid duplicating retrieval/evidence concepts"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalService.java", "reason": "Existing retrieval filtering, truncation, hit ID behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalResult.java", "reason": "Current retrieval result shape to extend with citations"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalMapper.java", "reason": "Tenant-scoped retrieval SQL to preserve"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\ChunkRow.java", "reason": "Current SQL row projection for citation fields"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\rag\\prompt\\RagPromptBuilder.java", "reason": "Prompt source-label and no-fabrication change point"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayService.java", "reason": "RAG orchestration and request-log metadata source"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionResult.java", "reason": "Current gateway result metadata carrier"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\stream\\ChatCompletionStreamPreparation.java", "reason": "Streaming request-log evidence carrier"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionResponse.java", "reason": "Optional opt-in response extension point"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Header parsing, response extension, request-log persistence point"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogEntity.java", "reason": "Request-log entity for retrieval_evidence field"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\CreateRequestLogCommand.java", "reason": "Command builder for retrieval evidence"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Request-log mapping and hit chunk summary behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminController.java", "reason": "Admin request-log tenant boundary and endpoints"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\vo\\ApiRequestLogVO.java", "reason": "Safe list/detail base VO parsing pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\vo\\ApiRequestLogDetailVO.java", "reason": "Safe detail VO extension point"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\vo\\HitChunkSummaryVO.java", "reason": "Existing safe hit chunk evidence VO"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkMapper.java", "reason": "Tenant-scoped chunk lookup for request-log evidence"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkEntity.java", "reason": "Chunk metadata fields for citation source mapping"}
+{"file": "frontend\\src\\types\\request-log.ts", "reason": "Frontend request-log/citation type extension point"}
+{"file": "frontend\\src\\api\\request-logs.ts", "reason": "Typed frontend request-log/evidence API client"}
+{"file": "frontend\\src\\components\\domain\\HitChunksPanel.tsx", "reason": "Existing safe hit chunk display component"}
+{"file": "frontend\\src\\components\\domain\\RequestLogDetailDrawer.tsx", "reason": "Request-log detail UI extension point"}
+{"file": "frontend\\src\\pages\\request-logs\\RequestLogListPage.tsx", "reason": "Request-log admin workflow page"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalServiceTest.java", "reason": "Retrieval citation assertions belong here"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\rag\\prompt\\RagPromptBuilderTest.java", "reason": "Prompt source-label/no-fabrication assertions belong here"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayServiceTest.java", "reason": "Gateway metadata/citation flow assertions belong here"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsControllerTest.java", "reason": "Opt-in response and request-log command assertions belong here"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogServiceTest.java", "reason": "Request-log evidence persistence assertions belong here"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminControllerTest.java", "reason": "Admin evidence safety and tenant assertions belong here"}

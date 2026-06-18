@@ -119,8 +119,11 @@ class OpenAiChatCompletionsControllerTest {
         usage.setCompletionTokens(1);
         usage.setTotalTokens(2);
         mockResponse.setUsage(usage);
+        com.sangui.raggateway.retrieval.Citation citation = new com.sangui.raggateway.retrieval.Citation(
+                "S1", 1L, 10L, 20L, "handbook.md", 0, 0.85, null, 13, 13);
+        String evidenceJson = "{\"version\":1,\"no_hits\":false,\"citations\":[{\"citation_id\":\"S1\",\"chunk_id\":1}]}";
         return new ChatCompletionResult(mockResponse, "gpt-4o-mini", "openai", 500L, 1, 1, 2,
-                "What is RAG?", "[1,2,3]", "Hello", 5);
+                "What is RAG?", "[1,2,3]", evidenceJson, java.util.List.of(citation), "Hello", 5);
     }
 
     private ChatCompletionStreamPreparation createStreamPreparation() {
@@ -129,7 +132,7 @@ class OpenAiChatCompletionsControllerTest {
         upstreamRequest.setStream(true);
         return new ChatCompletionStreamPreparation("https://api.openai.com", "sk-upstream-key",
                 upstreamRequest, "gpt-4o-mini", "openai",
-                "What is RAG?", "[1,2,3]");
+                "What is RAG?", "[1,2,3]", null);
     }
 
     @Test
@@ -159,7 +162,8 @@ class OpenAiChatCompletionsControllerTest {
                 .andExpect(jsonPath("$.usage.total_tokens").value(2))
                 .andExpect(jsonPath("$.code").doesNotExist())
                 .andExpect(jsonPath("$.message").doesNotExist())
-                .andExpect(jsonPath("$.data").doesNotExist());
+                .andExpect(jsonPath("$.data").doesNotExist())
+                .andExpect(jsonPath("$.sangui_citations").doesNotExist());
 
         ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
                 ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
@@ -178,6 +182,133 @@ class OpenAiChatCompletionsControllerTest {
         assertThat(command.getTotalTokens()).isEqualTo(2);
         assertThat(command.getMessagesCount()).isEqualTo(1);
         assertThat(command.getQuestionSummary()).isEqualTo("What is RAG?");
+        assertThat(command.getHitChunkIds()).isEqualTo("[1,2,3]");
+        assertThat(command.getRetrievalEvidence()).isNotNull();
+    }
+
+    @Test
+    void shouldPreserveStandardNullFieldsButOmitNonOptInCitations() throws Exception {
+        OpenAiChatCompletionResponse response = new OpenAiChatCompletionResponse();
+        response.setId("chatcmpl-null-test");
+        response.setObject("chat.completion");
+        response.setModel("gpt-4o-mini");
+
+        OpenAiChatCompletionResponse.Message message = new OpenAiChatCompletionResponse.Message();
+        message.setRole("assistant");
+        message.setContent(null);
+        OpenAiChatCompletionResponse.Choice choice = new OpenAiChatCompletionResponse.Choice();
+        choice.setIndex(0);
+        choice.setMessage(message);
+        choice.setFinishReason(null);
+        response.setChoices(List.of(choice));
+        response.setUsage(null);
+
+        com.fasterxml.jackson.databind.JsonNode json = objectMapper.readTree(objectMapper.writeValueAsString(response));
+
+        assertThat(json.has("usage")).isTrue();
+        assertThat(json.get("usage").isNull()).isTrue();
+        assertThat(json.get("choices").get(0).has("finish_reason")).isTrue();
+        assertThat(json.get("choices").get(0).get("finish_reason").isNull()).isTrue();
+        assertThat(json.has("sangui_citations")).isFalse();
+    }
+
+    @Test
+    void shouldReturnSanguiCitationsWhenOptInHeaderPresent() throws Exception {
+        setContext();
+        when(chatCompletionGatewayService.processChatCompletion(any())).thenReturn(createSuccessResult());
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .header("X-Sangui-Return-Citations", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sangui_citations").isArray())
+                .andExpect(jsonPath("$.sangui_citations[0].citation_id").value("S1"))
+                .andExpect(jsonPath("$.sangui_citations[0].chunk_id").value(1))
+                .andExpect(jsonPath("$.sangui_citations[0].source_filename").value("handbook.md"))
+                .andExpect(jsonPath("$.sangui_citations[0].content").doesNotExist())
+                .andExpect(jsonPath("$.sangui_citations[0].chunk_content").doesNotExist())
+                .andExpect(jsonPath("$.sangui_citations[0].embedding").doesNotExist())
+                .andExpect(jsonPath("$.sangui_citations[0].storage_path").doesNotExist());
+    }
+
+    @Test
+    void shouldReturnEmptyCitationsWhenOptInAndNoHits() throws Exception {
+        setContext();
+        OpenAiChatCompletionResponse mockResponse = new OpenAiChatCompletionResponse();
+        mockResponse.setId("chatcmpl-nohit");
+        mockResponse.setObject("chat.completion");
+        mockResponse.setCreated(1710000000);
+        mockResponse.setModel("gpt-4o-mini");
+        OpenAiChatCompletionResponse.Choice choice = new OpenAiChatCompletionResponse.Choice();
+        choice.setIndex(0);
+        OpenAiChatCompletionResponse.Message message = new OpenAiChatCompletionResponse.Message();
+        message.setRole("assistant");
+        message.setContent("No info");
+        choice.setMessage(message);
+        choice.setFinishReason("stop");
+        mockResponse.setChoices(List.of(choice));
+        ChatCompletionResult noHitResult = new ChatCompletionResult(mockResponse, "gpt-4o-mini", "openai",
+                500L, 1, 1, 2, "What?", null, null, java.util.List.of(), "No info", 7);
+        when(chatCompletionGatewayService.processChatCompletion(any())).thenReturn(noHitResult);
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .header("X-Sangui-Return-Citations", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sangui_citations").isArray())
+                .andExpect(jsonPath("$.sangui_citations").isEmpty());
+    }
+
+    @Test
+    void shouldNotEmitCitationsInStreamEvenWhenOptIn() throws Exception {
+        setContext();
+        when(chatCompletionGatewayService.prepareStreamCompletion(any()))
+                .thenReturn(createStreamPreparation());
+        doAnswer(invocation -> {
+            SseEmitter emitter = invocation.getArgument(3);
+            Runnable onStreamReady = invocation.getArgument(5);
+            onStreamReady.run();
+            emitter.complete();
+            return null;
+        }).when(upstreamClient).streamChatCompletion(anyString(), anyString(),
+                any(UpstreamChatCompletionRequest.class), any(SseEmitter.class), anyString(), any(Runnable.class));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .header("X-Sangui-Return-Citations", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ],
+                                  "stream": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
+
+        ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
+                ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
+        verify(apiRequestLogService).record(captor.capture());
+        com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
+        assertThat(command.getStatus()).isEqualTo("success");
         assertThat(command.getHitChunkIds()).isEqualTo("[1,2,3]");
     }
 

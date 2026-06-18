@@ -147,8 +147,12 @@ class ChatCompletionGatewayServiceTest {
 
     private RetrievalResult createHitRetrievalResult() {
         RetrievalResult.RetrievedChunk chunk = new RetrievalResult.RetrievedChunk(
-                1L, 10L, "chunk content", null, 0.85);
-        return new RetrievalResult(List.of(chunk), List.of(1L), false, 50L);
+                1L, 10L, 20L, 0, "handbook.md", "chunk content", null, 0.85, 13, 13, "S1");
+        com.sangui.raggateway.retrieval.Citation citation = new com.sangui.raggateway.retrieval.Citation(
+                "S1", 1L, 10L, 20L, "handbook.md", 0, 0.85, null, 13, 13);
+        com.sangui.raggateway.retrieval.RetrievalEvidence evidence = new com.sangui.raggateway.retrieval.RetrievalEvidence(
+                1, false, 50L, 5, 0.3, 5, List.of(citation));
+        return new RetrievalResult(List.of(chunk), List.of(1L), List.of(citation), evidence, false, 50L);
     }
 
     @Test
@@ -190,6 +194,11 @@ class ChatCompletionGatewayServiceTest {
         assertThat(result.getTotalTokens()).isEqualTo(2);
         assertThat(result.getQuestionSummary()).isEqualTo("Hello");
         assertThat(result.getHitChunkIds()).isEqualTo("[1]");
+        assertThat(result.getCitations()).hasSize(1);
+        assertThat(result.getCitations().get(0).getCitationId()).isEqualTo("S1");
+        assertThat(result.getRetrievalEvidence()).isNotNull();
+        assertThat(result.getRetrievalEvidence()).contains("\"no_hits\":false");
+        assertThat(result.getRetrievalEvidence()).contains("\"citation_id\":\"S1\"");
     }
 
     @Test
@@ -655,7 +664,7 @@ class ChatCompletionGatewayServiceTest {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
         KnowledgeBaseEntity kb = createReadyKnowledgeBase();
-        RetrievalResult noHitResult = new RetrievalResult(List.of(), List.of(), true, 50L);
+        RetrievalResult noHitResult = new RetrievalResult(List.of(), List.of(), List.of(), null, true, 50L);
 
         when(appService.findById(APP_ID)).thenReturn(app);
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);

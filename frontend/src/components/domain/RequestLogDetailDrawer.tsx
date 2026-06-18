@@ -6,6 +6,7 @@ import { getAppReadiness } from '../../api/apps'
 import { classifyDiagnostic } from './requestDiagnostics'
 import RequestLogStatusTag from './RequestLogStatusTag'
 import HitChunksPanel from './HitChunksPanel'
+import SourceCitationList from './SourceCitationList'
 import RequestDiagnosticsPanel from './RequestDiagnosticsPanel'
 import OutputPreviewModal from './OutputPreviewModal'
 import { Drawer, Descriptions, Typography, Button, Space, Alert, Spin, Tag } from 'antd'
@@ -251,6 +252,34 @@ export default function RequestLogDetailDrawer({
             error={chunksError}
             onRetry={handleRetryHitChunks}
           />
+
+          {detail.retrieval_evidence && (
+            <>
+              <Typography.Title level={5}>{t('rl-drawer.retrievalEvidence')}</Typography.Title>
+              <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
+                <Descriptions.Item label={t('rl-drawer.evidenceNoHits')}>
+                  {detail.retrieval_evidence.no_hits ? t('rl-drawer.yes') : t('rl-drawer.no')}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('rl-drawer.evidenceLatency')}>
+                  {formatMs(detail.retrieval_evidence.retrieval_latency_ms)}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('rl-drawer.evidenceTopK')}>
+                  {detail.retrieval_evidence.top_k}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('rl-drawer.evidenceThreshold')}>
+                  {detail.retrieval_evidence.similarity_threshold.toFixed(3)}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('rl-drawer.evidenceMaxChunks')}>
+                  {detail.retrieval_evidence.max_context_chunks}
+                </Descriptions.Item>
+                <Descriptions.Item label={t('rl-drawer.evidenceVersion')}>
+                  {detail.retrieval_evidence.version}
+                </Descriptions.Item>
+              </Descriptions>
+              <Typography.Title level={5}>{t('rl-drawer.citations')}</Typography.Title>
+              <SourceCitationList citations={detail.retrieval_evidence.citations} />
+            </>
+          )}
 
           <RequestDiagnosticsPanel
             diagnostic={diagnostic}

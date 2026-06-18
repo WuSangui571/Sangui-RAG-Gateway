@@ -18,6 +18,8 @@ import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.log.ChatCompletionLogHelper;
 import com.sangui.raggateway.model.ModelConfigEntity;
 import com.sangui.raggateway.rag.prompt.RagPromptBuilder;
+import com.sangui.raggateway.retrieval.Citation;
+import com.sangui.raggateway.retrieval.RetrievalEvidence;
 import com.sangui.raggateway.retrieval.RetrievalResult;
 import com.sangui.raggateway.retrieval.RetrievalService;
 import org.slf4j.Logger;
@@ -137,12 +139,14 @@ public class ChatCompletionGatewayService {
             }
             String questionSummary = truncateForSummary(extractLastUserMessage(request.getMessages()));
             String hitChunkIdsJson = toJsonArray(retrievalResult.getHitChunkIds());
+            String retrievalEvidenceJson = toJsonEvidence(retrievalResult.getEvidence());
             String assistantOutputContent = extractAssistantOutput(response);
             Integer completionLength = assistantOutputContent != null ? assistantOutputContent.length() : null;
             return new ChatCompletionResult(response, modelConfig.getChatModel(),
                     modelConfig.getProviderName(), upstreamLatency,
                     promptTokens, completionTokens, totalTokens,
-                    questionSummary, hitChunkIdsJson,
+                    questionSummary, hitChunkIdsJson, retrievalEvidenceJson,
+                    retrievalResult.getCitations(),
                     assistantOutputContent, completionLength);
         } catch (GatewayException e) {
             throw e;
@@ -207,6 +211,7 @@ public class ChatCompletionGatewayService {
 
         String questionSummary = truncateForSummary(extractLastUserMessage(request.getMessages()));
         String hitChunkIdsJson = toJsonArray(retrievalResult.getHitChunkIds());
+        String retrievalEvidenceJson = toJsonEvidence(retrievalResult.getEvidence());
 
         return new ChatCompletionStreamPreparation(
                 modelConfig.getBaseUrl(),
@@ -215,7 +220,8 @@ public class ChatCompletionGatewayService {
                 modelConfig.getChatModel(),
                 modelConfig.getProviderName(),
                 questionSummary,
-                hitChunkIdsJson
+                hitChunkIdsJson,
+                retrievalEvidenceJson
         );
     }
 
@@ -400,5 +406,17 @@ public class ChatCompletionGatewayService {
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    String toJsonEvidence(RetrievalEvidence evidence) {
+        if (evidence == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(evidence);
+        } catch (Exception e) {
+            log.warn("Failed to serialize retrieval evidence, errorType={}", e.getClass().getSimpleName());
+            return null;
+        }
     }
 }
