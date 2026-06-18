@@ -1,0 +1,16 @@
+{"file": ".trellis\\tasks\\06-18-streaming-robustness\\prd.md", "reason": "Acceptance criteria for check phase"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsControllerTest.java", "reason": "Controller streaming lifecycle and reservation assertions"}
+{"file": ".trellis\\tasks\\06-18-streaming-robustness\\research.md", "reason": "Code seam map for later Codex check/finish-work"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Check required backend quality and streaming regression tests"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check OpenAI-compatible JSON/SSE error behavior"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Check safe request-log and log field boundaries"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Check forbidden fields and evidence safety"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Check streaming timeout/cancel/error/request-log resilience contract"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyRateLimitServiceTest.java", "reason": "Reservation release/reconcile window assertions"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Review implementation against controller lifecycle PRD"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogServiceTest.java", "reason": "Request-log status, safe fields, and parsing assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClientTest.java", "reason": "Upstream SSE DONE, missing DONE, timeout, cancellation, and safe log assertions"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClient.java", "reason": "Review upstream client cancellation/error semantics"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogAdminControllerTest.java", "reason": "Request-log admin status filter and VO contract assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayServiceTest.java", "reason": "Shared streaming preparation, retrieval evidence, and validation tests"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Review request-log persistence and status validation"}

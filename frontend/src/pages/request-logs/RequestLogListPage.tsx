@@ -124,7 +124,7 @@ export default function RequestLogListPage({ persistentAppId }: RequestLogListPa
       dataIndex: 'status',
       key: 'status',
       width: 100,
-      render: (status: 'success' | 'failure') => <RequestLogStatusTag status={status} />,
+      render: (status: 'success' | 'failure' | 'cancelled') => <RequestLogStatusTag status={status} />,
     },
     {
       title: t('request-log.column.errorCode'),
@@ -244,6 +244,7 @@ export default function RequestLogListPage({ persistentAppId }: RequestLogListPa
           options={[
             { value: 'success', label: t('request-log.success') },
             { value: 'failure', label: t('request-log.failure') },
+            { value: 'cancelled', label: t('request-log.cancelled') },
           ]}
         />
         <Input

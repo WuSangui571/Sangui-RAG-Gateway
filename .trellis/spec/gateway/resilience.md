@@ -56,7 +56,7 @@ rate_limit_exceeded
 internal_error
 ```
 
-Request-log failure fields:
+Request-log failure/cancellation fields:
 
 ```text
 request_id
@@ -65,7 +65,7 @@ app_id
 api_key_id
 model
 provider_name
-status = failure
+status = failure or cancelled
 error_code
 latency_ms
 upstream_latency_ms
@@ -102,7 +102,7 @@ hit_chunk_ids
 | Redis limiter unavailable | 500 | `internal_error` | OpenAI-compatible JSON, safe request log where possible, no silent pass-through |
 | Invalid chat payload | 400 | `invalid_request` | Validate before limiter; no quota consumed |
 | Request log insert failure | Gateway response unchanged | n/a | Log safe request ID and exception class only |
-| Client disconnect during stream | stream closes | n/a | Cancel upstream and log as cancellation, not internal error |
+| Client disconnect during stream | stream closes | `client_cancelled` | Cancel upstream, persist `status=cancelled`, release token reservation, and log as cancellation, not internal error |
 
 ## 6. Good/Base/Bad Cases
 

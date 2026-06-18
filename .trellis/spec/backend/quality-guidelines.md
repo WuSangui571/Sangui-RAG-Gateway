@@ -210,7 +210,7 @@ mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test
 ```
 
 Tested areas:
-- List endpoint with default pagination, status filter (success/failure case-insensitive), error_code, start_time/end_time range.
+- List endpoint with default pagination, status filter (success/failure/cancelled case-insensitive), error_code, start_time/end_time range.
 - Invalid page/page_size/status/time format/time range returns `400 INVALID_REQUEST`.
 - Missing app returns `404 NOT_FOUND`; cross-user app returns `403 FORBIDDEN` (no log query executed).
 - Detail endpoint returns safe fields only (no prompt, messages, api_key, key_hash, upstream_api_key, chunk_content, embedding, provider_response_body, stack_trace).

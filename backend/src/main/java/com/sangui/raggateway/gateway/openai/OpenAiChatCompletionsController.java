@@ -17,8 +17,10 @@ import com.sangui.raggateway.log.ApiRequestLogService;
 import com.sangui.raggateway.log.CreateRequestLogCommand;
 import com.sangui.raggateway.log.OutputCapturePolicy;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
+import com.sangui.raggateway.gateway.upstream.StreamCompletionOutcome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +51,7 @@ public class OpenAiChatCompletionsController {
     private final OutputCapturePolicy outputCapturePolicy;
     private final ApiKeyRateLimitService rateLimitService;
     private final ApiKeyLimitProperties rateLimitProperties;
+    private final long streamingEmitterTimeoutMs;
 
     public OpenAiChatCompletionsController(ChatCompletionGatewayService chatCompletionGatewayService,
                                            ApiRequestLogService apiRequestLogService,
@@ -57,7 +60,8 @@ public class OpenAiChatCompletionsController {
                                            AppService appService,
                                            OutputCapturePolicy outputCapturePolicy,
                                            ApiKeyRateLimitService rateLimitService,
-                                           ApiKeyLimitProperties rateLimitProperties) {
+                                           ApiKeyLimitProperties rateLimitProperties,
+                                           @Value("${rag.gateway.streaming.emitter-timeout-seconds:300}") long streamingEmitterTimeoutSeconds) {
         this.chatCompletionGatewayService = chatCompletionGatewayService;
         this.apiRequestLogService = apiRequestLogService;
         this.upstreamClient = upstreamClient;
@@ -66,6 +70,7 @@ public class OpenAiChatCompletionsController {
         this.outputCapturePolicy = outputCapturePolicy;
         this.rateLimitService = rateLimitService;
         this.rateLimitProperties = rateLimitProperties;
+        this.streamingEmitterTimeoutMs = streamingEmitterTimeoutSeconds * 1000L;
     }
 
     @PostMapping("/v1/chat/completions")
@@ -208,7 +213,7 @@ public class OpenAiChatCompletionsController {
                                                 String requestId, int messagesCount, long start,
                                                 boolean returnCitations) {
         int messagesChars = computeMessagesCharCount(request);
-        ApiKeyRateLimitResult reservation = null;
+        ApiKeyRateLimitResult[] reservationHolder = new ApiKeyRateLimitResult[1];
         if (rateLimitProperties.isEnabled()) {
             ApiKeyRateLimitResult limitResult;
             try {
@@ -239,15 +244,15 @@ public class OpenAiChatCompletionsController {
                 throw new GatewayException("Rate limit exceeded for this API key.",
                         "rate_limit_error", "rate_limit_exceeded", HttpStatus.TOO_MANY_REQUESTS);
             }
-            reservation = limitResult;
+            reservationHolder[0] = limitResult;
         }
 
         ChatCompletionStreamPreparation prep;
         try {
             prep = chatCompletionGatewayService.prepareStreamCompletion(request);
         } catch (GatewayException e) {
-            if (reservation != null) {
-                rateLimitService.releaseReservation(context.getApiKeyId(), reservation);
+            if (reservationHolder[0] != null) {
+                rateLimitService.releaseReservation(context.getApiKeyId(), reservationHolder[0]);
             }
             long latencyMs = System.currentTimeMillis() - start;
             log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=failure error_code={} messages_count={} latency_ms={}",
@@ -269,7 +274,8 @@ public class OpenAiChatCompletionsController {
             throw e;
         }
 
-        SseEmitter emitter = new SseEmitter(0L);
+        long emitterTimeout = streamingEmitterTimeoutMs > 0 ? streamingEmitterTimeoutMs : Long.MAX_VALUE;
+        SseEmitter emitter = new SseEmitter(emitterTimeout);
 
         Long userId = context.getUserId();
         Long appId = context.getAppId();
@@ -278,15 +284,104 @@ public class OpenAiChatCompletionsController {
         String providerName = prep.getProviderName();
         CompletableFuture<Void> streamReady = new CompletableFuture<>();
         AtomicBoolean responseCommitted = new AtomicBoolean(false);
+        AtomicBoolean terminalHandled = new AtomicBoolean(false);
+
+        emitter.onTimeout(() -> {
+            if (terminalHandled.compareAndSet(false, true)) {
+                long latencyMs = System.currentTimeMillis() - start;
+                log.info("gateway.chat.stream_timeout request_id={} app_id={} api_key_id={} user_id={} latency_ms={}",
+                        requestId, appId, apiKeyId, userId, latencyMs);
+                if (reservationHolder[0] != null) {
+                    rateLimitService.releaseReservation(apiKeyId, reservationHolder[0]);
+                }
+                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                        .requestId(requestId)
+                        .userId(userId)
+                        .appId(appId)
+                        .apiKeyId(apiKeyId)
+                        .model(model)
+                        .providerName(providerName)
+                        .status("cancelled")
+                        .errorCode("stream_timeout")
+                        .latencyMs(latencyMs)
+                        .messagesCount(messagesCount)
+                        .questionSummary(prep.getQuestionSummary())
+                        .hitChunkIds(prep.getHitChunkIds())
+                        .retrievalEvidence(prep.getRetrievalEvidence())
+                        .outputCaptureStatus("STREAMING_UNSUPPORTED")
+                        .build());
+            }
+        });
+
+        emitter.onError(ex -> {
+            if (terminalHandled.compareAndSet(false, true)) {
+                long latencyMs = System.currentTimeMillis() - start;
+                log.info("gateway.chat.stream_error request_id={} app_id={} api_key_id={} user_id={} latency_ms={}",
+                        requestId, appId, apiKeyId, userId, latencyMs);
+                if (reservationHolder[0] != null) {
+                    rateLimitService.releaseReservation(apiKeyId, reservationHolder[0]);
+                }
+                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                        .requestId(requestId)
+                        .userId(userId)
+                        .appId(appId)
+                        .apiKeyId(apiKeyId)
+                        .model(model)
+                        .providerName(providerName)
+                        .status("cancelled")
+                        .errorCode("client_cancelled")
+                        .latencyMs(latencyMs)
+                        .messagesCount(messagesCount)
+                        .questionSummary(prep.getQuestionSummary())
+                        .hitChunkIds(prep.getHitChunkIds())
+                        .retrievalEvidence(prep.getRetrievalEvidence())
+                        .outputCaptureStatus("STREAMING_UNSUPPORTED")
+                        .build());
+            }
+        });
 
         Thread.ofVirtual().start(() -> {
             try {
                 long upstreamStart = System.currentTimeMillis();
-                upstreamClient.streamChatCompletion(prep.getBaseUrl(), prep.getApiKey(),
+                StreamCompletionOutcome outcome = upstreamClient.streamChatCompletion(
+                        prep.getBaseUrl(), prep.getApiKey(),
                         prep.getUpstreamRequest(), emitter, requestId, () -> {
                             responseCommitted.set(true);
                             streamReady.complete(null);
                         });
+
+                if (!terminalHandled.compareAndSet(false, true)) {
+                    return;
+                }
+
+                if (outcome == StreamCompletionOutcome.CANCELLED) {
+                    long latencyMs = System.currentTimeMillis() - start;
+                    if (reservationHolder[0] != null) {
+                        rateLimitService.releaseReservation(apiKeyId, reservationHolder[0]);
+                    }
+                    emitter.complete();
+                    log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=cancelled error_code=client_cancelled messages_count={} latency_ms={}",
+                            requestId, appId, apiKeyId, userId, messagesCount, latencyMs);
+
+                    apiRequestLogService.record(CreateRequestLogCommand.builder()
+                            .requestId(requestId)
+                            .userId(userId)
+                            .appId(appId)
+                            .apiKeyId(apiKeyId)
+                            .model(model)
+                            .providerName(providerName)
+                            .status("cancelled")
+                            .errorCode("client_cancelled")
+                            .latencyMs(latencyMs)
+                            .messagesCount(messagesCount)
+                            .questionSummary(prep.getQuestionSummary())
+                            .hitChunkIds(prep.getHitChunkIds())
+                            .retrievalEvidence(prep.getRetrievalEvidence())
+                            .outputCaptureStatus("STREAMING_UNSUPPORTED")
+                            .build());
+                    return;
+                }
+
                 emitter.complete();
 
                 long latencyMs = System.currentTimeMillis() - start;
@@ -315,11 +410,17 @@ public class OpenAiChatCompletionsController {
                     streamReady.completeExceptionally(e);
                     return;
                 }
+                if (!terminalHandled.compareAndSet(false, true)) {
+                    return;
+                }
+                if (reservationHolder[0] != null) {
+                    rateLimitService.releaseReservation(apiKeyId, reservationHolder[0]);
+                }
                 long latencyMs = System.currentTimeMillis() - start;
                 log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=failure error_code={} messages_count={} latency_ms={}",
                         requestId, appId, apiKeyId, userId, e.getCode(), messagesCount, latencyMs);
 
-                sendSseError(emitter, e.getMessage(), e.getType(), e.getCode());
+                sendSseError(emitter, requestId, e.getMessage(), e.getType(), e.getCode());
 
                 apiRequestLogService.record(CreateRequestLogCommand.builder()
                         .requestId(requestId)
@@ -348,12 +449,18 @@ public class OpenAiChatCompletionsController {
                     ));
                     return;
                 }
+                if (!terminalHandled.compareAndSet(false, true)) {
+                    return;
+                }
+                if (reservationHolder[0] != null) {
+                    rateLimitService.releaseReservation(apiKeyId, reservationHolder[0]);
+                }
                 long latencyMs = System.currentTimeMillis() - start;
                 String errorCode = "upstream_error";
                 log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=failure error_code={} messages_count={} latency_ms={}",
                         requestId, appId, apiKeyId, userId, errorCode, messagesCount, latencyMs);
 
-                sendSseError(emitter, "Upstream service is unavailable", "server_error", errorCode);
+                sendSseError(emitter, requestId, "Upstream service is unavailable", "server_error", errorCode);
 
                 apiRequestLogService.record(CreateRequestLogCommand.builder()
                         .requestId(requestId)
@@ -375,7 +482,7 @@ public class OpenAiChatCompletionsController {
         });
 
         waitForStreamReady(streamReady, context, requestId, messagesCount, start, model, providerName,
-                prep.getQuestionSummary(), prep.getHitChunkIds(), prep.getRetrievalEvidence(), reservation);
+                prep.getQuestionSummary(), prep.getHitChunkIds(), prep.getRetrievalEvidence(), reservationHolder[0]);
         return emitter;
     }
 
@@ -457,16 +564,20 @@ public class OpenAiChatCompletionsController {
                 .build());
     }
 
-    private void sendSseError(SseEmitter emitter, String message, String type, String code) {
+    private void sendSseError(SseEmitter emitter, String requestId, String message, String type, String code) {
         try {
             OpenAiErrorResponse errorResponse = OpenAiErrorResponse.of(message, type, code);
             String errorData = objectMapper.writeValueAsString(errorResponse);
             emitter.send(SseEmitter.event().data(errorData));
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            log.info("gateway.chat.sse_error_send_failed request_id={} error_code={} error_class={}",
+                    requestId, code, e.getClass().getSimpleName());
         }
         try {
             emitter.complete();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.info("gateway.chat.sse_complete_failed request_id={} error_code={} error_class={}",
+                    requestId, code, e.getClass().getSimpleName());
         }
     }
 

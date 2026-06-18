@@ -473,7 +473,7 @@ backend/src/main/resources/db/migration/V4__create_request_log_table.sql
 | `api_key_id` | `BIGINT` | yes | Safe key metadata ID only |
 | `model` | `VARCHAR(255)` | no | Resolved model from config |
 | `provider_name` | `VARCHAR(128)` | no | Resolved provider from config |
-| `status` | `VARCHAR(32)` | yes | `success` or `failure` |
+| `status` | `VARCHAR(32)` | yes | `success`, `failure`, or `cancelled` |
 | `error_code` | `VARCHAR(64)` | no | Stable gateway error code |
 | `latency_ms` | `BIGINT` | no | Total controller elapsed time |
 | `upstream_latency_ms` | `BIGINT` | no | Upstream latency when available |

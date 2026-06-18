@@ -14,6 +14,7 @@ import com.sangui.raggateway.gateway.completion.ChatCompletionResult;
 import com.sangui.raggateway.gateway.stream.ChatCompletionStreamPreparation;
 import com.sangui.raggateway.gateway.upstream.OpenAiCompatibleUpstreamClient;
 import com.sangui.raggateway.gateway.upstream.UpstreamChatCompletionRequest;
+import com.sangui.raggateway.gateway.upstream.StreamCompletionOutcome;
 import com.sangui.raggateway.log.ApiRequestLogService;
 import com.sangui.raggateway.log.OutputCapturePolicy;
 import org.junit.jupiter.api.AfterEach;
@@ -41,6 +42,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -82,7 +84,7 @@ class OpenAiChatCompletionsControllerTest {
     void setUp() {
         OpenAiChatCompletionsController controller = new OpenAiChatCompletionsController(
                 chatCompletionGatewayService, apiRequestLogService, upstreamClient, objectMapper,
-                appService, outputCapturePolicy, rateLimitService, rateLimitProperties);
+                appService, outputCapturePolicy, rateLimitService, rateLimitProperties, 300L);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -284,8 +286,7 @@ class OpenAiChatCompletionsControllerTest {
             SseEmitter emitter = invocation.getArgument(3);
             Runnable onStreamReady = invocation.getArgument(5);
             onStreamReady.run();
-            emitter.complete();
-            return null;
+            return StreamCompletionOutcome.SUCCESS;
         }).when(upstreamClient).streamChatCompletion(anyString(), anyString(),
                 any(UpstreamChatCompletionRequest.class), any(SseEmitter.class), anyString(), any(Runnable.class));
 
@@ -321,8 +322,7 @@ class OpenAiChatCompletionsControllerTest {
             SseEmitter emitter = invocation.getArgument(3);
             Runnable onStreamReady = invocation.getArgument(5);
             onStreamReady.run();
-            emitter.complete();
-            return null;
+            return StreamCompletionOutcome.SUCCESS;
         }).when(upstreamClient).streamChatCompletion(anyString(), anyString(),
                 any(UpstreamChatCompletionRequest.class), any(SseEmitter.class), anyString(), any(Runnable.class));
 
@@ -390,6 +390,96 @@ class OpenAiChatCompletionsControllerTest {
         com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
         assertThat(command.getStatus()).isEqualTo("failure");
         assertThat(command.getErrorCode()).isEqualTo("upstream_error");
+        assertThat(command.getModel()).isEqualTo("gpt-4o-mini");
+        assertThat(command.getProviderName()).isEqualTo("openai");
+        assertThat(command.getQuestionSummary()).isEqualTo("What is RAG?");
+        assertThat(command.getHitChunkIds()).isEqualTo("[1,2,3]");
+    }
+
+    @Test
+    void shouldRecordCancelledAndReleaseReservationWhenStreamClientCancels() throws Exception {
+        setContext();
+        ApiKeyRateLimitResult reservation = ApiKeyRateLimitResult.allowed(59, 59900);
+        when(rateLimitProperties.isEnabled()).thenReturn(true);
+        when(rateLimitService.checkAndReserve(any(), anyInt(), any())).thenReturn(reservation);
+        when(chatCompletionGatewayService.prepareStreamCompletion(any()))
+                .thenReturn(createStreamPreparation());
+        doAnswer(invocation -> {
+            Runnable onStreamReady = invocation.getArgument(5);
+            onStreamReady.run();
+            return StreamCompletionOutcome.CANCELLED;
+        }).when(upstreamClient).streamChatCompletion(anyString(), anyString(),
+                any(UpstreamChatCompletionRequest.class), any(SseEmitter.class), anyString(), any(Runnable.class));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ],
+                                  "stream": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
+
+        verify(rateLimitService, timeout(1000).times(1)).releaseReservation(eq(API_KEY_ID), eq(reservation));
+        verify(rateLimitService, never()).reconcileTokens(eq(API_KEY_ID), eq(reservation), anyInt());
+
+        ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
+                ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
+        verify(apiRequestLogService, timeout(1000).times(1)).record(captor.capture());
+        com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
+        assertThat(command.getStatus()).isEqualTo("cancelled");
+        assertThat(command.getErrorCode()).isEqualTo("client_cancelled");
+        assertThat(command.getLatencyMs()).isNotNull();
+        assertThat(command.getOutputCaptureStatus()).isEqualTo("STREAMING_UNSUPPORTED");
+        assertThat(command.getQuestionSummary()).isEqualTo("What is RAG?");
+        assertThat(command.getHitChunkIds()).isEqualTo("[1,2,3]");
+    }
+
+    @Test
+    void shouldRecordFailureAndReleaseReservationOnceWhenStreamFailsAfterReady() throws Exception {
+        setContext();
+        ApiKeyRateLimitResult reservation = ApiKeyRateLimitResult.allowed(59, 59900);
+        when(rateLimitProperties.isEnabled()).thenReturn(true);
+        when(rateLimitService.checkAndReserve(any(), anyInt(), any())).thenReturn(reservation);
+        when(chatCompletionGatewayService.prepareStreamCompletion(any()))
+                .thenReturn(createStreamPreparation());
+        doAnswer(invocation -> {
+            Runnable onStreamReady = invocation.getArgument(5);
+            onStreamReady.run();
+            throw new GatewayException("Upstream service is unavailable",
+                    "server_error", "upstream_error", HttpStatus.BAD_GATEWAY);
+        }).when(upstreamClient).streamChatCompletion(anyString(), anyString(),
+                any(UpstreamChatCompletionRequest.class), any(SseEmitter.class), anyString(), any(Runnable.class));
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ],
+                                  "stream": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
+
+        verify(rateLimitService, timeout(1000).times(1)).releaseReservation(eq(API_KEY_ID), eq(reservation));
+        verify(rateLimitService, never()).reconcileTokens(eq(API_KEY_ID), eq(reservation), anyInt());
+
+        ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
+                ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
+        verify(apiRequestLogService, timeout(1000).times(1)).record(captor.capture());
+        com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
+        assertThat(command.getStatus()).isEqualTo("failure");
+        assertThat(command.getErrorCode()).isEqualTo("upstream_error");
+        assertThat(command.getLatencyMs()).isNotNull();
         assertThat(command.getModel()).isEqualTo("gpt-4o-mini");
         assertThat(command.getProviderName()).isEqualTo("openai");
         assertThat(command.getQuestionSummary()).isEqualTo("What is RAG?");

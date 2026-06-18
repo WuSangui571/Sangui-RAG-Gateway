@@ -3,7 +3,7 @@ import { useI18n } from '../../app/i18n'
 import type { I18nKey } from '../../app/i18n/dict'
 
 interface RequestLogStatusTagProps {
-  status: 'success' | 'failure'
+  status: 'success' | 'failure' | 'cancelled'
 }
 
 export default function RequestLogStatusTag({ status }: RequestLogStatusTagProps) {
@@ -11,7 +11,7 @@ export default function RequestLogStatusTag({ status }: RequestLogStatusTagProps
   const i18nKey = `status.${status}` as I18nKey
   const label = t(i18nKey)
   return (
-    <Tag color={status === 'success' ? 'green' : 'red'}>
+    <Tag color={status === 'success' ? 'green' : status === 'cancelled' ? 'orange' : 'red'}>
       {label}
     </Tag>
   )

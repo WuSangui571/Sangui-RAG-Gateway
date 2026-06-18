@@ -1,0 +1,53 @@
+{
+  "id": "streaming-robustness",
+  "name": "streaming-robustness",
+  "title": "Streaming Robustness",
+  "description": "Harden OpenAI-compatible SSE streaming lifecycle, cancellation, request-log observability, and rate-limit reservation release without changing business scope beyond gateway streaming robustness.",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "sangui",
+  "assignee": "sangui",
+  "createdAt": "2026-06-18",
+  "completedAt": null,
+  "branch": "feature/streaming-robustness",
+  "base_branch": "feature/streaming-robustness",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

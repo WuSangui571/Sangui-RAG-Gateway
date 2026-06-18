@@ -978,8 +978,8 @@ Validation matrix for this baseline:
 | `request_id` | Controller-generated UUID. |
 | `user_id`, `app_id`, `api_key_id` | From captured `GatewayRequestContext`. |
 | `model`, `provider_name` | From resolved model config. |
-| `status` | `success` or `failure`. |
-| `error_code` | `invalid_request`, `model_config_not_ready`, `upstream_error`, or `upstream_timeout` for failures. |
+| `status` | `success`, `failure`, or `cancelled`. |
+| `error_code` | `invalid_request`, `model_config_not_ready`, `upstream_error`, `upstream_timeout`, `client_cancelled`, or `stream_timeout` for non-success outcomes. |
 | `latency_ms` | Total elapsed time from controller entry until stream close/failure/cancellation. |
 | `upstream_latency_ms` | Time to upstream lifecycle completion. |
 | `prompt_tokens`, `completion_tokens`, `total_tokens` | Null in baseline streaming. |
@@ -1417,7 +1417,7 @@ Introduced by `V4__create_request_log_table.sql`:
 | `api_key_id` | `BIGINT` | yes | Safe key metadata ID only |
 | `model` | `VARCHAR(255)` | no | Resolved model from config, null on validation failures |
 | `provider_name` | `VARCHAR(128)` | no | Resolved provider from config, null on validation failures |
-| `status` | `VARCHAR(32)` | yes | `success` or `failure` |
+| `status` | `VARCHAR(32)` | yes | `success`, `failure`, or `cancelled` |
 | `error_code` | `VARCHAR(64)` | no | Stable gateway error code |
 | `latency_ms` | `BIGINT` | no | Total controller elapsed time |
 | `upstream_latency_ms` | `BIGINT` | no | Upstream latency when available |
@@ -1883,7 +1883,7 @@ GET /api/admin/apps/{appId}/request-logs/{requestId}/hit-chunks
 
 #### List Request Logs
 
-Query params: `page` (default 1, positive), `page_size` (default 20, 1-100), `status` (success/failure, case-insensitive), `error_code` (exact match), `start_time` (ISO, inclusive), `end_time` (ISO, inclusive).
+Query params: `page` (default 1, positive), `page_size` (default 20, 1-100), `status` (success/failure/cancelled, case-insensitive), `error_code` (exact match), `start_time` (ISO, inclusive), `end_time` (ISO, inclusive).
 
 Response: `ApiResponse<ApiRequestLogPageVO<ApiRequestLogVO>>` with items, page, page_size, total. `hit_chunk_ids` is returned as a numeric array parsed from JSONB. `usage` may be null when token data is unavailable.
 

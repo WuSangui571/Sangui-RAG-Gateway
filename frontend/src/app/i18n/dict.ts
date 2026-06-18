@@ -308,6 +308,7 @@ const dict = {
     'request-log.statusFilter': '状态',
     'request-log.success': '成功',
     'request-log.failure': '失败',
+    'request-log.cancelled': '已取消',
     'request-log.errorCode': '错误码',
     'request-log.startTime': '开始时间 (ISO)',
     'request-log.endTime': '结束时间 (ISO)',
@@ -449,6 +450,7 @@ const dict = {
     'status.CANCELED': '已取消',
     'status.success': '成功',
     'status.failure': '失败',
+    'status.cancelled': '已取消',
 
     'status.smoke.IDLE': '空闲',
     'status.smoke.RUNNING': '运行中',
@@ -782,6 +784,7 @@ const dict = {
     'request-log.statusFilter': 'Status',
     'request-log.success': 'Success',
     'request-log.failure': 'Failure',
+    'request-log.cancelled': 'Cancelled',
     'request-log.errorCode': 'Error Code',
     'request-log.startTime': 'Start Time (ISO)',
     'request-log.endTime': 'End Time (ISO)',
@@ -923,6 +926,7 @@ const dict = {
     'status.CANCELED': 'CANCELED',
     'status.success': 'SUCCESS',
     'status.failure': 'FAILURE',
+    'status.cancelled': 'CANCELLED',
 
     'status.smoke.IDLE': 'IDLE',
     'status.smoke.RUNNING': 'RUNNING',

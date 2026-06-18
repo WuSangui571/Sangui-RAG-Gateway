@@ -136,14 +136,14 @@ public class OpenAiCompatibleUpstreamClient {
         }
     }
 
-    public void streamChatCompletion(String baseUrl, String apiKey,
+    public StreamCompletionOutcome streamChatCompletion(String baseUrl, String apiKey,
                                       UpstreamChatCompletionRequest request,
                                       SseEmitter emitter, String requestId) {
-        streamChatCompletion(baseUrl, apiKey, request, emitter, requestId, () -> {
+        return streamChatCompletion(baseUrl, apiKey, request, emitter, requestId, () -> {
         });
     }
 
-    public void streamChatCompletion(String baseUrl, String apiKey,
+    public StreamCompletionOutcome streamChatCompletion(String baseUrl, String apiKey,
                                       UpstreamChatCompletionRequest request,
                                       SseEmitter emitter, String requestId,
                                       Runnable onStreamReady) {
@@ -156,7 +156,7 @@ public class OpenAiCompatibleUpstreamClient {
 
         long start = System.currentTimeMillis();
         try {
-            restClient.post()
+            StreamCompletionOutcome outcome = restClient.post()
                     .uri(url)
                     .header("Authorization", "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -190,7 +190,7 @@ public class OpenAiCompatibleUpstreamClient {
                                     } catch (IOException e) {
                                         log.info("gateway.chat.stream_cancelled request_id={}",
                                                 requestId);
-                                        return null;
+                                        return StreamCompletionOutcome.CANCELLED;
                                     }
                                     if ("[DONE]".equals(data.trim())) {
                                         doneReceived = true;
@@ -207,12 +207,15 @@ public class OpenAiCompatibleUpstreamClient {
                                     HttpStatus.BAD_GATEWAY
                             );
                         }
-                        return null;
+                        return StreamCompletionOutcome.SUCCESS;
                     });
 
             long upstreamLatency = System.currentTimeMillis() - start;
-            log.info("gateway.chat.stream_completed request_id={} upstream_url={} model={} upstream_latency_ms={}",
-                    requestId, safeUrl, request.getModel(), upstreamLatency);
+            if (outcome == StreamCompletionOutcome.SUCCESS) {
+                log.info("gateway.chat.stream_completed request_id={} upstream_url={} model={} upstream_latency_ms={}",
+                        requestId, safeUrl, request.getModel(), upstreamLatency);
+            }
+            return outcome;
         } catch (GatewayException e) {
             long upstreamLatency = System.currentTimeMillis() - start;
             log.info("gateway.chat.stream_failed request_id={} upstream_url={} error_code={} upstream_latency_ms={}",

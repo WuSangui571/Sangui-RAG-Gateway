@@ -20,6 +20,7 @@ import org.springframework.web.client.RestClient;
 
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -301,9 +302,7 @@ class OpenAiCompatibleUpstreamClientTest {
     void shouldStreamChunksToSseEmitter() {
         String sseBody = """
                 data: {"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"delta":{"content":"Hello"}}]}
-                
                 data: [DONE]
-                
                 """;
         UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
         request.setModel("gpt-4o-mini");
@@ -371,6 +370,35 @@ class OpenAiCompatibleUpstreamClientTest {
                             && ge.getHttpStatus().value() == 502;
                 });
 
+        mockServer.verify();
+    }
+
+    @Test
+    void shouldReturnCancelledWhenClientSendFails() {
+        String sseBody = """
+                data: {"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"delta":{"content":"Hello"}}]}
+                data: [DONE]
+                """;
+        UpstreamChatCompletionRequest request = new UpstreamChatCompletionRequest();
+        request.setModel("gpt-4o-mini");
+        request.setStream(true);
+        request.setMessages(List.of(new UpstreamChatCompletionRequest.Message("user", "Hello")));
+
+        mockServer.expect(requestTo(BASE_URL + "/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(sseBody, MediaType.TEXT_PLAIN));
+
+        SseEmitter emitter = new SseEmitter(0L) {
+            @Override
+            public void send(SseEmitter.SseEventBuilder builder) throws IOException {
+                throw new IOException("client disconnected");
+            }
+        };
+
+        StreamCompletionOutcome outcome = client.streamChatCompletion(
+                BASE_URL, API_KEY, request, emitter, "request-stream-cancel");
+
+        assertThat(outcome).isEqualTo(StreamCompletionOutcome.CANCELLED);
         mockServer.verify();
     }
 

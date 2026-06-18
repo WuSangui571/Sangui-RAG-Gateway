@@ -11,7 +11,7 @@ export interface ApiRequestLogVO {
   api_key_id: number
   model: string | null
   provider_name: string | null
-  status: 'success' | 'failure'
+  status: 'success' | 'failure' | 'cancelled'
   error_code: string | null
   latency_ms: number | null
   upstream_latency_ms: number | null
@@ -76,7 +76,7 @@ export interface RetrievalEvidenceVO {
 export interface RequestLogListParams {
   page?: number
   page_size?: number
-  status?: 'success' | 'failure' | ''
+  status?: 'success' | 'failure' | 'cancelled' | ''
   error_code?: string
   start_time?: string
   end_time?: string

@@ -176,8 +176,8 @@ public class ApiRequestLogAdminController {
         }
         if (status != null && !status.isBlank()) {
             String normalized = status.toLowerCase();
-            if (!"success".equals(normalized) && !"failure".equals(normalized)) {
-                throw new BusinessException("INVALID_REQUEST", "status must be success or failure");
+            if (!"success".equals(normalized) && !"failure".equals(normalized) && !"cancelled".equals(normalized)) {
+                throw new BusinessException("INVALID_REQUEST", "status must be success, failure, or cancelled");
             }
         }
     }

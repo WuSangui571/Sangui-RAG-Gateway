@@ -1,0 +1,17 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Gateway resilience spec for upstream timeout, post-start SSE errors, cancellation, and request-log behavior"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret-safe request-log and RAG evidence boundary for streaming observability"}
+{"file": ".trellis\\tasks\\06-18-streaming-robustness\\prd.md", "reason": "Primary streaming robustness PRD with API, lifecycle, logging, reservation, and test contracts"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project-level OpenAI-compatible streaming and request-log product contract"}
+{"file": ".trellis\\tasks\\06-18-streaming-robustness\\research.md", "reason": "Focused code research and risk map for streaming lifecycle implementation"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe structured streaming logs and request-log observability fields"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "OpenAI-compatible pre-stream JSON errors and post-stream SSE error semantics"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Retrieval evidence and hit_chunk_ids contract that streaming request logs must preserve"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\apikey\\ApiKeyRateLimitService.java", "reason": "Reservation release/reconcile semantics that streaming terminal states must reuse"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Prompt preservation and no-hit behavior shared by streaming preparation"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend request-log status/type alignment if streaming cancelled status is introduced"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClient.java", "reason": "Upstream SSE forwarding, DONE detection, timeout/error/cancellation seam"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer checklist for public API, streaming, request logs, rate limits, and frontend type alignment"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Main streaming orchestration, request-log, and reservation lifecycle seam"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayService.java", "reason": "Shared non-streaming/streaming validation, retrieval, prompt, and stream preparation flow"}

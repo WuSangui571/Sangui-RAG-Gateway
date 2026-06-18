@@ -12,6 +12,8 @@ rag:
     secret-key: ${RAG_GATEWAY_SECRET_KEY:}
     upstream:
       timeout-seconds: 30
+    streaming:
+      emitter-timeout-seconds: 300
     embedding:
       timeout-seconds: 30
     storage:

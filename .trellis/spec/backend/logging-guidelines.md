@@ -119,7 +119,7 @@ Each event includes only safe key/value fields:
 | `provider_name` | config_resolved | Provider name from default model config |
 | `model` | config_resolved, upstream_*, response_parse_* | Model name from default model config |
 | `upstream_url` | upstream_* | Sanitized host+path only, no query or userinfo |
-| `status` | completed | `success` or `failure` |
+| `status` | completed | `success`, `failure`, or `cancelled` |
 | `error_code` | completed, upstream_failed, validation_failed | Stable error code |
 | `latency_ms` | completed | Total request latency |
 | `upstream_latency_ms` | upstream_*, response_parse_succeeded | Upstream round-trip latency |
@@ -169,7 +169,7 @@ Persisted fields:
 | `api_key_id` | `GatewayRequestContext.apiKeyId` | Safe ID |
 | `model` | `ModelConfigEntity.chatModel` from success path only | Safe bounded string |
 | `provider_name` | `ModelConfigEntity.providerName` from success path only | Safe bounded string |
-| `status` | `success` or `failure` | Safe enum |
+| `status` | `success`, `failure`, or `cancelled` | Safe enum |
 | `error_code` | Gateway error code from GatewayException | Safe string |
 | `latency_ms` | Total controller elapsed time | Safe numeric |
 | `upstream_latency_ms` | Service-measured upstream latency from success path | Safe numeric |
@@ -511,6 +511,9 @@ Streaming contract:
 
 ```text
 stream=true currently records output_capture_status=STREAMING_UNSUPPORTED.
+Streaming success uses `status=success`; post-start upstream failure or missing `[DONE]` uses `status=failure`;
+client disconnect and gateway-owned emitter timeout use `status=cancelled` with `error_code=client_cancelled` or
+`stream_timeout`.
 ```
 
 Do not persist raw SSE payloads. Future streaming support must use a bounded assistant-delta collector and the same redaction/retention policy before persistence.

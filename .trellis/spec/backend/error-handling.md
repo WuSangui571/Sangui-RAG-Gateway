@@ -389,7 +389,7 @@ All upstream failures map to `502 upstream_error` (or `504 upstream_timeout` for
 | Invalid upstream success body (parse failure) | `upstream_error` | 502 | `gateway.chat.response_parse_failed` | request_id, model, error_class |
 | Unexpected internal exception | `upstream_error` | 502 | `gateway.chat.upstream_failed` | request_id, safe upstream_url, error_class, error_code, upstream_latency_ms |
 
-`ChatCompletionGatewayService` forwards GatewayException from upstream/client through the controller to GlobalExceptionHandler. The completed log in the controller captures the final success/failure status, error_code, and total latency_ms.
+`ChatCompletionGatewayService` forwards GatewayException from upstream/client through the controller to GlobalExceptionHandler. The completed log in the controller captures the final success/failure/cancelled status, error_code, and total latency_ms.
 
 Public gateway responses remain OpenAI-compatible for all error cases. Upstream provider body content is never included in logs or client responses. Upstream client and response-parse failure logs record exception class names only, not throwable messages or stack traces, because those exception messages can contain raw upstream URL or body fragments.
 
@@ -404,6 +404,15 @@ Public gateway responses remain OpenAI-compatible for all error cases. Upstream 
 | `model_config_not_ready` | `failure` | `model_config_not_ready` | no |
 | `upstream_error` | `failure` | `upstream_error` | no |
 | `upstream_timeout` | `failure` | `upstream_timeout` | no |
+
+For authenticated streaming requests that reach the stream logging boundary, terminal lifecycle statuses are:
+
+| Streaming terminal case | Persisted status | Persisted error_code |
+|---|---|---|
+| Upstream sends `[DONE]` | `success` | null |
+| Post-start upstream failure, timeout, or missing `[DONE]` | `failure` | `upstream_error` or `upstream_timeout` |
+| Client disconnect detected while sending SSE | `cancelled` | `client_cancelled` |
+| Gateway-owned emitter timeout | `cancelled` | `stream_timeout` |
 
 Known unpersisted scenarios:
 
@@ -526,7 +535,7 @@ The request log observability endpoints (`/api/admin/apps/{appId}/request-logs/*
 | App id belongs to another user | 403 | `FORBIDDEN` | Generic `Access denied`; no log/chunk queries executed. |
 | Invalid `page` (< 1) | 400 | `INVALID_REQUEST` | No mapper query. |
 | Invalid `page_size` (< 1 or > 100) | 400 | `INVALID_REQUEST` | No mapper query. |
-| Invalid `status` (!= `success`/`failure`) | 400 | `INVALID_REQUEST` | Case-insensitive input normalized. |
+| Invalid `status` (!= `success`/`failure`/`cancelled`) | 400 | `INVALID_REQUEST` | Case-insensitive input normalized. |
 | Invalid time format | 400 | `INVALID_REQUEST` | Safe message; does not echo raw input. |
 | `start_time` after `end_time` | 400 | `INVALID_REQUEST` | No mapper query. |
 | Log request ID missing under owned app | 404 | `NOT_FOUND` | `Request log not found`. |

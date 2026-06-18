@@ -218,7 +218,7 @@ class ApiRequestLogAdminControllerTest {
     }
 
     @Test
-    void shouldAcceptSuccessAndFailureStatus() throws Exception {
+    void shouldAcceptKnownRequestLogStatuses() throws Exception {
         AppEntity app = createApp(1L, 100L);
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
 
@@ -233,6 +233,11 @@ class ApiRequestLogAdminControllerTest {
         mockMvc.perform(get("/api/admin/apps/1/request-logs")
 
                         .param("status", "failure"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/admin/apps/1/request-logs")
+
+                        .param("status", "cancelled"))
                 .andExpect(status().isOk());
     }
 

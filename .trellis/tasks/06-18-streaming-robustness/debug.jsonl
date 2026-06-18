@@ -1,0 +1,4 @@
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Debug controller terminal-state and request-log behavior"}
+{"file": ".trellis\\tasks\\06-18-streaming-robustness\\research.md", "reason": "Debug with known streaming code seams and gaps"}
+{"file": ".trellis\\tasks\\06-18-streaming-robustness\\prd.md", "reason": "Debug against lifecycle and reservation acceptance matrix"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClient.java", "reason": "Debug upstream SSE/cancellation behavior"}
