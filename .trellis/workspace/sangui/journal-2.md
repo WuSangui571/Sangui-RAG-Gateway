@@ -1865,3 +1865,78 @@ Commit: `cc4e6d6f fix:增强流式请求终态观测`
 ### Next Steps
 
 - None - task complete
+
+
+## Session 65: Frontend Quality Baseline
+
+**Date**: 2026-06-18
+**Task**: Frontend Quality Baseline
+**Branch**: `feature/frontend-quality-baseline`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+**Commit**: `989b2509 test:????????`
+
+**??????**:
+- Frontend quality baseline: added ESLint flat config, Vitest/jsdom/React Testing Library setup, and npm scripts for `lint` and `test`.
+- Frontend tests: covered `AdminShell`, `RequestLogListPage`, `ModelConfigPage`, and `AppConfigPage` representative contracts.
+- CI/spec: wired frontend `lint` and unit/component tests into CI before typecheck/build/visual smoke, and documented the new command and coverage contract in frontend quality spec.
+- Frontend cleanup during Codex check: removed an unreachable `AdminShell` auth refresh effect instead of keeping an eslint suppression, added jsdom `getComputedStyle` shim, and replaced Ant Design `destroyOnClose` with `destroyOnHidden`.
+- Preserved the pre-handoff backend streaming content-type fix in `OpenAiChatCompletionsController` and verified it with the targeted controller test.
+
+**????**:
+- `.github/workflows/ci.yml`
+- `.trellis/spec/frontend/quality-guidelines.md`
+- `backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java`
+- `frontend/package.json`
+- `frontend/package-lock.json`
+- `frontend/eslint.config.js`
+- `frontend/vitest.config.ts`
+- `frontend/src/test/setup.ts`
+- `frontend/src/__tests__/AdminShell.test.tsx`
+- `frontend/src/__tests__/pages/RequestLogListPage.test.tsx`
+- `frontend/src/__tests__/pages/ModelConfigPage.test.tsx`
+- `frontend/src/__tests__/pages/AppConfigPage.test.tsx`
+- `frontend/src/app/providers/UIPreferenceProvider.tsx`
+- `frontend/src/components/layout/AdminShell.tsx`
+- `frontend/src/pages/apps/AppConfigPage.tsx`
+- `frontend/src/pages/model-configs/ModelConfigPage.tsx`
+
+**???????**:
+- `cd frontend; cmd /c npm run lint` -> passed.
+- `cd frontend; cmd /c npm run test` -> passed, 4 files / 29 tests.
+- `cd frontend; cmd /c npm run typecheck` -> passed.
+- `cd frontend; cmd /c npm run build` -> passed; Vite reported only the existing large chunk warning.
+- `cd frontend; cmd /c npm run test:visual` -> passed, 3 Chromium visual smoke tests.
+- `git diff --check` -> passed, no whitespace errors.
+- `cd backend; mvn -q "-Dtest=OpenAiChatCompletionsControllerTest" test` -> passed after rerun outside the restricted sandbox; the first attempt failed only because Maven dependency resolution was blocked by sandbox networking (`Permission denied: getsockopt`).
+
+**?????**:
+- Frontend now has a reproducible local/CI quality baseline for lint, unit/component tests, typecheck, build, and visual smoke.
+- Unit/component baseline uses mocked typed API clients and does not require backend services, Docker, provider keys, app API keys, or admin JWTs.
+- Request-log tests assert safe operational metadata and forbidden-field absence for sensitive observability fields.
+- No DB schema, migrations, admin API contract, auth/permission model, RAG retrieval, or storage behavior was intentionally changed.
+- User confirmed manual testing and committed the implementation before this record-session closeout.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `989b2509` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
