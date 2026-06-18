@@ -1715,3 +1715,77 @@ Updated files include backend document processing classes, V14 migration, docume
 ### Next Steps
 
 - None - task complete
+
+
+## Session 63: Source Citations Retrieval Evaluation
+
+**Date**: 2026-06-18
+**Task**: Source Citations Retrieval Evaluation
+**Branch**: `feature/source-citations-retrieval-evaluation`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+**Commit**: `95df6032 feat:source-citations-retrieval-evaluation`
+
+**Outcome**:
+- Completed P1 source citations and retrieval evaluation after manual acceptance.
+- Added bounded citation metadata across retrieval, prompt context, optional gateway response, request-log evidence, admin detail display, and frontend types.
+- Added retrieval evaluation baseline endpoint and deterministic baseline cases.
+- Preserved default OpenAI-compatible chat response shape; `sangui_citations` remains opt-in for non-streaming requests.
+
+**Main Modules**:
+- backend retrieval: Citation, RetrievalEvidence, RetrievalService, RetrievalMapper, RetrievalResult, ChunkRow.
+- backend prompt/gateway: RagPromptBuilder, ChatCompletionGatewayService, ChatCompletionResult, OpenAiChatCompletionResponse, OpenAiChatCompletionsController, ChatCompletionStreamPreparation.
+- backend request logs: ApiRequestLogEntity, CreateRequestLogCommand, ApiRequestLogMapper, ApiRequestLogService, ApiRequestLogDetailVO, CitationVO, RetrievalEvidenceVO, V15 migration.
+- backend retrieval evaluation: RetrievalEvaluationService, RetrievalEvaluationAdminController, DTO/result/case models, baseline-cases.jsonl.
+- frontend request-log evidence: request-log types, RequestLogDetailDrawer, SourceCitationList, i18n labels.
+- Trellis specs: database, logging, backend quality, RAG retrieval, prompt policy, RAG security, frontend type safety.
+
+**Codex Check Fixes**:
+- Removed class-level NON_NULL serialization from OpenAiChatCompletionResponse; only `sangui_citations` is omitted when null.
+- Added regression test proving standard null fields remain serialized while non-opt-in citations are absent.
+- Tightened RetrievalMapper source filename LEFT JOIN with same user_id and knowledge_base_id boundary.
+- Synced V15/citation/evidence/evaluation contracts into Trellis specs.
+
+**Validation Passed**:
+- `cd backend; mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test`
+- `cd backend; mvn -q "-Dtest=ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest,ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test`
+- `cd backend; mvn -q "-Dtest=RetrievalEvaluationServiceTest,RetrievalEvaluationAdminControllerTest" test`
+- `cd backend; mvn -q -DskipTests compile`
+- `cd frontend; cmd /c npm run typecheck`
+- `cd frontend; cmd /c npm run build`
+- `git diff --check`
+
+**Manual Acceptance**:
+- User reported manual testing completed and code committed.
+
+**Boundaries / Not Run**:
+- Full `mvn test` was not run because the targeted PRD checks covered the changed behavior and full integration tests require PostgreSQL/Redis infrastructure.
+- Frontend visual CI was not run because the task did not add a new visual workflow and browser visual-test infrastructure was not started.
+- No provider/embedding live smoke was run in this record step; production retrieval evaluation still requires a READY KB and usable embedding config.
+
+**Next Candidate**:
+- Recommend P1 Streaming Robustness next because citations/evidence now make non-streaming and log observability stronger, while streaming remains the highest-risk gateway runtime boundary.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `95df6032` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
