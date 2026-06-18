@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import java.io.IOException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -78,6 +81,20 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("INVALID_REQUEST", "Malformed request body"));
     }
 
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<?> handleIOException(IOException ex, HttpServletRequest request) {
+        if (isStreamingGatewayRequest(request)) {
+            GatewayRequestContext context = GatewayRequestContextHolder.get();
+            String requestId = context != null ? context.getRequestId() : null;
+            log.info("Gateway stream response write failed after client disconnect: request_id={} error_class={}",
+                    requestId, ex.getClass().getSimpleName());
+            return ResponseEntity.noContent().build();
+        }
+        log.error("Unexpected I/O error", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("INTERNAL_ERROR", "Internal server error"));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException ex) {
         log.warn("Validation error: {}", ex.getMessage());
@@ -90,5 +107,13 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("INTERNAL_ERROR", "Internal server error"));
+    }
+
+    private boolean isStreamingGatewayRequest(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String accept = request.getHeader("Accept");
+        return "/v1/chat/completions".equals(uri)
+                && accept != null
+                && accept.contains(MediaType.TEXT_EVENT_STREAM_VALUE);
     }
 }
