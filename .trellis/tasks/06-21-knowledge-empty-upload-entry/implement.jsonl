@@ -1,0 +1,22 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Product boundary and KB/document MVP scope"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend page/component/API organization for knowledge workflow"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Explicit loading empty error disabled states and admin UI behavior"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Document upload polling and API error visibility rules"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Local/server state boundaries for upload and document status"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "KnowledgeBaseVO DocumentVO status unions and i18n/type constraints"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend tests lint typecheck build expectations"}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Document status/task state and ingestion safety boundaries"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "No document content/storage/secret leakage in UI"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing upload/status/table patterns before adding components"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Confirm no API/DTO/DB changes and respect document status flow"}
+{"file": "frontend/src/pages/knowledge/KnowledgeBasePage.tsx", "reason": "Primary implementation seam: KB list, doc list, upload, polling, retry"}
+{"file": "frontend/src/components/domain/StatusTag.tsx", "reason": "Existing status display mapping to reuse"}
+{"file": "frontend/src/types/knowledge.ts", "reason": "KnowledgeBaseStatus and KnowledgeBaseVO contract"}
+{"file": "frontend/src/types/document.ts", "reason": "Document/task status unions and polling terminal definitions"}
+{"file": "frontend/src/api/documents.ts", "reason": "Existing upload/list/retry API client functions"}
+{"file": "frontend/src/api/knowledge.ts", "reason": "Existing KB list/create API client functions"}
+{"file": "frontend/src/app/i18n/dict.ts", "reason": "Typed dictionary requiring zh-CN/en-US parity"}
+{"file": "frontend/src/__tests__/pages/RequestLogListPage.test.tsx", "reason": "Page test pattern with ShellContext, UIPreferenceProvider, mocked API clients"}
+{"file": ".trellis/tasks/06-21-knowledge-empty-upload-entry/prd.md", "reason": "Task requirements acceptance criteria and boundaries"}

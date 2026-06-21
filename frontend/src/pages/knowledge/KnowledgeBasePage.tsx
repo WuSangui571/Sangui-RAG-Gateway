@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Table, Button, Modal, Form, Input, InputNumber, Select, Space, Typography, Alert, Upload,
 } from 'antd'
@@ -46,6 +46,11 @@ export default function KnowledgeBasePage() {
   const [docsLoading, setDocsLoading] = useState(false)
   const [docsError, setDocsError] = useState<string | null>(null)
   const pollTimerRef = useRef<number | null>(null)
+
+  const selectedKb = useMemo(
+    () => kbs.find(kb => kb.id === selectedKbId) ?? null,
+    [kbs, selectedKbId],
+  )
 
   const fetchKbs = useCallback(async () => {
     if (adminUserId === null) return
@@ -295,6 +300,10 @@ export default function KnowledgeBasePage() {
         <Button onClick={fetchKbs}>{t('knowledge.refresh')}</Button>
       </Space>
 
+      {!loading && kbs.length === 0 && !error && (
+        <Alert type="info" message={t('knowledge.emptyHint')} style={{ marginBottom: 16 }} />
+      )}
+
       <Table
         rowKey="id"
         columns={kbColumns}
@@ -310,6 +319,16 @@ export default function KnowledgeBasePage() {
             {t('knowledge.documentsIn', { id: selectedKbId })}
           </Typography.Title>
 
+          {selectedKb && selectedKb.status === 'EMPTY' && (
+            <Alert type="info" message={t('knowledge.statusEmptyHint')} style={{ marginBottom: 12 }} />
+          )}
+          {selectedKb && selectedKb.status === 'PROCESSING' && (
+            <Alert type="info" message={t('knowledge.statusProcessingHint')} style={{ marginBottom: 12 }} />
+          )}
+          {selectedKb && selectedKb.status === 'FAILED' && (
+            <Alert type="warning" message={t('knowledge.statusFailedHint')} style={{ marginBottom: 12 }} />
+          )}
+
           {docsError && (
             <Alert type="error" message={t('knowledge.docError')} description={docsError} closable onClose={() => setDocsError(null)} style={{ marginBottom: 8 }} />
           )}
@@ -323,14 +342,27 @@ export default function KnowledgeBasePage() {
             <Button onClick={fetchDocuments} disabled={selectedKbId === null}>{t('knowledge.refreshDocs')}</Button>
           </Space>
 
-          <Table
-            rowKey="id"
-            columns={docColumns}
-            dataSource={documents}
-            loading={docsLoading}
-            locale={{ emptyText: t('knowledge.docEmpty') }}
-            pagination={false}
-          />
+          {documents.length === 0 && !docsLoading && !docsError ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
+                {t('knowledge.docEmptyHint')}
+              </Typography.Paragraph>
+              <Upload beforeUpload={beforeUpload} showUploadList={false} accept=".txt,.md,.markdown">
+                <Button type="primary" icon={<UploadOutlined />}>
+                  {t('knowledge.upload')}
+                </Button>
+              </Upload>
+            </div>
+          ) : (
+            <Table
+              rowKey="id"
+              columns={docColumns}
+              dataSource={documents}
+              loading={docsLoading}
+              locale={{ emptyText: t('knowledge.docEmpty') }}
+              pagination={false}
+            />
+          )}
         </div>
       )}
 

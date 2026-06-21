@@ -1,0 +1,20 @@
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Review product boundary and KB/document MVP scope"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Review frontend file placement and import boundaries"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Review explicit loading empty error disabled states and admin UI behavior"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Review document polling/upload error behavior"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Review local/server/global state boundaries"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Review status unions DTO/VO field alignment and dictionary parity"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Review required frontend validation commands and UX/security checklist"}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Review document status/task state semantics and no fake ready state"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Review no sensitive document/storage/secret fields in DOM"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Review duplication and component extraction decision"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Review that no API/DTO/DB changes slipped in"}
+{"file": "frontend/src/pages/knowledge/KnowledgeBasePage.tsx", "reason": "Review primary page implementation and state branches"}
+{"file": "frontend/src/components/domain/StatusTag.tsx", "reason": "Review status display reuse"}
+{"file": "frontend/src/types/knowledge.ts", "reason": "Review unchanged KB contract"}
+{"file": "frontend/src/types/document.ts", "reason": "Review unchanged document/task contract"}
+{"file": "frontend/src/api/documents.ts", "reason": "Review reuse of existing upload/list/retry client functions"}
+{"file": "frontend/src/api/knowledge.ts", "reason": "Review reuse of existing KB client functions"}
+{"file": "frontend/src/app/i18n/dict.ts", "reason": "Review zh-CN/en-US dictionary parity"}
+{"file": "frontend/src/__tests__/pages/RequestLogListPage.test.tsx", "reason": "Review page test pattern for mocked API and safety assertions"}
+{"file": ".trellis/tasks/06-21-knowledge-empty-upload-entry/prd.md", "reason": "Review against task requirements acceptance criteria and boundaries"}
