@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Table, Button, Select, Input, Space, Typography, Alert, Form,
+  Table, Button, Select, Input, Space, Typography, Alert,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import type { AppVO } from '../../types/app'
 import type { ApiRequestLogVO, RequestLogListParams } from '../../types/request-log'
 import { listRequestLogs } from '../../api/request-logs'
+import { listApps } from '../../api/apps'
 import { ApiError } from '../../api/http'
 import RequestLogStatusTag from '../../components/domain/RequestLogStatusTag'
 import RequestLogDetailDrawer from '../../components/domain/RequestLogDetailDrawer'
@@ -19,9 +21,12 @@ interface RequestLogListPageProps {
 
 export default function RequestLogListPage({ persistentAppId }: RequestLogListPageProps) {
   const { t } = useI18n()
-  const { adminUserId } = useShell()
-  const [appId, setAppId] = useState<string>('')
-  const [submittedAppId, setSubmittedAppId] = useState<number | null>(null)
+  const { adminUserId, selectedAppId, setSelectedAppId } = useShell()
+
+  const [apps, setApps] = useState<AppVO[]>([])
+  const [activeAppId, setActiveAppId] = useState<number | null>(null)
+  const [appsLoading, setAppsLoading] = useState(false)
+  const [appsError, setAppsError] = useState<string | null>(null)
   const autoConnectDone = useRef(false)
 
   const [filters, setFilters] = useState<RequestLogListParams>({
@@ -41,14 +46,35 @@ export default function RequestLogListPage({ persistentAppId }: RequestLogListPa
   const [detailRequestId, setDetailRequestId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
 
-  const canQuery = submittedAppId !== null && adminUserId !== null
+  const canQuery = activeAppId !== null && adminUserId !== null
+  const noAppsAvailable = apps.length === 0
+
+  const fetchApps = useCallback(async () => {
+    if (adminUserId === null) return
+    setAppsLoading(true)
+    setAppsError(null)
+    try {
+      const res = await listApps(undefined)
+      if (res.code === 'OK') {
+        setApps(res.data)
+      } else {
+        setAppsError(res.message)
+        setApps([])
+      }
+    } catch (e: unknown) {
+      setAppsError(e instanceof ApiError ? e.message : (e instanceof Error ? e.message : 'Network error'))
+      setApps([])
+    } finally {
+      setAppsLoading(false)
+    }
+  }, [adminUserId])
 
   const fetchLogs = useCallback(async () => {
-    if (submittedAppId === null || adminUserId === null) return
+    if (activeAppId === null || adminUserId === null) return
     setLoading(true)
     setError(null)
     try {
-      const res = await listRequestLogs(submittedAppId, filters)
+      const res = await listRequestLogs(activeAppId, filters)
       if (res.code !== 'OK') {
         setError(res.message)
         setData([])
@@ -65,26 +91,33 @@ export default function RequestLogListPage({ persistentAppId }: RequestLogListPa
     } finally {
       setLoading(false)
     }
-  }, [submittedAppId, adminUserId, filters])
+  }, [activeAppId, adminUserId, filters])
+
+  useEffect(() => {
+    fetchApps()
+  }, [fetchApps])
 
   useEffect(() => {
     if (autoConnectDone.current) return
     if (persistentAppId !== undefined && persistentAppId > 0) {
       autoConnectDone.current = true
-      setSubmittedAppId(persistentAppId)
+      setActiveAppId(persistentAppId)
     }
   }, [persistentAppId])
+
+  useEffect(() => {
+    if (selectedAppId !== null) {
+      setActiveAppId(selectedAppId)
+    }
+  }, [selectedAppId])
 
   useEffect(() => {
     fetchLogs()
   }, [fetchLogs])
 
-  function handleConnect() {
-    const appIdNum = Number(appId)
-    if (!appId || !Number.isFinite(appIdNum) || appIdNum <= 0) {
-      return
-    }
-    setSubmittedAppId(appIdNum)
+  function handleAppSelect(appId: number) {
+    setActiveAppId(appId)
+    setSelectedAppId(appId)
     setFilters(prev => ({ ...prev, page: 1 }))
     setError(null)
   }
@@ -196,128 +229,141 @@ export default function RequestLogListPage({ persistentAppId }: RequestLogListPa
     )
   }
 
-  if (!canQuery) {
-    return (
-      <div style={{ maxWidth: 480, margin: '80px auto', padding: 24 }}>
-        <Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
-          {t('request-log.title')}
-        </Title>
-        <Form layout="vertical">
-          <Form.Item label={t('request-log.appId')} required>
-            <Input
-              value={appId}
-              onChange={e => setAppId(e.target.value)}
-              placeholder={t('request-log.enterAppId')}
-              type="number"
-              onPressEnter={handleConnect}
-            />
-          </Form.Item>
-          <Button
-            type="primary"
-            block
-            onClick={handleConnect}
-            disabled={!appId || !Number.isFinite(Number(appId)) || Number(appId) <= 0}
-          >
-            {t('request-log.connect')}
-          </Button>
-        </Form>
-      </div>
-    )
-  }
-
   return (
     <div style={{ padding: 24 }}>
       <Title level={3} style={{ marginBottom: 16 }}>
         {t('request-log.title')}
-        <Typography.Text type="secondary" style={{ fontSize: 14, marginLeft: 12 }}>
-          App #{submittedAppId}
-        </Typography.Text>
+        {activeAppId !== null && (
+          <Typography.Text type="secondary" style={{ fontSize: 14, marginLeft: 12 }}>
+            App #{activeAppId}
+          </Typography.Text>
+        )}
       </Title>
 
-      <Space wrap style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16 }}>
+        <Typography.Text type="secondary">{t('request-log.selectApp')}</Typography.Text>
         <Select
-          value={filters.status || undefined}
-          onChange={(v) => handleFilterChange('status', v)}
-          placeholder={t('request-log.statusFilter')}
-          allowClear
-          style={{ width: 130 }}
-          options={[
-            { value: 'success', label: t('request-log.success') },
-            { value: 'failure', label: t('request-log.failure') },
-            { value: 'cancelled', label: t('request-log.cancelled') },
-          ]}
+          value={activeAppId}
+          onChange={(v) => handleAppSelect(v)}
+          placeholder={t('request-log.selectPlaceholder')}
+          loading={appsLoading}
+          disabled={appsLoading}
+          style={{ width: 280 }}
+          options={apps.map(app => ({ value: app.id, label: `#${app.id} ${app.name}` }))}
+          notFoundContent={appsLoading ? t('request-log.loadingApps') : t('request-log.noApps')}
         />
-        <Input
-          value={filters.error_code || ''}
-          onChange={(e) => handleFilterChange('error_code', e.target.value || undefined)}
-          placeholder={t('request-log.errorCode')}
-          allowClear
-          style={{ width: 160 }}
-        />
-        <Input
-          value={filters.start_time || ''}
-          onChange={(e) => handleFilterChange('start_time', e.target.value || undefined)}
-          placeholder={t('request-log.startTime')}
-          style={{ width: 220 }}
-        />
-        <Input
-          value={filters.end_time || ''}
-          onChange={(e) => handleFilterChange('end_time', e.target.value || undefined)}
-          placeholder={t('request-log.endTime')}
-          style={{ width: 220 }}
-        />
-        <Button onClick={() => {
-          setFilters({ page: 1, page_size: 20, status: '', error_code: '', start_time: '', end_time: '' })
-        }}>
-          {t('request-log.resetFilters')}
-        </Button>
       </Space>
 
-      {error && (
+      {appsError && (
         <Alert
           type="error"
-          message={t('request-log.loadError')}
-          description={error}
+          message={t('request-log.loadAppsError')}
+          description={appsError}
           closable
-          onClose={() => setError(null)}
+          onClose={() => setAppsError(null)}
           style={{ marginBottom: 16 }}
           action={
-            <Button size="small" onClick={fetchLogs}>
+            <Button size="small" onClick={fetchApps}>
               {t('request-log.retry')}
             </Button>
           }
         />
       )}
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={data}
-        loading={loading}
-        locale={{
-          emptyText: error ? ' ' : t('request-log.empty'),
-        }}
-        pagination={{
-          current: filters.page || 1,
-          pageSize: filters.page_size || 20,
-          total,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50', '100'],
-          showTotal: (totalCount) => t('request-log.pagination', { total: totalCount }),
-          onChange: (page, pageSize) => {
-            setFilters(prev => ({ ...prev, page, page_size: pageSize }))
-          },
-        }}
-        scroll={{ x: 1100 }}
-      />
+      {!canQuery && !appsLoading && !appsError && (
+        <div style={{ textAlign: 'center', padding: 48, color: '#888' }}>
+          <Text type="secondary">
+            {noAppsAvailable ? t('request-log.noApps') : t('request-log.emptyNoApp')}
+          </Text>
+        </div>
+      )}
 
-      {submittedAppId !== null && (
-        <RequestLogDetailDrawer
-          open={detailOpen}
-          appId={submittedAppId}
-          requestId={detailRequestId}
-          onClose={closeDetail}
-        />
+      {canQuery && (
+        <>
+          <Space wrap style={{ marginBottom: 16 }}>
+            <Select
+              value={filters.status || undefined}
+              onChange={(v) => handleFilterChange('status', v)}
+              placeholder={t('request-log.statusFilter')}
+              allowClear
+              style={{ width: 130 }}
+              options={[
+                { value: 'success', label: t('request-log.success') },
+                { value: 'failure', label: t('request-log.failure') },
+                { value: 'cancelled', label: t('request-log.cancelled') },
+              ]}
+            />
+            <Input
+              value={filters.error_code || ''}
+              onChange={(e) => handleFilterChange('error_code', e.target.value || undefined)}
+              placeholder={t('request-log.errorCode')}
+              allowClear
+              style={{ width: 160 }}
+            />
+            <Input
+              value={filters.start_time || ''}
+              onChange={(e) => handleFilterChange('start_time', e.target.value || undefined)}
+              placeholder={t('request-log.startTime')}
+              style={{ width: 220 }}
+            />
+            <Input
+              value={filters.end_time || ''}
+              onChange={(e) => handleFilterChange('end_time', e.target.value || undefined)}
+              placeholder={t('request-log.endTime')}
+              style={{ width: 220 }}
+            />
+            <Button onClick={() => {
+              setFilters({ page: 1, page_size: 20, status: '', error_code: '', start_time: '', end_time: '' })
+            }}>
+              {t('request-log.resetFilters')}
+            </Button>
+          </Space>
+
+          {error && (
+            <Alert
+              type="error"
+              message={t('request-log.loadError')}
+              description={error}
+              closable
+              onClose={() => setError(null)}
+              style={{ marginBottom: 16 }}
+              action={
+                <Button size="small" onClick={fetchLogs}>
+                  {t('request-log.retry')}
+                </Button>
+              }
+            />
+          )}
+
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={data}
+            loading={loading}
+            locale={{
+              emptyText: error ? ' ' : t('request-log.empty'),
+            }}
+            pagination={{
+              current: filters.page || 1,
+              pageSize: filters.page_size || 20,
+              total,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              showTotal: (totalCount) => t('request-log.pagination', { total: totalCount }),
+              onChange: (page, pageSize) => {
+                setFilters(prev => ({ ...prev, page, page_size: pageSize }))
+              },
+            }}
+            scroll={{ x: 1100 }}
+          />
+
+          <RequestLogDetailDrawer
+            open={detailOpen}
+            appId={activeAppId}
+            requestId={detailRequestId}
+            onClose={closeDetail}
+          />
+        </>
       )}
     </div>
   )

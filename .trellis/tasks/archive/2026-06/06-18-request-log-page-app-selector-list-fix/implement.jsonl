@@ -1,0 +1,26 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/tasks/06-18-request-log-page-app-selector-list-fix/prd.md", "reason": "Task requirements, acceptance criteria, boundaries, and test plan for request-log page app selection/list visibility fix"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary and request-log safe metadata product contract"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend page/API/type organization for admin console changes"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Admin component states, tables, empty/error behavior, and safe request-log table expectations"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Keep app selection/request-log data as page/server state and avoid unsafe persistence"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Request-log VO, output preview types, AppVO output capture switch contract"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Required frontend tests and validation commands for RequestLogListPage"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Request-log admin query contract, tenant-scoped list/detail, no output_capture_status list gating"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin request-log API validation/error matrix and output preview access boundary"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Request-log safe fields and output preview observability separation"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend request-log targeted tests if backend code is touched"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Request-log failure/cancellation persistence semantics from gateway flow"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Tenant, secret, evidence, and output preview safety boundaries"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer flow mapping for admin frontend -> API -> service -> request-log rows"}
+{"file": "frontend/src/pages/api-keys/ApiKeyPage.tsx", "reason": "Reference app dropdown pattern to align request-log page with API key page"}
+{"file": "frontend/src/pages/request-logs/RequestLogListPage.tsx", "reason": "Primary page likely to modify: replace manual app ID connect flow and preserve list metadata loading"}
+{"file": "frontend/src/api/request-logs.ts", "reason": "Typed request-log list/detail/hit-chunks/output-preview API client contract"}
+{"file": "frontend/src/api/apps.ts", "reason": "Existing app list client to power request-log app selector"}
+{"file": "frontend/src/types/request-log.ts", "reason": "Request-log type definitions and output capture status/preview boundary"}
+{"file": "frontend/src/__tests__/pages/RequestLogListPage.test.tsx", "reason": "Existing component tests to update for app selector and output-capture-independent list rendering"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java", "reason": "Backend request-log admin seam to inspect only if frontend fix does not explain missing logs"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Backend list query currently scopes by user/app/status/error/time only; inspect before changing"}
+{"file": ".trellis/tasks/06-18-request-log-page-app-selector-list-fix/handoff.md", "reason": "Focused code research and DeepSeek implementation handoff"}
