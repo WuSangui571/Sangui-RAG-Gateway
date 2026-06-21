@@ -1,0 +1,8 @@
+{"file": ".trellis\\tasks\\06-21-model-config-check-button-clarity\\prd.md", "reason": "Debug against task scope, API boundary, and acceptance criteria"}
+{"file": "frontend\\src\\pages\\model-configs\\ModelConfigPage.tsx", "reason": "Debug model config check UI behavior"}
+{"file": "frontend\\src\\__tests__\\pages\\ModelConfigPage.test.tsx", "reason": "Debug page-level regression coverage"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Debug using frontend validation and testing contract"}
+{"file": "backend\\settings.xml", "reason": "Debug Maven mirror/fallback policy for Docker build dependency resolution"}
+{"file": "backend\\Dockerfile", "reason": "Debug backend container Maven build wiring"}
+{"file": "backend\\pom.xml", "reason": "Debug dependency that pulls AWS SDK descriptors"}
+{"file": ".github\\workflows\\ci.yml", "reason": "Debug CI docker-backend command and build context"}

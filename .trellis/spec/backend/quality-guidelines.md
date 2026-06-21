@@ -17,6 +17,41 @@ streaming forwarding
 multi-tenant isolation
 ```
 
+## Backend Docker Maven Build Contract
+
+`backend/settings.xml` is part of the backend Docker build contract because
+`backend/Dockerfile` copies it to `/root/.m2/settings.xml` before running:
+
+```bash
+mvn -B -ntp -DskipTests package
+```
+
+Rules:
+
+- `backend/settings.xml` may contain public Maven mirror metadata only.
+- It must not contain credentials, tokens, usernames, passwords, private repository URLs, provider keys, or environment-expanded secrets.
+- Do not use a mirror policy that makes one public mirror the only effective source for every artifact. Maven Central must remain reachable if a regional mirror returns a partial outage such as `502 Bad Gateway`.
+- Keep the Dockerfile Maven command visible. Do not reintroduce quiet `dependency:go-offline -q` or other hidden dependency-resolution steps that mask the failing artifact.
+
+Required checks after changing `backend/settings.xml`, `backend/Dockerfile`,
+or the backend Docker/Compose build path:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+cd ..
+docker build --progress=plain -t sangui-rag-gateway-backend:ci -f backend/Dockerfile backend
+docker compose --progress=plain --env-file .env -f deploy/docker-compose.yml build backend --no-cache
+```
+
+Good/base/bad cases:
+
+| Case | Expected result |
+|---|---|
+| Good | `backend/settings.xml` uses a mirror selector that preserves Maven Central fallback, contains only public repository metadata, and the Docker build succeeds through `mvn -B -ntp -DskipTests package`. |
+| Base | Docker is not available locally; XML syntax, secret scan, Dockerfile settings path, and `mvn -q -DskipTests compile` are verified, and the missing Docker evidence is stated explicitly. |
+| Bad | A public mirror uses `mirrorOf=*` and Central is no longer reachable when that mirror returns 502; dependency resolution is hidden behind quiet prefetch steps; settings contain credentials or private repository URLs. |
+
 High-priority unit tests:
 
 ```text

@@ -1,0 +1,21 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-21-model-config-check-button-clarity\\prd.md", "reason": "Source PRD with scope, API boundary, acceptance criteria, and test matrix"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project model-config check API contract and product boundary"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Admin UI controls, loading/error/disabled states, and accessible labels"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Keep draft/check modal state local and avoid persisted secret state"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Typed API request/response and i18n-safe status contracts"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend testing and completion command contract"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "API clients and error handling should stay traceable and typed"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Admin API payload and secret boundary thinking for model-config checks"}
+{"file": "frontend\\src\\pages\\model-configs\\ModelConfigPage.tsx", "reason": "Current page owns draft and saved check interactions"}
+{"file": "frontend\\src\\api\\model-configs.ts", "reason": "Typed check API functions for draft and saved config checks"}
+{"file": "frontend\\src\\types\\model-config.ts", "reason": "Model config check request/result types"}
+{"file": "frontend\\src\\app\\i18n\\dict.ts", "reason": "zh-CN/en-US copy and dictionary parity for check labels"}
+{"file": "frontend\\src\\__tests__\\pages\\ModelConfigPage.test.tsx", "reason": "Existing page tests to extend for draft/saved/failure/loading cases"}
+{"file": "backend\\settings.xml", "reason": "Track B Maven mirror policy used inside backend Docker build"}
+{"file": "backend\\Dockerfile", "reason": "Track B backend image build copies settings.xml and runs Maven package"}
+{"file": "backend\\pom.xml", "reason": "Track B dependency graph includes AWS SDK S3 2.29.52 that triggers descriptor resolution"}
+{"file": ".github\\workflows\\ci.yml", "reason": "Track B GitHub CI docker-backend command and build context"}
+{"file": "deploy\\docker-compose.yml", "reason": "Track B compose backend build path for optional verification"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend compile/build validation contract for Track B"}
