@@ -887,7 +887,7 @@ npm run build
 | `SPRING_DATASOURCE_PASSWORD` | `sangui_password` | Datasource password |
 | `SPRING_DATA_REDIS_HOST` | `localhost` | Redis host (uses service name `redis` inside Compose) |
 | `SPRING_DATA_REDIS_PORT` | `6379` | Redis port |
-| `RAG_GATEWAY_SECRET_KEY` | `local-dev-change-me` | AES encryption master key (override in production) |
+| `RAG_GATEWAY_SECRET_KEY` | (none — must be set) | AES encryption master key. Must be a strong value of at least 32 characters. Replace `.env.example`'s `<set-a-strong-32-char-secret>` before startup. Never use `local-dev-change-me` in production. |
 | `FILE_STORAGE_TYPE` | `local` | Storage backend type (`local` or `object`) |
 | `FILE_STORAGE_LOCAL_PATH` | `./data/uploads` | Upload storage path |
 | `FILE_STORAGE_OBJECT_ENDPOINT` | (none) | S3-compatible object storage endpoint |
@@ -906,6 +906,7 @@ npm run build
 | `RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS` | `3000` | Max characters per chunk in context |
 | `RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE` | `false` | Explicitly allow local filesystem storage in `prod`/`production` profiles |
 | `RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE` | `false` | Explicitly allow global request-log output capture in `prod`/`production` profiles |
+| `RAG_PRODUCTION_ALLOW_WEAK_LOCAL_SECRET` | `false` | Explicitly allow weak placeholder secret (`local-dev-change-me`) in `dev` or no-profile runtime. Never enable in production-like profiles. |
 | `RAG_API_KEY_LIMITS_ENABLED` | `true` | Enable API-key scoped gateway rate limits |
 | `RAG_API_KEY_LIMITS_DEFAULT_REQUESTS_PER_MINUTE` | `60` | Default requests per minute per API key |
 | `RAG_API_KEY_LIMITS_DEFAULT_TOKENS_PER_MINUTE` | `60000` | Default estimated tokens per minute per API key |
@@ -919,6 +920,10 @@ Inside Docker Compose, the backend service automatically uses `postgres` and `re
 
 - `.env.example` contains only safe local development placeholders. It must not contain real API keys, provider keys, or production secrets.
 - The `.env` file is gitignored. Deployment secrets should be provided via environment or deployment secret management.
+- `RAG_GATEWAY_SECRET_KEY` serves dual roles: it is the AES-256-GCM encryption master key for upstream provider API keys, AND the admin JWT signing key. These two uses share the same secret in the current architecture. A future migration may split these into separate keys without changing the encryption payload format.
+- The documented placeholder `<set-a-strong-32-char-secret>` is rejected by the startup guard and must be replaced with a real secret.
+- In production-like profiles (`prod`/`production`), `RAG_GATEWAY_SECRET_KEY` must be non-blank, at least 32 characters, and must not be the known weak placeholder `local-dev-change-me`.
+- In non-test profiles without production indicators (e.g. `dev` or no active profile), the weak placeholder `local-dev-change-me` is rejected unless `rag.production-guard.allow-weak-local-secret=true` is explicitly set. This acknowledgement must never be enabled in production-like profiles.
 - Upstream provider API keys are configured through the Admin Model Config UI, encrypted at rest with AES-256-GCM, and never returned in admin list/detail responses.
 - Generated app API keys (`sk-sangui-*`) are shown only once and stored as hashes. The full key is never persisted in plaintext or returned outside creation.
 - Logs never contain API keys, encrypted upstream keys, document content, provider response bodies, or augmented prompts.

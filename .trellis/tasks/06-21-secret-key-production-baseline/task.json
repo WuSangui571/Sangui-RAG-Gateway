@@ -1,0 +1,53 @@
+{
+  "id": "secret-key-production-baseline",
+  "name": "secret-key-production-baseline",
+  "title": "Secret Key Production Baseline",
+  "description": "",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "backend config/security/deploy/spec",
+  "package": null,
+  "priority": "P1",
+  "creator": "sangui",
+  "assignee": "sangui",
+  "createdAt": "2026-06-21",
+  "completedAt": null,
+  "branch": "feature/secret-key-production-guardrails",
+  "base_branch": "feature/secret-key-production-guardrails",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

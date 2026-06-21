@@ -48,6 +48,7 @@ rag:
   production-guard:
     allow-local-file-storage: ${RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE:false}
     allow-output-capture: ${RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE:false}
+    allow-weak-local-secret: ${RAG_PRODUCTION_ALLOW_WEAK_LOCAL_SECRET:false}
   document-processing:
     worker:
       enabled: true

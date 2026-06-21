@@ -216,6 +216,8 @@ The following are valid later enhancements, not current hard dependencies:
 
 Safety models must be explicit, configurable, observable, and documented. They must not become hidden fallbacks that silently alter request outcomes without traceability.
 
+- secret-key role separation: currently `rag.gateway.secret-key` serves as both the upstream provider API key AES-256-GCM encryption master key and the admin JWT HMAC signing key. A future migration should split these into independent keys without changing the existing encryption payload format or requiring re-encryption of stored provider keys.
+
 ## 10. Storage Secret and Lifecycle Boundary
 
 Storage internals are deployment metadata and must not become API, frontend, request-log, or evidence fields.

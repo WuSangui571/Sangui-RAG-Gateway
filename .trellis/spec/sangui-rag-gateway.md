@@ -610,14 +610,14 @@ backend/src/main/java/com/sangui/raggateway/common/config/ProductionGuardPropert
 backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java
 ```
 
-The guard runs during Spring context initialization and inspects `Environment.getActiveProfiles()`. It applies only when an active profile is exactly `prod` or `production`, case-insensitive. It must not apply to `dev` or `test` alone. Production-like profiles must not be combined with `dev` or `test`.
+The guard runs during Spring context initialization and inspects `Environment.getActiveProfiles()`. In all **non-test** profiles, it validates `rag.gateway.secret-key` against blank and known weak placeholder values. In production-like profiles (`prod`/`production`), it additionally enforces minimum key length (32 chars), and validates datasource, Redis, file storage, and output capture safety. The `test` profile skips the entire guard. Production-like profiles must not be combined with `dev` or `test`.
 
 Configuration contract:
 
 | Environment variable | Spring property | Production-like requirement |
 |---|---|---|
 | `SPRING_PROFILES_ACTIVE` | `spring.profiles.active` | `prod` or `production` activates the guard; `prod,dev` and `production,test` fail startup. |
-| `RAG_GATEWAY_SECRET_KEY` | `rag.gateway.secret-key` | Required, non-blank, at least 32 characters, and not `local-dev-change-me`. |
+| `RAG_GATEWAY_SECRET_KEY` | `rag.gateway.secret-key` | Required, non-blank, at least 32 characters in production-like profiles, not `local-dev-change-me`, and not the documented replacement placeholder `<set-a-strong-32-char-secret>`. |
 | `SPRING_DATASOURCE_URL` | `spring.datasource.url` | Must not be `jdbc:postgresql://localhost:5432/sangui_rag_gateway`. |
 | `SPRING_DATASOURCE_USERNAME` | `spring.datasource.username` | Must not be `sangui`. |
 | `SPRING_DATASOURCE_PASSWORD` | `spring.datasource.password` | Required, non-blank, and must not be `sangui_password`. |
@@ -626,13 +626,14 @@ Configuration contract:
 | `FILE_STORAGE_TYPE` | `rag.gateway.storage.type` | `local` requires `rag.production-guard.allow-local-file-storage=true`. |
 | `RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE` | `rag.production-guard.allow-local-file-storage` | Explicit production acknowledgement for local filesystem storage. Default `false`. |
 | `RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE` | `rag.production-guard.allow-output-capture` | Explicit production acknowledgement for global output capture. Default `false`. |
+| `RAG_PRODUCTION_ALLOW_WEAK_LOCAL_SECRET` | `rag.production-guard.allow-weak-local-secret` | Explicit acknowledgement for using weak placeholder secret (`local-dev-change-me`) in `dev` or no-profile runtime. Default `false`. Never enable in production-like profiles. |
 | n/a | `rag.request-log.output-capture.enabled` | `true` requires `rag.production-guard.allow-output-capture=true`. |
 
 Deployment file contract:
 
 | File | Requirement |
 |---|---|
-| `.env.example` | Lists both `RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE=false` and `RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE=false`. |
+| `.env.example` | Lists `RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE=false`, `RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE=false`, and `RAG_PRODUCTION_ALLOW_WEAK_LOCAL_SECRET=false`. |
 | `backend/src/main/resources/application.yml` | Binds both acknowledgement properties under `rag.production-guard`. |
 | `deploy/docker-compose.yml` | Passes both acknowledgement variables into the backend service environment. |
 
@@ -640,7 +641,12 @@ Validation matrix:
 
 | Scenario | Expected result |
 |---|---|
-| `dev`, `test`, or no production-like profile | Guard is inactive; local defaults can start. |
+| `test` profile with any secret | Guard is inactive; test context starts. |
+| `dev` or no active profile with blank `rag.gateway.secret-key` | Startup fails with a safe `IllegalStateException` naming `rag.gateway.secret-key` without echoing the value. |
+| `dev`, no active profile, or `prod` with `.env.example` replacement placeholder `<set-a-strong-32-char-secret>` | Startup fails with a safe message naming `rag.gateway.secret-key`; the placeholder value is not echoed and `allow-weak-local-secret` does not bypass it. |
+| `dev` or no active profile with weak placeholder `local-dev-change-me` and `rag.production-guard.allow-weak-local-secret=true` | Context starts; local development mode with weak secret explicitly acknowledged. |
+| `dev` or no active profile with weak placeholder `local-dev-change-me` and no acknowledgement | Startup fails with a safe message naming both `rag.gateway.secret-key` and `rag.production-guard.allow-weak-local-secret`. |
+| `dev` or no active profile with strong secret (non-placeholder) | Context starts. |
 | `prod` with strong secret, non-default DB credentials, Redis service host, output capture disabled, and non-local storage or acknowledged local storage | Context starts. |
 | `prod` with blank, short, or placeholder `rag.gateway.secret-key` | Startup fails with a safe `IllegalStateException` naming `rag.gateway.secret-key` without echoing the value. |
 | `prod` with default datasource URL, username, blank password, or default password | Startup fails with a safe message naming the unsafe datasource property without echoing the password. |
