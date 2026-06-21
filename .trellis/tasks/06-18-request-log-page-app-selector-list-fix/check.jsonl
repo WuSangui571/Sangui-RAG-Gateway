@@ -1,0 +1,20 @@
+{"file": ".trellis/tasks/06-18-request-log-page-app-selector-list-fix/prd.md", "reason": "Check implementation against explicit acceptance criteria and forbidden scope"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify no drift from lightweight RAG gateway and safe request-log scope"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify frontend types align with backend snake_case contracts and no forbidden fields are typed/rendered"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check loading, empty, error, safe-rendering, lint/test/typecheck/build expectations"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify backend changes, if any, preserve admin error shapes and safe status handling"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Verify basic metadata remains independent of output preview capture and no sensitive fields leak"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend and frontend completion validation expectations"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Ensure no gateway persistence behavior is changed without evidence"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Verify request-log list/detail/preview safety and ownership boundaries"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Final cross-layer contract review checklist"}
+{"file": "frontend/src/pages/api-keys/ApiKeyPage.tsx", "reason": "Compare app selector behavior and avoid divergence from API key page UX"}
+{"file": "frontend/src/pages/request-logs/RequestLogListPage.tsx", "reason": "Review no-app, loading, empty, error, filter, pagination, detail drawer behavior"}
+{"file": "frontend/src/api/request-logs.ts", "reason": "Verify query params and paths remain aligned with backend admin APIs"}
+{"file": "frontend/src/types/request-log.ts", "reason": "Verify forbidden fields are not introduced into normal list/detail types"}
+{"file": "frontend/src/__tests__/pages/RequestLogListPage.test.tsx", "reason": "Required focused test assertions for app selector, empty/error, and safe rendering"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogAdminController.java", "reason": "Verify list API stays owner-scoped and has no output capture gating if backend touched"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java", "reason": "Verify list filters do not accidentally depend on output_capture_status"}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogAdminControllerTest.java", "reason": "Backend controller tests to extend only if backend code changes"}
+{"file": "backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java", "reason": "Backend service tests to extend only if backend code changes"}
+{"file": ".trellis/tasks/06-18-request-log-page-app-selector-list-fix/handoff.md", "reason": "Check implementation against focused research and handoff boundaries"}
