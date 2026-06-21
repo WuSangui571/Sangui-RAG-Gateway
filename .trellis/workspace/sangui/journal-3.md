@@ -82,3 +82,75 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 68: API base URL help closeout
+
+**Date**: 2026-06-21
+**Task**: API base URL help closeout
+**Branch**: `feature/api-base-url-help`
+
+### Summary
+
+Closed out the API base URL help task after manual acceptance and commit `42698c0d`.
+The task is archived and the frontend change is verified.
+
+### Main Changes
+
+**Commit**
+- Business commit: `42698c0d fix:完善 API Key base_url 集成提示`
+- Manual acceptance: user confirmed manual testing and commit were completed.
+
+**Modules**
+- Frontend API key creation success state / one-time secret modal.
+- Frontend i18n typed dictionary.
+- Frontend component-level Vitest / React Testing Library coverage.
+
+**Updated files**
+- `frontend/src/components/domain/ApiKeyOneTimeSecret.tsx`
+- `frontend/src/app/i18n/dict.ts`
+- `frontend/src/__tests__/components/ApiKeyOneTimeSecret.test.tsx`
+- `.trellis/tasks/archive/2026-06/06-21-api-base-url-help/`
+
+**Implementation and Codex check fixes**
+- One-time secret modal now shows runtime-derived SDK `base_url = <origin>/v1`.
+- It also shows runtime-derived Chat Completions endpoint: `<origin>/v1/chat/completions`.
+- Production path still defaults to `window.location.origin`; optional `origin` prop is a component test seam.
+- Full API key plaintext remains transient modal/page state only. `ApiKeyPage.tsx` still clears it when the modal closes or the app changes.
+- Moved the test from `__tests__/pages/ApiKeyPage.test.tsx` to `__tests__/components/ApiKeyOneTimeSecret.test.tsx`.
+- Replaced deprecated Ant Design `destroyOnClose` with `destroyOnHidden`.
+- Added a default runtime-origin assertion for the no-override production path.
+
+**Validation**
+- `cmd /c npx vitest run src/__tests__/components/ApiKeyOneTimeSecret.test.tsx`: passed, 1 test file, 12 tests.
+- `cmd /c npm run lint`: passed, ESLint 0 errors.
+- `cmd /c npm run test`: passed, 5 test files, 48 tests.
+- `cmd /c npm run typecheck`: passed.
+- `cmd /c npm run build`: passed; Vite reported only the existing large chunk warning.
+- `git diff --check`: passed; only LF -> CRLF notice for `ApiKeyOneTimeSecret.tsx`.
+
+**Result and boundaries**
+- Task archived: `api-base-url-help`.
+- No backend API, DTO, database, Docker, Nginx, gateway route, or API key security semantic changes.
+- Backend tests were not run because backend code was unchanged.
+- `npm run test:visual` was not run because this task did not change login, theme, global layout, or the Playwright visual baseline.
+- Manual follow-up focus, if needed: deployed-origin URL derivation, all three copy buttons, and plaintext key disappearance after closing the modal.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `42698c0d` | (see git log) |
+
+### Testing
+
+- [OK] Targeted component test, frontend lint, full frontend unit/component tests, typecheck, build, and diff whitespace check passed.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

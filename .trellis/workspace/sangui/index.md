@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 67
+- **Total Sessions**: 68
 - **Last Active**: 2026-06-21
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~84 | Active |
+| `journal-3.md` | ~155 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 68 | 2026-06-21 | API base URL help closeout | `42698c0d` | `feature/api-base-url-help` |
 | 67 | 2026-06-21 | Request log app selector closeout | `23beb958` | `codex/request-log-page-usability` |
 | 66 | 2026-06-18 | Streaming disconnect runtime smoke closeout | `21f80850` | `feature/streaming-disconnect-runtime-smoke` |
 | 65 | 2026-06-18 | Frontend Quality Baseline | `989b2509` | `feature/frontend-quality-baseline` |
