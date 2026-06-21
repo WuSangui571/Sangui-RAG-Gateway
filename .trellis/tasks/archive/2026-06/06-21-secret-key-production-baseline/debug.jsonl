@@ -1,0 +1,4 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and debugging/check handoff"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend quality and verification guidance"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/ProductionConfigGuard.java", "reason": "Primary guard implementation for debugging startup failures"}
+{"file": "backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java", "reason": "Primary guard regression test matrix"}

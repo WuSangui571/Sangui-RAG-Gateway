@@ -14,8 +14,10 @@ public class ProductionConfigGuard implements InitializingBean {
 
     private static final Set<String> PRODUCTION_PROFILES = Set.of("prod", "production");
     private static final Set<String> FORBIDDEN_COMBO_PROFILES = Set.of("dev", "test");
+    private static final String TEST_PROFILE = "test";
 
-    private static final String WEAK_SECRET = "local-dev-change-me";
+    private static final String WEAK_LOCAL_SECRET = "local-dev-change-me";
+    private static final String DOCUMENTED_SECRET_PLACEHOLDER = "<set-a-strong-32-char-secret>";
     private static final int MIN_SECRET_LENGTH = 32;
 
     private static final String DEFAULT_DATASOURCE_URL = "jdbc:postgresql://localhost:5432/sangui_rag_gateway";
@@ -39,19 +41,27 @@ public class ProductionConfigGuard implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() {
-        if (!isProductionProfile()) {
+        if (isProductionProfile()) {
+            validateProfileCombinations();
+        }
+        if (isTestProfile()) {
             return;
         }
-        validateProfileCombinations();
         validateSecretKey();
-        validateDataSource();
-        validateRedis();
-        validateFileStorage();
-        validateOutputCapture();
+        if (isProductionProfile()) {
+            validateDataSource();
+            validateRedis();
+            validateFileStorage();
+            validateOutputCapture();
+        }
     }
 
     private boolean isProductionProfile() {
         return activeProfiles().stream().anyMatch(PRODUCTION_PROFILES::contains);
+    }
+
+    private boolean isTestProfile() {
+        return activeProfiles().contains(TEST_PROFILE);
     }
 
     private void validateProfileCombinations() {
@@ -74,15 +84,32 @@ public class ProductionConfigGuard implements InitializingBean {
 
     private void validateSecretKey() {
         String secretKey = environment.getProperty("rag.gateway.secret-key", "");
+        boolean isProduction = isProductionProfile();
+
         if (secretKey == null || secretKey.isBlank()) {
-            throw new IllegalStateException("rag.gateway.secret-key must not be blank in production");
+            throw new IllegalStateException("rag.gateway.secret-key must not be blank");
         }
-        if (WEAK_SECRET.equals(secretKey)) {
-            throw new IllegalStateException("rag.gateway.secret-key must not be a known weak placeholder value");
-        }
-        if (secretKey.length() < MIN_SECRET_LENGTH) {
+
+        if (DOCUMENTED_SECRET_PLACEHOLDER.equals(secretKey)) {
             throw new IllegalStateException(
-                    "rag.gateway.secret-key must be at least " + MIN_SECRET_LENGTH + " characters in production");
+                    "rag.gateway.secret-key must be replaced with a real secret before startup");
+        }
+
+        if (isProduction) {
+            if (WEAK_LOCAL_SECRET.equals(secretKey)) {
+                throw new IllegalStateException("rag.gateway.secret-key must not be a known weak placeholder value");
+            }
+            if (secretKey.length() < MIN_SECRET_LENGTH) {
+                throw new IllegalStateException(
+                        "rag.gateway.secret-key must be at least " + MIN_SECRET_LENGTH + " characters in production");
+            }
+        } else {
+            if (WEAK_LOCAL_SECRET.equals(secretKey) && !guardProperties.isAllowWeakLocalSecret()) {
+                throw new IllegalStateException(
+                        "rag.gateway.secret-key is set to a known weak placeholder. "
+                        + "Set rag.production-guard.allow-weak-local-secret=true to acknowledge this for local development only, "
+                        + "or set RAG_GATEWAY_SECRET_KEY to a strong secret of at least " + MIN_SECRET_LENGTH + " characters.");
+            }
         }
     }
 

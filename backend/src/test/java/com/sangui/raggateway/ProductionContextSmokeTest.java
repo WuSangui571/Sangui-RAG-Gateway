@@ -7,6 +7,8 @@ import com.sangui.raggateway.common.config.AdminAuthConfig;
 import com.sangui.raggateway.common.config.ApiKeyLimitProperties;
 import com.sangui.raggateway.common.config.EncryptionConfig;
 import com.sangui.raggateway.common.config.GatewayAuthConfig;
+import com.sangui.raggateway.common.config.ProductionConfigGuard;
+import com.sangui.raggateway.common.config.ProductionGuardProperties;
 import com.sangui.raggateway.common.security.AdminJwtService;
 import com.sangui.raggateway.common.security.GatewayAuthFilter;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
@@ -18,6 +20,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -25,6 +28,7 @@ import static org.mockito.Mockito.mock;
 class ProductionContextSmokeTest {
 
     private static final String VALID_SECRET = "prod-smoke-jwt-secret-at-least-32-bytes-long-for-hs256!!";
+    private static final String DOCUMENTED_SECRET_PLACEHOLDER = "<set-a-strong-32-char-secret>";
 
     @Nested
     class PositiveNonTestProfileSmoke {
@@ -138,6 +142,99 @@ class ProductionContextSmokeTest {
                         .hasMessageContaining("JWT secret must not be blank");
             });
         }
+    }
+
+    @Nested
+    class NegativeWeakSecretKey {
+
+        @Test
+        void guardFailsWhenDevProfileHasWeakPlaceholderWithoutAck() {
+            ApplicationContextRunner runner = new ApplicationContextRunner()
+                    .withUserConfiguration(GuardSmokeConfig.class)
+                    .withPropertyValues(
+                            "spring.profiles.active=dev",
+                            "rag.gateway.secret-key=local-dev-change-me");
+
+            runner.run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining("weak placeholder");
+            });
+        }
+
+        @Test
+        void guardPassesWhenDevProfileHasWeakPlaceholderWithAck() {
+            ApplicationContextRunner runner = new ApplicationContextRunner()
+                    .withUserConfiguration(GuardSmokeConfig.class)
+                    .withPropertyValues(
+                            "spring.profiles.active=dev",
+                            "rag.gateway.secret-key=local-dev-change-me",
+                            "rag.production-guard.allow-weak-local-secret=true");
+
+            runner.run(context -> {
+                assertThat(context).hasNotFailed();
+            });
+        }
+
+        @Test
+        void guardFailsWhenNoProfileWithWeakPlaceholder() {
+            ApplicationContextRunner runner = new ApplicationContextRunner()
+                    .withUserConfiguration(GuardSmokeConfig.class)
+                    .withPropertyValues("rag.gateway.secret-key=local-dev-change-me");
+
+            runner.run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining("weak placeholder");
+            });
+        }
+
+        @Test
+        void guardFailsWhenNoProfileUsesDocumentedPlaceholder() {
+            ApplicationContextRunner runner = new ApplicationContextRunner()
+                    .withUserConfiguration(GuardSmokeConfig.class)
+                    .withPropertyValues("rag.gateway.secret-key=" + DOCUMENTED_SECRET_PLACEHOLDER);
+
+            runner.run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining("real secret");
+            });
+        }
+
+        @Test
+        void guardPassesWhenNoProfileWithStrongSecret() {
+            ApplicationContextRunner runner = new ApplicationContextRunner()
+                    .withUserConfiguration(GuardSmokeConfig.class)
+                    .withPropertyValues("rag.gateway.secret-key=" + VALID_SECRET);
+
+            runner.run(context -> {
+                assertThat(context).hasNotFailed();
+            });
+        }
+
+        @Test
+        void guardSkipsWhenTestProfile() {
+            ApplicationContextRunner runner = new ApplicationContextRunner()
+                    .withUserConfiguration(GuardSmokeConfig.class)
+                    .withPropertyValues("spring.profiles.active=test");
+
+            runner.run(context -> {
+                assertThat(context).hasNotFailed();
+            });
+        }
+    }
+
+    @TestConfiguration
+    @Import(ProductionConfigGuard.class)
+    @EnableConfigurationProperties(ProductionGuardProperties.class)
+    static class GuardSmokeConfig {
     }
 
     @TestConfiguration

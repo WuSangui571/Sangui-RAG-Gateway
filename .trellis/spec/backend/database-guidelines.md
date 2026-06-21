@@ -403,7 +403,7 @@ api_key_masked or prefix for display
 encryption_version if key rotation is introduced
 ```
 
-The encryption master key must come from environment variables (`RAG_GATEWAY_SECRET_KEY`), not source code, outside local development. The `dev` profile may provide a safe placeholder default matching `.env.example` so `mvn spring-boot:run` starts locally; production-like runs must override it with `RAG_GATEWAY_SECRET_KEY`.
+The encryption master key must come from environment variables (`RAG_GATEWAY_SECRET_KEY`), not source code. The `dev` profile may provide the local placeholder `local-dev-change-me`, but this requires explicit acknowledgement via `rag.production-guard.allow-weak-local-secret=true` at startup. The documented replacement placeholder `<set-a-strong-32-char-secret>` must be replaced before startup and is not bypassed by that acknowledgement. The `test` profile skips guard checks. Production-like runs must override with a strong `RAG_GATEWAY_SECRET_KEY` of at least 32 characters that is not any known placeholder.
 
 ### Implemented Encryption Baseline
 

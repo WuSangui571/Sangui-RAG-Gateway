@@ -1,0 +1,25 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project/deployment/production guard and secret contract source of truth"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Upstream API key encryption master-key and persistence contract"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Secret-safe startup/admin/gateway error contract"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe logging and request-log boundaries"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend security review checklist and required verification commands"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "No silent fallback and safe upstream/provider-key failure boundaries"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "API key/upstream key/admin JWT security boundary"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer env/config/security contract checklist"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\ProductionConfigGuard.java", "reason": "Existing centralized startup guard pattern; extend instead of duplicating"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\ProductionGuardProperties.java", "reason": "Existing guard acknowledgements property binding"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\EncryptionConfig.java", "reason": "Non-test upstream key encryption bean wiring from rag.gateway.secret-key"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\AdminAuthConfig.java", "reason": "Non-test admin JWT bean wiring from rag.gateway.secret-key"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\UpstreamApiKeyEncryptor.java", "reason": "AES-GCM provider key encryption behavior and blank-secret fail-fast"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\AdminJwtService.java", "reason": "Admin JWT signing/validation behavior using same secret"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\ProductionConfigGuardTest.java", "reason": "Primary guard test matrix and message-safety assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\ProductionContextSmokeTest.java", "reason": "ApplicationContextRunner startup-visible config wiring pattern"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\UpstreamApiKeyEncryptorTest.java", "reason": "Encryption round-trip/failure test patterns"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\AdminJwtServiceTest.java", "reason": "JWT signing/validation/failure test patterns"}
+{"file": "backend\\src\\main\\resources\\application.yml", "reason": "Base profile and secret binding defaults"}
+{"file": "backend\\src\\main\\resources\\application-dev.yml", "reason": "Dev profile secret placeholder behavior"}
+{"file": "deploy\\docker-compose.yml", "reason": "Backend env propagation and weak secret fallback risk"}
+{"file": ".env.example", "reason": "Documented env placeholders and deployment contract"}
+{"file": "README.md", "reason": "User-facing env and secret/provider-key documentation"}

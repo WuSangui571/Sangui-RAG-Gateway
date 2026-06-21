@@ -7,6 +7,7 @@ public class ProductionGuardProperties {
 
     private boolean allowLocalFileStorage = false;
     private boolean allowOutputCapture = false;
+    private boolean allowWeakLocalSecret = false;
 
     public boolean isAllowLocalFileStorage() {
         return allowLocalFileStorage;
@@ -22,5 +23,13 @@ public class ProductionGuardProperties {
 
     public void setAllowOutputCapture(boolean allowOutputCapture) {
         this.allowOutputCapture = allowOutputCapture;
+    }
+
+    public boolean isAllowWeakLocalSecret() {
+        return allowWeakLocalSecret;
+    }
+
+    public void setAllowWeakLocalSecret(boolean allowWeakLocalSecret) {
+        this.allowWeakLocalSecret = allowWeakLocalSecret;
     }
 }
