@@ -1,0 +1,24 @@
+{"file": ".trellis\\tasks\\06-21-model-config-check-button-clarity\\prd.md", "reason": "Acceptance criteria and forbidden scope for review"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify implementation preserves documented model-config check API semantics"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Review UI state and button semantics"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Verify no global or persistent state is introduced"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Verify typed API payloads and no any/secret field drift"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Validate required frontend checks and security UI expectations"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Verify no raw fetch or swallowed API errors"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Verify API boundary remains aligned across frontend/backend contracts"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin model-config check error matrix and secret-safe responses"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe provider/model/upstream-key handling review"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret, tenant, and error response forbidden-field review"}
+{"file": "frontend\\src\\pages\\model-configs\\ModelConfigPage.tsx", "reason": "Review final button semantics, loading states, and no stale results"}
+{"file": "frontend\\src\\api\\model-configs.ts", "reason": "Verify no new duplicated API client or path drift"}
+{"file": "frontend\\src\\types\\model-config.ts", "reason": "Verify DTO/VO type alignment remains unchanged unless justified"}
+{"file": "frontend\\src\\app\\i18n\\dict.ts", "reason": "Verify both locales and typed dictionary parity"}
+{"file": "frontend\\src\\__tests__\\pages\\ModelConfigPage.test.tsx", "reason": "Verify required assertions cover behavior and boundaries"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigAdminController.java", "reason": "Saved vs unsaved endpoint ownership and error boundary reference only"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigCheckService.java", "reason": "Saved vs unsaved merge behavior and required fields reference only"}
+{"file": "backend\\settings.xml", "reason": "Verify public-only Maven metadata and Central fallback strategy"}
+{"file": "backend\\Dockerfile", "reason": "Verify transparent Maven build step and no hidden dependency go-offline fallback"}
+{"file": "backend\\pom.xml", "reason": "Verify dependency versions are not changed without explicit justification"}
+{"file": ".github\\workflows\\ci.yml", "reason": "Verify CI command remains aligned with Dockerfile/settings context"}
+{"file": "deploy\\docker-compose.yml", "reason": "Verify compose backend build path remains aligned"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Review backend validation requirements for Track B"}

@@ -341,11 +341,10 @@ export default function ModelConfigPage() {
           <Button
             size="small"
             disabled={checkingId !== null}
-            style={{ width: 56 }}
-            aria-busy={checkingId === record.id}
+            loading={checkingId === record.id}
             onClick={() => handleRunSavedCheck(record)}
           >
-            {t('model-config.checkButton')}
+            {checkingId === record.id ? t('model-config.checking') : t('model-config.checkButton')}
           </Button>
           {record.status === 'ENABLED' ? (
             <Button size="small" danger onClick={() => handleDisable(record)}>
@@ -517,6 +516,12 @@ export default function ModelConfigPage() {
         width={640}
         okText={t('model-config.checkRun')}
       >
+        <Alert
+          message={t('model-config.checkDraftDescription')}
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
         <Form form={checkForm} layout="vertical">
           <Form.Item
             name="capability"

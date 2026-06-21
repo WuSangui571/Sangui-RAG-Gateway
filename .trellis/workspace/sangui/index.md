@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 69
+- **Total Sessions**: 70
 - **Last Active**: 2026-06-21
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~221 | Active |
+| `journal-3.md` | ~295 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 70 | 2026-06-21 | Model config check clarity closeout | `8d27e3a4` | `feature/model-config-check-button-clarity` |
 | 69 | 2026-06-21 | Knowledge empty upload entry closeout | `4d52ad17` | `feature/knowledge-empty-upload-entry` |
 | 68 | 2026-06-21 | API base URL help closeout | `42698c0d` | `feature/api-base-url-help` |
 | 67 | 2026-06-21 | Request log app selector closeout | `23beb958` | `codex/request-log-page-usability` |
