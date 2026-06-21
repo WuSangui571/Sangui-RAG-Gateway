@@ -290,3 +290,54 @@ Closed the `knowledge-empty-upload-entry` frontend task after user manual testin
 ### Next Steps
 
 - None - task complete
+
+
+## Session 71: Smoke page flow simplification closeout
+
+**Date**: 2026-06-21
+**Task**: Smoke page flow simplification closeout
+**Branch**: `feature/smoke-page-flow-simplification`
+
+### Summary
+
+Closed the smoke page flow simplification task after manual testing and commit `e8e6d7c4`.
+The work refactored the frontend smoke page into an operator-oriented flow and preserved
+the metadata-only evidence boundary.
+
+### Main Changes
+
+| Area | Record |
+|------|--------|
+| Task | Simplify smoke test page flow architecture |
+| Commit | e8e6d7c4 fix: smoke page flow checks |
+| Main modules | Frontend smoke page IA, readiness gate, metadata-only evidence, failure boundary hints, i18n, page tests |
+| Updated files | frontend/src/pages/smoke/SmokeTestPage.tsx; frontend/src/app/i18n/dict.ts; frontend/src/__tests__/pages/SmokeTestPage.test.tsx; .trellis/tasks/06-21-smoke-page-flow-simplification/* |
+| Codex check fixes | Made readiness a real execution gate; mapped readiness API failure to Failure Next Step; removed nested Cards; hardened tests for listApps(undefined), NOT_READY disabled state, and hit chunk summary omission |
+| Result boundary | Frontend-only change. No backend, DB, API, auth, gateway, retrieval, or infra contract changes |
+| Evidence boundary | Smoke evidence renders safe metadata only: request id, status, model/provider, latency, token usage, content length, and hit chunk ids/document ids/KB ids/source filename/chunk index. It does not render answer text, prompts/messages, raw bodies, keys/hashes, chunk summary/content, output preview, provider body, or stack trace |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e8e6d7c4` | (see git log) |
+
+### Testing
+
+- [OK] `cd frontend; cmd /c npx vitest run src/__tests__/pages/SmokeTestPage.test.tsx` -> 16/16 passed
+- [OK] `cd frontend; cmd /c npm run lint` -> passed
+- [OK] `cd frontend; cmd /c npm run typecheck` -> passed
+- [OK] `cd frontend; cmd /c npm run test` -> 7 files / 95 tests passed
+- [OK] `cd frontend; cmd /c npm run build` -> passed, with existing Vite chunk-size warning only
+- [OK] `cd frontend; cmd /c npm run test:visual` -> 3/3 passed
+- [OK] `git diff --check` -> clean, with LF to CRLF warning only
+- [OK] User confirmed manual testing and commit before record-session
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

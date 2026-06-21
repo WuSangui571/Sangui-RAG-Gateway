@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import {
-  Button, Select, Space, Typography, Card, Spin, Descriptions, Tag, Input, Divider,
+  Button, Select, Space, Typography, Card, Spin, Descriptions, Tag, Input, Divider, Alert,
 } from 'antd'
 import type { AppVO, AppReadinessVO, ReadinessStatus } from '../../types/app'
 import type { ApiKeyVO } from '../../types/api-key'
 import type { SmokeChatCompletionResponse, SmokeStreamingEvidence } from '../../types/openai'
-import type { ApiRequestLogVO, ApiRequestLogDetailVO, HitChunkSummaryVO } from '../../types/request-log'
+import type { ApiRequestLogVO, ApiRequestLogDetailVO, HitChunkSummaryVO, DiagnosticBoundary } from '../../types/request-log'
 import { listApps, getAppReadiness } from '../../api/apps'
 import { listApiKeys } from '../../api/api-keys'
 import { ApiError } from '../../api/http'
@@ -14,6 +15,7 @@ import { listRequestLogs, getRequestLogDetail, getHitChunks } from '../../api/re
 import { useShell } from '../../components/layout/AdminShell'
 import { useI18n } from '../../app/i18n'
 import type { I18nKey } from '../../app/i18n/dict'
+import { BOUNDARY_LABEL_KEYS } from '../../components/domain/requestDiagnostics'
 
 const { Text } = Typography
 
@@ -56,6 +58,80 @@ interface RevokedKeyStepState {
   keyValue: string | null
 }
 
+const READINESS_HINT_MAP: Record<string, I18nKey> = {
+  app: 'smoke.precondition.hint.app' as I18nKey,
+  default_model_config: 'smoke.precondition.hint.default_model_config' as I18nKey,
+  default_knowledge_base: 'smoke.precondition.hint.default_knowledge_base' as I18nKey,
+  knowledge_base_status: 'smoke.precondition.hint.knowledge_base_status' as I18nKey,
+  active_api_key: 'smoke.precondition.hint.active_api_key' as I18nKey,
+  embedding_config: 'smoke.precondition.hint.embedding_config' as I18nKey,
+}
+
+const ERROR_CODE_BOUNDARY_MAP: Record<string, DiagnosticBoundary> = {
+  model_config_not_ready: 'readiness',
+  knowledge_base_not_ready: 'retrieval',
+  embedding_failed: 'embedding',
+  upstream_timeout: 'upstream',
+  upstream_error: 'upstream',
+  invalid_api_key: 'auth',
+}
+
+const BOUNDARY_COLORS: Record<DiagnosticBoundary, string> = {
+  auth: 'red',
+  readiness: 'orange',
+  retrieval: 'blue',
+  embedding: 'purple',
+  upstream: 'red',
+  streaming: 'cyan',
+  'request-log': 'gold',
+  unknown: 'default',
+}
+
+const FAILURE_HINT_MAP: Record<DiagnosticBoundary, I18nKey> = {
+  auth: 'smoke.failure.auth' as I18nKey,
+  readiness: 'smoke.failure.readiness' as I18nKey,
+  retrieval: 'smoke.failure.retrieval' as I18nKey,
+  embedding: 'smoke.failure.embedding' as I18nKey,
+  upstream: 'smoke.failure.upstream' as I18nKey,
+  streaming: 'smoke.failure.streaming' as I18nKey,
+  'request-log': 'smoke.failure.request-log' as I18nKey,
+  unknown: 'smoke.failure.unknown' as I18nKey,
+}
+
+const FRAMED_SECTION_STYLE: CSSProperties = {
+  border: '1px solid rgba(140, 140, 140, 0.35)',
+  borderRadius: 6,
+  padding: 12,
+}
+
+const FRAMED_SECTION_BORDER: Record<'success' | 'error', string> = {
+  success: '#52c41a',
+  error: '#ff4d4f',
+}
+
+function FramedSection({
+  title,
+  tone,
+  children,
+}: {
+  title?: ReactNode
+  tone?: 'success' | 'error'
+  children: ReactNode
+}) {
+  const style = tone
+    ? { ...FRAMED_SECTION_STYLE, borderColor: FRAMED_SECTION_BORDER[tone] }
+    : FRAMED_SECTION_STYLE
+
+  return (
+    <div style={style}>
+      {title && (
+        <Text strong style={{ display: 'block', marginBottom: 8 }}>{title}</Text>
+      )}
+      {children}
+    </div>
+  )
+}
+
 function StepStatusTagLocalized({ status }: { status: StepStatus }) {
   const { t } = useI18n()
   const upper = status.toUpperCase()
@@ -70,12 +146,12 @@ function StepStatusTagLocalized({ status }: { status: StepStatus }) {
 
 function ReadinessStatusTagLocalized({ status }: { status: ReadinessStatus | string }) {
   const { t } = useI18n()
-  const upper = status.toUpperCase()
   if (status === 'READY') return <Tag color="success">{t('status.readiness.READY')}</Tag>
   if (status === 'MISSING') return <Tag color="error">{t('status.readiness.MISSING')}</Tag>
   if (status === 'DISABLED') return <Tag color="warning">{t('status.readiness.DISABLED')}</Tag>
   if (status === 'NOT_READY') return <Tag color="default">{t('status.readiness.NOT_READY')}</Tag>
   if (!status) return <Tag color="default">{t('status.readiness.UNKNOWN')}</Tag>
+  const upper = status.toUpperCase()
   return <Tag color="default">{upper}</Tag>
 }
 
@@ -107,6 +183,8 @@ export default function SmokeTestPage() {
   const [readiness, setReadiness] = useState<AppReadinessVO | null>(null)
   const [readinessLoading, setReadinessLoading] = useState(false)
   const [readinessError, setReadinessError] = useState<string | null>(null)
+
+  const [runAllActive, setRunAllActive] = useState(false)
 
   const fetchApps = useCallback(async () => {
     if (adminUserId === null) return
@@ -192,6 +270,7 @@ export default function SmokeTestPage() {
     setStreaming({ status: 'idle', evidence: null, error: null })
     setRequestLog({ status: 'idle', listRow: null, detail: null, hitChunks: null, error: null, subStep: 'idle' })
     setRevokedKey(prev => ({ ...prev, status: 'idle', error: null }))
+    setRunAllActive(false)
   }
 
   function handleAppSelect(appId: number) {
@@ -214,8 +293,8 @@ export default function SmokeTestPage() {
     resetAllSteps()
   }
 
-  async function handleNonStreamingSmoke() {
-    if (selectedKeyValue === null) return
+  async function handleNonStreamingSmoke(): Promise<boolean> {
+    if (selectedKeyValue === null) return false
     setNonStreaming({ status: 'running', evidence: null, error: null })
     try {
       const response: SmokeChatCompletionResponse = await smokeChatCompletions({
@@ -238,6 +317,7 @@ export default function SmokeTestPage() {
         },
         error: null,
       })
+      return true
     } catch (e: unknown) {
       if (e instanceof SmokeApiError) {
         setNonStreaming({
@@ -252,6 +332,7 @@ export default function SmokeTestPage() {
           error: { status: 0, message: e instanceof Error ? e.message : tCommon('Unknown error'), code: null },
         })
       }
+      return false
     }
   }
 
@@ -436,435 +517,473 @@ export default function SmokeTestPage() {
     }
   }
 
-  const canRun = activeAppId !== null && selectedKeyValue !== null && userInput.trim().length > 0
-  const canRunRequestLog = activeAppId !== null && adminUserId !== null && nonStreaming.status === 'pass'
+  async function handleRunAllSmokes() {
+    if (!canRun) return
+    resetAllSteps()
+    setRunAllActive(true)
 
-  function computeOverview(): { level: 'idle' | 'pass' | 'partial' | 'fail'; key: I18nKey } {
-    const steps: StepStatus[] = [nonStreaming.status, streaming.status, requestLog.status]
-    if (revokedKey.enabled) {
-      steps.push(revokedKey.status)
+    const nsPassed = await handleNonStreamingSmoke()
+    await handleStreamingSmoke()
+
+    if (nsPassed && activeAppId !== null && adminUserId !== null) {
+      await handleRequestLogValidation()
     }
-    const allIdle = steps.every(s => s === 'idle')
-    if (allIdle) return { level: 'idle', key: 'smoke.overviewIdle' as I18nKey }
-    const readinessFailed = readinessError !== null || (readiness !== null && readiness.overall_status !== 'READY')
-    const allPass = steps.every(s => s === 'pass' || s === 'skip')
-    if (allPass && !readinessFailed) return { level: 'pass', key: 'smoke.overviewPass' as I18nKey }
-    const anyFail = readinessFailed || steps.some(s => s === 'fail')
-    if (anyFail) return { level: 'fail', key: 'smoke.overviewFail' as I18nKey }
-    return { level: 'partial', key: 'smoke.overviewPartial' as I18nKey }
+
+    setRunAllActive(false)
   }
 
-  const overview = computeOverview()
+  const readinessReady = readiness !== null && readiness.overall_status === 'READY'
+  const readinessNotReady = readiness !== null && readiness.overall_status !== 'READY'
+  const canRun = activeAppId !== null
+    && readinessReady
+    && readinessError === null
+    && selectedKeyValue !== null
+    && userInput.trim().length > 0
+  const canRunRequestLog = activeAppId !== null && adminUserId !== null && nonStreaming.status === 'pass'
+
+  const disabledReason = useMemo((): string | null => {
+    if (activeAppId === null) return t('smoke.disabledSelectApp')
+    if (readinessLoading || readinessError !== null || !readinessReady) return t('smoke.disabledNotReady')
+    if (selectedKeyValue === null) return t('smoke.disabledNoKey')
+    if (userInput.trim().length === 0) return t('smoke.disabledNoMessage')
+    return null
+  }, [activeAppId, readinessLoading, readinessError, readinessReady, selectedKeyValue, userInput, t])
+
+  const failureBoundary = useMemo((): DiagnosticBoundary | null => {
+    if (readinessError !== null) return 'readiness'
+
+    if (readinessNotReady) {
+      if (readiness?.checks) {
+        for (const check of readiness.checks) {
+          if (check.status !== 'READY') {
+            if (check.key === 'app' || check.key === 'default_model_config') return 'readiness'
+            if (check.key === 'default_knowledge_base' || check.key === 'knowledge_base_status') return 'retrieval'
+            if (check.key === 'embedding_config') return 'embedding'
+            if (check.key === 'active_api_key') return 'auth'
+          }
+        }
+      }
+      return 'readiness'
+    }
+
+    if (nonStreaming.status === 'fail' && nonStreaming.error?.code) {
+      const mapped = ERROR_CODE_BOUNDARY_MAP[nonStreaming.error.code]
+      if (mapped) return mapped
+    }
+    if (streaming.status === 'fail') {
+      if (streaming.evidence && !streaming.evidence.donePresent) return 'streaming'
+      if (streaming.error?.code) {
+        const mapped = ERROR_CODE_BOUNDARY_MAP[streaming.error.code]
+        if (mapped) return mapped
+      }
+    }
+    if (requestLog.status === 'fail') return 'request-log'
+    if (revokedKey.status === 'fail') return 'auth'
+    if (nonStreaming.status === 'fail' || streaming.status === 'fail') return 'unknown'
+    return null
+  }, [readinessError, readinessNotReady, readiness, nonStreaming, streaming, requestLog, revokedKey])
+
+  const hasEvidence = nonStreaming.status === 'pass' || nonStreaming.status === 'fail'
+    || streaming.status === 'pass' || streaming.status === 'fail'
+    || requestLog.status === 'pass' || requestLog.status === 'fail'
+    || revokedKey.status === 'pass' || revokedKey.status === 'fail'
 
   return (
     <div>
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
         {loadError && (
-          <Text type="danger">{loadError}</Text>
+          <Alert type="error" message={loadError} showIcon closable />
         )}
 
-        {activeAppId !== null && (
-          <Card size="small" title={t('smoke.overviewTitle')} style={{
-            borderColor: overview.level === 'pass' ? '#52c41a' : overview.level === 'fail' ? '#ff4d4f'
-              : overview.level === 'partial' ? '#faad14' : undefined,
-          }}>
-            <Space>
-              <Tag color={
-                overview.level === 'pass' ? 'success' : overview.level === 'fail' ? 'error'
-                  : overview.level === 'partial' ? 'warning' : 'default'
-              }>
-                {overview.level === 'pass' ? t('status.smoke.PASS')
-                  : overview.level === 'fail' ? t('status.smoke.FAIL')
-                  : overview.level === 'partial' ? t('status.smoke.SKIP')
-                  : t('status.smoke.IDLE')}
-              </Tag>
-              <Text>{t(overview.key)}</Text>
-            </Space>
-          </Card>
-        )}
-
-        {activeAppId === null && (
-          <Card size="small">
-            <Text type="secondary">{t('smoke.noAppSelected')}</Text>
-          </Card>
-        )}
-
-        <Space>
-          <div>
-            <Text type="secondary">{t('smoke.app')}</Text>
+        {/* Region 1: Select App */}
+        <Card size="small" title={t('smoke.app')}>
+          <Space direction="vertical" style={{ width: '100%' }}>
             <Select
               value={activeAppId}
               onChange={(v) => handleAppSelect(v)}
               placeholder={t('smoke.appPlaceholder')}
-              style={{ width: 240, marginLeft: 8 }}
+              style={{ width: 280 }}
               options={apps.map(a => ({ value: a.id, label: `#${a.id} ${a.name}` }))}
             />
-          </div>
-          <div>
-            <Text type="secondary">{t('smoke.activeKey')}</Text>
-            <Select
-              value={selectedKeyPrefix}
-              onChange={(v) => setSelectedKeyPrefix(v)}
-              placeholder={t('smoke.keyPlaceholder')}
-              style={{ width: 260, marginLeft: 8 }}
-              options={keys.map(k => ({
-                value: `${k.name} (${k.key_prefix})`,
-                label: `${k.name} (${k.key_prefix})`,
-              }))}
-            />
-          </div>
-          {activeAppId !== null && keys.length === 0 && !loadError && (
-            <Text type="warning" style={{ fontSize: 12 }}>
-              {t('smoke.noActiveApiKey')}
-            </Text>
-          )}
-        </Space>
+            {apps.length === 0 && !loadError && (
+              <Text type="secondary">{t('smoke.noApps')}</Text>
+            )}
+            {activeAppId === null && apps.length > 0 && (
+              <Text type="secondary">{t('smoke.selectAppHint')}</Text>
+            )}
+            {activeAppId !== null && (
+              <Space size="small">
+                {keys.length > 0 && (
+                  <Select
+                    value={selectedKeyPrefix}
+                    onChange={(v) => setSelectedKeyPrefix(v)}
+                    placeholder={t('smoke.keyPlaceholder')}
+                    style={{ width: 240 }}
+                    options={keys.map(k => ({
+                      value: `${k.name} (${k.key_prefix})`,
+                      label: `${k.name} (${k.key_prefix})`,
+                    }))}
+                  />
+                )}
+                {keys.length === 0 && (
+                  <Text type="warning" style={{ fontSize: 12 }}>
+                    {t('smoke.noActiveApiKey')}
+                  </Text>
+                )}
+              </Space>
+            )}
+          </Space>
+        </Card>
 
+        {/* Region 2: Preconditions */}
         {activeAppId !== null && (
-          <Card size="small" title={
-            <Space>
-              <span>{t('smoke.preflightTitle')}</span>
-              {readinessLoading && <Spin size="small" />}
-              {readiness && (
-                <ReadinessStatusTagLocalized status={readiness.overall_status} />
-              )}
-            </Space>
-          }>
-            {readinessLoading && !readiness && (
+          <Card
+            size="small"
+            title={t('smoke.preconditionsTitle')}
+            extra={
+              readiness && !readinessLoading
+                ? <ReadinessStatusTagLocalized status={readiness.overall_status} />
+                : null
+            }
+          >
+            {readinessLoading && (
               <Spin tip={t('smoke.preflightLoading')} style={{ display: 'block', margin: '16px 0' }}>
                 <div style={{ height: 40 }} />
               </Spin>
             )}
             {readinessError && (
-              <Space>
-                <Text type="danger">{t('smoke.preflightError')} {readinessError}</Text>
-                <Button size="small" onClick={fetchReadiness}>{t('smoke.retryReadiness')}</Button>
-              </Space>
+              <Alert
+                type="warning"
+                message={`${t('smoke.preflightError')} ${readinessError}`}
+                action={<Button size="small" onClick={fetchReadiness}>{t('smoke.retryReadiness')}</Button>}
+                style={{ marginBottom: 8 }}
+              />
             )}
             {readiness && readiness.checks.length > 0 && (
-              <Descriptions column={1} size="small" bordered>
-                {readiness.checks.map(check => (
-                  <Descriptions.Item key={check.key} label={
-                    <Space size={4}>
-                      <span>{check.label}</span>
+              <Space direction="vertical" style={{ width: '100%' }} size="small">
+                {readiness.checks.map(check => {
+                  const hintKey = check.status !== 'READY'
+                    ? READINESS_HINT_MAP[check.key]
+                    : undefined
+                  return (
+                    <div key={check.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                       <ReadinessStatusTagLocalized status={check.status} />
-                    </Space>
-                  }>
-                    <Space direction="vertical" size={2}>
-                      <Text>{check.message}</Text>
-                      {check.metadata && Object.keys(check.metadata).length > 0 && (
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {Object.entries(check.metadata)
-                            .map(([k, v]) => `${k}: ${v}`)
-                            .join(', ')}
-                        </Text>
-                      )}
-                    </Space>
-                  </Descriptions.Item>
-                ))}
-              </Descriptions>
-            )}
-            {readiness && readiness.overall_status !== 'READY' && (
-              <Text type="warning" style={{ display: 'block', marginTop: 8 }}>
-                {t('smoke.preflightWarning')}
-              </Text>
-            )}
-            {readiness && readiness.overall_status === 'READY' && (
-              <Text type="success" style={{ display: 'block', marginTop: 8 }}>
-                {t('smoke.preflightReady')}
-              </Text>
-            )}
-          </Card>
-        )}
-
-        <Card size="small" title={t('smoke.keyCardTitle')}>
-          <Space.Compact style={{ width: '100%' }}>
-            <Input.Password
-              value={selectedKeyValue ?? ''}
-              onChange={(e) => handleApiKeyChange(e.target.value)}
-              placeholder="sk-sangui-..."
-              style={{ flex: 1 }}
-            />
-            <Button
-              onClick={() => { setSelectedKeyValue(null); resetAllSteps() }}
-              disabled={selectedKeyValue === null}
-            >
-              {t('smoke.clear')}
-            </Button>
-          </Space.Compact>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {t('smoke.keyHint')}
-          </Text>
-        </Card>
-
-        <Card size="small" title={t('smoke.userMessageTitle')}>
-          <Input.TextArea
-            value={userInput}
-            onChange={(e) => handleUserInputChange(e.target.value)}
-            rows={2}
-            placeholder={t('smoke.userMessagePlaceholder')}
-          />
-          <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-            {t('smoke.securityBoundary')}
-          </Text>
-        </Card>
-
-        <Divider orientation="left" plain>{t('smoke.step1')}</Divider>
-
-        <Text type="secondary" style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
-          {t('smoke.section1Desc')}
-        </Text>
-
-        <Space>
-          <Button
-            type="primary"
-            onClick={handleNonStreamingSmoke}
-            loading={nonStreaming.status === 'running'}
-            disabled={!canRun}
-          >
-            {t('smoke.step1Send')}
-          </Button>
-          <StepStatusTagLocalized status={nonStreaming.status} />
-          {!canRun && (
-            <Text type="secondary">{t('smoke.disabledNoKey')}</Text>
-          )}
-        </Space>
-
-        {nonStreaming.status === 'running' && (
-          <Spin tip={t('smoke.step1Waiting')} style={{ display: 'block', margin: '16px 0' }}>
-            <div style={{ height: 40 }} />
-          </Spin>
-        )}
-
-        {nonStreaming.evidence && (
-          <Card size="small" title={t('smoke.step1Evidence')} style={{ borderColor: '#52c41a' }}>
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label={t('evidence.id')}>{nonStreaming.evidence.id}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.object')}>{nonStreaming.evidence.object}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.model')}>{nonStreaming.evidence.model}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.finishReason')}>{nonStreaming.evidence.finishReason}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.contentLength')}>{nonStreaming.evidence.contentLength} {t('evidence.chars')}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.tokens')}>
-                {t('evidence.tokenSummary', {
-                  prompt: nonStreaming.evidence.promptTokens,
-                  completion: nonStreaming.evidence.completionTokens,
-                  total: nonStreaming.evidence.totalTokens,
+                      <div style={{ flex: 1 }}>
+                        <Text strong style={{ fontSize: 13 }}>{check.label || check.key}</Text>
+                        {check.message && (
+                          <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>{check.message}</Text>
+                        )}
+                        {hintKey && (
+                          <Text type="warning" style={{ display: 'block', fontSize: 12 }}>
+                            {t(hintKey)}
+                          </Text>
+                        )}
+                      </div>
+                    </div>
+                  )
                 })}
-              </Descriptions.Item>
-            </Descriptions>
-            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
-              {t('smoke.securityBoundary')}
-            </Text>
-          </Card>
-        )}
-
-        {nonStreaming.error && (
-          <Card size="small" title={t('smoke.step1Error')} style={{ borderColor: '#ff4d4f' }}>
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label={t('evidence.httpStatus')}>{nonStreaming.error.status || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.errorCode')}>
-                <Tag color="red">{nonStreaming.error.code || 'N/A'}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label={t('evidence.message')}>{nonStreaming.error.message}</Descriptions.Item>
-            </Descriptions>
-          </Card>
-        )}
-
-        <Divider orientation="left" plain>{t('smoke.step2')}</Divider>
-
-        <Text type="secondary" style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
-          {t('smoke.section2Desc')}
-        </Text>
-
-        <Space>
-          <Button
-            onClick={handleStreamingSmoke}
-            loading={streaming.status === 'running'}
-            disabled={!canRun}
-          >
-            {t('smoke.step2Send')}
-          </Button>
-          <StepStatusTagLocalized status={streaming.status} />
-          {!canRun && (
-            <Text type="secondary">{t('smoke.disabledNoKey')}</Text>
-          )}
-        </Space>
-
-        {streaming.status === 'running' && (
-          <Spin tip={t('smoke.step2Waiting')} style={{ display: 'block', margin: '16px 0' }}>
-            <div style={{ height: 40 }} />
-          </Spin>
-        )}
-
-        {streaming.evidence && (
-          <Card size="small" title={t('smoke.step2Evidence')} style={{ borderColor: streaming.status === 'pass' ? '#52c41a' : '#ff4d4f' }}>
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label={t('evidence.httpStatus')}>{streaming.evidence.httpStatus}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.dataLines')}>{streaming.evidence.dataLineCount}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.chunkCount')}>{streaming.evidence.chunkCount}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.donePresent')}>
-                <Tag color={streaming.evidence.donePresent ? 'success' : 'error'}>
-                  {streaming.evidence.donePresent ? t('evidence.yes') : t('evidence.no')}
-                </Tag>
-              </Descriptions.Item>
-            </Descriptions>
-            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
-              {t('smoke.securityBoundary')}
-            </Text>
-          </Card>
-        )}
-
-        {streaming.error && (
-          <Card size="small" title={t('smoke.step2Error')} style={{ borderColor: '#ff4d4f' }}>
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label={t('evidence.httpStatus')}>{streaming.error.status || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.errorCode')}>
-                <Tag color="red">{streaming.error.code || 'N/A'}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label={t('evidence.message')}>{streaming.error.message}</Descriptions.Item>
-            </Descriptions>
-          </Card>
-        )}
-
-        <Divider orientation="left" plain>{t('smoke.step3')}</Divider>
-
-        <Text type="secondary" style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
-          {t('smoke.section3Desc')}
-        </Text>
-
-        <Space>
-          <Button
-            onClick={handleRequestLogValidation}
-            loading={requestLog.status === 'running'}
-            disabled={!canRunRequestLog}
-          >
-            {t('smoke.step3Validate')}
-          </Button>
-          <StepStatusTagLocalized status={requestLog.status} />
-          {!canRunRequestLog && (
-            <Text type="secondary">{t('smoke.nonStreamingRequired')}</Text>
-          )}
-        </Space>
-
-        {requestLog.status === 'running' && (
-          <Spin tip={t('smoke.step3Validating', { step: requestLog.subStep })} style={{ display: 'block', margin: '16px 0' }}>
-            <div style={{ height: 40 }} />
-          </Spin>
-        )}
-
-        {requestLog.listRow && (
-          <Card size="small" title={t('smoke.step3ListEvidence')} style={{ borderColor: requestLog.status === 'pass' ? '#52c41a' : requestLog.status === 'fail' ? '#ff4d4f' : undefined }}>
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label={t('evidence.requestId')}>{requestLog.listRow.request_id}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.model')}>{requestLog.listRow.model ?? '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.provider')}>{requestLog.listRow.provider_name ?? '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.status')}>{requestLog.listRow.status}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.latency')}>{requestLog.listRow.latency_ms !== null ? `${requestLog.listRow.latency_ms}ms` : '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.messagesCount')}>{requestLog.listRow.messages_count ?? '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.hitChunkIds')}>
-                {t('evidence.hitChunkIdSummary', {
-                  ids: requestLog.listRow.hit_chunk_ids.join(', '),
-                  count: requestLog.listRow.hit_chunk_ids.length,
-                })}
-              </Descriptions.Item>
-            </Descriptions>
-            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
-              {t('smoke.securityBoundary')}
-            </Text>
-          </Card>
-        )}
-
-        {requestLog.detail && (
-          <Card size="small" title={t('smoke.step3DetailEvidence')}>
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label={t('evidence.requestId')}>{requestLog.detail.request_id}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.userId')}>{requestLog.detail.user_id}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.updatedAt')}>{requestLog.detail.updated_at}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.messagesCount')}>{requestLog.detail.messages_count ?? '-'}</Descriptions.Item>
-            </Descriptions>
-          </Card>
-        )}
-
-        {requestLog.hitChunks && requestLog.hitChunks.length > 0 && (
-          <Card size="small" title={t('smoke.step3ChunkTitle', { count: requestLog.hitChunks.length })}>
-            <Descriptions column={1} size="small" bordered>
-              {requestLog.hitChunks.map((chunk, idx) => (
-                <Descriptions.Item key={idx} label={t('evidence.chunkNumber', { number: idx + 1 })}>
-                  chunk_id={chunk.chunk_id}, document_id={chunk.document_id}, kb_id={chunk.knowledge_base_id}, file={chunk.source_filename ?? '-'}, chunk_idx={chunk.chunk_index}
-                </Descriptions.Item>
-              ))}
-            </Descriptions>
-          </Card>
-        )}
-
-        {requestLog.error && (
-          <Card size="small" title={t('smoke.step3Error')} style={{ borderColor: '#ff4d4f' }}>
-            <Text type="danger">{requestLog.error}</Text>
-          </Card>
-        )}
-
-        <Divider orientation="left" plain>{t('smoke.step4')}</Divider>
-
-        <Text type="secondary" style={{ fontSize: 13, marginBottom: 8, display: 'block' }}>
-          {t('smoke.section4Desc')}
-        </Text>
-
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Space>
-            <Button
-              size="small"
-              type={revokedKey.enabled ? 'primary' : 'default'}
-              onClick={() => setRevokedKey(prev => ({ ...prev, enabled: !prev.enabled, status: 'idle', error: null, keyValue: null }))}
-            >
-              {revokedKey.enabled ? t('smoke.step4Enabled') : t('smoke.step4Disabled')}
-            </Button>
-            <Text type="secondary">{t('smoke.step4Hint')}</Text>
-          </Space>
-
-          {revokedKey.enabled && (
-            <Space.Compact style={{ width: '100%', maxWidth: 480 }}>
-              <Input.Password
-                value={revokedKey.keyValue ?? ''}
-                onChange={(e) => setRevokedKey(prev => ({ ...prev, keyValue: e.target.value || null, status: 'idle', error: null }))}
-                placeholder={t('smoke.step4Placeholder')}
-                style={{ flex: 1 }}
+              </Space>
+            )}
+            {readiness && readiness.checks.length === 0 && (
+              <Text type="secondary">{t('smoke.precondition.noChecks')}</Text>
+            )}
+            {readinessNotReady && (
+              <Alert
+                type="warning"
+                message={t('smoke.preflightWarning')}
+                style={{ marginTop: 8 }}
+                showIcon
               />
-            </Space.Compact>
-          )}
-
-          {revokedKey.enabled && (
-            <Space>
-              <Button
-                onClick={handleRevokedKeyCheck}
-                loading={revokedKey.status === 'running'}
-                disabled={!revokedKey.keyValue}
-              >
-                {t('smoke.step4Verify')}
-              </Button>
-              <StepStatusTagLocalized status={revokedKey.status} />
-            </Space>
-          )}
-
-          {!revokedKey.enabled && revokedKey.status === 'skip' && (
-            <Text type="secondary">{t('smoke.step4DisabledHint')}</Text>
-          )}
-        </Space>
-
-        {revokedKey.error && (
-          <Card size="small" title={t('smoke.step4Error')} style={{ borderColor: '#ff4d4f' }}>
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label={t('evidence.httpStatus')}>{revokedKey.error.status || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label={t('evidence.errorCode')}>
-                <Tag color="red">{revokedKey.error.code || 'N/A'}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label={t('evidence.message')}>{revokedKey.error.message}</Descriptions.Item>
-            </Descriptions>
+            )}
           </Card>
         )}
 
-        {revokedKey.status === 'pass' && (
-          <Card size="small" title={t('smoke.step4Evidence')} style={{ borderColor: '#52c41a' }}>
-            <Text>{t('smoke.step4EvidenceText')}</Text>
+        {/* Region 3: Execute Smoke */}
+        {activeAppId !== null && (
+          <Card size="small" title={t('smoke.executeTitle')}>
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <FramedSection>
+                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('smoke.keyCardTitle')}</Text>
+                    <Space.Compact style={{ width: '100%', marginTop: 4 }}>
+                      <Input.Password
+                        value={selectedKeyValue ?? ''}
+                        onChange={(e) => handleApiKeyChange(e.target.value)}
+                        placeholder="sk-sangui-..."
+                        style={{ flex: 1 }}
+                      />
+                      <Button
+                        onClick={() => { setSelectedKeyValue(null); resetAllSteps() }}
+                        disabled={selectedKeyValue === null}
+                      >
+                        {t('smoke.clear')}
+                      </Button>
+                    </Space.Compact>
+                    <Text type="secondary" style={{ fontSize: 11 }}>{t('smoke.keyHint')}</Text>
+                  </div>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('smoke.userMessageTitle')}</Text>
+                    <Input.TextArea
+                      value={userInput}
+                      onChange={(e) => handleUserInputChange(e.target.value)}
+                      rows={2}
+                      placeholder={t('smoke.userMessagePlaceholder')}
+                      style={{ marginTop: 4 }}
+                    />
+                  </div>
+                </Space>
+              </FramedSection>
+
+              {/* Primary Run All */}
+              <Space>
+                <Button
+                  type="primary"
+                  onClick={handleRunAllSmokes}
+                  loading={runAllActive}
+                  disabled={!canRun}
+                >
+                  {t('smoke.runAllSmokes')}
+                </Button>
+                {disabledReason && (
+                  <Text type="secondary">{disabledReason}</Text>
+                )}
+                {runAllActive && (
+                  <Spin size="small" style={{ marginLeft: 8 }} />
+                )}
+              </Space>
+
+              <Divider orientation="left" plain style={{ fontSize: 13, margin: '8px 0' }}>{t('smoke.step1')}</Divider>
+
+              <Space>
+                <Button
+                  onClick={() => { handleNonStreamingSmoke() }}
+                  loading={nonStreaming.status === 'running'}
+                  disabled={!canRun}
+                >
+                  {t('smoke.step1Send')}
+                </Button>
+                <StepStatusTagLocalized status={nonStreaming.status} />
+              </Space>
+
+              <Divider orientation="left" plain style={{ fontSize: 13, margin: '8px 0' }}>{t('smoke.step2')}</Divider>
+
+              <Space>
+                <Button
+                  onClick={handleStreamingSmoke}
+                  loading={streaming.status === 'running'}
+                  disabled={!canRun}
+                >
+                  {t('smoke.step2Send')}
+                </Button>
+                <StepStatusTagLocalized status={streaming.status} />
+              </Space>
+
+              <Divider orientation="left" plain style={{ fontSize: 13, margin: '8px 0' }}>{t('smoke.step3')}</Divider>
+
+              <Space>
+                <Button
+                  onClick={handleRequestLogValidation}
+                  loading={requestLog.status === 'running'}
+                  disabled={!canRunRequestLog}
+                >
+                  {t('smoke.step3Validate')}
+                </Button>
+                <StepStatusTagLocalized status={requestLog.status} />
+                {!canRunRequestLog && nonStreaming.status !== 'pass' && nonStreaming.status !== 'idle' && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>{t('smoke.nonStreamingPassHint')}</Text>
+                )}
+              </Space>
+
+              <Divider orientation="left" plain style={{ fontSize: 13, margin: '8px 0' }}>{t('smoke.step4')}</Divider>
+
+              <Space direction="vertical" style={{ width: '100%' }} size="small">
+                <Space>
+                  <Button
+                    size="small"
+                    type={revokedKey.enabled ? 'primary' : 'default'}
+                    onClick={() => setRevokedKey(prev => ({ ...prev, enabled: !prev.enabled, status: 'idle', error: null, keyValue: null }))}
+                  >
+                    {revokedKey.enabled ? t('smoke.step4Enabled') : t('smoke.step4Disabled')}
+                  </Button>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{t('smoke.step4Hint')}</Text>
+                </Space>
+
+                {revokedKey.enabled && (
+                  <Space.Compact style={{ width: '100%', maxWidth: 480 }}>
+                    <Input.Password
+                      value={revokedKey.keyValue ?? ''}
+                      onChange={(e) => setRevokedKey(prev => ({ ...prev, keyValue: e.target.value || null, status: 'idle', error: null }))}
+                      placeholder={t('smoke.step4Placeholder')}
+                      style={{ flex: 1 }}
+                    />
+                  </Space.Compact>
+                )}
+
+                {revokedKey.enabled && (
+                  <Space>
+                    <Button
+                      onClick={handleRevokedKeyCheck}
+                      loading={revokedKey.status === 'running'}
+                      disabled={!revokedKey.keyValue}
+                    >
+                      {t('smoke.step4Verify')}
+                    </Button>
+                    <StepStatusTagLocalized status={revokedKey.status} />
+                  </Space>
+                )}
+
+                {!revokedKey.enabled && revokedKey.status === 'skip' && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>{t('smoke.step4DisabledHint')}</Text>
+                )}
+              </Space>
+            </Space>
+          </Card>
+        )}
+
+        {/* Region 4: Evidence */}
+        {hasEvidence && (
+          <Card size="small" title={t('smoke.evidenceTitle')}>
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+
+              {nonStreaming.evidence && (
+                <FramedSection title={t('smoke.evidence.gatewayResponse')} tone="success">
+                  <Descriptions column={1} size="small" bordered>
+                    <Descriptions.Item label={t('evidence.id')}>{nonStreaming.evidence.id}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.object')}>{nonStreaming.evidence.object}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.model')}>{nonStreaming.evidence.model}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.finishReason')}>{nonStreaming.evidence.finishReason}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.contentLength')}>{nonStreaming.evidence.contentLength} {t('evidence.chars')}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.tokens')}>
+                      {t('evidence.tokenSummary', {
+                        prompt: nonStreaming.evidence.promptTokens,
+                        completion: nonStreaming.evidence.completionTokens,
+                        total: nonStreaming.evidence.totalTokens,
+                      })}
+                    </Descriptions.Item>
+                  </Descriptions>
+                </FramedSection>
+              )}
+
+              {nonStreaming.error && (
+                <FramedSection title={t('smoke.evidence.gatewayResponse')} tone="error">
+                  <Descriptions column={1} size="small" bordered>
+                    <Descriptions.Item label={t('evidence.httpStatus')}>{nonStreaming.error.status || 'N/A'}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.errorCode')}>
+                      <Tag color="red">{nonStreaming.error.code || 'N/A'}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.message')}>{nonStreaming.error.message}</Descriptions.Item>
+                  </Descriptions>
+                </FramedSection>
+              )}
+
+              {streaming.evidence && (
+                <FramedSection title={t('smoke.evidence.streaming')} tone={streaming.status === 'pass' ? 'success' : 'error'}>
+                  <Descriptions column={1} size="small" bordered>
+                    <Descriptions.Item label={t('evidence.httpStatus')}>{streaming.evidence.httpStatus}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.dataLines')}>{streaming.evidence.dataLineCount}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.chunkCount')}>{streaming.evidence.chunkCount}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.donePresent')}>
+                      <Tag color={streaming.evidence.donePresent ? 'success' : 'error'}>
+                        {streaming.evidence.donePresent ? t('evidence.yes') : t('evidence.no')}
+                      </Tag>
+                    </Descriptions.Item>
+                  </Descriptions>
+                </FramedSection>
+              )}
+
+              {streaming.error && (
+                <FramedSection title={t('smoke.evidence.streaming')} tone="error">
+                  <Descriptions column={1} size="small" bordered>
+                    <Descriptions.Item label={t('evidence.httpStatus')}>{streaming.error.status || 'N/A'}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.errorCode')}>
+                      <Tag color="red">{streaming.error.code || 'N/A'}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.message')}>{streaming.error.message}</Descriptions.Item>
+                  </Descriptions>
+                </FramedSection>
+              )}
+
+              {requestLog.listRow && (
+                <FramedSection title={t('smoke.evidence.requestLog')}>
+                  <Descriptions column={1} size="small" bordered>
+                    <Descriptions.Item label={t('evidence.requestId')}>{requestLog.listRow.request_id}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.model')}>{requestLog.listRow.model ?? '-'}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.provider')}>{requestLog.listRow.provider_name ?? '-'}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.status')}>{requestLog.listRow.status}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.latency')}>{requestLog.listRow.latency_ms !== null ? `${requestLog.listRow.latency_ms}ms` : '-'}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.messagesCount')}>{requestLog.listRow.messages_count ?? '-'}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.hitChunkIds')}>
+                      {t('evidence.hitChunkIdSummary', {
+                        ids: requestLog.listRow.hit_chunk_ids.join(', '),
+                        count: requestLog.listRow.hit_chunk_ids.length,
+                      })}
+                    </Descriptions.Item>
+                  </Descriptions>
+                  {requestLog.detail && (
+                    <div style={{ marginTop: 8 }}>
+                      <Descriptions column={1} size="small" bordered>
+                        <Descriptions.Item label={t('evidence.userId')}>{requestLog.detail.user_id}</Descriptions.Item>
+                        <Descriptions.Item label={t('evidence.updatedAt')}>{requestLog.detail.updated_at}</Descriptions.Item>
+                        <Descriptions.Item label={t('evidence.messagesCount')}>{requestLog.detail.messages_count ?? '-'}</Descriptions.Item>
+                      </Descriptions>
+                    </div>
+                  )}
+                </FramedSection>
+              )}
+
+              {requestLog.error && (
+                <FramedSection title={t('smoke.evidence.requestLog')} tone="error">
+                  <Text type="danger">{requestLog.error}</Text>
+                </FramedSection>
+              )}
+
+              {requestLog.hitChunks && requestLog.hitChunks.length > 0 && (
+                <FramedSection title={t('smoke.evidence.hitChunks')}>
+                  <Descriptions column={1} size="small" bordered>
+                    {requestLog.hitChunks.map((chunk, idx) => (
+                      <Descriptions.Item key={idx} label={t('evidence.chunkNumber', { number: idx + 1 })}>
+                        chunk_id={chunk.chunk_id}, document_id={chunk.document_id}, kb_id={chunk.knowledge_base_id}, file={chunk.source_filename ?? '-'}, chunk_idx={chunk.chunk_index}
+                      </Descriptions.Item>
+                    ))}
+                  </Descriptions>
+                </FramedSection>
+              )}
+
+              {revokedKey.status === 'pass' && (
+                <FramedSection title={t('smoke.evidence.revokedKey')} tone="success">
+                  <Text>{t('smoke.step4EvidenceText')}</Text>
+                </FramedSection>
+              )}
+
+              {revokedKey.error && (
+                <FramedSection title={t('smoke.evidence.revokedKey')} tone="error">
+                  <Descriptions column={1} size="small" bordered>
+                    <Descriptions.Item label={t('evidence.httpStatus')}>{revokedKey.error.status || 'N/A'}</Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.errorCode')}>
+                      <Tag color="red">{revokedKey.error.code || 'N/A'}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label={t('evidence.message')}>{revokedKey.error.message}</Descriptions.Item>
+                  </Descriptions>
+                </FramedSection>
+              )}
+
+              <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
+                {t('smoke.securityBoundary')}
+              </Text>
+            </Space>
+          </Card>
+        )}
+
+        {/* Region 5: Failure Next Step */}
+        {failureBoundary && (
+          <Card size="small" title={t('smoke.failureTitle')} style={{ borderColor: '#ff4d4f' }}>
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <Tag color={BOUNDARY_COLORS[failureBoundary]}>
+                {t(BOUNDARY_LABEL_KEYS[failureBoundary])}
+              </Tag>
+              <Text>{t(FAILURE_HINT_MAP[failureBoundary])}</Text>
+            </Space>
           </Card>
         )}
       </Space>
