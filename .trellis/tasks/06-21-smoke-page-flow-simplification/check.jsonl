@@ -1,0 +1,31 @@
+{"file": ".trellis\\tasks\\06-21-smoke-page-flow-simplification\\prd.md", "reason": "Task scope, acceptance criteria, forbidden boundaries, and test matrix"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product boundary and smoke/readiness/request-log contracts"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend file ownership and page/component boundaries"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Admin UI composition, status, empty, loading, and error state rules"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Typed API client and traceable loading/error behavior"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Local transient key state and global shell boundary"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Typed app/readiness/request-log/OpenAI payload and forbidden field rules"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend lint, tests, build, visual smoke, UX and security checklist"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Safe evidence, request-log, hit-chunk, output-preview, key and prompt secrecy boundary"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Request-log safe metadata and forbidden prompt/key/provider/chunk fields"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Gateway/admin error code meanings for failure next-step mapping"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Hit chunk IDs, retrieval evidence, no-hit, and metadata-only citation boundary"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer contract checklist and Good/Base/Bad case discipline"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Reuse diagnostics and existing test patterns instead of duplicating logic"}
+{"file": "frontend\\src\\pages\\smoke\\SmokeTestPage.tsx", "reason": "Primary implementation target for smoke page IA and flow state"}
+{"file": "frontend\\src\\components\\domain\\requestDiagnostics.ts", "reason": "Existing diagnostic boundary mapping and next-step hint pattern"}
+{"file": "frontend\\src\\components\\domain\\RequestDiagnosticsPanel.tsx", "reason": "Existing diagnostic presentation pattern for failure next steps"}
+{"file": "frontend\\src\\components\\layout\\AdminShell.tsx", "reason": "Selected app and admin auth shell state context used by smoke page"}
+{"file": "frontend\\src\\app\\i18n\\dict.ts", "reason": "Typed zh-CN/en-US dictionary and parity checks for UI copy"}
+{"file": "frontend\\src\\api\\apps.ts", "reason": "Existing app list and readiness typed API clients"}
+{"file": "frontend\\src\\api\\api-keys.ts", "reason": "Existing active API key metadata client boundary"}
+{"file": "frontend\\src\\api\\openai.ts", "reason": "Existing smoke chat and streaming client behavior"}
+{"file": "frontend\\src\\api\\request-logs.ts", "reason": "Existing request-log list/detail/hit-chunk API clients"}
+{"file": "frontend\\src\\types\\app.ts", "reason": "App and readiness status union contracts"}
+{"file": "frontend\\src\\types\\api-key.ts", "reason": "API key metadata type boundary without plaintext list values"}
+{"file": "frontend\\src\\types\\openai.ts", "reason": "Smoke response and streaming evidence types"}
+{"file": "frontend\\src\\types\\request-log.ts", "reason": "Request-log evidence, retrieval evidence, output-preview, and diagnostic types"}
+{"file": "frontend\\src\\__tests__\\pages\\RequestLogListPage.test.tsx", "reason": "Safe rendering and forbidden-field DOM scan test pattern"}
+{"file": "frontend\\src\\__tests__\\pages\\KnowledgeBasePage.test.tsx", "reason": "Page-level empty/error/status and forbidden-field test pattern"}
+{"file": "frontend\\src\\__tests__\\pages\\AppConfigPage.test.tsx", "reason": "App list/mock API and admin page test setup pattern"}
+{"file": "frontend\\package.json", "reason": "Frontend validation command contract"}
