@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 72
+- **Total Sessions**: 73
 - **Last Active**: 2026-06-21
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~410 | Active |
+| `journal-3.md` | ~488 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 73 | 2026-06-21 | Dev secret HS256 local contract closeout | `4b5c2038` | `feature/dev-secret-hs256-baseline` |
 | 72 | 2026-06-21 | Secret key production baseline closeout | `6a24a392` | `feature/secret-key-production-guardrails` |
 | 71 | 2026-06-21 | Smoke page flow simplification closeout | `e8e6d7c4` | `feature/smoke-page-flow-simplification` |
 | 70 | 2026-06-21 | Model config check clarity closeout | `8d27e3a4` | `feature/model-config-check-button-clarity` |
