@@ -219,3 +219,74 @@ Closed the `knowledge-empty-upload-entry` frontend task after user manual testin
 ### Next Steps
 
 - None - task complete
+
+
+## Session 70: Model config check clarity closeout
+
+**Date**: 2026-06-21
+**Task**: Model config check clarity closeout
+**Branch**: `feature/model-config-check-button-clarity`
+
+### Summary
+
+完成模型配置检查入口语义收敛与 Maven Central 回退验证；归档任务并记录前端、build 契约、验证命令和边界。
+
+### Main Changes
+
+| Item | Content |
+|------|---------|
+| Commit | `8d27e3a4 fix:明确模型配置检查语义并恢复 Maven Central 回退` |
+| Modules | Frontend model-config check UX, i18n, page tests, backend Docker Maven mirror/build contract |
+| Result | Completed `model-config-check-button-clarity`; user manually tested and committed; Codex completed check/finish-work and archived the Trellis task. |
+
+**Implementation Summary**
+- Top-level check entry now says `检查草稿配置 / Check Draft Config` and points to draft-check modal fields.
+- Row-level check entry now says `检查已保存配置 / Check Saved Config` and calls `checkSavedModelConfig(record.id, {})`; it does not read create/edit modal drafts.
+- Draft check modal adds an info alert explaining that the check does not save config and does not read unsaved create/edit form content.
+- Saved row check uses Ant Design `Button loading` and displays `检查中... / Checking...` while preventing duplicate submission.
+- `backend/settings.xml` changes Aliyun mirror from `mirrorOf=*` to `external:*,!central`, keeping Maven Central reachable when Aliyun public mirror has partial 502 failures.
+- `.trellis/spec/backend/quality-guidelines.md` documents the backend Docker Maven build contract: public-only `settings.xml`, Central fallback, and Docker/Compose validation commands.
+
+**Updated Files**
+- `backend/settings.xml`
+- `frontend/src/pages/model-configs/ModelConfigPage.tsx`
+- `frontend/src/app/i18n/dict.ts`
+- `frontend/src/__tests__/pages/ModelConfigPage.test.tsx`
+- `.trellis/spec/backend/quality-guidelines.md`
+- `.trellis/tasks/archive/2026-06/06-21-model-config-check-button-clarity/`
+
+**Validation Commands**
+- `cmd /c npx vitest run src/__tests__/pages/ModelConfigPage.test.tsx`: PASS, 19/19.
+- `cmd /c npm run test`: PASS, 79/79; existing `KnowledgeBasePage` Ant Design `destroyOnClose` warning remains unrelated.
+- `cmd /c npm run lint`: PASS.
+- `cmd /c npm run typecheck`: PASS.
+- `cmd /c npm run build`: PASS; existing Vite large chunk warning remains unrelated.
+- `mvn -q -DskipTests compile`: PASS within the 60-second backend timeout boundary.
+- `docker build --progress=plain -t sangui-rag-gateway-backend:ci -f backend/Dockerfile backend`: PASS; container `mvn -B -ntp -DskipTests package` ended with BUILD SUCCESS.
+- `docker compose --progress=plain --env-file .env -f deploy/docker-compose.yml build backend --no-cache`: PASS.
+- `git diff --check`: PASS; only LF/CRLF working-tree warnings appeared.
+- `backend/settings.xml` XML parse and secret keyword scan: PASS; no credential, token, or private URL was found.
+
+**Boundaries**
+- No backend Java, database migration, Admin API DTO/VO, auth logic, provider check strategy, or runtime Docker/Compose environment contract was changed.
+- `npm run test:visual` was not run because the current visual smoke covers unauthenticated login theme baseline, and this task did not change global theme/layout.
+- No automatic push was performed; the business commit was completed manually by the user.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8d27e3a4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
