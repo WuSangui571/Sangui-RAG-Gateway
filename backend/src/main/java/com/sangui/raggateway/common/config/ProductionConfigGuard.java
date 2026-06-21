@@ -17,6 +17,7 @@ public class ProductionConfigGuard implements InitializingBean {
     private static final String TEST_PROFILE = "test";
 
     private static final String WEAK_LOCAL_SECRET = "local-dev-change-me";
+    private static final String NEW_LOCAL_PLACEHOLDER = "local-dev-hs256-secret-change-me-32chars";
     private static final String DOCUMENTED_SECRET_PLACEHOLDER = "<set-a-strong-32-char-secret>";
     private static final int MIN_SECRET_LENGTH = 32;
 
@@ -96,19 +97,24 @@ public class ProductionConfigGuard implements InitializingBean {
         }
 
         if (isProduction) {
-            if (WEAK_LOCAL_SECRET.equals(secretKey)) {
-                throw new IllegalStateException("rag.gateway.secret-key must not be a known weak placeholder value");
+            if (WEAK_LOCAL_SECRET.equals(secretKey) || NEW_LOCAL_PLACEHOLDER.equals(secretKey)) {
+                throw new IllegalStateException(
+                        "rag.gateway.secret-key must not be a known local placeholder value in production");
             }
             if (secretKey.length() < MIN_SECRET_LENGTH) {
                 throw new IllegalStateException(
                         "rag.gateway.secret-key must be at least " + MIN_SECRET_LENGTH + " characters in production");
             }
         } else {
-            if (WEAK_LOCAL_SECRET.equals(secretKey) && !guardProperties.isAllowWeakLocalSecret()) {
+            if (WEAK_LOCAL_SECRET.equals(secretKey)) {
                 throw new IllegalStateException(
                         "rag.gateway.secret-key is set to a known weak placeholder. "
-                        + "Set rag.production-guard.allow-weak-local-secret=true to acknowledge this for local development only, "
-                        + "or set RAG_GATEWAY_SECRET_KEY to a strong secret of at least " + MIN_SECRET_LENGTH + " characters.");
+                        + "Set RAG_GATEWAY_SECRET_KEY to a strong secret of at least "
+                        + MIN_SECRET_LENGTH + " characters.");
+            }
+            if (secretKey.length() < MIN_SECRET_LENGTH) {
+                throw new IllegalStateException(
+                        "rag.gateway.secret-key must be at least " + MIN_SECRET_LENGTH + " characters");
             }
         }
     }

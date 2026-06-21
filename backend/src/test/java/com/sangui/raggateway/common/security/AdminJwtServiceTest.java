@@ -22,6 +22,13 @@ class AdminJwtServiceTest {
     }
 
     @Test
+    void shouldRejectShortSecret() {
+        assertThatThrownBy(() -> new AdminJwtService("short", 3600))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("32");
+    }
+
+    @Test
     void shouldRejectNonPositiveExpiration() {
         assertThatThrownBy(() -> new AdminJwtService(SECRET, 0))
                 .isInstanceOf(IllegalArgumentException.class);

@@ -7,6 +7,7 @@ public class ProductionGuardProperties {
 
     private boolean allowLocalFileStorage = false;
     private boolean allowOutputCapture = false;
+    @Deprecated(since = "0.2", forRemoval = false)
     private boolean allowWeakLocalSecret = false;
 
     public boolean isAllowLocalFileStorage() {
@@ -25,10 +26,12 @@ public class ProductionGuardProperties {
         this.allowOutputCapture = allowOutputCapture;
     }
 
+    @Deprecated(since = "0.2", forRemoval = false)
     public boolean isAllowWeakLocalSecret() {
         return allowWeakLocalSecret;
     }
 
+    @Deprecated(since = "0.2", forRemoval = false)
     public void setAllowWeakLocalSecret(boolean allowWeakLocalSecret) {
         this.allowWeakLocalSecret = allowWeakLocalSecret;
     }

@@ -408,3 +408,81 @@ the metadata-only evidence boundary.
 ### Next Steps
 
 - None - task complete
+
+
+## Session 73: Dev secret HS256 local contract closeout
+
+**Date**: 2026-06-21
+**Task**: Dev secret HS256 local contract closeout
+**Branch**: `feature/dev-secret-hs256-baseline`
+
+### Summary
+
+Closed the dev secret HS256 local contract task after manual testing and commit `4b5c2038`.
+The local development secret contract now aligns `ProductionConfigGuard`,
+`AdminJwtService`, AES key derivation docs, `.env.example`, README, and Trellis
+specs around a 32+ character non-test runtime requirement.
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Commit | `4b5c2038 fix:dev secret HS256 contract` |
+| Task | `dev-secret-hs256-local-contract` |
+| Result | Non-test runtime now requires `rag.gateway.secret-key` to be at least 32 UTF-8 characters. The old `local-dev-change-me` placeholder is rejected even with weak-secret acknowledgement. The dev default is `local-dev-hs256-secret-change-me-32chars`, and production-like profiles reject local placeholders. |
+
+**Main modules**:
+- Backend config/security: `ProductionConfigGuard`, `ProductionGuardProperties`, `AdminJwtService`.
+- Runtime config/docs/spec: `application-dev.yml`, `.env.example`, `README.md`, `.trellis/spec/sangui-rag-gateway.md`, `.trellis/spec/backend/database-guidelines.md`.
+- Tests: `ProductionConfigGuardTest`, `ProductionContextSmokeTest`, `AdminJwtServiceTest`.
+
+**Updated files**:
+- `.env.example`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `README.md`
+- `backend/src/main/java/com/sangui/raggateway/common/config/ProductionConfigGuard.java`
+- `backend/src/main/java/com/sangui/raggateway/common/config/ProductionGuardProperties.java`
+- `backend/src/main/java/com/sangui/raggateway/common/security/AdminJwtService.java`
+- `backend/src/main/resources/application-dev.yml`
+- `backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java`
+- `backend/src/test/java/com/sangui/raggateway/ProductionContextSmokeTest.java`
+- `backend/src/test/java/com/sangui/raggateway/common/security/AdminJwtServiceTest.java`
+
+**Validation**:
+- `mvn -q "-Dtest=ProductionConfigGuardTest,ProductionContextSmokeTest" test` - passed.
+- `mvn -q "-Dtest=AdminJwtServiceTest,UpstreamApiKeyEncryptorTest" test` - passed.
+- `mvn -q "-Dtest=AdminAuthFilterTest,AdminAuthServiceTest,AdminAuthControllerTest" test` - passed.
+- `mvn -q -DskipTests compile` - passed.
+- `docker compose --env-file .env.example -f deploy/docker-compose.yml config` - passed; backend env includes `RAG_GATEWAY_SECRET_KEY=local-dev-hs256-secret-change-me-32chars`.
+- `git diff --check` - passed.
+- `rg "console\.log|debugger|TODO|FIXME" backend/src/main .trellis/spec README.md .env.example` - no new debug residue found.
+- `mvn -q test` - attempted with 60s timeout and timed out; not counted as passed.
+
+**Result and boundaries**:
+- Manual testing was confirmed by the user before record-session.
+- No JWT/AES key split was implemented; this remains a separate migration task.
+- No DB migration, frontend type/API contract, gateway `/v1/*`, RAG retrieval, prompt construction, or request-log behavior was changed.
+- `RAG_PRODUCTION_ALLOW_WEAK_LOCAL_SECRET` remains bindable for compatibility but is deprecated and no longer bypasses HS256 minimum strength.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4b5c2038` | (see git log) |
+
+### Testing
+
+- [OK] Targeted backend guard/smoke/JWT/AES/Admin Auth tests passed.
+- [OK] Backend compile passed.
+- [OK] Compose env interpolation and `git diff --check` passed.
+- [WARN] Full `mvn -q test` was attempted with a 60s timeout and did not complete within the limit.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

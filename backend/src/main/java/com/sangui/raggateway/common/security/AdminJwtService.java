@@ -21,6 +21,7 @@ public class AdminJwtService {
 
     private static final String CLAIM_USER_ID = "uid";
     private static final String CLAIM_USERNAME = "uname";
+    private static final int MIN_SECRET_LENGTH = 32;
 
     private final SecretKey secretKey;
     private final long expirationSeconds;
@@ -28,6 +29,10 @@ public class AdminJwtService {
     public AdminJwtService(String secret, long expirationSeconds) {
         if (secret == null || secret.isBlank()) {
             throw new IllegalArgumentException("JWT secret must not be blank");
+        }
+        if (secret.length() < MIN_SECRET_LENGTH) {
+            throw new IllegalArgumentException(
+                    "JWT secret must be at least " + MIN_SECRET_LENGTH + " characters for HS256");
         }
         if (expirationSeconds <= 0) {
             throw new IllegalArgumentException("JWT expiration must be positive");
