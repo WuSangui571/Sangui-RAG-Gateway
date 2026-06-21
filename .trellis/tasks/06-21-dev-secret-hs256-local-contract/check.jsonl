@@ -1,0 +1,27 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-21-dev-secret-hs256-local-contract\\prd.md", "reason": "Task PRD with accepted local-dev HS256 secret strategy, boundaries, matrices, and required tests"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project-level secret, deployment, guard, admin auth, and encryption contract"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend module boundaries for config/security/common changes"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Upstream API key encryption master-key contract and no-migration boundary"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Secret-safe startup and admin/gateway error wording expectations"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe logging and forbidden key/provider body fields"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend quality checklist and required targeted test style"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Gateway/upstream secret-safety and visible-failure baseline"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret boundary and deferred JWT/AES split note"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer env/auth/config flow checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Search-first and no duplicate validation logic guidance"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\ProductionConfigGuard.java", "reason": "Existing startup guard seam for secret/profile/ack validation"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\ProductionGuardProperties.java", "reason": "Existing production guard acknowledgement property binding"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\AdminAuthConfig.java", "reason": "Admin JWT bean wiring that must align with guard behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\AdminJwtService.java", "reason": "HS256 signing implementation and weak-key failure seam"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\UpstreamApiKeyEncryptor.java", "reason": "AES encryption consumer of the shared secret; behavior must not change unexpectedly"}
+{"file": "backend\\src\\main\\resources\\application.yml", "reason": "Base env/property binding for rag.gateway.secret-key and guard acknowledgements"}
+{"file": "backend\\src\\main\\resources\\application-dev.yml", "reason": "Current dev default local placeholder requiring HS256-compatible replacement"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\ProductionConfigGuardTest.java", "reason": "Focused guard test pattern for profile/secret/error-message matrix"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\ProductionContextSmokeTest.java", "reason": "Startup-visible bean wiring smoke pattern for AdminJwtService and EncryptionConfig"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\AdminJwtServiceTest.java", "reason": "Unit tests for JWT secret validation and token behavior"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\UpstreamApiKeyEncryptorTest.java", "reason": "Unit tests preserving AES encryption/decryption and blank-secret behavior"}
+{"file": ".env.example", "reason": "User-facing env placeholder contract"}
+{"file": "README.md", "reason": "User-facing setup/deployment/secret documentation contract"}
+{"file": "deploy\\docker-compose.yml", "reason": "Compose env pass-through contract for RAG_GATEWAY_SECRET_KEY and guard acknowledgements"}

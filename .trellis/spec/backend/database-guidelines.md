@@ -403,7 +403,7 @@ api_key_masked or prefix for display
 encryption_version if key rotation is introduced
 ```
 
-The encryption master key must come from environment variables (`RAG_GATEWAY_SECRET_KEY`), not source code. The `dev` profile may provide the local placeholder `local-dev-change-me`, but this requires explicit acknowledgement via `rag.production-guard.allow-weak-local-secret=true` at startup. The documented replacement placeholder `<set-a-strong-32-char-secret>` must be replaced before startup and is not bypassed by that acknowledgement. The `test` profile skips guard checks. Production-like runs must override with a strong `RAG_GATEWAY_SECRET_KEY` of at least 32 characters that is not any known placeholder.
+The encryption master key must come from environment variables (`RAG_GATEWAY_SECRET_KEY`), not source code. The `dev` profile provides the local non-production placeholder `local-dev-hs256-secret-change-me-32chars` (at least 32 UTF-8 characters, HS256-compatible) as the default. The weak placeholder `local-dev-change-me` (19 characters) is always rejected at startup because it does not satisfy the HS256 minimum strength requirement. The documented replacement placeholder `<set-a-strong-32-char-secret>` must be replaced before startup. The `test` profile skips guard checks. Production-like runs must override with a strong `RAG_GATEWAY_SECRET_KEY` of at least 32 characters that is not any known placeholder.
 
 ### Implemented Encryption Baseline
 

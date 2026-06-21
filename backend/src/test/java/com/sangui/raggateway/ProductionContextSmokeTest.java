@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 class ProductionContextSmokeTest {
 
     private static final String VALID_SECRET = "prod-smoke-jwt-secret-at-least-32-bytes-long-for-hs256!!";
+    private static final String NEW_LOCAL_PLACEHOLDER = "local-dev-hs256-secret-change-me-32chars";
     private static final String DOCUMENTED_SECRET_PLACEHOLDER = "<set-a-strong-32-char-secret>";
 
     @Nested
@@ -165,7 +166,7 @@ class ProductionContextSmokeTest {
         }
 
         @Test
-        void guardPassesWhenDevProfileHasWeakPlaceholderWithAck() {
+        void guardFailsWhenDevProfileHasWeakPlaceholderEvenWithAck() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withUserConfiguration(GuardSmokeConfig.class)
                     .withPropertyValues(
@@ -174,7 +175,39 @@ class ProductionContextSmokeTest {
                             "rag.production-guard.allow-weak-local-secret=true");
 
             runner.run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining("weak placeholder");
+            });
+        }
+
+        @Test
+        void guardPassesWhenDevProfileWithNewLocalPlaceholder() {
+            ApplicationContextRunner runner = new ApplicationContextRunner()
+                    .withUserConfiguration(GuardSmokeConfig.class)
+                    .withPropertyValues(
+                            "spring.profiles.active=dev",
+                            "rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER);
+
+            runner.run(context -> {
                 assertThat(context).hasNotFailed();
+            });
+        }
+
+        @Test
+        void adminJwtBeanCreatedWithNewLocalPlaceholder() {
+            ApplicationContextRunner runner = new ApplicationContextRunner()
+                    .withUserConfiguration(AdminAuthConfig.class, MockUserServiceConfig.class,
+                            MockObjectMapperConfig.class)
+                    .withPropertyValues(
+                            "rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER,
+                            "rag.admin-auth.jwt-expiration-seconds=86400");
+
+            runner.run(context -> {
+                assertThat(context).hasNotFailed();
+                assertThat(context).hasSingleBean(AdminJwtService.class);
             });
         }
 

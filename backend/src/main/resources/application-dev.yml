@@ -38,4 +38,4 @@ logging:
 
 rag:
   gateway:
-    secret-key: ${RAG_GATEWAY_SECRET_KEY:local-dev-change-me}
+    secret-key: ${RAG_GATEWAY_SECRET_KEY:local-dev-hs256-secret-change-me-32chars}

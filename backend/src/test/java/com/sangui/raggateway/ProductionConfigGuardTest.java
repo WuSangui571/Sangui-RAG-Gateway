@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProductionConfigGuardTest {
 
     private static final String STRONG_SECRET = "prod-secret-at-least-32-bytes-long-for-hs256!!";
+    private static final String NEW_LOCAL_PLACEHOLDER = "local-dev-hs256-secret-change-me-32chars";
     private static final String DOCUMENTED_SECRET_PLACEHOLDER = "<set-a-strong-32-char-secret>";
 
     private static final String[] PROD_BASELINE = {
@@ -40,12 +41,16 @@ class ProductionConfigGuardTest {
         }
 
         @Test
-        void devProfileWithWeakPlaceholderAndAckPasses() {
+        void devProfileWithWeakPlaceholderEvenWithAckFails() {
             runner.withPropertyValues(
                     "spring.profiles.active=dev",
                     "rag.gateway.secret-key=local-dev-change-me",
                     "rag.production-guard.allow-weak-local-secret=true").run(context -> {
-                assertThat(context).hasNotFailed();
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining("weak placeholder");
             });
         }
 
@@ -63,11 +68,33 @@ class ProductionConfigGuardTest {
         }
 
         @Test
+        void devProfileWithNewLocalPlaceholderPasses() {
+            runner.withPropertyValues(
+                    "spring.profiles.active=dev",
+                    "rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER).run(context -> {
+                assertThat(context).hasNotFailed();
+            });
+        }
+
+        @Test
         void devProfileWithStrongSecretPasses() {
             runner.withPropertyValues(
                     "spring.profiles.active=dev",
                     "rag.gateway.secret-key=" + STRONG_SECRET).run(context -> {
                 assertThat(context).hasNotFailed();
+            });
+        }
+
+        @Test
+        void devProfileWithShortSecretFails() {
+            runner.withPropertyValues(
+                    "spring.profiles.active=dev",
+                    "rag.gateway.secret-key=tooshort").run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining("32");
             });
         }
 
@@ -90,6 +117,26 @@ class ProductionConfigGuardTest {
             runner.withPropertyValues(
                     "rag.gateway.secret-key=" + STRONG_SECRET).run(context -> {
                 assertThat(context).hasNotFailed();
+            });
+        }
+
+        @Test
+        void noProfileWithNewLocalPlaceholderPasses() {
+            runner.withPropertyValues(
+                    "rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER).run(context -> {
+                assertThat(context).hasNotFailed();
+            });
+        }
+
+        @Test
+        void noProfileWithShortSecretFails() {
+            runner.withPropertyValues(
+                    "rag.gateway.secret-key=tooshort").run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining("32");
             });
         }
 
@@ -218,7 +265,7 @@ class ProductionConfigGuardTest {
                 assertThat(context.getStartupFailure())
                         .rootCause()
                         .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("weak placeholder");
+                        .hasMessageContaining("local placeholder");
             });
         }
 
@@ -250,7 +297,23 @@ class ProductionConfigGuardTest {
                 assertThat(context.getStartupFailure())
                         .rootCause()
                         .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("weak placeholder");
+                        .hasMessageContaining("local placeholder");
+            });
+        }
+
+        @Test
+        void failsWhenSecretKeyIsNewLocalPlaceholder() {
+            ApplicationContextRunner runner = new ApplicationContextRunner()
+                    .withUserConfiguration(GuardTestConfig.class)
+                    .withPropertyValues("spring.profiles.active=prod")
+                    .withPropertyValues(PROD_BASELINE)
+                    .withPropertyValues("rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER);
+            runner.run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                        .rootCause()
+                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining("local placeholder");
             });
         }
 
