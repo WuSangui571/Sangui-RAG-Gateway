@@ -1,0 +1,16 @@
+{"file": ".trellis\\tasks\\06-21-api-base-url-help\\prd.md", "reason": "Check implementation against task scope, acceptance criteria, and forbidden changes"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify frontend copy aligns with lightweight OpenAI-compatible gateway boundary"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Ensure changes stay in page/component/i18n/test boundaries"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "Review API key one-time component for clear states and secret handling"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Verify no secret persistence or broad state changes are introduced"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Verify no any/untyped API contract or secret fields are added"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Use lint/test/typecheck/build and secret safety checklist"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "Review side effects and clearing behavior around one-time secret"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Verify no unintended cross-layer contract drift"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Check no duplicated or conflicting base URL derivation is introduced"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Verify API key plaintext is not persisted/logged and no secrets are exposed"}
+{"file": "frontend\\src\\components\\domain\\ApiKeyOneTimeSecret.tsx", "reason": "Review generated SDK base URL, full endpoint display, copy behavior, and one-time secret safety"}
+{"file": "frontend\\src\\pages\\api-keys\\ApiKeyPage.tsx", "reason": "Ensure plaintext key lifecycle remains transient and no unrelated API key behavior changes"}
+{"file": "frontend\\src\\app\\i18n\\dict.ts", "reason": "Verify both locales are updated through typed dictionary keys"}
+{"file": "frontend\\src\\__tests__\\pages\\RequestLogListPage.test.tsx", "reason": "Use as a pattern only; do not modify request-log tests unless necessary"}
+{"file": "frontend\\src\\__tests__\\pages\\AppConfigPage.test.tsx", "reason": "Use as a pattern only; do not modify app config tests unless necessary"}

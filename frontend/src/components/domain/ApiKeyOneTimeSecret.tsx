@@ -9,25 +9,32 @@ interface ApiKeyOneTimeSecretProps {
   plaintextKey: string | null
   onClose: () => void
   onGoToSmokeTest?: () => void
+  origin?: string
 }
 
-export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoToSmokeTest }: ApiKeyOneTimeSecretProps) {
+export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoToSmokeTest, origin: originOverride }: ApiKeyOneTimeSecretProps) {
   const { t } = useI18n()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'failed'>('idle')
-  const [baseUrlCopyStatus, setBaseUrlCopyStatus] = useState<'idle' | 'success' | 'failed'>('idle')
+  const [sdkUrlCopyStatus, setSdkUrlCopyStatus] = useState<'idle' | 'success' | 'failed'>('idle')
+  const [endpointCopyStatus, setEndpointCopyStatus] = useState<'idle' | 'success' | 'failed'>('idle')
 
-  const gatewayBaseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  const origin = originOverride ?? (typeof window !== 'undefined' ? window.location.origin : '')
+  const sdkBaseUrl = origin ? `${origin}/v1` : ''
+  const chatCompletionsEndpoint = origin ? `${origin}/v1/chat/completions` : ''
 
   useEffect(() => {
     if (!open) {
       setCopyStatus('idle')
-      setBaseUrlCopyStatus('idle')
+      setSdkUrlCopyStatus('idle')
+      setEndpointCopyStatus('idle')
       return
     }
     window.setTimeout(() => {
-      inputRef.current?.focus()
-      inputRef.current?.select()
+      try {
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      } catch { /* input selection is best-effort */ }
     }, 0)
   }, [open, plaintextKey])
 
@@ -53,18 +60,18 @@ export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoT
     }
   }
 
-  async function handleCopyBaseUrl() {
-    if (!gatewayBaseUrl) return
+  async function handleCopyUrl(url: string, setStatus: (s: 'idle' | 'success' | 'failed') => void) {
+    if (!url) return
 
     try {
       if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(gatewayBaseUrl)
+        await navigator.clipboard.writeText(url)
       } else {
         throw new Error('clipboard not available')
       }
-      setBaseUrlCopyStatus('success')
+      setStatus('success')
     } catch {
-      setBaseUrlCopyStatus('failed')
+      setStatus('failed')
     }
   }
 
@@ -96,7 +103,7 @@ export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoT
           </Button>
         </Space>
       }
-      destroyOnClose
+      destroyOnHidden
     >
       <Paragraph style={{ marginBottom: 12 }}>
         <Text type="warning">{t('secret.warning')}</Text>
@@ -119,22 +126,36 @@ export default function ApiKeyOneTimeSecret({ open, plaintextKey, onClose, onGoT
       <Divider style={{ margin: '16px 0 12px' }} />
 
       <Paragraph style={{ marginBottom: 8 }}>
-        <Text strong>{t('secret.nextStep')}</Text>{' '}
-        <Text type="secondary">
-          {t('secret.usage')}{' '}
-          <Text code>Authorization: Bearer {'<key>'}</Text>{' '}
-          {t('secret.usageAuth')}
-        </Text>
+        <Text type="secondary">{t('secret.integrationHint')}</Text>
+      </Paragraph>
+
+      <Paragraph style={{ marginBottom: 4 }}>
+        <Text strong>{t('secret.sdkBaseUrlLabel')}</Text>
       </Paragraph>
       <Space style={{ marginBottom: 8 }}>
-        <Text code style={{ fontSize: 13 }}>{gatewayBaseUrl}</Text>
-        <Button size="small" onClick={handleCopyBaseUrl}>
-          {baseUrlCopyStatus === 'success' ? t('secret.copiedUrl') : t('secret.copyBaseUrl')}
+        <Text code style={{ fontSize: 13 }}>{sdkBaseUrl}</Text>
+        <Button size="small" onClick={() => handleCopyUrl(sdkBaseUrl, setSdkUrlCopyStatus)}>
+          {sdkUrlCopyStatus === 'success' ? t('secret.copiedUrl') : t('secret.copyUrl')}
         </Button>
       </Space>
-      {baseUrlCopyStatus === 'failed' && (
+      {sdkUrlCopyStatus === 'failed' && (
         <Paragraph>
-          <Text type="warning" style={{ fontSize: 12 }}>{t('secret.copyUrlFailed')}</Text>
+          <Text type="warning" style={{ fontSize: 12 }}>{t('secret.copySdkUrlFailed')}</Text>
+        </Paragraph>
+      )}
+
+      <Paragraph style={{ marginBottom: 4 }}>
+        <Text strong>{t('secret.chatEndpointLabel')}</Text>
+      </Paragraph>
+      <Space style={{ marginBottom: 8 }}>
+        <Text code style={{ fontSize: 13 }}>{chatCompletionsEndpoint}</Text>
+        <Button size="small" onClick={() => handleCopyUrl(chatCompletionsEndpoint, setEndpointCopyStatus)}>
+          {endpointCopyStatus === 'success' ? t('secret.copiedUrl') : t('secret.copyUrl')}
+        </Button>
+      </Space>
+      {endpointCopyStatus === 'failed' && (
+        <Paragraph>
+          <Text type="warning" style={{ fontSize: 12 }}>{t('secret.copyEndpointFailed')}</Text>
         </Paragraph>
       )}
       {onGoToSmokeTest && (

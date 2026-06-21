@@ -1,0 +1,18 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-21-api-base-url-help\\prd.md", "reason": "Task requirements, acceptance criteria, non-goals, and required tests for API key base URL help"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product/API source of truth: OpenAI-compatible gateway uses /v1/chat/completions and API key integration flow"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend file placement and domain component boundaries for API key workflow"}
+{"file": ".trellis\\spec\\frontend\\component-guidelines.md", "reason": "One-time API key display component behavior and safe admin UI patterns"}
+{"file": ".trellis\\spec\\frontend\\state-management.md", "reason": "Full generated API keys must remain transient page/modal state and be cleared on close"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Typed dictionary and API key creation response boundaries"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Required frontend tests and validation commands"}
+{"file": ".trellis\\spec\\frontend\\hook-guidelines.md", "reason": "API key hooks/page state should not persist one-time plaintext or swallow errors"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Clarify no API/DTO/DB/env contract changes while respecting /v1 public gateway contract"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Search/reuse existing origin/base URL and API key display patterns before adding helpers"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret/key handling boundaries and forbidden response/log fields"}
+{"file": "frontend\\src\\components\\domain\\ApiKeyOneTimeSecret.tsx", "reason": "Primary component: currently derives origin, copies Base URL, and displays one-time API key"}
+{"file": "frontend\\src\\pages\\api-keys\\ApiKeyPage.tsx", "reason": "Page owns API key creation state and clears plaintext on close/app switch"}
+{"file": "frontend\\src\\app\\i18n\\dict.ts", "reason": "Existing Chinese/English secret/help dictionary keys live here"}
+{"file": "frontend\\src\\__tests__\\pages\\RequestLogListPage.test.tsx", "reason": "Nearby page test pattern for ShellContext, UIPreferenceProvider, API mocks, and locale setup"}
+{"file": "frontend\\src\\__tests__\\pages\\AppConfigPage.test.tsx", "reason": "Nearby admin page test pattern for mocked APIs and shell provider"}
