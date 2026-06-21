@@ -341,3 +341,70 @@ the metadata-only evidence boundary.
 ### Next Steps
 
 - None - task complete
+
+
+## Session 72: Secret key production baseline closeout
+
+**Date**: 2026-06-21
+**Task**: Secret key production baseline closeout
+**Branch**: `feature/secret-key-production-guardrails`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+**Commit**: `6a24a392 fix:??????????`
+
+**??????**:
+- Backend production guard: `ProductionConfigGuard` ????? `test` profile ? secret ????? profile ?? DB/Redis/storage/output-capture guard?
+- Config/deploy contract: `application.yml` ?? `rag.production-guard.allow-weak-local-secret`?Compose ?? `RAG_PRODUCTION_ALLOW_WEAK_LOCAL_SECRET`??????? fallback?
+- Docs/spec: `.env.example`?README?project spec?database/security spec ?? secret-key ??????? JWT/AES key ?????
+- Tests: ?? guard ? startup-visible smoke ?????
+
+**????**:
+- `.env.example`
+- `deploy/docker-compose.yml`
+- `README.md`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/security/rag-security.md`
+- `backend/src/main/resources/application.yml`
+- `backend/src/main/java/com/sangui/raggateway/common/config/ProductionConfigGuard.java`
+- `backend/src/main/java/com/sangui/raggateway/common/config/ProductionGuardProperties.java`
+- `backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java`
+- `backend/src/test/java/com/sangui/raggateway/ProductionContextSmokeTest.java`
+
+**???????**:
+- `mvn -q "-Dtest=ProductionConfigGuardTest,ProductionContextSmokeTest" test` ? passed
+- `mvn -q "-Dtest=UpstreamApiKeyEncryptorTest,AdminJwtServiceTest" test` ? passed
+- `mvn -q -DskipTests compile` ? passed
+- `git diff --check` ? passed; only LF/CRLF working-copy warnings were observed earlier
+- `docker compose --env-file .env.example -f deploy/docker-compose.yml config` ? passed; env interpolation shows `RAG_PRODUCTION_ALLOW_WEAK_LOCAL_SECRET=false` and documented placeholder, which startup guard now rejects visibly
+- User confirmed manual testing and committed `6a24a392` before record-session
+
+**?????**:
+- ?? task ???????????????????? `test` runtime ?????`.env.example` ? `<set-a-strong-32-char-secret>` ?? guard ?????????? secret?
+- ??? JWT signing key ? upstream API key encryption key?????????????????? encrypted provider key?
+- ??? DB schema?HTTP API?????? Spring Security/CORS ??? task ?????
+- ?? `mvn test` ????????????? PRD ?????????????compile?Compose config ? diff hygiene?
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6a24a392` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
