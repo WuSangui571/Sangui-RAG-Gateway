@@ -71,7 +71,7 @@ Admin auth flow:
 frontend login form
   -> POST /api/admin/auth/login { username, password }
   -> password hash verification against sys_user
-  -> AdminJwtService signs expiring token with rag.gateway.secret-key
+  -> AdminJwtService signs expiring token with rag.admin-auth.jwt-secret
   -> frontend stores token/current safe user metadata in shell state
   -> frontend HTTP helper sends Authorization: Bearer <admin-jwt>
   -> AdminAuthFilter validates token and active user

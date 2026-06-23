@@ -2,7 +2,7 @@ package com.sangui.raggateway.common.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "rag.gateway")
+@ConfigurationProperties(prefix = "rag.gateway.encryption")
 public class EncryptionProperties {
 
     private String secretKey;

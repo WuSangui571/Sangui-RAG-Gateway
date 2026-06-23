@@ -507,7 +507,9 @@ Environment examples:
 SPRING_DATASOURCE_URL=
 SPRING_DATASOURCE_USERNAME=
 SPRING_DATASOURCE_PASSWORD=
-RAG_GATEWAY_SECRET_KEY=
+RAG_ADMIN_AUTH_JWT_SECRET=
+RAG_GATEWAY_ENCRYPTION_SECRET_KEY=
+RAG_GATEWAY_SECRET_KEY= # deprecated compatibility only
 FILE_STORAGE_TYPE=local
 FILE_STORAGE_LOCAL_PATH=
 REDIS_HOST=
@@ -572,6 +574,8 @@ SPRING_DATASOURCE_USERNAME
 SPRING_DATASOURCE_PASSWORD
 SPRING_DATA_REDIS_HOST
 SPRING_DATA_REDIS_PORT
+RAG_ADMIN_AUTH_JWT_SECRET
+RAG_GATEWAY_ENCRYPTION_SECRET_KEY
 RAG_GATEWAY_SECRET_KEY
 FILE_STORAGE_TYPE
 FILE_STORAGE_LOCAL_PATH
@@ -610,14 +614,16 @@ backend/src/main/java/com/sangui/raggateway/common/config/ProductionGuardPropert
 backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java
 ```
 
-The guard runs during Spring context initialization and inspects `Environment.getActiveProfiles()`. In all **non-test** profiles, it validates `rag.gateway.secret-key` against blank, documented placeholder, known weak placeholder, and minimum length (32 chars). In production-like profiles (`prod`/`production`), it additionally rejects known local development placeholders and validates datasource, Redis, file storage, and output capture safety. The `test` profile skips the entire guard. Production-like profiles must not be combined with `dev` or `test`.
+The guard runs during Spring context initialization and inspects `Environment.getActiveProfiles()`. In all **non-test** profiles, it validates both `rag.admin-auth.jwt-secret` and `rag.gateway.encryption.secret-key` against blank, documented placeholder, known weak placeholder, and minimum length (32 chars). In production-like profiles (`prod`/`production`), it additionally rejects known local development placeholders, enforces that the two secrets are not equal, and validates datasource, Redis, file storage, and output capture safety. The `test` profile skips the entire guard. Production-like profiles must not be combined with `dev` or `test`. The old `rag.gateway.secret-key` is deprecated and no longer validated by the guard.
 
 Configuration contract:
 
 | Environment variable | Spring property | Production-like requirement |
 |---|---|---|
 | `SPRING_PROFILES_ACTIVE` | `spring.profiles.active` | `prod` or `production` activates the guard; `prod,dev` and `production,test` fail startup. |
-| `RAG_GATEWAY_SECRET_KEY` | `rag.gateway.secret-key` | Required, non-blank, at least 32 characters in all non-test profiles. Must not be the documented placeholder `<set-a-strong-32-char-secret>`, the weak placeholder `local-dev-change-me`, or known local development placeholders in production-like profiles. The dev default is `local-dev-hs256-secret-change-me-32chars`. |
+| `RAG_ADMIN_AUTH_JWT_SECRET` | `rag.admin-auth.jwt-secret` | Required, non-blank, at least 32 characters in all non-test profiles. Must not be the documented placeholder `<set-a-strong-32-char-secret>`, the weak placeholder `local-dev-change-me`, or known local development placeholders in production-like profiles. Must not equal `RAG_GATEWAY_ENCRYPTION_SECRET_KEY` in production-like profiles. The dev default is `local-dev-admin-jwt-secret-change-me-32chars`. |
+| `RAG_GATEWAY_ENCRYPTION_SECRET_KEY` | `rag.gateway.encryption.secret-key` | Required, non-blank, at least 32 characters in all non-test profiles. Must not be the documented placeholder `<set-a-strong-32-char-secret>`, the weak placeholder `local-dev-change-me`, or known local development placeholders in production-like profiles. Must not equal `RAG_ADMIN_AUTH_JWT_SECRET` in production-like profiles. For migration from the deprecated shared secret, copy the old `RAG_GATEWAY_SECRET_KEY` value here. The dev default is `local-dev-aes-key-secret-change-me-32chars`. |
+| `RAG_GATEWAY_SECRET_KEY` | `rag.gateway.secret-key` | **Deprecated**. No longer read by AdminJwtService or UpstreamApiKeyEncryptor. Kept for backward compatibility only. |
 | `SPRING_DATASOURCE_URL` | `spring.datasource.url` | Must not be `jdbc:postgresql://localhost:5432/sangui_rag_gateway`. |
 | `SPRING_DATASOURCE_USERNAME` | `spring.datasource.username` | Must not be `sangui`. |
 | `SPRING_DATASOURCE_PASSWORD` | `spring.datasource.password` | Required, non-blank, and must not be `sangui_password`. |
@@ -642,13 +648,14 @@ Validation matrix:
 | Scenario | Expected result |
 |---|---|
 | `test` profile with any secret | Guard is inactive; test context starts. |
-| `dev` or no active profile with blank `rag.gateway.secret-key` | Startup fails with a safe `IllegalStateException` naming `rag.gateway.secret-key` without echoing the value. |
-| `dev` or no active profile with `.env.example` documented placeholder `<set-a-strong-32-char-secret>` | Startup fails with a safe message naming `rag.gateway.secret-key`; the placeholder value is not echoed. |
-| `dev` or no active profile with weak placeholder `local-dev-change-me` (with or without `allow-weak-local-secret`) | Startup fails naming `rag.gateway.secret-key` and the minimum length or weak placeholder requirement; the acknowledgement flag is deprecated and no longer bypasses this check. |
-| `dev` or no active profile with the new local placeholder `local-dev-hs256-secret-change-me-32chars` | Context starts; local development mode with HS256-compatible non-production placeholder. Admin JWT beans can be created. |
-| `dev` or no active profile with strong secret (non-placeholder) | Context starts. |
-| `prod` with strong secret, non-default DB credentials, Redis service host, output capture disabled, and non-local storage or acknowledged local storage | Context starts. |
-| `prod` with blank, short, or placeholder `rag.gateway.secret-key` (including `local-dev-change-me` and `local-dev-hs256-secret-change-me-32chars`) | Startup fails with a safe `IllegalStateException` naming `rag.gateway.secret-key` without echoing the value. |
+| `dev` or no active profile with blank JWT or AES secret | Startup fails with a safe `IllegalStateException` naming the specific property (`rag.admin-auth.jwt-secret` or `rag.gateway.encryption.secret-key`) without echoing the value. |
+| `dev` or no active profile with `.env.example` documented placeholder `<set-a-strong-32-char-secret>` | Startup fails with a safe message naming the specific property; the placeholder value is not echoed. |
+| `dev` or no active profile with weak placeholder `local-dev-change-me` | Startup fails naming the specific property and the minimum length or weak placeholder requirement. |
+| `dev` or no active profile with the new local placeholders | Context starts; local development mode with distinct non-production placeholders for JWT and AES. |
+| `dev` or no active profile with strong secrets (non-placeholder) | Context starts. |
+| `prod` with strong distinct secrets, non-default DB credentials, Redis service host, output capture disabled, and non-local storage or acknowledged local storage | Context starts. |
+| `prod` with blank, short, or placeholder JWT or AES secret | Startup fails with a safe `IllegalStateException` naming the specific property without echoing the value. |
+| `prod` with equal JWT and AES secrets | Startup fails naming both properties with a distinctness message. |
 | `prod` with default datasource URL, username, blank password, or default password | Startup fails with a safe message naming the unsafe datasource property without echoing the password. |
 | `prod` with `localhost:6379` or `127.0.0.1:6379` Redis | Startup fails visibly; Redis failures must not be silently bypassed. |
 | `prod` with `rag.gateway.storage.type=local` and no acknowledgement | Startup fails and names `rag.production-guard.allow-local-file-storage`. |
@@ -745,6 +752,8 @@ SPRING_DATASOURCE_USERNAME=sangui
 SPRING_DATASOURCE_PASSWORD=sangui_password
 SPRING_DATA_REDIS_HOST=localhost
 SPRING_DATA_REDIS_PORT=6379
+RAG_ADMIN_AUTH_JWT_SECRET=local-dev-admin-jwt-secret-change-me-32chars
+RAG_GATEWAY_ENCRYPTION_SECRET_KEY=local-dev-aes-key-secret-change-me-32chars
 RAG_GATEWAY_SECRET_KEY=local-dev-hs256-secret-change-me-32chars
 ```
 
@@ -1073,7 +1082,7 @@ PUT    /api/admin/apps/{appId}/default-model-config  Bind app to same-user enabl
 
 - Algorithm: AES-256-GCM with random 12-byte IV.
 - Stored format: `v1:<base64url-iv>:<base64url-ciphertext>`.
-- Key derivation: SHA-256 of `RAG_GATEWAY_SECRET_KEY`.
+- Key derivation: SHA-256 of `RAG_GATEWAY_ENCRYPTION_SECRET_KEY`.
 - Masked display: first 3 + asterisks + last 4 characters (very short keys fully masked).
 - `api_key_encrypted` is ciphertext, never plaintext, never returned in responses.
 - `api_key_masked` is returned in responses, never equal to plaintext.

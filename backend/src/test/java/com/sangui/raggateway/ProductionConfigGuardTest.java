@@ -13,11 +13,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProductionConfigGuardTest {
 
     private static final String STRONG_SECRET = "prod-secret-at-least-32-bytes-long-for-hs256!!";
-    private static final String NEW_LOCAL_PLACEHOLDER = "local-dev-hs256-secret-change-me-32chars";
+    private static final String LEGACY_LOCAL_PLACEHOLDER = "local-dev-hs256-secret-change-me-32chars";
+    private static final String JWT_LOCAL_PLACEHOLDER = "local-dev-admin-jwt-secret-change-me-32chars";
+    private static final String ENCRYPTION_LOCAL_PLACEHOLDER = "local-dev-aes-key-secret-change-me-32chars";
     private static final String DOCUMENTED_SECRET_PLACEHOLDER = "<set-a-strong-32-char-secret>";
+    private static final String PROP_JWT = "rag.admin-auth.jwt-secret";
+    private static final String PROP_ENC = "rag.gateway.encryption.secret-key";
+
+    private static final String[] STRONG_JWT_AES = {
+            PROP_JWT + "=" + STRONG_SECRET,
+            PROP_ENC + "=" + STRONG_SECRET + "!different"
+    };
 
     private static final String[] PROD_BASELINE = {
-            "rag.gateway.secret-key=" + STRONG_SECRET,
+            PROP_JWT + "=" + STRONG_SECRET,
+            PROP_ENC + "=" + STRONG_SECRET + "!!enc-different",
             "spring.datasource.url=jdbc:postgresql://prod-db:5432/sangui",
             "spring.datasource.username=prod_user",
             "spring.datasource.password=prod_password",
@@ -34,172 +44,226 @@ class ProductionConfigGuardTest {
                 .withUserConfiguration(GuardTestConfig.class);
 
         @Test
-        void testProfileSkipsGuardWithWeakPlaceholder() {
+        void testProfileSkipsGuard() {
             runner.withPropertyValues("spring.profiles.active=test").run(context -> {
                 assertThat(context).hasNotFailed();
             });
         }
 
         @Test
-        void devProfileWithWeakPlaceholderEvenWithAckFails() {
-            runner.withPropertyValues(
-                    "spring.profiles.active=dev",
-                    "rag.gateway.secret-key=local-dev-change-me",
-                    "rag.production-guard.allow-weak-local-secret=true").run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("weak placeholder");
-            });
+        void devProfileWithStrongSecretsPasses() {
+            runner.withPropertyValues("spring.profiles.active=dev")
+                    .withPropertyValues(STRONG_JWT_AES)
+                    .run(context -> assertThat(context).hasNotFailed());
         }
 
         @Test
-        void devProfileWithWeakPlaceholderWithoutAckFails() {
-            runner.withPropertyValues(
-                    "spring.profiles.active=dev",
-                    "rag.gateway.secret-key=local-dev-change-me").run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("weak placeholder");
-            });
-        }
-
-        @Test
-        void devProfileWithNewLocalPlaceholderPasses() {
-            runner.withPropertyValues(
-                    "spring.profiles.active=dev",
-                    "rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER).run(context -> {
+        void devProfileWithNewLocalPlaceholdersPasses() {
+            runner.withPropertyValues("spring.profiles.active=dev",
+                    PROP_JWT + "=" + JWT_LOCAL_PLACEHOLDER,
+                    PROP_ENC + "=" + ENCRYPTION_LOCAL_PLACEHOLDER).run(context -> {
                 assertThat(context).hasNotFailed();
             });
         }
 
         @Test
-        void devProfileWithStrongSecretPasses() {
-            runner.withPropertyValues(
-                    "spring.profiles.active=dev",
-                    "rag.gateway.secret-key=" + STRONG_SECRET).run(context -> {
-                assertThat(context).hasNotFailed();
-            });
+        void noProfileWithStrongSecretsPasses() {
+            runner.withPropertyValues(STRONG_JWT_AES)
+                    .run(context -> assertThat(context).hasNotFailed());
         }
 
         @Test
-        void devProfileWithShortSecretFails() {
-            runner.withPropertyValues(
-                    "spring.profiles.active=dev",
-                    "rag.gateway.secret-key=tooshort").run(context -> {
+        void devProfileBlankJwtFails() {
+            runner.withPropertyValues("spring.profiles.active=dev",
+                    PROP_JWT + "=",
+                    PROP_ENC + "=" + STRONG_SECRET).run(context -> {
                 assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("32");
-            });
-        }
-
-        @Test
-        void devProfileWithDocumentedPlaceholderFailsEvenWithAck() {
-            runner.withPropertyValues(
-                    "spring.profiles.active=dev",
-                    "rag.gateway.secret-key=" + DOCUMENTED_SECRET_PLACEHOLDER,
-                    "rag.production-guard.allow-weak-local-secret=true").run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("real secret");
-            });
-        }
-
-        @Test
-        void noProfileWithStrongSecretPasses() {
-            runner.withPropertyValues(
-                    "rag.gateway.secret-key=" + STRONG_SECRET).run(context -> {
-                assertThat(context).hasNotFailed();
-            });
-        }
-
-        @Test
-        void noProfileWithNewLocalPlaceholderPasses() {
-            runner.withPropertyValues(
-                    "rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER).run(context -> {
-                assertThat(context).hasNotFailed();
-            });
-        }
-
-        @Test
-        void noProfileWithShortSecretFails() {
-            runner.withPropertyValues(
-                    "rag.gateway.secret-key=tooshort").run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("32");
-            });
-        }
-
-        @Test
-        void noProfileWithBlankSecretFails() {
-            runner.withPropertyValues("rag.gateway.secret-key=").run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_JWT)
                         .hasMessageContaining("must not be blank");
             });
         }
 
         @Test
-        void noProfileWithWeakPlaceholderFails() {
-            runner.withPropertyValues(
-                    "rag.gateway.secret-key=local-dev-change-me").run(context -> {
+        void devProfileBlankEncryptionFails() {
+            runner.withPropertyValues("spring.profiles.active=dev",
+                    PROP_JWT + "=" + STRONG_SECRET,
+                    PROP_ENC + "=").run(context -> {
                 assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_ENC)
+                        .hasMessageContaining("must not be blank");
+            });
+        }
+
+        @Test
+        void devProfileShortJwtFails() {
+            runner.withPropertyValues("spring.profiles.active=dev",
+                    PROP_JWT + "=tooshort",
+                    PROP_ENC + "=" + STRONG_SECRET).run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_JWT)
+                        .hasMessageContaining("32");
+            });
+        }
+
+        @Test
+        void devProfileShortEncryptionFails() {
+            runner.withPropertyValues("spring.profiles.active=dev",
+                    PROP_JWT + "=" + STRONG_SECRET,
+                    PROP_ENC + "=tooshort").run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_ENC)
+                        .hasMessageContaining("32");
+            });
+        }
+
+        @Test
+        void devProfileWeakPlaceholderJwtFails() {
+            runner.withPropertyValues("spring.profiles.active=dev",
+                    PROP_JWT + "=local-dev-change-me",
+                    PROP_ENC + "=" + STRONG_SECRET).run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_JWT)
                         .hasMessageContaining("weak placeholder");
+            });
+        }
+
+        @Test
+        void devProfileWeakPlaceholderEncryptionFails() {
+            runner.withPropertyValues("spring.profiles.active=dev",
+                    PROP_JWT + "=" + STRONG_SECRET,
+                    PROP_ENC + "=local-dev-change-me").run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_ENC)
+                        .hasMessageContaining("weak placeholder");
+            });
+        }
+
+        @Test
+        void devProfileDocumentedPlaceholderJwtFails() {
+            runner.withPropertyValues("spring.profiles.active=dev",
+                    PROP_JWT + "=" + DOCUMENTED_SECRET_PLACEHOLDER,
+                    PROP_ENC + "=" + STRONG_SECRET).run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_JWT)
+                        .hasMessageContaining("real secret");
+            });
+        }
+
+        @Test
+        void devProfileDocumentedPlaceholderEncryptionFails() {
+            runner.withPropertyValues("spring.profiles.active=dev",
+                    PROP_JWT + "=" + STRONG_SECRET,
+                    PROP_ENC + "=" + DOCUMENTED_SECRET_PLACEHOLDER).run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_ENC)
+                        .hasMessageContaining("real secret");
+            });
+        }
+
+        @Test
+        void noProfileBlankJwtFails() {
+            runner.withPropertyValues(
+                    PROP_JWT + "=", PROP_ENC + "=" + STRONG_SECRET).run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_JWT)
+                        .hasMessageContaining("must not be blank");
+            });
+        }
+
+        @Test
+        void noProfileBlankEncryptionFails() {
+            runner.withPropertyValues(
+                    PROP_JWT + "=" + STRONG_SECRET, PROP_ENC + "=").run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_ENC)
+                        .hasMessageContaining("must not be blank");
+            });
+        }
+
+        @Test
+        void noProfileShortJwtFails() {
+            runner.withPropertyValues(
+                    PROP_JWT + "=tooshort", PROP_ENC + "=" + STRONG_SECRET).run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_JWT)
+                        .hasMessageContaining("32");
+            });
+        }
+
+        @Test
+        void noProfileShortEncryptionFails() {
+            runner.withPropertyValues(
+                    PROP_JWT + "=" + STRONG_SECRET, PROP_ENC + "=tooshort").run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_ENC)
+                        .hasMessageContaining("32");
+            });
+        }
+
+        @Test
+        void noProfileWeakPlaceholderJwtFails() {
+            runner.withPropertyValues(
+                    PROP_JWT + "=local-dev-change-me",
+                    PROP_ENC + "=" + STRONG_SECRET).run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_JWT)
+                        .hasMessageContaining("weak placeholder");
+            });
+        }
+
+        @Test
+        void noProfileWeakPlaceholderEncryptionFails() {
+            runner.withPropertyValues(
+                    PROP_JWT + "=" + STRONG_SECRET,
+                    PROP_ENC + "=local-dev-change-me").run(context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_ENC)
+                        .hasMessageContaining("weak placeholder");
+            });
+        }
+
+        @Test
+        void noProfileWithWeakPlaceholderMessageDoesNotEchoSecret() {
+            runner.withPropertyValues(
+                    PROP_JWT + "=" + STRONG_SECRET,
+                    PROP_ENC + "=local-dev-change-me").run(context -> {
+                assertThat(context).hasFailed();
+                String rootMessage = getRootCauseMessage(context.getStartupFailure());
+                assertThat(rootMessage).doesNotContain("local-dev-change-me");
             });
         }
 
         @Test
         void noProfileWithDocumentedPlaceholderFails() {
             runner.withPropertyValues(
-                    "rag.gateway.secret-key=" + DOCUMENTED_SECRET_PLACEHOLDER).run(context -> {
+                    PROP_JWT + "=" + STRONG_SECRET,
+                    PROP_ENC + "=" + DOCUMENTED_SECRET_PLACEHOLDER).run(context -> {
                 assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_ENC)
                         .hasMessageContaining("real secret");
             });
         }
 
         @Test
-        void devProfileWeakPlaceholderAckMessageDoesNotEchoSecret() {
+        void documentedPlaceholderMessageDoesNotEchoSecret() {
             runner.withPropertyValues(
-                    "spring.profiles.active=dev",
-                    "rag.gateway.secret-key=local-dev-change-me").run(context -> {
-                assertThat(context).hasFailed();
-                String rootMessage = getRootCauseMessage(context.getStartupFailure());
-                assertThat(rootMessage).doesNotContain("local-dev-change-me");
-            });
-        }
-
-        @Test
-        void noProfileWeakPlaceholderFailureMessageDoesNotEchoSecret() {
-            runner.withPropertyValues(
-                    "rag.gateway.secret-key=local-dev-change-me").run(context -> {
-                assertThat(context).hasFailed();
-                String rootMessage = getRootCauseMessage(context.getStartupFailure());
-                assertThat(rootMessage).doesNotContain("local-dev-change-me");
-            });
-        }
-
-        @Test
-        void documentedPlaceholderFailureMessageDoesNotEchoSecret() {
-            runner.withPropertyValues(
-                    "rag.gateway.secret-key=" + DOCUMENTED_SECRET_PLACEHOLDER).run(context -> {
+                    PROP_JWT + "=" + STRONG_SECRET,
+                    PROP_ENC + "=" + DOCUMENTED_SECRET_PLACEHOLDER).run(context -> {
                 assertThat(context).hasFailed();
                 String rootMessage = getRootCauseMessage(context.getStartupFailure());
                 assertThat(rootMessage).doesNotContain(DOCUMENTED_SECRET_PLACEHOLDER);
@@ -253,115 +317,194 @@ class ProductionConfigGuardTest {
     @Nested
     class NegativeSecretKey {
 
+        private ApplicationContextRunner prodRunner() {
+            return new ApplicationContextRunner()
+                    .withUserConfiguration(GuardTestConfig.class)
+                    .withPropertyValues("spring.profiles.active=prod")
+                    .withPropertyValues(PROD_BASELINE);
+        }
+
         @Test
         void failsWhenProductionProfileIsSetThroughEnvironment() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withInitializer(context -> context.getEnvironment().setActiveProfiles("production"))
                     .withUserConfiguration(GuardTestConfig.class)
                     .withPropertyValues(PROD_BASELINE)
-                    .withPropertyValues("rag.gateway.secret-key=local-dev-change-me");
+                    .withPropertyValues(PROP_JWT + "=local-dev-change-me");
             runner.run(context -> {
                 assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
+                assertThat(context.getStartupFailure()).rootCause()
+                        .hasMessageContaining(PROP_JWT)
                         .hasMessageContaining("local placeholder");
             });
         }
 
         @Test
-        void failsWhenSecretKeyIsBlank() {
-            ApplicationContextRunner runner = new ApplicationContextRunner()
-                    .withUserConfiguration(GuardTestConfig.class)
-                    .withPropertyValues("spring.profiles.active=prod")
-                    .withPropertyValues(PROD_BASELINE)
-                    .withPropertyValues("rag.gateway.secret-key=");
-            runner.run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("blank");
-            });
+        void failsWhenJwtBlank() {
+            prodRunner()
+                    .withPropertyValues(PROP_JWT + "=")
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_JWT)
+                                .hasMessageContaining("blank");
+                    });
         }
 
         @Test
-        void failsWhenSecretKeyIsWeakPlaceholder() {
-            ApplicationContextRunner runner = new ApplicationContextRunner()
-                    .withUserConfiguration(GuardTestConfig.class)
-                    .withPropertyValues("spring.profiles.active=prod")
-                    .withPropertyValues(PROD_BASELINE)
-                    .withPropertyValues("rag.gateway.secret-key=local-dev-change-me");
-            runner.run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("local placeholder");
-            });
+        void failsWhenEncryptionBlank() {
+            prodRunner()
+                    .withPropertyValues(PROP_ENC + "=")
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_ENC)
+                                .hasMessageContaining("blank");
+                    });
         }
 
         @Test
-        void failsWhenSecretKeyIsNewLocalPlaceholder() {
-            ApplicationContextRunner runner = new ApplicationContextRunner()
-                    .withUserConfiguration(GuardTestConfig.class)
-                    .withPropertyValues("spring.profiles.active=prod")
-                    .withPropertyValues(PROD_BASELINE)
-                    .withPropertyValues("rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER);
-            runner.run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("local placeholder");
-            });
+        void failsWhenJwtIsWeakPlaceholder() {
+            prodRunner()
+                    .withPropertyValues(PROP_JWT + "=local-dev-change-me")
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_JWT)
+                                .hasMessageContaining("local placeholder");
+                    });
         }
 
         @Test
-        void failsWhenSecretKeyIsDocumentedPlaceholder() {
-            ApplicationContextRunner runner = new ApplicationContextRunner()
-                    .withUserConfiguration(GuardTestConfig.class)
-                    .withPropertyValues("spring.profiles.active=prod")
-                    .withPropertyValues(PROD_BASELINE)
-                    .withPropertyValues("rag.gateway.secret-key=" + DOCUMENTED_SECRET_PLACEHOLDER);
-            runner.run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("real secret");
-            });
+        void failsWhenEncryptionIsWeakPlaceholder() {
+            prodRunner()
+                    .withPropertyValues(PROP_ENC + "=local-dev-change-me")
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_ENC)
+                                .hasMessageContaining("local placeholder");
+                    });
         }
 
         @Test
-        void failsWhenSecretKeyIsShorterThan32Chars() {
-            ApplicationContextRunner runner = new ApplicationContextRunner()
-                    .withUserConfiguration(GuardTestConfig.class)
-                    .withPropertyValues("spring.profiles.active=prod")
-                    .withPropertyValues(PROD_BASELINE)
-                    .withPropertyValues("rag.gateway.secret-key=short-secret");
-            runner.run(context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                        .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
-                        .hasMessageContaining("32");
-            });
+        void failsWhenJwtIsLegacyLocalPlaceholder() {
+            prodRunner()
+                    .withPropertyValues(PROP_JWT + "=" + LEGACY_LOCAL_PLACEHOLDER)
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_JWT)
+                                .hasMessageContaining("local placeholder");
+                    });
+        }
+
+        @Test
+        void failsWhenEncryptionIsLegacyLocalPlaceholder() {
+            prodRunner()
+                    .withPropertyValues(PROP_ENC + "=" + LEGACY_LOCAL_PLACEHOLDER)
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_ENC)
+                                .hasMessageContaining("local placeholder");
+                    });
+        }
+
+        @Test
+        void failsWhenJwtUsesDevDefaultPlaceholderInProduction() {
+            prodRunner()
+                    .withPropertyValues(PROP_JWT + "=" + JWT_LOCAL_PLACEHOLDER)
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_JWT)
+                                .hasMessageContaining("local placeholder");
+                    });
+        }
+
+        @Test
+        void failsWhenEncryptionUsesDevDefaultPlaceholderInProduction() {
+            prodRunner()
+                    .withPropertyValues(PROP_ENC + "=" + ENCRYPTION_LOCAL_PLACEHOLDER)
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_ENC)
+                                .hasMessageContaining("local placeholder");
+                    });
+        }
+
+        @Test
+        void failsWhenJwtIsDocumentedPlaceholder() {
+            prodRunner()
+                    .withPropertyValues(PROP_JWT + "=" + DOCUMENTED_SECRET_PLACEHOLDER)
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_JWT)
+                                .hasMessageContaining("real secret");
+                    });
+        }
+
+        @Test
+        void failsWhenEncryptionIsDocumentedPlaceholder() {
+            prodRunner()
+                    .withPropertyValues(PROP_ENC + "=" + DOCUMENTED_SECRET_PLACEHOLDER)
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_ENC)
+                                .hasMessageContaining("real secret");
+                    });
+        }
+
+        @Test
+        void failsWhenJwtIsShort() {
+            prodRunner()
+                    .withPropertyValues(PROP_JWT + "=short-secret")
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_JWT)
+                                .hasMessageContaining("32");
+                    });
+        }
+
+        @Test
+        void failsWhenEncryptionIsShort() {
+            prodRunner()
+                    .withPropertyValues(PROP_ENC + "=short-secret")
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining(PROP_ENC)
+                                .hasMessageContaining("32");
+                    });
+        }
+
+        @Test
+        void failsWhenSecretsAreEqual() {
+            prodRunner()
+                    .withPropertyValues(PROP_JWT + "=" + STRONG_SECRET,
+                            PROP_ENC + "=" + STRONG_SECRET)
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        assertThat(context.getStartupFailure()).rootCause()
+                                .hasMessageContaining("must not be equal");
+                    });
         }
 
         @Test
         void failureMessageDoesNotEchoSecretValue() {
-            ApplicationContextRunner runner = new ApplicationContextRunner()
-                    .withUserConfiguration(GuardTestConfig.class)
-                    .withPropertyValues("spring.profiles.active=prod")
-                    .withPropertyValues(PROD_BASELINE)
-                    .withPropertyValues("rag.gateway.secret-key=my-insecure-key-that-is-short");
-            runner.run(context -> {
-                assertThat(context).hasFailed();
-                Throwable failure = context.getStartupFailure();
-                String rootMessage = getRootCauseMessage(failure);
-                assertThat(rootMessage).doesNotContain("my-insecure-key-that-is-short");
-            });
+            prodRunner()
+                    .withPropertyValues(PROP_JWT + "=my-insecure-key-that-is-short")
+                    .run(context -> {
+                        assertThat(context).hasFailed();
+                        Throwable failure = context.getStartupFailure();
+                        String rootMessage = getRootCauseMessage(failure);
+                        assertThat(rootMessage).doesNotContain("my-insecure-key-that-is-short");
+                    });
         }
     }
 

@@ -25,7 +25,7 @@ public class UpstreamApiKeyEncryptor {
     public UpstreamApiKeyEncryptor(EncryptionProperties properties) {
         String secret = properties.getSecretKey();
         if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException("rag.gateway.secret-key must not be blank");
+            throw new IllegalStateException("rag.gateway.encryption.secret-key must not be blank");
         }
         this.aesKey = deriveKey(secret);
     }

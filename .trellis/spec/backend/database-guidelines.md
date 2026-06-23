@@ -403,7 +403,7 @@ api_key_masked or prefix for display
 encryption_version if key rotation is introduced
 ```
 
-The encryption master key must come from environment variables (`RAG_GATEWAY_SECRET_KEY`), not source code. The `dev` profile provides the local non-production placeholder `local-dev-hs256-secret-change-me-32chars` (at least 32 UTF-8 characters, HS256-compatible) as the default. The weak placeholder `local-dev-change-me` (19 characters) is always rejected at startup because it does not satisfy the HS256 minimum strength requirement. The documented replacement placeholder `<set-a-strong-32-char-secret>` must be replaced before startup. The `test` profile skips guard checks. Production-like runs must override with a strong `RAG_GATEWAY_SECRET_KEY` of at least 32 characters that is not any known placeholder.
+The encryption master key must come from environment variables (`RAG_GATEWAY_ENCRYPTION_SECRET_KEY`), not source code. The `dev` profile provides the local non-production placeholder `local-dev-aes-key-secret-change-me-32chars` (at least 32 UTF-8 characters, AES-256-GCM compatible) as the default. The weak placeholder `local-dev-change-me` (19 characters) is always rejected at startup because it does not satisfy the minimum strength requirement. The documented replacement placeholder `<set-a-strong-32-char-secret>` must be replaced before startup. The `test` profile skips guard checks. Production-like runs must override with a strong `RAG_GATEWAY_ENCRYPTION_SECRET_KEY` of at least 32 characters that is not any known placeholder. The old `RAG_GATEWAY_SECRET_KEY` is deprecated and no longer used for encryption.
 
 ### Implemented Encryption Baseline
 
@@ -419,9 +419,9 @@ backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyMasker
 Encryption contract:
 
 - Algorithm: AES-256-GCM with random 12-byte IV per encryption.
-- Key derivation: SHA-256 of `RAG_GATEWAY_SECRET_KEY` produces a 256-bit AES key.
+- Key derivation: SHA-256 of `RAG_GATEWAY_ENCRYPTION_SECRET_KEY` produces a 256-bit AES key.
 - Stored format: `v1:<base64url-iv>:<base64url-ciphertext>`.
-- The encryptor fails fast if `rag.gateway.secret-key` is blank at startup.
+- The encryptor fails fast if `rag.gateway.encryption.secret-key` is blank at startup.
 - Decrypt is available for future upstream forwarding, but decrypted values are never returned from admin APIs.
 
 Masking contract:

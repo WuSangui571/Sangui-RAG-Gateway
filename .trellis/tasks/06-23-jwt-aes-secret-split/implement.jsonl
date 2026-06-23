@@ -1,0 +1,31 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/tasks/06-23-jwt-aes-secret-split/prd.md", "reason": "Task PRD with accepted secret split contract, migration boundary, validation matrix, and required tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project-level environment, deployment, encryption, admin auth, and production guard contract"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend package ownership and common config/security boundaries"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Upstream API key encrypted-at-rest contract and model config test obligations"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Secret-safe admin and gateway error behavior for decrypt failures and auth boundaries"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-safe logging rules for API keys, encrypted keys, JWTs, and provider failures"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend test, security, and review checklist for auth/encryption changes"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Gateway decrypt/upstream failure boundaries and safe request-log behavior"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Security spec explicitly records the future secret-key role separation requirement"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer checklist for env variables, auth, secrets, deployment, and tests"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicated validation or parallel secret derivation logic"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/AdminAuthConfig.java", "reason": "Current AdminJwtService wiring uses the shared rag.gateway.secret-key and must be split"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/EncryptionProperties.java", "reason": "Current AES encryption properties bind the shared rag.gateway secret and need rebinding"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/EncryptionConfig.java", "reason": "Encryptor bean construction seam for new encryption secret properties"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/ProductionConfigGuard.java", "reason": "Startup validation seam for both JWT and AES secret rules"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/ProductionGuardProperties.java", "reason": "Existing production guard acknowledgement properties and deprecated weak-secret context"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/AdminJwtService.java", "reason": "Admin JWT HS256 signing and secret length validation seam"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java", "reason": "AES-256-GCM key derivation and decrypt failure seam"}
+{"file": "backend/src/main/resources/application.yml", "reason": "Primary Spring property and environment variable mapping"}
+{"file": "backend/src/main/resources/application-dev.yml", "reason": "Local dev default placeholders must become distinct and HS256-compatible"}
+{"file": ".env.example", "reason": "Deployment env example must document new JWT and AES env vars and migration notes"}
+{"file": "deploy/docker-compose.yml", "reason": "Compose backend environment must pass new secret env vars"}
+{"file": "README.md", "reason": "User-facing deployment and secret migration contract"}
+{"file": "backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java", "reason": "Startup guard validation matrix for missing, short, placeholder, and equal secrets"}
+{"file": "backend/src/test/java/com/sangui/raggateway/ProductionContextSmokeTest.java", "reason": "Bean wiring smoke for AdminJwtService and UpstreamApiKeyEncryptor with split secrets"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/AdminJwtServiceTest.java", "reason": "JWT signing secret behavior and old-token invalidation assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptorTest.java", "reason": "AES encryption secret migration and no-hidden-fallback assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/auth/AdminAuthServiceTest.java", "reason": "Admin auth fixture may need updated JWT secret construction"}
+{"file": "backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java", "reason": "Model config encrypted key preservation and decrypt seam regression"}

@@ -70,7 +70,8 @@ import static org.mockito.Mockito.when;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = OpenAiChatCompletionsRuntimeSmokeTest.SmokeApplication.class,
         properties = {
-                "rag.gateway.secret-key=smoke-test-secret-key-at-least-32-bytes-long!!",
+                "rag.admin-auth.jwt-secret=smoke-test-jwt-secret-at-least-32-bytes-long!!",
+                "rag.gateway.encryption.secret-key=smoke-test-aes-key-at-least-32-bytes-long!!",
                 "rag.gateway.streaming.emitter-timeout-seconds=3",
                 "rag.gateway.api-key-limits.enabled=true"
         }

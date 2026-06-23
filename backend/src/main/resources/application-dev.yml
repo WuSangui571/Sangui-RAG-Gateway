@@ -37,5 +37,8 @@ logging:
     com.sangui.raggateway: DEBUG
 
 rag:
+  admin-auth:
+    jwt-secret: ${RAG_ADMIN_AUTH_JWT_SECRET:local-dev-admin-jwt-secret-change-me-32chars}
   gateway:
-    secret-key: ${RAG_GATEWAY_SECRET_KEY:local-dev-hs256-secret-change-me-32chars}
+    encryption:
+      secret-key: ${RAG_GATEWAY_ENCRYPTION_SECRET_KEY:local-dev-aes-key-secret-change-me-32chars}

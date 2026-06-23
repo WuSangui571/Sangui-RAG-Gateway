@@ -10,6 +10,8 @@ server:
 rag:
   gateway:
     secret-key: ${RAG_GATEWAY_SECRET_KEY:}
+    encryption:
+      secret-key: ${RAG_GATEWAY_ENCRYPTION_SECRET_KEY:}
     upstream:
       timeout-seconds: 30
     streaming:
@@ -44,6 +46,7 @@ rag:
       default-daily-token-quota: ${RAG_API_KEY_LIMITS_DEFAULT_DAILY_TOKEN_QUOTA:1000000}
       default-completion-token-reservation: ${RAG_API_KEY_LIMITS_DEFAULT_COMPLETION_TOKEN_RESERVATION:1024}
   admin-auth:
+    jwt-secret: ${RAG_ADMIN_AUTH_JWT_SECRET:}
     jwt-expiration-seconds: ${RAG_ADMIN_AUTH_JWT_EXPIRATION_SECONDS:86400}
   production-guard:
     allow-local-file-storage: ${RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE:false}

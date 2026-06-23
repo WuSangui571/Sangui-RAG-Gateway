@@ -307,7 +307,7 @@ class OpenAiChatCompletionsControllerTest {
 
         ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
                 ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
-        verify(apiRequestLogService).record(captor.capture());
+        verify(apiRequestLogService, timeout(1000).times(1)).record(captor.capture());
         com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
         assertThat(command.getStatus()).isEqualTo("success");
         assertThat(command.getHitChunkIds()).isEqualTo("[1,2,3]");
@@ -342,7 +342,7 @@ class OpenAiChatCompletionsControllerTest {
 
         ArgumentCaptor<com.sangui.raggateway.log.CreateRequestLogCommand> captor =
                 ArgumentCaptor.forClass(com.sangui.raggateway.log.CreateRequestLogCommand.class);
-        verify(apiRequestLogService).record(captor.capture());
+        verify(apiRequestLogService, timeout(1000).times(1)).record(captor.capture());
         com.sangui.raggateway.log.CreateRequestLogCommand command = captor.getValue();
         assertThat(command.getUserId()).isEqualTo(USER_ID);
         assertThat(command.getAppId()).isEqualTo(APP_ID);

@@ -1,0 +1,6 @@
+{"file": ".trellis/tasks/06-23-jwt-aes-secret-split/prd.md", "reason": "Debug against the accepted JWT/AES secret split contract and validation matrix"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Debug failures must preserve secret-safe error behavior"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Debug failures must not log JWTs, API keys, encrypted keys, or secret values"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/ProductionConfigGuard.java", "reason": "Startup validation is the likely debug seam for bad secret configuration"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java", "reason": "AES decrypt failures and migration behavior are likely debug seams"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/AdminJwtService.java", "reason": "JWT signing and validation behavior is a likely debug seam"}

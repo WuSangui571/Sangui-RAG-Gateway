@@ -28,11 +28,11 @@ public class AdminJwtService {
 
     public AdminJwtService(String secret, long expirationSeconds) {
         if (secret == null || secret.isBlank()) {
-            throw new IllegalArgumentException("JWT secret must not be blank");
+            throw new IllegalArgumentException("rag.admin-auth.jwt-secret must not be blank");
         }
         if (secret.length() < MIN_SECRET_LENGTH) {
             throw new IllegalArgumentException(
-                    "JWT secret must be at least " + MIN_SECRET_LENGTH + " characters for HS256");
+                    "rag.admin-auth.jwt-secret must be at least " + MIN_SECRET_LENGTH + " characters for HS256");
         }
         if (expirationSeconds <= 0) {
             throw new IllegalArgumentException("JWT expiration must be positive");

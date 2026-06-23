@@ -17,7 +17,10 @@ public class ProductionConfigGuard implements InitializingBean {
     private static final String TEST_PROFILE = "test";
 
     private static final String WEAK_LOCAL_SECRET = "local-dev-change-me";
-    private static final String NEW_LOCAL_PLACEHOLDER = "local-dev-hs256-secret-change-me-32chars";
+    private static final Set<String> LOCAL_SECRET_PLACEHOLDERS = Set.of(
+            "local-dev-hs256-secret-change-me-32chars",
+            "local-dev-admin-jwt-secret-change-me-32chars",
+            "local-dev-aes-key-secret-change-me-32chars");
     private static final String DOCUMENTED_SECRET_PLACEHOLDER = "<set-a-strong-32-char-secret>";
     private static final int MIN_SECRET_LENGTH = 32;
 
@@ -48,7 +51,7 @@ public class ProductionConfigGuard implements InitializingBean {
         if (isTestProfile()) {
             return;
         }
-        validateSecretKey();
+        validateJwtAndEncryptionSecrets();
         if (isProductionProfile()) {
             validateDataSource();
             validateRedis();
@@ -83,38 +86,53 @@ public class ProductionConfigGuard implements InitializingBean {
                 .collect(Collectors.toSet());
     }
 
-    private void validateSecretKey() {
-        String secretKey = environment.getProperty("rag.gateway.secret-key", "");
+    private static final String PROP_JWT_SECRET = "rag.admin-auth.jwt-secret";
+    private static final String PROP_ENCRYPTION_SECRET = "rag.gateway.encryption.secret-key";
+
+    private void validateJwtAndEncryptionSecrets() {
+        String jwtSecret = environment.getProperty(PROP_JWT_SECRET, "");
+        String encryptionSecret = environment.getProperty(PROP_ENCRYPTION_SECRET, "");
         boolean isProduction = isProductionProfile();
 
-        if (secretKey == null || secretKey.isBlank()) {
-            throw new IllegalStateException("rag.gateway.secret-key must not be blank");
+        validateSecretProperty(PROP_JWT_SECRET, jwtSecret, isProduction);
+        validateSecretProperty(PROP_ENCRYPTION_SECRET, encryptionSecret, isProduction);
+
+        if (isProduction && !jwtSecret.isBlank() && !encryptionSecret.isBlank()
+                && jwtSecret.equals(encryptionSecret)) {
+            throw new IllegalStateException(
+                    PROP_JWT_SECRET + " and " + PROP_ENCRYPTION_SECRET + " must not be equal in production");
+        }
+    }
+
+    private void validateSecretProperty(String propertyName, String secret, boolean isProduction) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(propertyName + " must not be blank");
         }
 
-        if (DOCUMENTED_SECRET_PLACEHOLDER.equals(secretKey)) {
+        if (DOCUMENTED_SECRET_PLACEHOLDER.equals(secret)) {
             throw new IllegalStateException(
-                    "rag.gateway.secret-key must be replaced with a real secret before startup");
+                    propertyName + " must be replaced with a real secret before startup");
         }
 
         if (isProduction) {
-            if (WEAK_LOCAL_SECRET.equals(secretKey) || NEW_LOCAL_PLACEHOLDER.equals(secretKey)) {
+            if (WEAK_LOCAL_SECRET.equals(secret) || LOCAL_SECRET_PLACEHOLDERS.contains(secret)) {
                 throw new IllegalStateException(
-                        "rag.gateway.secret-key must not be a known local placeholder value in production");
+                        propertyName + " must not be a known local placeholder value in production");
             }
-            if (secretKey.length() < MIN_SECRET_LENGTH) {
+            if (secret.length() < MIN_SECRET_LENGTH) {
                 throw new IllegalStateException(
-                        "rag.gateway.secret-key must be at least " + MIN_SECRET_LENGTH + " characters in production");
+                        propertyName + " must be at least " + MIN_SECRET_LENGTH + " characters in production");
             }
         } else {
-            if (WEAK_LOCAL_SECRET.equals(secretKey)) {
+            if (WEAK_LOCAL_SECRET.equals(secret)) {
                 throw new IllegalStateException(
-                        "rag.gateway.secret-key is set to a known weak placeholder. "
-                        + "Set RAG_GATEWAY_SECRET_KEY to a strong secret of at least "
+                        propertyName + " is set to a known weak placeholder. "
+                        + "Set it to a strong secret of at least "
                         + MIN_SECRET_LENGTH + " characters.");
             }
-            if (secretKey.length() < MIN_SECRET_LENGTH) {
+            if (secret.length() < MIN_SECRET_LENGTH) {
                 throw new IllegalStateException(
-                        "rag.gateway.secret-key must be at least " + MIN_SECRET_LENGTH + " characters");
+                        propertyName + " must be at least " + MIN_SECRET_LENGTH + " characters");
             }
         }
     }

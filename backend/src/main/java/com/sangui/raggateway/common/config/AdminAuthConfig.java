@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Profile;
 @Profile("!test")
 public class AdminAuthConfig {
 
-    @Value("${rag.gateway.secret-key}")
+    @Value("${rag.admin-auth.jwt-secret}")
     private String jwtSecret;
 
     @Value("${rag.admin-auth.jwt-expiration-seconds:86400}")

@@ -28,24 +28,31 @@ import static org.mockito.Mockito.mock;
 class ProductionContextSmokeTest {
 
     private static final String VALID_SECRET = "prod-smoke-jwt-secret-at-least-32-bytes-long-for-hs256!!";
-    private static final String NEW_LOCAL_PLACEHOLDER = "local-dev-hs256-secret-change-me-32chars";
+    private static final String JWT_LOCAL_PLACEHOLDER = "local-dev-admin-jwt-secret-change-me-32chars";
+    private static final String ENCRYPTION_LOCAL_PLACEHOLDER = "local-dev-aes-key-secret-change-me-32chars";
     private static final String DOCUMENTED_SECRET_PLACEHOLDER = "<set-a-strong-32-char-secret>";
+    private static final String PROP_JWT = "rag.admin-auth.jwt-secret";
+    private static final String PROP_ENC = "rag.gateway.encryption.secret-key";
+
+    private static final String[] STRONG_JWT_AES = {
+            PROP_JWT + "=" + VALID_SECRET,
+            PROP_ENC + "=" + VALID_SECRET + "!different"
+    };
 
     @Nested
     class PositiveNonTestProfileSmoke {
 
         private final ApplicationContextRunner gatewayRunner = new ApplicationContextRunner()
-                .withUserConfiguration(GatewayAuthConfig.class, MockDependencies.class)
-                .withPropertyValues("rag.gateway.secret-key=" + VALID_SECRET);
+                .withUserConfiguration(GatewayAuthConfig.class, MockDependencies.class);
 
         private final ApplicationContextRunner encryptionRunner = new ApplicationContextRunner()
                 .withUserConfiguration(EncryptionConfig.class)
-                .withPropertyValues("rag.gateway.secret-key=" + VALID_SECRET);
+                .withPropertyValues(PROP_ENC + "=" + VALID_SECRET);
 
         private final ApplicationContextRunner adminAuthRunner = new ApplicationContextRunner()
                 .withUserConfiguration(AdminAuthConfig.class, MockUserServiceConfig.class, MockObjectMapperConfig.class)
                 .withPropertyValues(
-                        "rag.gateway.secret-key=" + VALID_SECRET,
+                        PROP_JWT + "=" + VALID_SECRET,
                         "rag.admin-auth.jwt-expiration-seconds=86400");
 
         private final ApplicationContextRunner apiKeyLimitRunner = new ApplicationContextRunner()
@@ -114,33 +121,33 @@ class ProductionContextSmokeTest {
     class NegativeBlankSecretKey {
 
         @Test
-        void encryptionConfigFailsWhenSecretKeyIsBlank() {
+        void encryptionConfigFailsWhenEncryptionSecretIsBlank() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withUserConfiguration(EncryptionConfig.class)
-                    .withPropertyValues("rag.gateway.secret-key=");
+                    .withPropertyValues(PROP_ENC + "=");
 
             runner.run(context -> {
                 assertThat(context).hasFailed();
                 assertThat(context.getStartupFailure())
                         .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key must not be blank");
+                        .hasMessageContaining(PROP_ENC + " must not be blank");
             });
         }
 
         @Test
-        void adminJwtServiceFailsWhenSecretIsBlank() {
+        void adminJwtServiceFailsWhenJwtSecretIsBlank() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withUserConfiguration(AdminAuthConfig.class, MockUserServiceConfig.class,
                             MockObjectMapperConfig.class)
                     .withPropertyValues(
-                            "rag.gateway.secret-key=",
+                            PROP_JWT + "=",
                             "rag.admin-auth.jwt-expiration-seconds=86400");
 
             runner.run(context -> {
                 assertThat(context).hasFailed();
                 assertThat(context.getStartupFailure())
                         .rootCause()
-                        .hasMessageContaining("JWT secret must not be blank");
+                        .hasMessageContaining(PROP_JWT + " must not be blank");
             });
         }
     }
@@ -149,51 +156,51 @@ class ProductionContextSmokeTest {
     class NegativeWeakSecretKey {
 
         @Test
-        void guardFailsWhenDevProfileHasWeakPlaceholderWithoutAck() {
+        void guardFailsWhenDevProfileHasWeakJwtPlaceholder() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withUserConfiguration(GuardSmokeConfig.class)
                     .withPropertyValues(
                             "spring.profiles.active=dev",
-                            "rag.gateway.secret-key=local-dev-change-me");
+                            PROP_JWT + "=local-dev-change-me",
+                            PROP_ENC + "=" + VALID_SECRET);
 
             runner.run(context -> {
                 assertThat(context).hasFailed();
                 assertThat(context.getStartupFailure())
                         .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining(PROP_JWT)
                         .hasMessageContaining("weak placeholder");
             });
         }
 
         @Test
-        void guardFailsWhenDevProfileHasWeakPlaceholderEvenWithAck() {
+        void guardFailsWhenDevProfileHasWeakEncryptionPlaceholder() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withUserConfiguration(GuardSmokeConfig.class)
                     .withPropertyValues(
                             "spring.profiles.active=dev",
-                            "rag.gateway.secret-key=local-dev-change-me",
-                            "rag.production-guard.allow-weak-local-secret=true");
+                            PROP_JWT + "=" + VALID_SECRET,
+                            PROP_ENC + "=local-dev-change-me");
 
             runner.run(context -> {
                 assertThat(context).hasFailed();
                 assertThat(context.getStartupFailure())
                         .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining(PROP_ENC)
                         .hasMessageContaining("weak placeholder");
             });
         }
 
         @Test
-        void guardPassesWhenDevProfileWithNewLocalPlaceholder() {
+        void guardPassesWhenDevProfileWithNewLocalPlaceholders() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withUserConfiguration(GuardSmokeConfig.class)
                     .withPropertyValues(
                             "spring.profiles.active=dev",
-                            "rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER);
+                            PROP_JWT + "=" + JWT_LOCAL_PLACEHOLDER,
+                            PROP_ENC + "=" + ENCRYPTION_LOCAL_PLACEHOLDER);
 
-            runner.run(context -> {
-                assertThat(context).hasNotFailed();
-            });
+            runner.run(context -> assertThat(context).hasNotFailed());
         }
 
         @Test
@@ -202,7 +209,7 @@ class ProductionContextSmokeTest {
                     .withUserConfiguration(AdminAuthConfig.class, MockUserServiceConfig.class,
                             MockObjectMapperConfig.class)
                     .withPropertyValues(
-                            "rag.gateway.secret-key=" + NEW_LOCAL_PLACEHOLDER,
+                            PROP_JWT + "=" + JWT_LOCAL_PLACEHOLDER,
                             "rag.admin-auth.jwt-expiration-seconds=86400");
 
             runner.run(context -> {
@@ -212,16 +219,18 @@ class ProductionContextSmokeTest {
         }
 
         @Test
-        void guardFailsWhenNoProfileWithWeakPlaceholder() {
+        void guardFailsWhenNoProfileWithWeakJwtPlaceholder() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withUserConfiguration(GuardSmokeConfig.class)
-                    .withPropertyValues("rag.gateway.secret-key=local-dev-change-me");
+                    .withPropertyValues(
+                            PROP_JWT + "=local-dev-change-me",
+                            PROP_ENC + "=" + VALID_SECRET);
 
             runner.run(context -> {
                 assertThat(context).hasFailed();
                 assertThat(context.getStartupFailure())
                         .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining(PROP_JWT)
                         .hasMessageContaining("weak placeholder");
             });
         }
@@ -230,26 +239,26 @@ class ProductionContextSmokeTest {
         void guardFailsWhenNoProfileUsesDocumentedPlaceholder() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withUserConfiguration(GuardSmokeConfig.class)
-                    .withPropertyValues("rag.gateway.secret-key=" + DOCUMENTED_SECRET_PLACEHOLDER);
+                    .withPropertyValues(
+                            PROP_JWT + "=" + VALID_SECRET,
+                            PROP_ENC + "=" + DOCUMENTED_SECRET_PLACEHOLDER);
 
             runner.run(context -> {
                 assertThat(context).hasFailed();
                 assertThat(context.getStartupFailure())
                         .rootCause()
-                        .hasMessageContaining("rag.gateway.secret-key")
+                        .hasMessageContaining(PROP_ENC)
                         .hasMessageContaining("real secret");
             });
         }
 
         @Test
-        void guardPassesWhenNoProfileWithStrongSecret() {
+        void guardPassesWhenNoProfileWithStrongSecrets() {
             ApplicationContextRunner runner = new ApplicationContextRunner()
                     .withUserConfiguration(GuardSmokeConfig.class)
-                    .withPropertyValues("rag.gateway.secret-key=" + VALID_SECRET);
+                    .withPropertyValues(STRONG_JWT_AES);
 
-            runner.run(context -> {
-                assertThat(context).hasNotFailed();
-            });
+            runner.run(context -> assertThat(context).hasNotFailed());
         }
 
         @Test
@@ -258,9 +267,7 @@ class ProductionContextSmokeTest {
                     .withUserConfiguration(GuardSmokeConfig.class)
                     .withPropertyValues("spring.profiles.active=test");
 
-            runner.run(context -> {
-                assertThat(context).hasNotFailed();
-            });
+            runner.run(context -> assertThat(context).hasNotFailed());
         }
     }
 

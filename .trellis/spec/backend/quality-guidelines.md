@@ -75,7 +75,7 @@ Before completing backend work, verify:
 
 - [ ] Public gateway responses remain OpenAI-compatible for the supported subset.
 - [ ] API keys and upstream keys are never stored or logged in plaintext.
-- [ ] Upstream API keys are encrypted at rest with AES-256-GCM using `RAG_GATEWAY_SECRET_KEY`.
+- [ ] Upstream API keys are encrypted at rest with AES-256-GCM using `RAG_GATEWAY_ENCRYPTION_SECRET_KEY`; `RAG_GATEWAY_SECRET_KEY` is deprecated compatibility input only.
 - [ ] Admin API responses only return `api_key_masked`, never `api_key_encrypted` or plaintext upstream keys.
 - [ ] Admin endpoints require `Authorization: Bearer <admin-jwt>` and derive tenant identity from `AdminAuthContextHolder`, not request headers.
 - [ ] Admin model config CRUD endpoints enforce same-user ownership with 404/403 distinction.

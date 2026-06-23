@@ -887,7 +887,9 @@ npm run build
 | `SPRING_DATASOURCE_PASSWORD` | `sangui_password` | Datasource password |
 | `SPRING_DATA_REDIS_HOST` | `localhost` | Redis host (uses service name `redis` inside Compose) |
 | `SPRING_DATA_REDIS_PORT` | `6379` | Redis port |
-| `RAG_GATEWAY_SECRET_KEY` | `local-dev-hs256-secret-change-me-32chars` (dev default) | AES encryption master key and Admin JWT HS256 signing key. The dev profile default is a non-production placeholder of 32+ characters suitable for local development with HS256. For deployment, replace with a strong secret of at least 32 characters. The documented placeholder `<set-a-strong-32-char-secret>` is rejected at startup. Never use `local-dev-change-me` or short keys. |
+| `RAG_GATEWAY_SECRET_KEY` | `local-dev-hs256-secret-change-me-32chars` (dev default) | **Deprecated.** Replaced by `RAG_ADMIN_AUTH_JWT_SECRET` and `RAG_GATEWAY_ENCRYPTION_SECRET_KEY` below. Kept only for backward compatibility; no longer read by AdminJwtService or UpstreamApiKeyEncryptor. |
+| `RAG_ADMIN_AUTH_JWT_SECRET` | `local-dev-admin-jwt-secret-change-me-32chars` (dev default) | Admin JWT HS256 signing secret. At least 32 UTF-8 characters. Must be distinct from the encryption secret in production. |
+| `RAG_GATEWAY_ENCRYPTION_SECRET_KEY` | `local-dev-aes-key-secret-change-me-32chars` (dev default) | AES-256-GCM encryption master key for upstream provider API keys. At least 32 UTF-8 characters. Must be distinct from the JWT secret in production. To migrate from the deprecated shared secret, copy your old `RAG_GATEWAY_SECRET_KEY` value here. |
 | `FILE_STORAGE_TYPE` | `local` | Storage backend type (`local` or `object`) |
 | `FILE_STORAGE_LOCAL_PATH` | `./data/uploads` | Upload storage path |
 | `FILE_STORAGE_OBJECT_ENDPOINT` | (none) | S3-compatible object storage endpoint |
@@ -920,10 +922,12 @@ Inside Docker Compose, the backend service automatically uses `postgres` and `re
 
 - `.env.example` contains only safe local development placeholders. It must not contain real API keys, provider keys, or production secrets.
 - The `.env` file is gitignored. Deployment secrets should be provided via environment or deployment secret management.
-- `RAG_GATEWAY_SECRET_KEY` serves dual roles: it is the AES-256-GCM encryption master key for upstream provider API keys, AND the admin JWT HS256 signing key. These two uses share the same secret in the current architecture. A future migration may split these into separate keys without changing the encryption payload format.
-- The dev profile default is `local-dev-hs256-secret-change-me-32chars`, a non-production placeholder of at least 32 UTF-8 characters that satisfies both AES key derivation and Admin JWT HS256 signing for local development.
+- `RAG_GATEWAY_SECRET_KEY` is **deprecated**. It is no longer the primary source of truth for either admin JWT signing or upstream API key encryption. Use `RAG_ADMIN_AUTH_JWT_SECRET` and `RAG_GATEWAY_ENCRYPTION_SECRET_KEY` instead.
+- `RAG_ADMIN_AUTH_JWT_SECRET` is the HS256 signing key for admin JWTs. Rotating it invalidates existing admin tokens but does not affect stored encrypted provider keys.
+- `RAG_GATEWAY_ENCRYPTION_SECRET_KEY` is the AES-256-GCM master key for upstream provider API keys. Rotating it requires re-entering model config provider keys.
+- The dev profile defaults are distinct non-production placeholders of at least 32 UTF-8 characters suitable for local development.
 - The documented placeholder `<set-a-strong-32-char-secret>` is rejected by the startup guard and must be replaced with a real secret.
-- In production-like profiles (`prod`/`production`), `RAG_GATEWAY_SECRET_KEY` must be non-blank, at least 32 characters, and must not be the known weak placeholder `local-dev-change-me` or the known local placeholder `local-dev-hs256-secret-change-me-32chars`.
+- In production-like profiles (`prod`/`production`), both secrets must be non-blank, at least 32 characters, must not be the known weak placeholder `local-dev-change-me` or the known local placeholders, and **must not be equal**.
 - In non-test profiles without production indicators (e.g. `dev` or no active profile), the guard enforces a minimum of 32 UTF-8 characters. The weak placeholder `local-dev-change-me` (19 characters) is always rejected. The flag `rag.production-guard.allow-weak-local-secret` is deprecated and no longer bypasses this check.
 - Upstream provider API keys are configured through the Admin Model Config UI, encrypted at rest with AES-256-GCM, and never returned in admin list/detail responses.
 - Generated app API keys (`sk-sangui-*`) are shown only once and stored as hashes. The full key is never persisted in plaintext or returned outside creation.
