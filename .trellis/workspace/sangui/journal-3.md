@@ -767,3 +767,74 @@ and KB status update in one short transaction, with storage cleanup on failure.
 ### Next Steps
 
 - None - task complete
+
+
+## Session 79: Retrieval READY filter closeout
+
+**Date**: 2026-06-23
+**Task**: Retrieval READY filter closeout
+**Branch**: `feature/retrieval-ready-filter-ann-baseline`
+
+### Summary
+
+Closed the committed Retrieval READY filter task. The retrieval SQL now enforces READY source documents and consistent embedding/chunk/document boundaries before vector ordering, and the durable specs record that contract for future retrieval changes.
+
+### Main Changes
+
+**Summary**
+Closed the Retrieval READY filter and ANN baseline task after manual testing and commit `0f5715a5`.
+
+**Main modules**
+- Retrieval SQL boundary: `backend/src/main/java/com/sangui/raggateway/retrieval/RetrievalMapper.java`
+- Retrieval tests: `backend/src/test/java/com/sangui/raggateway/retrieval/RetrievalServiceTest.java`
+- SQL contract test: `backend/src/test/java/com/sangui/raggateway/retrieval/RetrievalMapperTest.java`
+- Specs: `.trellis/spec/rag/retrieval-quality.md`, `.trellis/spec/backend/database-guidelines.md`
+
+**What changed**
+- Retrieval now joins source `rag_document` at SQL level and requires `status = 'READY'` before vector ordering.
+- SQL also keeps embedding, chunk, and document duplicated boundary columns consistent: `document_id`, `user_id`, and `knowledge_base_id` must agree.
+- Non-READY document chunks are excluded before thresholding, prompt injection, `hit_chunk_ids`, citations, and `retrieval_evidence`.
+- ANN/HNSW/IVFFlat remains deferred because the task found no approved operator-class, scale, or explain-plan validation baseline.
+- Specs now record READY filtering and duplicated-row consistency as durable retrieval/database contracts.
+
+**Validation passed**
+- `mvn -q "-Dtest=RetrievalMapperTest,RetrievalServiceTest,RagPromptBuilderTest" test`
+- `mvn -q "-Dtest=ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test`
+- `mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test`
+- `mvn -q "-Dtest=RetrievalEvaluationServiceTest,RetrievalEvaluationAdminControllerTest" test`
+- `mvn -q -DskipTests compile`
+- `git diff --check`
+
+**Manual validation**
+- User confirmed manual testing was completed before this record-session closeout.
+
+**Boundaries**
+- No public `/v1/chat/completions` API shape change.
+- No Admin DTO/VO or frontend type change.
+- No migration added.
+- No ANN index added in this task.
+- Full `mvn test` and runtime streaming smoke were not run because the PRD required targeted verification and this change did not modify streaming or unrelated backend paths.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0f5715a5` | (see git log) |
+
+### Testing
+
+- [OK] `mvn -q "-Dtest=RetrievalMapperTest,RetrievalServiceTest,RagPromptBuilderTest" test`
+- [OK] `mvn -q "-Dtest=ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test`
+- [OK] `mvn -q "-Dtest=ApiRequestLogServiceTest,ApiRequestLogAdminControllerTest" test`
+- [OK] `mvn -q "-Dtest=RetrievalEvaluationServiceTest,RetrievalEvaluationAdminControllerTest" test`
+- [OK] `mvn -q -DskipTests compile`
+- [OK] `git diff --check`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

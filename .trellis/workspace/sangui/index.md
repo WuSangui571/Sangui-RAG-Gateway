@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 78
+- **Total Sessions**: 79
 - **Last Active**: 2026-06-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~769 | Active |
+| `journal-3.md` | ~835 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 79 | 2026-06-23 | Retrieval READY filter closeout | `0f5715a5` | `feature/retrieval-ready-filter-ann-baseline` |
 | 78 | 2026-06-23 | Auto retry duplicate chunk cleanup closeout | `6792e469`, `dd9bd217` | `feature/retry-duplicate-chunk-cleanup` |
 | 77 | 2026-06-23 | Upload rollback orphan file cleanup | `afefca17` | `feature/upload-orphan-file-rollback` |
 | 76 | 2026-06-23 | Unify retrieval config runtime source | `b820c2c0` | `feature/retrieval-threshold-single-source` |
