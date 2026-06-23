@@ -1,0 +1,25 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-23-retry-duplicate-chunk-cleanup\\prd.md", "reason": "Acceptance criteria and forbidden scope for review"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary and non-goal review"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Verify retry matrix and reprocessing invariant"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Security review for chunk/content/embedding exposure and hidden fallbacks"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer completion checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Review for duplicate cleanup paths"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "DB invariant and transaction boundary review"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Verify retry errors and safe failure messages"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Review logs for private content, paths, vectors, and secrets"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Test and quality completion checklist"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Review retry/failure behavior for visible failures"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Primary code review target for invariant enforcement"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingTaskService.java", "reason": "Review task state transitions and attempt count semantics"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingWorker.java", "reason": "Review worker retry boundary if touched"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkMapper.java", "reason": "Review chunk insert and cleanup assumptions"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkEmbeddingMapper.java", "reason": "Review embedding insert and cleanup assumptions"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V5__create_knowledge_document_tables.sql", "reason": "Verify no unnecessary migration drift"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V6__create_document_chunk_embedding_table.sql", "reason": "Verify embedding cleanup contract"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V14__create_document_processing_task_table.sql", "reason": "Review task schema assumptions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Primary test review target"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingTaskServiceTest.java", "reason": "Review task tests if changed"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingWorkerTest.java", "reason": "Review worker retry tests if changed"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentAdminControllerTest.java", "reason": "Review admin retry contract if touched"}

@@ -264,6 +264,10 @@ public class DocumentService {
             return;
         }
 
+        clearChunksAndEmbeddings(docId);
+        log.info("Document processing attempt cleanup completed: taskId={}, docId={}, attempt={}",
+                taskId, docId, task.getAttemptCount());
+
         byte[] fileContent;
         try (InputStream storageStream = fileStorageService.read(doc.getStoragePath())) {
             fileContent = storageStream.readAllBytes();

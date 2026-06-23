@@ -33,6 +33,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -918,6 +919,116 @@ class DocumentServiceTest {
         verify(taskService).cancelTask(20L);
         verify(fileStorageService).delete("knowledge/1/uuid/test.md");
         verify(documentMapper).deleteById(10L);
+    }
+
+    @Test
+    void shouldClearStaleChunksBeforeRetryInsertsNewChunks() throws Exception {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        doc.setStatus(DocumentStatus.UPLOADED.name());
+        doc.setStoragePath("knowledge/1/uuid/test.md");
+        when(documentMapper.selectById(10L)).thenReturn(doc);
+
+        byte[] fileContent = "Hello World".getBytes(StandardCharsets.UTF_8);
+        when(fileStorageService.read("knowledge/1/uuid/test.md"))
+                .thenReturn(new ByteArrayInputStream(fileContent));
+
+        when(documentParser.supports(any(), eq("test.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("Hello World", "markdown"));
+        when(textChunker.chunk(anyString())).thenReturn(List.of("Hello World"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(null);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentProcessingTaskEntity task = createTaskEntity(20L, 10L,
+                DocumentProcessingTaskStatus.PROCESSING.name());
+        task.setAttemptCount(2);
+
+        documentService.processDocument(task);
+
+        InOrder inOrder = inOrder(documentChunkEmbeddingMapper, documentChunkMapper);
+        inOrder.verify(documentChunkEmbeddingMapper).delete(any(LambdaQueryWrapper.class));
+        inOrder.verify(documentChunkMapper).delete(any(LambdaQueryWrapper.class));
+        inOrder.verify(documentChunkMapper).insertChunk(any(DocumentChunkEntity.class));
+    }
+
+    @Test
+    void shouldClearStaleEmbeddingsBeforeRetryInsertsNewEmbeddings() throws Exception {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        doc.setStatus(DocumentStatus.UPLOADED.name());
+        doc.setStoragePath("knowledge/1/uuid/test.md");
+        when(documentMapper.selectById(10L)).thenReturn(doc);
+
+        byte[] fileContent = "Hello World".getBytes(StandardCharsets.UTF_8);
+        when(fileStorageService.read("knowledge/1/uuid/test.md"))
+                .thenReturn(new ByteArrayInputStream(fileContent));
+
+        when(documentParser.supports(any(), eq("test.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("Hello World", "markdown"));
+        when(textChunker.chunk(anyString())).thenReturn(List.of("Hello World"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        ModelConfigEntity config = createModelConfig(10L, 100L, "text-embedding-3-small", 2);
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("decrypted-key");
+
+        DocumentChunkEntity chunk = createChunk(5L, 100L, 1L, 10L, 0);
+        when(documentChunkMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(chunk));
+
+        when(embeddingClient.embed(anyString(), anyString(), anyString(), anyList(), anyInt()))
+                .thenReturn(List.of(new float[]{0.1f, 0.2f}));
+
+        DocumentProcessingTaskEntity task = createTaskEntity(20L, 10L,
+                DocumentProcessingTaskStatus.PROCESSING.name());
+        task.setAttemptCount(2);
+
+        documentService.processDocument(task);
+
+        InOrder inOrder = inOrder(documentChunkEmbeddingMapper);
+        inOrder.verify(documentChunkEmbeddingMapper).delete(any(LambdaQueryWrapper.class));
+        inOrder.verify(documentChunkEmbeddingMapper).insertEmbedding(any(DocumentChunkEmbeddingEntity.class));
+    }
+
+    @Test
+    void shouldNotCleanupOnRetryPendingTask() {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        doc.setStatus(DocumentStatus.UPLOADED.name());
+        when(documentMapper.selectOne(any())).thenReturn(doc);
+
+        DocumentProcessingTaskEntity task = createTaskEntity(20L, 10L,
+                DocumentProcessingTaskStatus.PENDING.name());
+        when(taskService.findByDocumentId(10L)).thenReturn(task);
+
+        documentService.retryDocument(100L, 10L);
+
+        verify(documentChunkEmbeddingMapper, never()).delete(any(LambdaQueryWrapper.class));
+        verify(documentChunkMapper, never()).delete(any(LambdaQueryWrapper.class));
+        verify(taskService, never()).resetForRetry(anyLong());
+    }
+
+    @Test
+    void shouldNotCleanupOnRetryRetryableTask() {
+        DocumentEntity doc = createDoc(10L, 100L, 1L, "test.md");
+        doc.setStatus(DocumentStatus.FAILED.name());
+        when(documentMapper.selectOne(any())).thenReturn(doc);
+
+        DocumentProcessingTaskEntity task = createTaskEntity(20L, 10L,
+                DocumentProcessingTaskStatus.RETRYABLE.name());
+        when(taskService.findByDocumentId(10L)).thenReturn(task);
+
+        documentService.retryDocument(100L, 10L);
+
+        verify(documentChunkEmbeddingMapper, never()).delete(any(LambdaQueryWrapper.class));
+        verify(documentChunkMapper, never()).delete(any(LambdaQueryWrapper.class));
+        verify(taskService, never()).resetForRetry(anyLong());
     }
 
     private DocumentProcessingTaskEntity createTaskEntity(Long id, Long documentId, String status) {

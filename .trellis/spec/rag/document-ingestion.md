@@ -142,6 +142,18 @@ Current hard rules:
 - Retry/reprocessing must clear old chunks and embeddings before producing new active rows.
 - Task and document errors must be bounded and admin-safe. Do not persist provider raw bodies, chunk content, stack traces, storage absolute paths, credentials, vectors, prompts, or uploaded file content.
 
+### Retry/Reprocessing Matrix
+
+| Trigger | Cleanup boundary | Behavior |
+|---|---|---|
+| Automatic worker claim (PENDING or RETRYABLE → PROCESSING) | `DocumentService.processDocument(...)` calls `clearChunksAndEmbeddings(documentId)` at attempt start, before parseDocumentContent writes new chunks | Removes any stale chunks/embeddings from prior failed attempts. On the first attempt, the same boundary performs empty deletes so there is one processing path. Cleanup failure is visible and propagated to the worker. |
+| Explicit admin retry (FAILED task) | `DocumentService.retryDocument(...)` calls `clearChunksAndEmbeddings(documentId)`, resets document to `UPLOADED`, resets task to `PENDING`, sets KB to `PROCESSING` | Same as before this task; unchanged. |
+| Explicit admin retry (PENDING / RETRYABLE task) | No cleanup; no state mutation | Returns current document idempotently. |
+| Explicit admin retry (PROCESSING task) | Rejected `409 DOCUMENT_PROCESSING` | No cleanup or mutation. |
+| Explicit admin retry (SUCCEEDED + document READY) | Rejected `400 INVALID_REQUEST` | No cleanup or reprocessing. Replacement/reprocess of successful documents is a future contract. |
+
+`clearChunksAndEmbeddings(documentId)` deletes embeddings then chunks for the given document. This is not wrapped in a catch block in either path; cleanup failures are surfaced as exceptions and cause the attempt (or explicit retry) to fail visibly.
+
 Future roadmap only:
 
 - batch embedding

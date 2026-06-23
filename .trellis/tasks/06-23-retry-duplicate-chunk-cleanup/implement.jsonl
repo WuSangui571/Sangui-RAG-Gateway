@@ -1,0 +1,25 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\tasks\\06-23-retry-duplicate-chunk-cleanup\\prd.md", "reason": "Task PRD with retry invariant, scope, tests, and boundaries"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary and document ingestion product scope"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Document ingestion retry, reprocessing, chunk and embedding lifecycle contract"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Tenant, secret, evidence, and storage lifecycle safety boundaries"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer ingestion and DB state flow checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Avoid duplicate cleanup/retry logic"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Document/chunk/embedding/task table contracts and transaction boundaries"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin retry error matrix and document processing failure behavior"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe document processing and storage lifecycle logs"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend tests and quality rules for ingestion"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Embedding failure visibility and no hidden fallback guidance"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Core processDocument retry cleanup, explicit retry, chunk and embedding persistence"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingTaskService.java", "reason": "Task claim, RETRYABLE scheduling, explicit retry reset behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingWorker.java", "reason": "Worker claim and processNext orchestration"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkMapper.java", "reason": "Chunk insert and unique document chunk index contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkEmbeddingMapper.java", "reason": "Embedding insert and chunk_id uniqueness contract"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V5__create_knowledge_document_tables.sql", "reason": "Existing chunk table indexes and uniqueness"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V6__create_document_chunk_embedding_table.sql", "reason": "Existing embedding table indexes and uniqueness"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V14__create_document_processing_task_table.sql", "reason": "One active task per document and attempt fields"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Focused tests for partial chunk and embedding retry cleanup"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingTaskServiceTest.java", "reason": "Task state tests for retry reset and claim semantics"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingWorkerTest.java", "reason": "Worker orchestration tests if cleanup boundary moves to worker"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentAdminControllerTest.java", "reason": "Admin retry endpoint behavior remains unchanged"}
