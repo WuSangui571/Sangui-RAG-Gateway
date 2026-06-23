@@ -1,0 +1,33 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/tasks/06-23-retrieval-threshold-single-source/prd.md", "reason": "Confirmed PRD, scope boundaries, acceptance criteria, validation matrix, and handoff plan"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project-level RAG gateway boundary and implemented retrieval/app config contracts"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "rag_app retrieval columns, DB defaults, tenant-safe retrieval SQL, migration rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Gateway/admin error shapes and retrieval-related error matrix"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Retrieval/request-log safe fields and forbidden prompt/chunk/key data"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required backend tests for retrieval, prompt, gateway, and app config work"}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "Primary retrieval contract for topK, threshold, context limits, no-hit, and evidence"}
+{"file": ".trellis/spec/rag/prompt-context-policy.md", "reason": "Prompt context/no-hit behavior must remain bounded and STRICT_RAG-compatible"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Tenant, prompt, evidence, and secret-safety boundaries for retrieval changes"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Gateway retrieval call ordering and visible failure boundary before upstream"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer flow for retrieval config across DB, service, API, frontend, docs"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid repeated constants and duplicated retrieval config resolution"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend AppVO/API types if retrieval config fields are exposed"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Frontend must not store server config/defaults as local source of truth"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend validation/build requirements if AppConfigPage is touched"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "App creation and app-domain retrieval config resolver likely belong here"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppEntity.java", "reason": "rag_app retrieval fields already mapped here"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/vo/AppVO.java", "reason": "May need retrieval config fields if admin API exposes them"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Current gateway hardcoded fallback defaults must be removed"}
+{"file": "backend/src/main/java/com/sangui/raggateway/retrieval/evaluation/RetrievalEvaluationService.java", "reason": "Current evaluation hardcoded fallback defaults must be removed"}
+{"file": "backend/src/main/java/com/sangui/raggateway/retrieval/RetrievalService.java", "reason": "Existing retrieve signature/evidence behavior receives effective config"}
+{"file": "backend/src/main/resources/application.yml", "reason": "Current retrieval default-similarity-threshold fallback conflicts with env/docs/DB"}
+{"file": "backend/src/main/resources/db/migration/V7__add_app_default_knowledge_base.sql", "reason": "Original rag_app retrieval defaults and no_hit_policy columns"}
+{"file": "backend/src/main/resources/db/migration/V8__lower_default_retrieval_threshold.sql", "reason": "Threshold default/data repair to 0.300"}
+{"file": "frontend/src/types/app.ts", "reason": "Frontend AppVO currently lacks retrieval config fields"}
+{"file": "frontend/src/pages/apps/AppConfigPage.tsx", "reason": "Current app config page has no retrieval settings despite README wording"}
+{"file": "frontend/src/api/apps.ts", "reason": "Typed API boundary for any retrieval config endpoint"}
+{"file": "README.md", "reason": "Documented env defaults and app retrieval UI claims must align with implementation"}
+{"file": ".env.example", "reason": "Documented retrieval env defaults currently 0.300 baseline"}
+{"file": "deploy/docker-compose.yml", "reason": "Compose passes retrieval env defaults to backend"}

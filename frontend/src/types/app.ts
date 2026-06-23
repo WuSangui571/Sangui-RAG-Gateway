@@ -9,6 +9,12 @@ export interface AppVO {
   status: AppStatus
   default_model_config_id: number | null
   default_knowledge_base_id: number | null
+  retrieval_top_k: number | null
+  retrieval_similarity_threshold: number | null
+  retrieval_max_context_chunks: number | null
+  retrieval_max_context_chars: number | null
+  retrieval_max_single_chunk_chars: number | null
+  no_hit_policy: 'STRICT_RAG' | string | null
   request_log_output_capture_enabled: boolean
   created_at: string
   updated_at: string

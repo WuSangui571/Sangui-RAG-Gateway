@@ -105,7 +105,7 @@ After starting the full stack, configure the gateway through the admin console f
 
 2. **Create a knowledge base**: create a KB with an embedding model name and dimension (e.g. `text-embedding-3-small` / 1536). Upload a `.txt` or `.md` file, then wait for the document status to reach `READY`.
 
-3. **Create an app**: give it a name, then bind the model config and knowledge base through the app detail page. Configure retrieval settings (top_k, similarity threshold, context limits) via the app detail UI.
+3. **Create an app**: give it a name, then bind the model config and knowledge base through the app detail page. Retrieval configuration (top_k, similarity threshold, context limits) is initialized with documented defaults and persisted per app. Admin UI-based retrieval config editing is planned for a future release.
 
 4. **Create an API key**: under the app, generate a key. Copy the full key immediately — it will not be shown again.
 

@@ -3,6 +3,7 @@ package com.sangui.raggateway.app;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.apikey.ApiKeyEntity;
 import com.sangui.raggateway.apikey.ApiKeyService;
+import com.sangui.raggateway.app.config.AppRetrievalProperties;
 import com.sangui.raggateway.app.vo.AppReadinessCheckVO;
 import com.sangui.raggateway.app.vo.AppReadinessVO;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
@@ -44,10 +45,11 @@ class AppServiceTest {
     private ApiKeyService apiKeyService;
 
     private AppService appService;
+    private final AppRetrievalProperties retrievalProperties = new AppRetrievalProperties();
 
     @BeforeEach
     void setUp() {
-        appService = new AppService(appMapper, modelConfigService, knowledgeBaseService, apiKeyService);
+        appService = new AppService(appMapper, modelConfigService, knowledgeBaseService, apiKeyService, retrievalProperties);
         lenient().when(modelConfigService.isChatCapable(any())).thenReturn(true);
     }
 
@@ -277,6 +279,12 @@ class AppServiceTest {
         assertThat(created.getName()).isEqualTo("Test App");
         assertThat(created.getUserId()).isEqualTo(100L);
         assertThat(created.getStatus()).isEqualTo("ENABLED");
+        assertThat(created.getRetrievalTopK()).isEqualTo(5);
+        assertThat(created.getRetrievalSimilarityThreshold()).isEqualTo(0.300);
+        assertThat(created.getRetrievalMaxContextChunks()).isEqualTo(5);
+        assertThat(created.getRetrievalMaxContextChars()).isEqualTo(12000);
+        assertThat(created.getRetrievalMaxSingleChunkChars()).isEqualTo(3000);
+        assertThat(created.getNoHitPolicy()).isEqualTo("STRICT_RAG");
         assertThat(created.getCreatedAt()).isNotNull();
         assertThat(created.getUpdatedAt()).isNotNull();
     }
@@ -485,6 +493,12 @@ class AppServiceTest {
         verify(appMapper).insert(captor.capture());
         AppEntity created = captor.getValue();
         assertThat(created.getRequestLogOutputCaptureEnabled()).isNull();
+        assertThat(created.getRetrievalTopK()).isEqualTo(5);
+        assertThat(created.getRetrievalSimilarityThreshold()).isEqualTo(0.300);
+        assertThat(created.getRetrievalMaxContextChunks()).isEqualTo(5);
+        assertThat(created.getRetrievalMaxContextChars()).isEqualTo(12000);
+        assertThat(created.getRetrievalMaxSingleChunkChars()).isEqualTo(3000);
+        assertThat(created.getNoHitPolicy()).isEqualTo("STRICT_RAG");
     }
 
     @Test
@@ -537,6 +551,111 @@ class AppServiceTest {
         AppEntity result = appService.updateOutputCapture(999L, true, 100L);
 
         assertThat(result).isNull();
+    }
+
+    // ---- Retrieve Config ----
+
+    @Test
+    void shouldResolveRetrievalConfigFromValidApp() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(3);
+        app.setRetrievalSimilarityThreshold(0.620);
+        app.setRetrievalMaxContextChunks(2);
+        app.setRetrievalMaxContextChars(4096);
+        app.setRetrievalMaxSingleChunkChars(512);
+
+        AppRetrievalConfig config = appService.resolveRetrievalConfig(app);
+
+        assertThat(config.getTopK()).isEqualTo(3);
+        assertThat(config.getSimilarityThreshold()).isEqualTo(0.620);
+        assertThat(config.getMaxContextChunks()).isEqualTo(2);
+        assertThat(config.getMaxContextChars()).isEqualTo(4096);
+        assertThat(config.getMaxSingleChunkChars()).isEqualTo(512);
+    }
+
+    @Test
+    void shouldResolveRetrievalConfigWithDefaultValues() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.300);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+
+        AppRetrievalConfig config = appService.resolveRetrievalConfig(app);
+
+        assertThat(config.getTopK()).isEqualTo(5);
+        assertThat(config.getSimilarityThreshold()).isEqualTo(0.300);
+        assertThat(config.getMaxContextChunks()).isEqualTo(5);
+        assertThat(config.getMaxContextChars()).isEqualTo(12000);
+        assertThat(config.getMaxSingleChunkChars()).isEqualTo(3000);
+    }
+
+    @Test
+    void shouldRejectNullAppForRetrievalConfig() {
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("app must not be null");
+    }
+
+    @Test
+    void shouldRejectNullRetrievalTopK() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalSimilarityThreshold(0.3);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("retrievalTopK must not be null");
+    }
+
+    @Test
+    void shouldRejectNullRetrievalSimilarityThreshold() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("retrievalSimilarityThreshold must not be null");
+    }
+
+    @Test
+    void shouldRejectNonPositiveRetrievalTopK() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(0);
+        app.setRetrievalSimilarityThreshold(0.3);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("retrievalTopK must be positive");
+    }
+
+    @Test
+    void shouldRejectOutOfRangeThreshold() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(1.5);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("retrievalSimilarityThreshold must be in [0.0, 1.0]");
     }
 
     // ---- Readiness ----

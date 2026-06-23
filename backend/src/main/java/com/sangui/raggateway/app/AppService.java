@@ -3,6 +3,7 @@ package com.sangui.raggateway.app;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.apikey.ApiKeyEntity;
 import com.sangui.raggateway.apikey.ApiKeyService;
+import com.sangui.raggateway.app.config.AppRetrievalProperties;
 import com.sangui.raggateway.app.vo.AppReadinessCheckVO;
 import com.sangui.raggateway.app.vo.AppReadinessVO;
 import com.sangui.raggateway.model.ModelConfigEntity;
@@ -11,6 +12,8 @@ import com.sangui.raggateway.model.ModelConfigStatus;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.knowledge.KnowledgeBaseService;
 import com.sangui.raggateway.knowledge.KnowledgeBaseStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,17 +28,22 @@ import java.util.Map;
 @Profile("!test")
 public class AppService {
 
+    private static final Logger log = LoggerFactory.getLogger(AppService.class);
+
     private final AppMapper appMapper;
     private final ModelConfigService modelConfigService;
     private final KnowledgeBaseService knowledgeBaseService;
     private final ApiKeyService apiKeyService;
+    private final AppRetrievalProperties retrievalProperties;
 
     public AppService(AppMapper appMapper, ModelConfigService modelConfigService,
-                      KnowledgeBaseService knowledgeBaseService, ApiKeyService apiKeyService) {
+                      KnowledgeBaseService knowledgeBaseService, ApiKeyService apiKeyService,
+                      AppRetrievalProperties retrievalProperties) {
         this.appMapper = appMapper;
         this.modelConfigService = modelConfigService;
         this.knowledgeBaseService = knowledgeBaseService;
         this.apiKeyService = apiKeyService;
+        this.retrievalProperties = retrievalProperties;
     }
 
     @Transactional
@@ -51,6 +59,12 @@ public class AppService {
         app.setName(name.trim());
         app.setUserId(userId);
         app.setStatus(AppStatus.ENABLED.name());
+        app.setRetrievalTopK(retrievalProperties.getDefaultTopK());
+        app.setRetrievalSimilarityThreshold(retrievalProperties.getDefaultSimilarityThreshold());
+        app.setRetrievalMaxContextChunks(retrievalProperties.getDefaultMaxContextChunks());
+        app.setRetrievalMaxContextChars(retrievalProperties.getDefaultMaxContextChars());
+        app.setRetrievalMaxSingleChunkChars(retrievalProperties.getDefaultMaxSingleChunkChars());
+        app.setNoHitPolicy("STRICT_RAG");
         app.setCreatedAt(LocalDateTime.now());
         app.setUpdatedAt(LocalDateTime.now());
         appMapper.insert(app);
@@ -183,6 +197,18 @@ public class AppService {
             return null;
         }
         return kb;
+    }
+
+    public AppRetrievalConfig resolveRetrievalConfig(AppEntity app) {
+        if (app == null) {
+            throw new IllegalArgumentException("app must not be null");
+        }
+        try {
+            return AppRetrievalConfig.from(app);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid retrieval config for appId={}, reason={}", app.getId(), e.getMessage());
+            throw e;
+        }
     }
 
     public AppReadinessVO assembleReadiness(Long appId, Long userId) {

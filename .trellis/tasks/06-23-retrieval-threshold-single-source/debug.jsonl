@@ -1,0 +1,6 @@
+{"file": ".trellis/tasks/06-23-retrieval-threshold-single-source/prd.md", "reason": "Debug against planned source-of-truth invariant, scope boundaries, and required assertions"}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "Retrieval behavior, threshold, no-hit, and evidence contracts during debugging"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Visible and safe error mapping for invalid retrieval config or gateway failures"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Gateway retrieval config handoff and public error boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/retrieval/evaluation/RetrievalEvaluationService.java", "reason": "Evaluation retrieval config handoff should match gateway source"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "App persisted retrieval config creation/resolution boundary"}

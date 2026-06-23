@@ -34,7 +34,7 @@ rag:
       max-file-size-bytes: ${RAG_DOCUMENT_MAX_FILE_SIZE_BYTES:1048576}
     retrieval:
       default-top-k: ${RAG_RETRIEVAL_DEFAULT_TOP_K:5}
-      default-similarity-threshold: ${RAG_RETRIEVAL_DEFAULT_SIMILARITY_THRESHOLD:0.700}
+      default-similarity-threshold: ${RAG_RETRIEVAL_DEFAULT_SIMILARITY_THRESHOLD:0.300}
       default-max-context-chunks: ${RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS:5}
       default-max-context-chars: ${RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHARS:12000}
       default-max-single-chunk-chars: ${RAG_RETRIEVAL_DEFAULT_MAX_SINGLE_CHUNK_CHARS:3000}

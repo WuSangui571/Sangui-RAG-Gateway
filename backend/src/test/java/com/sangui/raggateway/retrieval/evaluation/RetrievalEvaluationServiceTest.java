@@ -2,6 +2,7 @@ package com.sangui.raggateway.retrieval.evaluation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangui.raggateway.app.AppEntity;
+import com.sangui.raggateway.app.AppRetrievalConfig;
 import com.sangui.raggateway.app.AppService;
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
@@ -45,6 +46,11 @@ class RetrievalEvaluationServiceTest {
         service = new RetrievalEvaluationService(appService, retrievalService, new ObjectMapper());
     }
 
+    private void stubResolveRetrievalConfig() {
+        when(appService.resolveRetrievalConfig(any(AppEntity.class)))
+                .thenAnswer(inv -> AppRetrievalConfig.from(inv.getArgument(0)));
+    }
+
     private AppEntity createApp() {
         AppEntity app = new AppEntity();
         app.setId(APP_ID);
@@ -85,6 +91,7 @@ class RetrievalEvaluationServiceTest {
     void shouldComputeMetricsForMatchingCase() {
         when(appService.findByIdAndUserId(APP_ID, USER_ID)).thenReturn(createApp());
         when(appService.resolveDefaultKnowledgeBase(any())).thenReturn(createReadyKb());
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Sangui gateway default retrieval top k"), any(), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt()))
                 .thenReturn(createHitResult(List.of(8L), List.of(4L), "handbook.md", 0.85));
@@ -107,6 +114,7 @@ class RetrievalEvaluationServiceTest {
     void shouldReportNoHitsCaseAsHitWhenRetrievalEmpty() {
         when(appService.findByIdAndUserId(APP_ID, USER_ID)).thenReturn(createApp());
         when(appService.resolveDefaultKnowledgeBase(any())).thenReturn(createReadyKb());
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(anyString(), any(), anyInt(), anyDouble(), anyInt(), anyInt(), anyInt()))
                 .thenReturn(new RetrievalResult(List.of(), List.of(), List.of(), null, true, 50L));
 
@@ -122,6 +130,7 @@ class RetrievalEvaluationServiceTest {
     void shouldReportErrorCodeWhenRetrievalThrows() {
         when(appService.findByIdAndUserId(APP_ID, USER_ID)).thenReturn(createApp());
         when(appService.resolveDefaultKnowledgeBase(any())).thenReturn(createReadyKb());
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(anyString(), any(), anyInt(), anyDouble(), anyInt(), anyInt(), anyInt()))
                 .thenThrow(new RuntimeException("embedding down"));
 
@@ -167,6 +176,20 @@ class RetrievalEvaluationServiceTest {
     }
 
     @Test
+    void shouldRejectInvalidRetrievalConfig() {
+        AppEntity app = createApp();
+        when(appService.findByIdAndUserId(APP_ID, USER_ID)).thenReturn(app);
+        when(appService.resolveDefaultKnowledgeBase(any())).thenReturn(createReadyKb());
+        when(appService.resolveRetrievalConfig(app))
+                .thenThrow(new IllegalArgumentException("retrievalTopK must be positive, got: 0"));
+
+        assertThatThrownBy(() -> service.run(APP_ID, USER_ID, List.of("case-001"), 1))
+                .isInstanceOf(BusinessException.class)
+                .matches(e -> "INVALID_REQUEST".equals(((BusinessException) e).getCode()))
+                .hasMessageContaining("App retrieval config is invalid");
+    }
+
+    @Test
     void shouldValidateLimitBounds() {
         assertThatThrownBy(() -> service.validateLimit(0))
                 .isInstanceOf(BusinessException.class);
@@ -180,6 +203,7 @@ class RetrievalEvaluationServiceTest {
     void shouldNotExposeForbiddenFieldsInCaseResult() {
         when(appService.findByIdAndUserId(APP_ID, USER_ID)).thenReturn(createApp());
         when(appService.resolveDefaultKnowledgeBase(any())).thenReturn(createReadyKb());
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(anyString(), any(), anyInt(), anyDouble(), anyInt(), anyInt(), anyInt()))
                 .thenReturn(createHitResult(List.of(8L), List.of(4L), "handbook.md", 0.85));
 

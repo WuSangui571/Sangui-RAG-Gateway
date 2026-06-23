@@ -69,6 +69,19 @@ max_single_chunk_tokens = 800
 
 If the implementation currently uses lower recall-first thresholds or character-based equivalents, document the choice, tests, and conversion explicitly. The hard requirement is that context is bounded and filtered; changing default values must be handled as an implementation task with matching tests.
 
+Current implemented baseline uses app-persisted character controls for the runtime retrieval pipeline:
+
+```text
+retrieval_top_k = 5
+retrieval_similarity_threshold = 0.300
+retrieval_max_context_chunks = 5
+retrieval_max_context_chars = 12000
+retrieval_max_single_chunk_chars = 3000
+no_hit_policy = STRICT_RAG
+```
+
+`ChatCompletionGatewayService` and `RetrievalEvaluationService` must receive these values through `AppService.resolveRetrievalConfig(AppEntity)` or an equivalent app-domain resolver. They must not carry local numeric fallback literals for topK, threshold, max context chunks, max context chars, or max single chunk chars.
+
 ## 4. Contracts
 
 | Contract | Required behavior |

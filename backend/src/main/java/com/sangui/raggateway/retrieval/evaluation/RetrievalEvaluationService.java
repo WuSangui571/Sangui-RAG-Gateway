@@ -2,6 +2,7 @@ package com.sangui.raggateway.retrieval.evaluation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangui.raggateway.app.AppEntity;
+import com.sangui.raggateway.app.AppRetrievalConfig;
 import com.sangui.raggateway.app.AppService;
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
@@ -63,15 +64,20 @@ public class RetrievalEvaluationService {
                     "Evaluation sample set is empty", HttpStatus.BAD_REQUEST);
         }
 
-        int topK = app.getRetrievalTopK() != null ? app.getRetrievalTopK() : 5;
-        double threshold = app.getRetrievalSimilarityThreshold() != null
-                ? app.getRetrievalSimilarityThreshold() : 0.300;
-        int maxChunks = app.getRetrievalMaxContextChunks() != null
-                ? app.getRetrievalMaxContextChunks() : 5;
-        int maxChars = app.getRetrievalMaxContextChars() != null
-                ? app.getRetrievalMaxContextChars() : 12000;
-        int maxSingleChars = app.getRetrievalMaxSingleChunkChars() != null
-                ? app.getRetrievalMaxSingleChunkChars() : 3000;
+        AppRetrievalConfig config;
+        try {
+            config = appService.resolveRetrievalConfig(app);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid retrieval config for appId={}, reason={}", app.getId(), e.getMessage());
+            throw new BusinessException("INVALID_REQUEST",
+                    "App retrieval config is invalid: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
+        int topK = config.getTopK();
+        double threshold = config.getSimilarityThreshold();
+        int maxChunks = config.getMaxContextChunks();
+        int maxChars = config.getMaxContextChars();
+        int maxSingleChars = config.getMaxSingleChunkChars();
 
         List<RetrievalEvaluationCaseResult> caseResults = new ArrayList<>(selected.size());
         int hitCount = 0;

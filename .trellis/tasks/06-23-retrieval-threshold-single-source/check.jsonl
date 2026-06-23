@@ -1,0 +1,30 @@
+{"file": ".trellis/tasks/06-23-retrieval-threshold-single-source/prd.md", "reason": "Review implementation against planned scope, non-goals, tests, and self-check criteria"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify docs/spec/default values and product boundary stay aligned"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Check DB/default/source-of-truth changes against schema and migration contracts"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Ensure invalid config errors are visible and safe without leaking internals"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Verify retrieval evidence and logs remain metadata-only"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Validate test coverage and no forbidden backend patterns"}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "Review final behavior against retrieval contracts and Good/Base/Bad cases"}
+{"file": ".trellis/spec/rag/prompt-context-policy.md", "reason": "Verify no prompt/no-hit regression from config source changes"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Security review for logs/evidence/API fields and tenant boundaries"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Check no hidden fallback/pass-through behavior is introduced"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer verification checklist for API/DB/frontend/docs alignment"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Check no second source of truth or duplicated defaults remain"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify frontend types match backend DTO/VO if frontend touched"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Check retrieval settings UI state stays server-derived if implemented"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Review frontend tests/typecheck/build requirements if touched"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "Verify app persisted config is the only runtime source"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppEntity.java", "reason": "Check entity fields align with DB/AppVO/frontend"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/vo/AppVO.java", "reason": "Verify AppVO does not omit exposed retrieval config fields"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Confirm retrieval config is resolved once and passed exactly"}
+{"file": "backend/src/main/java/com/sangui/raggateway/retrieval/evaluation/RetrievalEvaluationService.java", "reason": "Confirm evaluation uses same app retrieval config source"}
+{"file": "backend/src/main/java/com/sangui/raggateway/retrieval/RetrievalService.java", "reason": "Ensure RetrievalService remains retrieval logic, not app-default resolver"}
+{"file": "backend/src/main/resources/application.yml", "reason": "Verify YAML/env fallback aligns if defaults remain for initialization"}
+{"file": "backend/src/main/resources/db/migration/V7__add_app_default_knowledge_base.sql", "reason": "Confirm migration history/default semantics are documented and not misused"}
+{"file": "backend/src/main/resources/db/migration/V8__lower_default_retrieval_threshold.sql", "reason": "Ensure chosen default aligns with README/env/spec/tests"}
+{"file": "frontend/src/types/app.ts", "reason": "Check frontend type alignment if API exposes retrieval config"}
+{"file": "frontend/src/pages/apps/AppConfigPage.tsx", "reason": "Ensure no frontend-only retrieval defaults if page touched"}
+{"file": "frontend/src/api/apps.ts", "reason": "Verify typed client contract matches backend if endpoint added"}
+{"file": "README.md", "reason": "Check README does not claim unsupported UI/config behavior"}
+{"file": ".env.example", "reason": "Verify env defaults stay aligned with YAML/docs/DB"}
+{"file": "deploy/docker-compose.yml", "reason": "Verify deploy env contract remains aligned"}

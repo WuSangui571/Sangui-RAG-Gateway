@@ -346,9 +346,12 @@ Retrieval defaults:
 ```text
 top_k = 5
 similarity_threshold = 0.30
-max_context_tokens = 3000
-max_single_chunk_tokens = 800
+max_context_chars = 12000
+max_single_chunk_chars = 3000
+no_hit_policy = STRICT_RAG
 ```
+
+Implemented app rows store these defaults in `rag_app` retrieval columns. `application.yml`, `.env.example`, `deploy/docker-compose.yml`, and DB migration defaults are app creation/bootstrap inputs only; runtime gateway and evaluation retrieval must resolve from the persisted app row instead of local service fallback literals.
 
 Vector retrieval SQL must include tenant and knowledge-base constraints.
 

@@ -2,6 +2,7 @@ package com.sangui.raggateway.gateway.completion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangui.raggateway.app.AppEntity;
+import com.sangui.raggateway.app.AppRetrievalConfig;
 import com.sangui.raggateway.app.AppService;
 import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
@@ -341,19 +342,21 @@ public class ChatCompletionGatewayService {
                     ERR_CODE_INVALID_REQUEST, HttpStatus.BAD_REQUEST);
         }
 
-        int topK = app.getRetrievalTopK() != null ? app.getRetrievalTopK() : 5;
-        double threshold = app.getRetrievalSimilarityThreshold() != null
-                ? app.getRetrievalSimilarityThreshold() : 0.300;
-        int maxChunks = app.getRetrievalMaxContextChunks() != null
-                ? app.getRetrievalMaxContextChunks() : 5;
-        int maxChars = app.getRetrievalMaxContextChars() != null
-                ? app.getRetrievalMaxContextChars() : 12000;
-        int maxSingleChars = app.getRetrievalMaxSingleChunkChars() != null
-                ? app.getRetrievalMaxSingleChunkChars() : 3000;
+        AppRetrievalConfig config;
+        try {
+            config = appService.resolveRetrievalConfig(app);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid retrieval config for appId={}, reason={}", app.getId(), e.getMessage());
+            throw new GatewayException(ERR_MESSAGE_CONFIG_NOT_READY, ERR_TYPE,
+                    ERR_CODE_MODEL_CONFIG_NOT_READY, HttpStatus.CONFLICT);
+        }
 
         try {
             return retrievalService.retrieve(
-                    userMessage, kb, topK, threshold, maxChunks, maxChars, maxSingleChars);
+                    userMessage, kb,
+                    config.getTopK(), config.getSimilarityThreshold(),
+                    config.getMaxContextChunks(), config.getMaxContextChars(),
+                    config.getMaxSingleChunkChars());
         } catch (EmbeddingException e) {
             log.warn("Embedding failed for appId={} kbId={}", app.getId(), kb.getId());
             throw new GatewayException("Embedding failed for retrieval",

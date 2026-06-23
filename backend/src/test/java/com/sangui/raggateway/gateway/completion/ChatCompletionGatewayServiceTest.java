@@ -2,6 +2,7 @@ package com.sangui.raggateway.gateway.completion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangui.raggateway.app.AppEntity;
+import com.sangui.raggateway.app.AppRetrievalConfig;
 import com.sangui.raggateway.app.AppService;
 import com.sangui.raggateway.common.exception.GatewayException;
 import com.sangui.raggateway.common.security.GatewayRequestContext;
@@ -155,6 +156,11 @@ class ChatCompletionGatewayServiceTest {
         return new RetrievalResult(List.of(chunk), List.of(1L), List.of(citation), evidence, false, 50L);
     }
 
+    private void stubResolveRetrievalConfig() {
+        when(appService.resolveRetrievalConfig(any(AppEntity.class)))
+                .thenAnswer(inv -> AppRetrievalConfig.from(inv.getArgument(0)));
+    }
+
     @Test
     void shouldReturnValidResponseForGoodCase() {
         AppEntity app = createEnabledApp();
@@ -166,6 +172,7 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
@@ -212,6 +219,7 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
@@ -240,6 +248,7 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
@@ -273,6 +282,7 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
@@ -362,6 +372,28 @@ class ChatCompletionGatewayServiceTest {
     }
 
     @Test
+    void shouldReturn409WhenRetrievalConfigInvalid() {
+        AppEntity app = createEnabledApp();
+        ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+
+        when(appService.findById(APP_ID)).thenReturn(app);
+        when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
+        when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        when(appService.resolveRetrievalConfig(app))
+                .thenThrow(new IllegalArgumentException("retrievalTopK must be positive, got: 0"));
+
+        assertThatThrownBy(() -> service.processChatCompletion(createValidRequest()))
+                .isInstanceOf(GatewayException.class)
+                .matches(e -> {
+                    GatewayException ge = (GatewayException) e;
+                    return ge.getCode().equals("model_config_not_ready")
+                            && ge.getHttpStatus().value() == 409;
+                });
+    }
+
+    @Test
     void shouldPrepareStreamCompletionSuccessfully() {
         AppEntity app = createEnabledApp();
         ModelConfigEntity config = createEnabledModelConfig();
@@ -372,6 +404,7 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
 
@@ -446,6 +479,7 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
 
@@ -618,6 +652,7 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
@@ -644,6 +679,7 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt())).thenReturn(retrievalResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))
@@ -670,6 +706,7 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
         when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
         when(retrievalService.retrieve(eq("Hello"), eq(kb), anyInt(), anyDouble(),
                 anyInt(), anyInt(), anyInt())).thenReturn(noHitResult);
         when(upstreamClient.sendChatCompletion(anyString(), anyString(), any(UpstreamChatCompletionRequest.class)))

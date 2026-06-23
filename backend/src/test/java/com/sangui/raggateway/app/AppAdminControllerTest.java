@@ -98,7 +98,13 @@ class AppAdminControllerTest {
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.user_id").value(100))
                 .andExpect(jsonPath("$.data.name").value("Demo App"))
-                .andExpect(jsonPath("$.data.status").value("ENABLED"));
+                .andExpect(jsonPath("$.data.status").value("ENABLED"))
+                .andExpect(jsonPath("$.data.retrieval_top_k").value(5))
+                .andExpect(jsonPath("$.data.retrieval_similarity_threshold").value(0.300))
+                .andExpect(jsonPath("$.data.retrieval_max_context_chunks").value(5))
+                .andExpect(jsonPath("$.data.retrieval_max_context_chars").value(12000))
+                .andExpect(jsonPath("$.data.retrieval_max_single_chunk_chars").value(3000))
+                .andExpect(jsonPath("$.data.no_hit_policy").value("STRICT_RAG"));
 
         verify(appService).create("Demo App", 100L);
     }
@@ -177,7 +183,13 @@ class AppAdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("OK"))
                 .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.user_id").value(100));
+                .andExpect(jsonPath("$.data.user_id").value(100))
+                .andExpect(jsonPath("$.data.retrieval_top_k").value(5))
+                .andExpect(jsonPath("$.data.retrieval_similarity_threshold").value(0.300))
+                .andExpect(jsonPath("$.data.retrieval_max_context_chunks").value(5))
+                .andExpect(jsonPath("$.data.retrieval_max_context_chars").value(12000))
+                .andExpect(jsonPath("$.data.retrieval_max_single_chunk_chars").value(3000))
+                .andExpect(jsonPath("$.data.no_hit_policy").value("STRICT_RAG"));
     }
 
     @Test
@@ -827,7 +839,13 @@ class AppAdminControllerTest {
         mockMvc.perform(get("/api/admin/apps")
                         )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].request_log_output_capture_enabled").value(false));
+                .andExpect(jsonPath("$.data[0].request_log_output_capture_enabled").value(false))
+                .andExpect(jsonPath("$.data[0].retrieval_top_k").value(5))
+                .andExpect(jsonPath("$.data[0].retrieval_similarity_threshold").value(0.300))
+                .andExpect(jsonPath("$.data[0].retrieval_max_context_chunks").value(5))
+                .andExpect(jsonPath("$.data[0].retrieval_max_context_chars").value(12000))
+                .andExpect(jsonPath("$.data[0].retrieval_max_single_chunk_chars").value(3000))
+                .andExpect(jsonPath("$.data[0].no_hit_policy").value("STRICT_RAG"));
     }
 
     @Test
@@ -940,6 +958,12 @@ class AppAdminControllerTest {
         app.setUserId(userId);
         app.setName("Demo App");
         app.setStatus("ENABLED");
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.300);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRICT_RAG");
         app.setCreatedAt(LocalDateTime.now());
         app.setUpdatedAt(LocalDateTime.now());
         return app;
