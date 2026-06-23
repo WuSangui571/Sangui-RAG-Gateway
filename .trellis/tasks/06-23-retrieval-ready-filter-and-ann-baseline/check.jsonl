@@ -1,0 +1,21 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-23-retrieval-ready-filter-and-ann-baseline\\prd.md", "reason": "Task requirements, scope, acceptance criteria, and validation matrix"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary and RAG gateway contract"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "SQL-level tenant and vector retrieval rules plus current schema contracts"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend retrieval, evidence, and compile checks"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe request-log and retrieval evidence fields"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Retrieval SQL, hit_chunk_ids, citation, and no-hit contracts"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Prompt context and no-hit behavior affected by retrieval outputs"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Document statuses and retry/reprocessing semantics"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Tenant, evidence, and secret-safety boundaries"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Gateway retrieval error and request-log safety context"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer checklist for retrieval SQL to logs/prompt flow"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalMapper.java", "reason": "Primary retrieval SQL that must enforce READY in SQL"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalService.java", "reason": "Retrieval flow, thresholding, hit IDs, citations, evidence ordering"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalServiceTest.java", "reason": "Existing retrieval unit-test patterns and assertions"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentStatus.java", "reason": "Current document status enum matrix"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V5__create_knowledge_document_tables.sql", "reason": "rag_document and rag_document_chunk schema/indexes"}
+{"file": "backend\\src\\main\\resources\\db\\migration\\V6__create_document_chunk_embedding_table.sql", "reason": "embedding table schema/indexes and ANN baseline absence"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayService.java", "reason": "Gateway use of retrieval outputs for hit_chunk_ids and retrieval_evidence"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\evaluation\\RetrievalEvaluationService.java", "reason": "Evaluation path reuses RetrievalService outputs"}

@@ -19,11 +19,16 @@ public interface RetrievalMapper {
                    c.metadata::text   AS metadata,
                    1 - (e.embedding <=> #{queryVector}::vector) AS similarity
             FROM rag_document_chunk_embedding e
-                     JOIN rag_document_chunk c ON c.id = e.chunk_id
-                     LEFT JOIN rag_document d
-                       ON d.id = c.document_id
+                     JOIN rag_document_chunk c
+                       ON c.id = e.chunk_id
+                      AND c.user_id = e.user_id
+                      AND c.knowledge_base_id = e.knowledge_base_id
+                      AND c.document_id = e.document_id
+                     JOIN rag_document d
+                       ON d.id = e.document_id
                       AND d.user_id = e.user_id
                       AND d.knowledge_base_id = e.knowledge_base_id
+                      AND d.status = 'READY'
             WHERE e.user_id = #{userId}
               AND e.knowledge_base_id = #{knowledgeBaseId}
             ORDER BY e.embedding <=> #{queryVector}::vector

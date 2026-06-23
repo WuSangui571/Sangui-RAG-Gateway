@@ -786,7 +786,7 @@ idx_rag_doc_chunk_emb_user_kb on rag_document_chunk_embedding(user_id, knowledge
 idx_rag_doc_chunk_emb_document on rag_document_chunk_embedding(document_id)
 ```
 
-Tenant rule: every vector row duplicates `user_id` and `knowledge_base_id`. Future vector queries must include both `user_id` and `knowledge_base_id` in SQL before ordering by vector distance. Java-only tenant filtering after vector operations is forbidden.
+Tenant rule: every vector row duplicates `user_id` and `knowledge_base_id`. Future vector queries must include both `user_id` and `knowledge_base_id` in SQL before ordering by vector distance. Java-only tenant filtering after vector operations is forbidden. Runtime retrieval must also join the source `rag_document` row and require `status = 'READY'` before vector ordering; chunks from `UPLOADED`, `PARSING`, `PARSED`, `EMBEDDING`, or `FAILED` documents are not valid retrieval hits.
 
 Dimension safety: the number of vectors returned by the embedding provider must equal the number of input chunks. Every vector length must equal `rag_knowledge_base.embedding_dimension`. The model config used for embedding must have same `user_id`, `status=ENABLED`, non-blank `embedding_model`, `embedding_dimension` equal to KB dimension, and a usable encrypted upstream API key. If multiple enabled model configs match the same embedding model and dimension for one user, the latest updated config is the operational default.
 
@@ -832,7 +832,16 @@ Tenant rule: when resolving or assigning `default_knowledge_base_id`, `app.user_
 SELECT c.id AS chunk_id, c.document_id, c.content, c.metadata::text,
        1 - (e.embedding <=> ?::vector) AS similarity
 FROM rag_document_chunk_embedding e
-JOIN rag_document_chunk c ON c.id = e.chunk_id
+JOIN rag_document_chunk c
+  ON c.id = e.chunk_id
+ AND c.user_id = e.user_id
+ AND c.knowledge_base_id = e.knowledge_base_id
+ AND c.document_id = e.document_id
+JOIN rag_document d
+  ON d.id = e.document_id
+ AND d.user_id = e.user_id
+ AND d.knowledge_base_id = e.knowledge_base_id
+ AND d.status = 'READY'
 WHERE e.user_id = ?
   AND e.knowledge_base_id = ?
 ORDER BY e.embedding <=> ?::vector
@@ -840,6 +849,8 @@ LIMIT ?
 ```
 
 Vector similarity: `1 - cosine_distance` (pgvector `<=>` returns cosine distance).
+
+The query must keep embedding, chunk, and document duplicate boundary columns consistent. Do not rely on Java-side filtering to remove chunks from non-READY documents or mismatched duplicated row metadata after vector ordering.
 
 ## Transaction Boundaries
 

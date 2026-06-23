@@ -38,7 +38,7 @@ POST /v1/chat/completions
   -> resolve app and bound knowledge base
   -> extract last user message
   -> generate query embedding
-  -> vector retrieval scoped by user_id + knowledge_base_id
+  -> vector retrieval scoped by user_id + knowledge_base_id + READY source document
   -> filter by similarity_threshold
   -> deduplicate and truncate
   -> produce hit_chunk_ids and safe context chunks
@@ -53,7 +53,16 @@ Required SQL boundary:
 SELECT c.id AS chunk_id, c.document_id, c.content, c.metadata::text,
        1 - (e.embedding <=> ?::vector) AS similarity
 FROM rag_document_chunk_embedding e
-JOIN rag_document_chunk c ON c.id = e.chunk_id
+JOIN rag_document_chunk c
+  ON c.id = e.chunk_id
+ AND c.user_id = e.user_id
+ AND c.knowledge_base_id = e.knowledge_base_id
+ AND c.document_id = e.document_id
+JOIN rag_document d
+  ON d.id = e.document_id
+ AND d.user_id = e.user_id
+ AND d.knowledge_base_id = e.knowledge_base_id
+ AND d.status = 'READY'
 WHERE e.user_id = ?
   AND e.knowledge_base_id = ?
 ORDER BY e.embedding <=> ?::vector
@@ -98,6 +107,8 @@ injected_chars: final injected length metadata
 |----------|-------------------|
 | Tenant scope | Retrieval SQL includes `user_id` and `knowledge_base_id` before vector ordering. |
 | App scope | Public gateway retrieval only uses the knowledge base bound to the authenticated app. |
+| Document readiness | Retrieval SQL joins `rag_document` and returns only chunks whose source document has `status = READY`; non-READY document chunks are no valid retrieval hits. |
+| Duplicated row consistency | Retrieval SQL requires embedding, chunk, and document rows to agree on `document_id`, `user_id`, and `knowledge_base_id`. |
 | Similarity threshold | Chunks below threshold are excluded from final context and `hit_chunk_ids`. |
 | `topK` | Limits candidates, but does not mean all candidates must be injected. |
 | Context limit | Final injected chunks must fit the configured max context budget. |
@@ -130,6 +141,7 @@ Similarity threshold guidance:
 | Bound KB is not `READY` | `409 knowledge_base_not_ready`; no retrieval | Gateway service/controller test |
 | Query embedding config missing or invalid | `502 embedding_failed`; no upstream chat call | Gateway service test |
 | Retrieval hits above threshold | Context contains only scoped chunks; `hit_chunk_ids` records injected IDs | `RetrievalServiceTest`, request-log test |
+| Matching chunk belongs to non-READY document | It is excluded by SQL before thresholding, prompt injection, `hit_chunk_ids`, citations, or retrieval evidence | `RetrievalMapperTest`, `RetrievalServiceTest` |
 | No chunks above threshold | `STRICT_RAG` no-hit context; no fabricated KB evidence | `RagPromptBuilderTest` |
 | Cross-user or cross-KB chunk exists | It is not returned because SQL is scoped | Mapper/service test |
 | Request log API returns hit chunks | Only safe fields and bounded summaries are exposed | Request-log admin API test |

@@ -438,4 +438,113 @@ class RetrievalServiceTest {
 
         assertThat(result.getCitations().get(0).getMetadata()).containsOnlyKeys("source", "parser");
     }
+
+    @Test
+    void shouldPreserveTenantScopeInMapperCall() {
+        KnowledgeBaseEntity kb = createReadyKb();
+        ModelConfigEntity config = createEmbeddingConfig();
+        when(modelConfigService.findEnabledEmbeddingConfig(USER_ID, "text-embedding-3-small", 1536))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("sk-test");
+        when(embeddingClient.embed(anyString(), eq("sk-test"), eq("text-embedding-3-small"),
+                eq(List.of("query")), eq(1536)))
+                .thenReturn(List.of(new float[1536]));
+        when(retrievalMapper.retrieveChunks(anyString(), any(), any(), anyInt()))
+                .thenReturn(Collections.emptyList());
+
+        retrievalService.retrieve("query", kb, 5, 0.7, 5, 12000, 3000);
+
+        verify(retrievalMapper).retrieveChunks(anyString(), eq(USER_ID), eq(KB_ID), eq(5));
+    }
+
+    @Test
+    void shouldReturnNoHitsWhenSqlExcludesNonReadyDocuments() {
+        KnowledgeBaseEntity kb = createReadyKb();
+        ModelConfigEntity config = createEmbeddingConfig();
+        when(modelConfigService.findEnabledEmbeddingConfig(USER_ID, "text-embedding-3-small", 1536))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("sk-test");
+        when(embeddingClient.embed(anyString(), eq("sk-test"), eq("text-embedding-3-small"),
+                eq(List.of("query")), eq(1536)))
+                .thenReturn(List.of(new float[1536]));
+        when(retrievalMapper.retrieveChunks(anyString(), eq(USER_ID), eq(KB_ID), anyInt()))
+                .thenReturn(Collections.emptyList());
+
+        RetrievalResult result = retrievalService.retrieve("query", kb, 5, 0.7, 5, 12000, 3000);
+
+        assertThat(result.isNoHits()).isTrue();
+        assertThat(result.getChunks()).isEmpty();
+        assertThat(result.getHitChunkIds()).isEmpty();
+        assertThat(result.getCitations()).isEmpty();
+        assertThat(result.getEvidence().isNoHits()).isTrue();
+        assertThat(result.getEvidence().getCitations()).isEmpty();
+    }
+
+    @Test
+    void shouldProcessAllReadyDocumentChunksInCorrectOrder() {
+        KnowledgeBaseEntity kb = createReadyKb();
+        ModelConfigEntity config = createEmbeddingConfig();
+        when(modelConfigService.findEnabledEmbeddingConfig(USER_ID, "text-embedding-3-small", 1536))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("sk-test");
+        when(embeddingClient.embed(anyString(), eq("sk-test"), eq("text-embedding-3-small"),
+                eq(List.of("query")), eq(1536)))
+                .thenReturn(List.of(new float[1536]));
+
+        ChunkRow r1 = new ChunkRow();
+        r1.setChunkId(100L);
+        r1.setDocumentId(200L);
+        r1.setKnowledgeBaseId(KB_ID);
+        r1.setChunkIndex(0);
+        r1.setSourceFilename("doc-a.md");
+        r1.setContent("content from doc A");
+        r1.setSimilarity(0.95);
+
+        ChunkRow r2 = new ChunkRow();
+        r2.setChunkId(101L);
+        r2.setDocumentId(201L);
+        r2.setKnowledgeBaseId(KB_ID);
+        r2.setChunkIndex(0);
+        r2.setSourceFilename("doc-b.md");
+        r2.setContent("content from doc B");
+        r2.setSimilarity(0.88);
+
+        when(retrievalMapper.retrieveChunks(anyString(), eq(USER_ID), eq(KB_ID), anyInt()))
+                .thenReturn(List.of(r1, r2));
+
+        RetrievalResult result = retrievalService.retrieve("query", kb, 5, 0.7, 5, 12000, 3000);
+
+        assertThat(result.isNoHits()).isFalse();
+        assertThat(result.getChunks()).hasSize(2);
+        assertThat(result.getHitChunkIds()).containsExactly(100L, 101L);
+        assertThat(result.getCitations()).hasSize(2);
+        assertThat(result.getCitations().get(0).getChunkId()).isEqualTo(100L);
+        assertThat(result.getCitations().get(1).getChunkId()).isEqualTo(101L);
+        assertThat(result.getEvidence().isNoHits()).isFalse();
+        assertThat(result.getEvidence().getCitations()).hasSize(2);
+    }
+
+    @Test
+    void shouldExcludeLowSimilarityChunksFromHitChunkIdsAndEvidence() {
+        KnowledgeBaseEntity kb = createReadyKb();
+        ModelConfigEntity config = createEmbeddingConfig();
+        when(modelConfigService.findEnabledEmbeddingConfig(USER_ID, "text-embedding-3-small", 1536))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("sk-test");
+        when(embeddingClient.embed(anyString(), eq("sk-test"), eq("text-embedding-3-small"),
+                eq(List.of("query")), eq(1536)))
+                .thenReturn(List.of(new float[1536]));
+
+        ChunkRow high = createRow(1L, "relevant", 0.9);
+        ChunkRow low = createRow(2L, "irrelevant", 0.3);
+        when(retrievalMapper.retrieveChunks(anyString(), eq(USER_ID), eq(KB_ID), anyInt()))
+                .thenReturn(List.of(high, low));
+
+        RetrievalResult result = retrievalService.retrieve("query", kb, 5, 0.7, 5, 12000, 3000);
+
+        assertThat(result.getHitChunkIds()).containsExactly(1L);
+        assertThat(result.getCitations()).hasSize(1);
+        assertThat(result.getCitations().get(0).getChunkId()).isEqualTo(1L);
+        assertThat(result.getEvidence().getCitations()).hasSize(1);
+    }
 }
