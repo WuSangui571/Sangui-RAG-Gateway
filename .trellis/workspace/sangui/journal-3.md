@@ -721,3 +721,49 @@ and KB status update in one short transaction, with storage cleanup on failure.
 ### Next Steps
 
 - None - task complete
+
+
+## Session 78: Auto retry duplicate chunk cleanup closeout
+
+**Date**: 2026-06-23
+**Task**: Auto retry duplicate chunk cleanup closeout
+**Branch**: `feature/retry-duplicate-chunk-cleanup`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|---|---|
+| Result | Completed auto retry duplicate chunk cleanup after manual acceptance. |
+| Code commit | 6792e469 fix:cleanup-retry-duplicate-chunks |
+| Archive commit | dd9bd217 chore(task): archive 06-23-retry-duplicate-chunk-cleanup |
+| Main modules | Document ingestion retry cleanup, DocumentService, DocumentServiceTest, RAG document-ingestion spec. |
+| Behavior | Worker processing attempts now clear stale document chunks and embeddings at attempt start before parsing inserts replacement chunks. Explicit admin retry behavior remains unchanged. |
+| Updated files | backend/src/main/java/com/sangui/raggateway/document/DocumentService.java; backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java; .trellis/spec/rag/document-ingestion.md; .trellis/tasks/archive/2026-06/06-23-retry-duplicate-chunk-cleanup/. |
+| Validation | mvn -q "-Dtest=DocumentServiceTest" test: pass; mvn -q "-Dtest=DocumentProcessingTaskServiceTest,DocumentProcessingWorkerTest" test: pass; mvn -q "-Dtest=DocumentAdminControllerTest" test: pass; mvn -q -DskipTests compile: pass; mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test: pass; git diff --check: pass with only LF/CRLF warnings. |
+| Validation limit | Full backend mvn -q test was attempted with a 60s cap and timed out; targeted tests and compile passed. |
+| Manual acceptance | User confirmed manual testing and code commit before record-session. |
+| Boundaries | No public API, frontend DTO, database migration, retrieval SQL, Docker, Redis, or MQ changes. No record-session was run before manual acceptance. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6792e469` | (see git log) |
+| `dd9bd217` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
