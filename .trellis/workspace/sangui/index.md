@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 74
+- **Total Sessions**: 75
 - **Last Active**: 2026-06-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~531 | Active |
+| `journal-3.md` | ~610 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 75 | 2026-06-23 | JWT AES secret split closeout | `bed318be` | `feature/jwt-aes-secret-split` |
 | 74 | 2026-06-23 | Trellis dangling gitlink cleanup closeout | `ee667383` | `feature/trellis-dangling-submodule-cleanup` |
 | 73 | 2026-06-21 | Dev secret HS256 local contract closeout | `4b5c2038` | `feature/dev-secret-hs256-baseline` |
 | 72 | 2026-06-21 | Secret key production baseline closeout | `6a24a392` | `feature/secret-key-production-guardrails` |

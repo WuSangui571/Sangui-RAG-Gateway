@@ -529,3 +529,82 @@ Closed the Trellis dangling submodule cleanup after manual testing and commit. R
 ### Next Steps
 
 - None - task complete
+
+
+## Session 75: JWT AES secret split closeout
+
+**Date**: 2026-06-23
+**Task**: JWT AES secret split closeout
+**Branch**: `feature/jwt-aes-secret-split`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Summary |
+|------|---------|
+| Commit | bed318be fix: split JWT and AES secret configuration |
+| Task | 06-23-jwt-aes-secret-split archived after manual test and commit confirmation |
+| Backend config | Split Admin JWT signing to rag.admin-auth.jwt-secret / RAG_ADMIN_AUTH_JWT_SECRET and upstream key encryption to rag.gateway.encryption.secret-key / RAG_GATEWAY_ENCRYPTION_SECRET_KEY. Kept rag.gateway.secret-key / RAG_GATEWAY_SECRET_KEY as deprecated compatibility only. |
+| Production guard | ProductionConfigGuard now validates both secrets, rejects blank/short/documented/known-local placeholders, rejects equal JWT/AES secrets in prod, and keeps test profile bypass behavior. Codex fixed the missing prod rejection for the two new dev default placeholders. |
+| Tests | Updated guard/context smoke, Admin JWT, upstream encryptor, auth, model config, chat completions, and runtime smoke coverage for the split-secret contract. |
+| Docs/spec | Updated README, .env.example, docker compose env pass-through, project spec, database/security/cross-layer specs, and backend quality checklist. |
+
+**Updated Files**:
+- `.env.example`
+- `README.md`
+- `deploy/docker-compose.yml`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/backend/quality-guidelines.md`
+- `.trellis/spec/guides/cross-layer-thinking-guide.md`
+- `.trellis/spec/security/rag-security.md`
+- `backend/src/main/java/com/sangui/raggateway/common/config/AdminAuthConfig.java`
+- `backend/src/main/java/com/sangui/raggateway/common/config/EncryptionProperties.java`
+- `backend/src/main/java/com/sangui/raggateway/common/config/ProductionConfigGuard.java`
+- `backend/src/main/java/com/sangui/raggateway/common/security/AdminJwtService.java`
+- `backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java`
+- `backend/src/main/resources/application.yml`
+- `backend/src/main/resources/application-dev.yml`
+- `backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java`
+- `backend/src/test/java/com/sangui/raggateway/ProductionContextSmokeTest.java`
+- `backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java`
+- `backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsRuntimeSmokeTest.java`
+
+**Validation**:
+- PASS: `mvn -q "-Dtest=ProductionConfigGuardTest,ProductionContextSmokeTest" test`
+- PASS: `mvn -q "-Dtest=AdminJwtServiceTest,UpstreamApiKeyEncryptorTest" test`
+- PASS: `mvn -q "-Dtest=AdminAuthFilterTest,AdminAuthServiceTest,AdminAuthControllerTest" test`
+- PASS: `mvn -q "-Dtest=ModelConfigServiceTest,ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test`
+- PASS: `mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest" test`
+- PASS: `mvn -q -DskipTests compile`
+- PASS: `docker compose --env-file .env.example -f deploy/docker-compose.yml config`
+- PASS: `git diff --check` exited 0 with LF/CRLF warnings only
+- LIMIT: `mvn -q test` was attempted with a 60s cap and timed out while still running; no task-specific assertion failure was observed before timeout
+- PASS: User completed manual testing and committed `bed318be`
+
+**Result and Boundary**:
+- Result: JWT signing and AES encryption no longer share one active secret; production startup now enforces both specific secret properties and production distinctness.
+- Migration boundary: existing encrypted upstream provider keys remain compatible when the old shared secret value is copied into RAG_GATEWAY_ENCRYPTION_SECRET_KEY; no encrypted payload format change and no dual-secret fallback were introduced.
+- Non-goals preserved: no public /v1 API changes, no Admin DTO changes, no database migration, no frontend change, no bulk re-encryption.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bed318be` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
