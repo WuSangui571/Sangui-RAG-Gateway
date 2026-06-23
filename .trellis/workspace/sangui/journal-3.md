@@ -671,3 +671,53 @@ Manual validation: user confirmed manual testing and committed the feature befor
 ### Next Steps
 
 - None - task complete
+
+
+## Session 77: Upload rollback orphan file cleanup
+
+**Date**: 2026-06-23
+**Task**: Upload rollback orphan file cleanup
+**Branch**: `feature/upload-orphan-file-rollback`
+
+### Summary
+
+Completed upload rollback orphan-file cleanup after manual acceptance and commit.
+The upload enqueue path now keeps post-storage metadata, processing-task creation,
+and KB status update in one short transaction, with storage cleanup on failure.
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Commit | afefca17 fix:cleanup-upload-rollback-orphan-files |
+| Main modules | backend document upload lifecycle; storage cleanup boundary; RAG ingestion spec |
+| Updated files | backend/src/main/java/com/sangui/raggateway/document/DocumentService.java; backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java; .trellis/spec/rag/document-ingestion.md |
+| Behavior | DocumentService.uploadAndEnqueue now saves the original file first, then creates rag_document, processing task, and KB PROCESSING status inside a short TransactionTemplate boundary. If any post-storage operation fails, it deletes the saved storage key and propagates the original failure. |
+| Check fix | Codex tightened the DeepSeek implementation by adding a real metadata/task/status transaction boundary so task creation or KB status failures do not leave a usable UPLOADED document without a processing task. |
+| Tests | PASS: mvn -q -DskipTests compile; PASS: mvn -q "-Dtest=DocumentServiceTest" test; PASS: mvn -q "-Dtest=LocalFileStorageServiceTest,ObjectFileStorageServiceTest" test; PASS: mvn -q "-Dtest=DocumentAdminControllerTest" test; PASS: mvn -q "-Dtest=DocumentProcessingTaskServiceTest,DocumentProcessingWorkerTest" test; PASS: git diff --check |
+| Manual acceptance | User reported manual testing complete and committed code before record-session. |
+| Boundaries | No public API, frontend DTO, database migration, Docker, Redis, or MQ changes. Parser and embedding worker failures still keep the original file as a durable ingestion artifact. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `afefca17` | (see git log) |
+
+### Testing
+
+- [OK] `mvn -q -DskipTests compile`
+- [OK] `mvn -q "-Dtest=DocumentServiceTest" test`
+- [OK] `mvn -q "-Dtest=LocalFileStorageServiceTest,ObjectFileStorageServiceTest" test`
+- [OK] `mvn -q "-Dtest=DocumentAdminControllerTest" test`
+- [OK] `mvn -q "-Dtest=DocumentProcessingTaskServiceTest,DocumentProcessingWorkerTest" test`
+- [OK] `git diff --check`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

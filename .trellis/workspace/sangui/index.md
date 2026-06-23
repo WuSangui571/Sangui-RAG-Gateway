@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 76
+- **Total Sessions**: 77
 - **Last Active**: 2026-06-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~668 | Active |
+| `journal-3.md` | ~723 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 77 | 2026-06-23 | Upload rollback orphan file cleanup | `afefca17` | `feature/upload-orphan-file-rollback` |
 | 76 | 2026-06-23 | Unify retrieval config runtime source | `b820c2c0` | `feature/retrieval-threshold-single-source` |
 | 75 | 2026-06-23 | JWT AES secret split closeout | `bed318be` | `feature/jwt-aes-secret-split` |
 | 74 | 2026-06-23 | Trellis dangling gitlink cleanup closeout | `ee667383` | `feature/trellis-dangling-submodule-cleanup` |
