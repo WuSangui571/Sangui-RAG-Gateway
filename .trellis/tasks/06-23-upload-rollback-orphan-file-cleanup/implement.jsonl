@@ -1,0 +1,23 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\tasks\\06-23-upload-rollback-orphan-file-cleanup\\prd.md", "reason": "Task requirements, invariants, validation matrix, and DeepSeek execution boundary"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project contract for document upload, async processing, storage abstraction, and object storage lifecycle baseline"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Database transaction boundaries for document rows and processing tasks"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Admin upload/delete error matrix and secret-safe failures"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Storage lifecycle log safety and visible cleanup failure rules"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend validation commands and storage lifecycle test requirements"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Async upload contract, durable original-file lifecycle, and explicit deletion rules"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Storage secret boundary, ownership-before-cleanup, and no hidden fallback rule"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Document ingestion cross-layer flow and contract checklist"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Avoid duplicate lifecycle logic and reuse existing storage abstractions"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Primary upload enqueue, storage save, DB row, task creation, KB status, cleanup target"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentAdminController.java", "reason": "Admin upload endpoint and response/error boundary"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingTaskService.java", "reason": "Processing task creation and task state patterns"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\storage\\FileStorageService.java", "reason": "Storage abstraction save/read/delete contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\storage\\LocalFileStorageService.java", "reason": "Local storage idempotent delete behavior"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\storage\\ObjectFileStorageService.java", "reason": "Object storage idempotent delete behavior for missing objects"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Focused tests for post-storage upload failure compensation and happy path"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentAdminControllerTest.java", "reason": "Admin upload response contract and no storage_path exposure"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentProcessingTaskServiceTest.java", "reason": "Task creation/status test patterns"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\storage\\LocalFileStorageServiceTest.java", "reason": "Local storage lifecycle tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\storage\\ObjectFileStorageServiceTest.java", "reason": "Object storage lifecycle tests"}

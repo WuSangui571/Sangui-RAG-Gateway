@@ -608,3 +608,66 @@ Closed the Trellis dangling submodule cleanup after manual testing and commit. R
 ### Next Steps
 
 - None - task complete
+
+
+## Session 76: Unify retrieval config runtime source
+
+**Date**: 2026-06-23
+**Task**: Unify retrieval config runtime source
+**Branch**: `feature/retrieval-threshold-single-source`
+
+### Summary
+
+Closed out the retrieval-threshold-single-source task after user manual validation and commit `b820c2c0`.
+Runtime retrieval config now has one execution source: persisted app retrieval fields resolved by `AppService.resolveRetrievalConfig(AppEntity)`.
+
+### Main Changes
+
+| Area | Notes |
+|------|-------|
+| Commit | b820c2c0 fix: unify retrieval config runtime source |
+| Task | retrieval-threshold-single-source / P1 High #3 retrieval threshold second source of truth |
+| Backend modules | App retrieval config bootstrap and resolver, gateway chat completion retrieval path, retrieval evaluation path, admin AppVO exposure |
+| Frontend modules | AppVO TypeScript contract updated for readonly retrieval fields |
+| Specs | Frontend type-safety, RAG prompt/context policy, and Sangui RAG Gateway cross-layer contract updated |
+| Result | Runtime retrieval config now resolves from persisted rag_app fields through AppService.resolveRetrievalConfig(AppEntity); gateway/evaluation removed local hard-coded fallback defaults. Invalid persisted retrieval config fails visibly instead of silently defaulting. |
+| Boundary | AppRetrievalProperties remains app-creation/bootstrap default source only. No DB schema, infra, Docker, Redis, MQ, or service API contract migration was introduced in this session. |
+
+Updated files included backend app retrieval config classes/properties, AppService, ChatCompletionGatewayService, RetrievalEvaluationService, AppVO, application.yml, backend focused tests, frontend app types, README, and Trellis spec files.
+
+Verification results:
+- PASS: cd backend; mvn -q "-Dtest=AppServiceTest,AppAdminControllerTest" test
+- PASS: cd backend; mvn -q "-Dtest=ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test
+- PASS: cd backend; mvn -q "-Dtest=RetrievalEvaluationServiceTest,RetrievalEvaluationAdminControllerTest" test
+- PASS: cd backend; mvn -q "-Dtest=RetrievalServiceTest,RagPromptBuilderTest" test
+- PASS: cd backend; mvn -q -DskipTests compile
+- PASS: cd frontend; cmd /c npm run typecheck
+- PASS: cd frontend; cmd /c npm run build (Vite chunk-size warning only)
+- PASS: cd frontend; cmd /c npm run lint
+- PASS: cd frontend; cmd /c npm run test (AntD destroyOnClose deprecation warning only)
+- PASS: git diff --check (LF-to-CRLF warnings only)
+
+Manual validation: user confirmed manual testing and committed the feature before record-session.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b820c2c0` | (see git log) |
+
+### Testing
+
+- [OK] Backend focused tests passed: `AppServiceTest`, `AppAdminControllerTest`, `ChatCompletionGatewayServiceTest`, `OpenAiChatCompletionsControllerTest`, `RetrievalEvaluationServiceTest`, `RetrievalEvaluationAdminControllerTest`, `RetrievalServiceTest`, `RagPromptBuilderTest`
+- [OK] Backend compile passed: `cd backend; mvn -q -DskipTests compile`
+- [OK] Frontend checks passed: `cmd /c npm run typecheck`, `cmd /c npm run build`, `cmd /c npm run lint`, `cmd /c npm run test`
+- [OK] Whitespace check passed: `git diff --check` with LF-to-CRLF warnings only
+- [OK] User confirmed manual testing before record-session
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
