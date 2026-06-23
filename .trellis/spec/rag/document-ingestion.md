@@ -178,6 +178,40 @@ InputStream read(String storageKey);
 void delete(String storageKey);
 ```
 
+Upload rollback flow:
+
+```text
+admin upload
+  -> validate owner, filename, content type, and file size
+  -> FileStorageService.save(...)
+  -> short database transaction:
+       rag_document insert with status=UPLOADED
+       rag_document_processing_task insert with status=PENDING
+       knowledge base status update to PROCESSING
+  -> return DocumentVO without storage_path
+```
+
+If any operation in the short database transaction fails after `save(...)`
+returns a storage key, `DocumentService.uploadAndEnqueue(...)` must call
+`FileStorageService.delete(storageKey)` exactly once and then propagate the
+original upload failure. The database transaction must roll back so the upload
+does not leave a usable `UPLOADED` document without a durable processing task.
+Cleanup delete remains idempotent for missing local files or S3 objects; real
+storage/backend cleanup failures are logged with safe identifiers and must not
+turn the upload into success.
+
+Upload rollback validation matrix:
+
+| Scenario | Expected behavior | Required assertion |
+|---|---|---|
+| Unsupported filename/content type, empty file, oversized file | Fail before `FileStorageService.save(...)` | `DocumentServiceTest` verifies no storage interaction. |
+| `FileStorageService.save(...)` fails | Upload fails visibly; no cleanup delete because no storage key exists | Service/controller tests. |
+| `rag_document` insert fails after save | Delete the saved storage key exactly once; propagate original failure | `DocumentServiceTest`. |
+| Processing task creation fails after document insert | Roll back the upload metadata transaction, delete the saved storage key exactly once, and do not update KB status | `DocumentServiceTest` asserts rollback and cleanup. |
+| KB status update fails after task creation | Roll back upload metadata/task work and delete the saved storage key exactly once | `DocumentServiceTest`. |
+| Cleanup delete also fails | Log safe `storageKey`, KB/user IDs, and cleanup exception class; propagate the original upload failure | `DocumentServiceTest`. |
+| Parser/embedding worker fails after a queued upload | Keep the stored original; worker failure is not upload rollback | Worker/process-document tests. |
+
 Deletion flow:
 
 ```text

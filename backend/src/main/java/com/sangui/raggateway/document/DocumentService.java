@@ -110,27 +110,40 @@ public class DocumentService {
 
         InputStream storageStream = new ByteArrayInputStream(fileContent);
         StoredFile storedFile = fileStorageService.save("knowledge", knowledgeBaseId, safeFilename, storageStream);
+        String storageKey = storedFile.getStoragePath();
 
-        DocumentEntity doc = new DocumentEntity();
-        doc.setUserId(userId);
-        doc.setKnowledgeBaseId(knowledgeBaseId);
-        doc.setOriginalFilename(displayBasename);
-        doc.setContentType(contentType);
-        doc.setFileSize(storedFile.getFileSize());
-        doc.setStoragePath(storedFile.getStoragePath());
-        doc.setStatus(DocumentStatus.UPLOADED.name());
-        doc.setChunkCount(0);
-        doc.setCreatedAt(LocalDateTime.now());
-        doc.setUpdatedAt(LocalDateTime.now());
-        documentMapper.insert(doc);
-        log.info("Document created: id={}, kbId={}, filename={}, status=UPLOADED",
-                doc.getId(), knowledgeBaseId, displayBasename);
+        try {
+            return transactionTemplate.execute(status -> {
+                DocumentEntity doc = new DocumentEntity();
+                doc.setUserId(userId);
+                doc.setKnowledgeBaseId(knowledgeBaseId);
+                doc.setOriginalFilename(displayBasename);
+                doc.setContentType(contentType);
+                doc.setFileSize(storedFile.getFileSize());
+                doc.setStoragePath(storageKey);
+                doc.setStatus(DocumentStatus.UPLOADED.name());
+                doc.setChunkCount(0);
+                doc.setCreatedAt(LocalDateTime.now());
+                doc.setUpdatedAt(LocalDateTime.now());
+                documentMapper.insert(doc);
+                log.info("Document created: id={}, kbId={}, filename={}, status=UPLOADED",
+                        doc.getId(), knowledgeBaseId, displayBasename);
 
-        taskService.createTask(userId, knowledgeBaseId, doc.getId(), processingProperties.getMaxAttempts());
+                taskService.createTask(userId, knowledgeBaseId, doc.getId(), processingProperties.getMaxAttempts());
 
-        knowledgeBaseService.updateStatus(knowledgeBaseId, KnowledgeBaseStatus.PROCESSING.name());
+                knowledgeBaseService.updateStatus(knowledgeBaseId, KnowledgeBaseStatus.PROCESSING.name());
 
-        return doc;
+                return doc;
+            });
+        } catch (Exception e) {
+            try {
+                fileStorageService.delete(storageKey);
+            } catch (Exception deleteEx) {
+                log.error("Storage cleanup failed after upload rollback: storageKey={}, kbId={}, userId={}, cleanupErrorClass={}",
+                        storageKey, knowledgeBaseId, userId, deleteEx.getClass().getSimpleName());
+            }
+            throw e;
+        }
     }
 
     @Transactional

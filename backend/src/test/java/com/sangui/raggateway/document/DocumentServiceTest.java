@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -701,8 +702,130 @@ class DocumentServiceTest {
         assertThat(result.getChunkCount()).isEqualTo(0);
         verify(taskService).createTask(100L, 1L, result.getId(), 3);
         verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.PROCESSING.name());
+        verify(fileStorageService, never()).delete(anyString());
         verifyNoInteractions(textChunker);
         verifyNoInteractions(embeddingClient);
+    }
+
+    @Test
+    void shouldFailBeforeStorageOnUnsupportedFileTypeForEnqueue() {
+        byte[] fileContent = "test".getBytes(StandardCharsets.UTF_8);
+        assertThatThrownBy(() -> documentService.uploadAndEnqueue(
+                100L, 1L, "test.pdf", "application/pdf", fileContent))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported file type");
+        verifyNoInteractions(fileStorageService);
+    }
+
+    @Test
+    void shouldFailBeforeStorageOnOversizedFileForEnqueue() {
+        DocumentProperties documentProperties = new DocumentProperties();
+        documentProperties.setMaxFileSizeBytes(3);
+        DocumentProcessingProperties processingProperties = new DocumentProcessingProperties();
+        DocumentService limitedService = new DocumentService(
+                documentMapper, documentChunkMapper, documentChunkEmbeddingMapper,
+                knowledgeBaseService, modelConfigService,
+                fileStorageService, embeddingClient,
+                transactionTemplate(),
+                textChunker, List.of(documentParser), documentProperties,
+                taskService, processingProperties);
+
+        assertThatThrownBy(() -> limitedService.uploadAndEnqueue(
+                100L, 1L, "test.md", "text/markdown", "test".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("max-file-size-bytes");
+        verifyNoInteractions(fileStorageService);
+    }
+
+    @Test
+    void shouldDeleteStorageWhenDocumentInsertFailsAfterSave() throws Exception {
+        byte[] fileContent = "Hello World".getBytes(StandardCharsets.UTF_8);
+        String storageKey = "knowledge/1/uuid/test.md";
+        StoredFile storedFile = new StoredFile(storageKey, fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        doThrow(new RuntimeException("DB insert error"))
+                .when(documentMapper).insert(any(DocumentEntity.class));
+
+        assertThatThrownBy(() -> documentService.uploadAndEnqueue(
+                100L, 1L, "test.md", "text/markdown", fileContent))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("DB insert error");
+
+        verify(fileStorageService).delete(storageKey);
+        verify(taskService, never()).createTask(anyLong(), anyLong(), anyLong(), anyInt());
+        verify(knowledgeBaseService, never()).updateStatus(anyLong(), anyString());
+    }
+
+    @Test
+    void shouldDeleteStorageWhenTaskCreationFailsAfterInsert() throws Exception {
+        RecordingTransactionManager txManager = new RecordingTransactionManager();
+        DocumentService transactionalService = new DocumentService(
+                documentMapper, documentChunkMapper, documentChunkEmbeddingMapper,
+                knowledgeBaseService, modelConfigService,
+                fileStorageService, embeddingClient,
+                new TransactionTemplate(txManager),
+                textChunker, List.of(documentParser), new DocumentProperties(),
+                taskService, new DocumentProcessingProperties());
+
+        byte[] fileContent = "Hello World".getBytes(StandardCharsets.UTF_8);
+        String storageKey = "knowledge/1/uuid/test.md";
+        StoredFile storedFile = new StoredFile(storageKey, fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        doThrow(new RuntimeException("Task creation error"))
+                .when(taskService).createTask(anyLong(), anyLong(), anyLong(), anyInt());
+
+        assertThatThrownBy(() -> transactionalService.uploadAndEnqueue(
+                100L, 1L, "test.md", "text/markdown", fileContent))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Task creation error");
+
+        assertThat(txManager.rollbacks()).isEqualTo(1);
+        assertThat(txManager.commits()).isZero();
+        verify(fileStorageService).delete(storageKey);
+        verify(knowledgeBaseService, never()).updateStatus(anyLong(), anyString());
+    }
+
+    @Test
+    void shouldDeleteStorageWhenKBStatusUpdateFailsAfterTaskCreation() throws Exception {
+        byte[] fileContent = "Hello World".getBytes(StandardCharsets.UTF_8);
+        String storageKey = "knowledge/1/uuid/test.md";
+        StoredFile storedFile = new StoredFile(storageKey, fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        doThrow(new RuntimeException("KB status update error"))
+                .when(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.PROCESSING.name());
+
+        assertThatThrownBy(() -> documentService.uploadAndEnqueue(
+                100L, 1L, "test.md", "text/markdown", fileContent))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("KB status update error");
+
+        verify(fileStorageService).delete(storageKey);
+        verify(taskService).createTask(anyLong(), anyLong(), anyLong(), anyInt());
+    }
+
+    @Test
+    void shouldPropagateOriginalExceptionWhenCleanupDeleteAlsoFails() throws Exception {
+        byte[] fileContent = "Hello World".getBytes(StandardCharsets.UTF_8);
+        String storageKey = "knowledge/1/uuid/test.md";
+        StoredFile storedFile = new StoredFile(storageKey, fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        doThrow(new RuntimeException("DB insert error"))
+                .when(documentMapper).insert(any(DocumentEntity.class));
+        doThrow(new RuntimeException("Storage backend unavailable"))
+                .when(fileStorageService).delete(storageKey);
+
+        assertThatThrownBy(() -> documentService.uploadAndEnqueue(
+                100L, 1L, "test.md", "text/markdown", fileContent))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("DB insert error");
+
+        verify(fileStorageService).delete(storageKey);
+        verify(taskService, never()).createTask(anyLong(), anyLong(), anyLong(), anyInt());
+        verify(knowledgeBaseService, never()).updateStatus(anyLong(), anyString());
     }
 
     @Test
@@ -866,6 +989,34 @@ class DocumentServiceTest {
 
         @Override
         public void rollback(TransactionStatus status) {
+        }
+    }
+
+    private static final class RecordingTransactionManager implements PlatformTransactionManager {
+        private final AtomicInteger commits = new AtomicInteger();
+        private final AtomicInteger rollbacks = new AtomicInteger();
+
+        @Override
+        public TransactionStatus getTransaction(TransactionDefinition definition) {
+            return new SimpleTransactionStatus();
+        }
+
+        @Override
+        public void commit(TransactionStatus status) {
+            commits.incrementAndGet();
+        }
+
+        @Override
+        public void rollback(TransactionStatus status) {
+            rollbacks.incrementAndGet();
+        }
+
+        int commits() {
+            return commits.get();
+        }
+
+        int rollbacks() {
+            return rollbacks.get();
         }
     }
 
