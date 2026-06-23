@@ -38,3 +38,6 @@ frontend/playwright-report/
 
 # Trellis developer identity
 .trellis/.developer
+
+# Local nested Trellis checkout (not a configured submodule)
+Trellis/

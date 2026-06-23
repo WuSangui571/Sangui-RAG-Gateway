@@ -1,0 +1,18 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish-work checklist source available in this repository"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check skill source available in this repository"}
+{"file": ".trellis\\tasks\\06-23-trellis-dangling-submodule-cleanup\\prd.md", "reason": "Task requirements, scope boundary, validation matrix, and DeepSeek handoff source of truth"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary and Trellis workflow rules for complex tasks"}
+{"file": ".trellis\\spec\\guides\\index.md", "reason": "Shared guide index and thinking trigger overview"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Infra and Docker/env-style contract checklist; useful for Git/Trellis metadata risk mapping"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Search-first and avoid duplicate Trellis/submodule mechanisms"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend completion/test boundaries and when backend checks are required or skipped"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend completion/test boundaries and when frontend checks are required or skipped"}
+{"file": ".trellis\\config.yaml", "reason": "Current Trellis project config; packages/submodule examples are commented and no active package is configured"}
+{"file": ".trellis\\scripts\\common\\config.py", "reason": "Trellis package and submodule package source of truth"}
+{"file": ".trellis\\scripts\\common\\packages_context.py", "reason": "get_context package reporting and submodule/git repo markers"}
+{"file": ".trellis\\scripts\\multi_agent\\start.py", "reason": "Submodule initialization path used by Trellis multi-agent worktrees"}
+{"file": ".trellis\\scripts\\multi_agent\\create_pr.py", "reason": "Submodule PR/staging path used by Trellis PR automation"}
+{"file": ".gitignore", "reason": "Ignore rules relevant after removing a root gitlink while local nested checkout may remain"}
+{"file": "README.md", "reason": "Potential documentation target for chosen repo/submodule layout"}
+{"file": ".trellis\\tasks\\06-23-trellis-dangling-submodule-cleanup\\research.md", "reason": "Focused Git/Trellis submodule audit and required validation checks"}
+{"file": ".trellis\\tasks\\06-23-trellis-dangling-submodule-cleanup\\handoff-deepseek.md", "reason": "Check handoff boundary and forbidden scope"}
