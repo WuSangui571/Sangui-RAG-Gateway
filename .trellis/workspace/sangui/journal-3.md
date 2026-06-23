@@ -486,3 +486,46 @@ specs around a 32+ character non-test runtime requirement.
 ### Next Steps
 
 - None - task complete
+
+
+## Session 74: Trellis dangling gitlink cleanup closeout
+
+**Date**: 2026-06-23
+**Task**: Trellis dangling gitlink cleanup closeout
+**Branch**: `feature/trellis-dangling-submodule-cleanup`
+
+### Summary
+
+Closed the Trellis dangling submodule cleanup after manual testing and commit. Removed the unconfigured root Trellis gitlink, preserved single-repo Trellis workflow mode, archived the task, and recorded validation evidence.
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Main module | Repository/Trellis metadata cleanup for dangling root Trellis gitlink. |
+| Commit | ee667383 fix:remove dangling Trellis gitlink |
+| Result | Removed the unconfigured root `Trellis` 160000 gitlink, kept `.trellis/` as the workflow source of truth, and ignored local `Trellis/` checkout to prevent accidental staging. |
+| Updated files | `.gitignore`; removed root gitlink `Trellis`; archived Trellis task evidence under `.trellis/tasks/archive/2026-06/06-23-trellis-dangling-submodule-cleanup/`. |
+| Validation | `git ls-files -s | Select-String '^160000'` produced no output; `.gitmodules` check returned `NO_GITMODULES`; `git config --get-regexp '^submodule\.'` produced no submodule config; `python .\.trellis\scripts\get_context.py --mode packages` reported single-repo mode; `python .\.trellis\scripts\task.py validate .trellis\tasks\06-23-trellis-dangling-submodule-cleanup` passed before archive; `git diff --check` passed with only Windows CRLF notice. |
+| Skipped tests | Backend Maven tests and frontend npm checks were not run because no backend/frontend/API/DB/runtime files changed. |
+| Boundary | No backend, frontend, gateway, RAG, security, database, Docker, API contract, or business behavior changes. Did not delete local nested `Trellis/` checkout. |
+| Manual acceptance | User manually tested and committed the cleanup before this record-session closeout. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ee667383` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
