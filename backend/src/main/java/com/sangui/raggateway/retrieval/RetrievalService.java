@@ -2,6 +2,7 @@ package com.sangui.raggateway.retrieval;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sangui.raggateway.common.util.PgVectorFormatter;
 import com.sangui.raggateway.embedding.EmbeddingClient;
 import com.sangui.raggateway.embedding.EmbeddingException;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
@@ -18,7 +19,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -83,7 +83,7 @@ public class RetrievalService {
         }
 
         float[] queryVector = vectors.get(0);
-        String vectorString = vectorToPgString(queryVector);
+        String vectorString = PgVectorFormatter.format(queryVector);
 
         int effectiveTopK = Math.max(0, topK);
         int effectiveMaxContextChunks = Math.max(0, maxContextChunks);
@@ -253,15 +253,4 @@ public class RetrievalService {
         }
     }
 
-    static String vectorToPgString(float[] vector) {
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < vector.length; i++) {
-            if (i > 0) {
-                sb.append(",");
-            }
-            sb.append(String.format(Locale.ROOT, "%.8f", vector[i]));
-        }
-        sb.append("]");
-        return sb.toString();
-    }
 }

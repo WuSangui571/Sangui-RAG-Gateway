@@ -1,0 +1,19 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-24-vector-serialization-unification\\prd.md", "reason": "Task PRD with scope, acceptance criteria, non-goals, and required validation"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project product boundary and RAG/pgvector data path context"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Shared utility package placement and dependency rules"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "pgvector, vector retrieval SQL, tenant and embedding persistence contracts"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend targeted validation requirements for ingestion and retrieval changes"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Retrieval query vector SQL boundary and READY/source filtering contract"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Document embedding persistence and vector row lifecycle contract"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Tenant, evidence, error, and embedding-vector exposure boundaries"}
+{"file": ".trellis\\spec\\guides\\code-reuse-thinking-guide.md", "reason": "Duplication removal guidance for shared formatter extraction"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer ingestion to retrieval boundary planning checks"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalService.java", "reason": "Existing retrieval vector formatting call site and compatibility baseline"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Existing document embedding persistence formatting call site"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalMapper.java", "reason": "Query vector ::vector usage and retrieval SQL boundary"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentChunkEmbeddingMapper.java", "reason": "Persisted embedding ::vector usage"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalServiceTest.java", "reason": "Existing retrieval formatter coverage and mapper argument tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Embedding persistence capture coverage to strengthen"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\retrieval\\RetrievalMapperTest.java", "reason": "Existing SQL cast and READY filter contract test"}

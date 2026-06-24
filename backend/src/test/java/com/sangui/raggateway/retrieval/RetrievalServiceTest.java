@@ -1,6 +1,7 @@
 package com.sangui.raggateway.retrieval;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sangui.raggateway.common.util.PgVectorFormatter;
 import com.sangui.raggateway.embedding.EmbeddingClient;
 import com.sangui.raggateway.embedding.EmbeddingException;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
@@ -9,6 +10,8 @@ import com.sangui.raggateway.model.ModelConfigService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -35,6 +38,9 @@ class RetrievalServiceTest {
 
     @Mock
     private EmbeddingClient embeddingClient;
+
+    @Captor
+    private ArgumentCaptor<String> queryVectorCaptor;
 
     private RetrievalService retrievalService;
 
@@ -327,14 +333,24 @@ class RetrievalServiceTest {
     }
 
     @Test
-    void testVectorToPgString() {
-        float[] vector = {0.1f, 0.2f, -0.3f};
-        String result = RetrievalService.vectorToPgString(vector);
+    void shouldPassVectorFormattedBySharedFormatterToMapper() {
+        KnowledgeBaseEntity kb = createReadyKb();
+        ModelConfigEntity config = createEmbeddingConfig();
+        when(modelConfigService.findEnabledEmbeddingConfig(USER_ID, "text-embedding-3-small", 1536))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("sk-test");
 
-        assertThat(result).startsWith("[");
-        assertThat(result).endsWith("]");
-        assertThat(result).contains("0.10000000");
-        assertThat(result).contains("-0.300000");
+        float[] vector = {0.1f, 0.2f, -0.3f};
+        when(embeddingClient.embed(anyString(), eq("sk-test"), eq("text-embedding-3-small"),
+                eq(List.of("test query")), eq(1536)))
+                .thenReturn(List.of(vector));
+        when(retrievalMapper.retrieveChunks(anyString(), eq(USER_ID), eq(KB_ID), anyInt()))
+                .thenReturn(Collections.emptyList());
+
+        retrievalService.retrieve("test query", kb, 5, 0.7, 5, 12000, 3000);
+
+        verify(retrievalMapper).retrieveChunks(queryVectorCaptor.capture(), eq(USER_ID), eq(KB_ID), eq(5));
+        assertThat(queryVectorCaptor.getValue()).isEqualTo(PgVectorFormatter.format(vector));
     }
 
     @Test

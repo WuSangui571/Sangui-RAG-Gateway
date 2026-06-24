@@ -790,6 +790,33 @@ Tenant rule: every vector row duplicates `user_id` and `knowledge_base_id`. Futu
 
 Dimension safety: the number of vectors returned by the embedding provider must equal the number of input chunks. Every vector length must equal `rag_knowledge_base.embedding_dimension`. The model config used for embedding must have same `user_id`, `status=ENABLED`, non-blank `embedding_model`, `embedding_dimension` equal to KB dimension, and a usable encrypted upstream API key. If multiple enabled model configs match the same embedding model and dimension for one user, the latest updated config is the operational default.
 
+### pgvector Literal Serialization Contract
+
+All Java code must use the shared `PgVectorFormatter` (`com.sangui.raggateway.common.util.PgVectorFormatter`) for every `float[]` → pgvector `VECTOR` literal conversion. Services must not duplicate formatter logic.
+
+Contract:
+
+```java
+public final class PgVectorFormatter {
+    public static String format(float[] vector)
+}
+```
+
+Expected payload shape: `[<c0>,<c1>,...,<cn>]` with no spaces.
+
+Component formatting: `String.format(Locale.ROOT, "%.8f", component)` — fixed eight decimal places, Locale.ROOT decimal separator.
+
+| Contract | Required behavior |
+|---|---|
+| Normal vector | Bracketed comma-separated literal with fixed 8 decimal places and Locale.ROOT. |
+| Null input | `IllegalArgumentException` with clear message. |
+| Empty array | `IllegalArgumentException` with clear message. |
+| Non-finite component (`NaN` / `Infinity`) | `IllegalArgumentException` with the offending component index; do not pass invalid vector literals to mapper SQL. |
+| Call sites | `DocumentService.persistEmbeddings` writes formatted string into `DocumentChunkEmbeddingEntity.embedding`; mapper uses `#{embedding}::vector`. `RetrievalService.retrieve` passes formatted string to `RetrievalMapper.retrieveChunks`; mapper uses `#{queryVector}::vector`. |
+| No alternate formatters | There is exactly one production implementation. Duplicate formatters in services are forbidden. |
+
+Mapper SQL `::vector` casts remain unchanged: `#{embedding}::vector` in `DocumentChunkEmbeddingMapper.insertEmbedding` and `#{queryVector}::vector` in `RetrievalMapper.retrieveChunks`.
+
 ANN index (HNSW/IVFFlat) is deferred until the retrieval distance metric is chosen.
 
 ### Implemented App/KB Binding and Retrieval Schema

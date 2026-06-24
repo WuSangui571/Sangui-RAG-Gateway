@@ -2,6 +2,7 @@ package com.sangui.raggateway.document;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.common.exception.BusinessException;
+import com.sangui.raggateway.common.util.PgVectorFormatter;
 import com.sangui.raggateway.document.chunk.TextChunker;
 import com.sangui.raggateway.document.config.DocumentProcessingProperties;
 import com.sangui.raggateway.document.config.DocumentProperties;
@@ -478,7 +479,7 @@ public class DocumentService {
             embedding.setChunkId(chunks.get(i).getId());
             embedding.setEmbeddingModel(embeddingModel);
             embedding.setEmbeddingDimension(embeddingDimension);
-            embedding.setEmbedding(vectorToPgString(vectors.get(i)));
+            embedding.setEmbedding(PgVectorFormatter.format(vectors.get(i)));
             embedding.setCreatedAt(LocalDateTime.now());
             embedding.setUpdatedAt(LocalDateTime.now());
             documentChunkEmbeddingMapper.insertEmbedding(embedding);
@@ -681,13 +682,4 @@ public class DocumentService {
                 .replace("\t", "\\t");
     }
 
-    private String vectorToPgString(float[] vector) {
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < vector.length; i++) {
-            if (i > 0) sb.append(",");
-            sb.append(vector[i]);
-        }
-        sb.append("]");
-        return sb.toString();
-    }
 }

@@ -69,6 +69,8 @@ ORDER BY e.embedding <=> ?::vector
 LIMIT ?
 ```
 
+The `?::vector` query vector placeholder receives a pgvector literal string formatted by `PgVectorFormatter` (`com.sangui.raggateway.common.util.PgVectorFormatter`), the same shared formatter used for document embedding persistence. The formatter produces bracket/comma-delimited `[c0,c1,...,cn]` literals with fixed 8 decimal places using `Locale.ROOT`, and rejects null, empty, `NaN`, or infinite vectors before mapper SQL. This is the single source of truth for all `float[]` → pgvector `VECTOR` literal conversions.
+
 Forbidden global retrieval:
 
 ```sql

@@ -66,6 +66,8 @@ created_at
 updated_at
 ```
 
+Embedding vector persistence uses `PgVectorFormatter` (`com.sangui.raggateway.common.util.PgVectorFormatter`) as the single `float[]` -> pgvector `VECTOR` literal boundary before `DocumentChunkEmbeddingMapper.insertEmbedding(...)` applies `#{embedding}::vector`. The formatter emits `[c0,c1,...,cn]` with fixed 8 decimal places using `Locale.ROOT` and fails visibly for null, empty, `NaN`, or infinite vectors.
+
 ## 4. Contracts
 
 | Contract | Required behavior |

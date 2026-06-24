@@ -2,6 +2,7 @@ package com.sangui.raggateway.document;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.common.exception.BusinessException;
+import com.sangui.raggateway.common.util.PgVectorFormatter;
 import com.sangui.raggateway.document.chunk.TextChunker;
 import com.sangui.raggateway.document.config.DocumentProcessingProperties;
 import com.sangui.raggateway.document.config.DocumentProperties;
@@ -222,6 +223,7 @@ class DocumentServiceTest {
         assertThat(embedding.getChunkId()).isEqualTo(5L);
         assertThat(embedding.getEmbeddingModel()).isEqualTo("text-embedding-3-small");
         assertThat(embedding.getEmbeddingDimension()).isEqualTo(2);
+        assertThat(embedding.getEmbedding()).isEqualTo(PgVectorFormatter.format(new float[]{0.1f, 0.2f}));
     }
 
     @Test
