@@ -20,6 +20,8 @@ Thumbs.db
 *.class
 *.jar
 *.war
+
+# Backend local runtime upload data (do not commit)
 backend/data/
 
 # Logs
