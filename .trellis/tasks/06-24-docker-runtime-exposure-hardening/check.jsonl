@@ -1,0 +1,18 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-24-docker-runtime-exposure-hardening\\prd.md", "reason": "Task contract, scope, acceptance criteria, validation matrix, and forbidden areas"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project deployment baseline, service exposure matrix, production guardrails, and Docker validation contract"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Required for Docker Compose and environment-variable cross-layer contract changes"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend Docker Maven build contract, Dockerfile validation, and quality gates"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend resource/layout boundaries; confirms no business module changes are needed"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Secret-safe operational logging and no sensitive deployment data exposure"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "PostgreSQL/Redis role boundary and production datasource safety context"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret and internal filesystem/environment exposure boundaries"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend build/quality checks if frontend Docker image contract changes"}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend boundary; Docker-only work must not drift into app code"}
+{"file": "deploy\\docker-compose.yml", "reason": "Current default service exposure, healthchecks, dependencies, and volumes"}
+{"file": "backend\\Dockerfile", "reason": "Current backend build/runtime user, curl dependency, and exposed port contract"}
+{"file": "frontend\\Dockerfile", "reason": "Current frontend build/runtime image and nginx default behavior"}
+{"file": "frontend\\nginx.conf", "reason": "Proxy contract for /api and /v1; should remain unchanged unless explicitly necessary"}
+{"file": ".env.example", "reason": "Current environment variables and default host port contract"}
+{"file": "README.md", "reason": "Deployment and local development instructions that must match Compose behavior"}

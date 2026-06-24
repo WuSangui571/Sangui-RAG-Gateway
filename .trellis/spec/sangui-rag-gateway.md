@@ -546,9 +546,9 @@ Service contracts:
 
 | Service | Image/build source | Internal dependency contract | Host exposure |
 |---|---|---|---|
-| `postgres` | `pgvector/pgvector:pg16` | database name/user/password from `.env` | `${POSTGRES_PORT:-5432}:5432` |
-| `redis` | `redis:7-alpine` | used by backend through service name `redis` | `${REDIS_PORT:-6379}:6379` |
-| `backend` | `backend/Dockerfile` | PostgreSQL at `postgres:5432`, Redis at `redis:6379`, uploads at `/app/data/uploads` | `${BACKEND_PORT:-8080}:${SERVER_PORT:-8080}` |
+| `postgres` | `pgvector/pgvector:pg16` | database name/user/password from `.env` | None by default; opt-in via `deploy/docker-compose.host-ports.yml` |
+| `redis` | `redis:7-alpine` | used by backend through service name `redis` | None by default; opt-in via `deploy/docker-compose.host-ports.yml` |
+| `backend` | `backend/Dockerfile` | PostgreSQL at `postgres:5432`, Redis at `redis:6379`, uploads at `/app/data/uploads`, runtime user `sangui` | `${BACKEND_PORT:-8080}:${SERVER_PORT:-8080}` |
 | `frontend` | `frontend/Dockerfile` | Nginx proxies API calls to `${BACKEND_UPSTREAM:-http://backend:8080}` | `${FRONTEND_PORT:-3000}:80` |
 
 Proxy contract in `frontend/nginx.conf`:
@@ -566,8 +566,8 @@ Environment variables documented by `.env.example`:
 POSTGRES_DB
 POSTGRES_USER
 POSTGRES_PASSWORD
-POSTGRES_PORT
-REDIS_PORT
+POSTGRES_PORT                      (opt-in: only used with deploy/docker-compose.host-ports.yml)
+REDIS_PORT                         (opt-in: only used with deploy/docker-compose.host-ports.yml)
 BACKEND_PORT
 FRONTEND_PORT
 SERVER_PORT
@@ -696,6 +696,8 @@ Validation matrix:
 | Scenario | Expected result | Assertion point |
 |---|---|---|
 | Compose config renders | Compose file has `postgres`, `redis`, `backend`, `frontend`, and named volume `backend-data` | `docker compose --env-file .env -f deploy/docker-compose.yml config` succeeds. |
+| PG/Redis no host ports by default | Default Compose config does not publish PG or Redis host ports | Rendered config has no `ports` for `postgres` or `redis` services. |
+| Opt-in host ports override | `deploy/docker-compose.host-ports.yml` adds host port publication for PG/Redis | `docker compose --env-file .env -f deploy/docker-compose.yml -f deploy/docker-compose.host-ports.yml config` renders PG/Redis ports. |
 | Backend dependencies resolve in Compose | Backend uses service names, not `localhost`, for PostgreSQL and Redis | Rendered config contains `jdbc:postgresql://postgres:5432/...` and `SPRING_DATA_REDIS_HOST=redis`. |
 | Upload persistence | Uploaded knowledge files survive backend container recreation | `backend-data` is mounted at `/app/data/uploads`. |
 | Frontend `/api` proxy | Admin calls reach backend | `/api/health` through frontend origin returns JSON, not `index.html`. |
@@ -706,9 +708,9 @@ Good/base/bad cases:
 
 | Case | Expected result |
 |---|---|
-| Good | Fresh checkout, copy `.env.example` to `.env`, run the Compose command, backend health returns `code=OK`, and frontend opens on `${FRONTEND_PORT:-3000}`. |
-| Base | Local development can still run infra-only Compose plus `mvn spring-boot:run` and `npm run dev`; Vite proxies both `/api` and `/v1` to backend. |
-| Bad | Any real secret or generated `sk-sangui-*` key appears in committed files, frontend proxy returns SPA HTML for `/api` or `/v1`, or backend uses `localhost` for database/Redis inside Compose. |
+| Good | Fresh checkout, copy `.env.example` to `.env`, run the Compose command, backend health returns `code=OK`, frontend opens on `${FRONTEND_PORT:-3000}`, PG/Redis are internal-only (no host ports published), and backend Java process runs as non-root user `sangui`. |
+| Base | Local development uses `deploy/docker-compose.host-ports.yml` to expose PG/Redis for local tooling, plus `mvn spring-boot:run` and `npm run dev`; Vite proxies both `/api` and `/v1` to backend. |
+| Bad | Any real secret or generated `sk-sangui-*` key appears in committed files; frontend proxy returns SPA HTML for `/api` or `/v1`; backend uses `localhost` for database/Redis inside Compose; PG/Redis publish host ports in the default Compose config; backend runtime runs as root. |
 
 ## Baseline Engineering Contracts
 
@@ -951,7 +953,7 @@ Validation matrix for this baseline:
 | Area | Good/Base Case | Bad Case | Required Check |
 |---|---|---|---|
 | README commands | Documented commands match files in repo | Wrapper commands are primary when wrapper files do not exist | Review README against file tree |
-| Docker Compose | `postgres` and `redis` services define ports, volumes, and health checks | Real secrets are committed or `.env` is tracked | Review `.env.example`, `.gitignore`, `deploy/docker-compose.yml` |
+| Docker Compose | `postgres` and `redis` define volumes and health checks; ports are internal-only by default with opt-in `deploy/docker-compose.host-ports.yml` | Real secrets are committed or `.env` is tracked | Review `.env.example`, `.gitignore`, `deploy/docker-compose.yml`, `deploy/docker-compose.host-ports.yml` |
 | Migration | `V1__init_pgvector.sql` creates only pgvector extension | Business tables are created before domain schema is specified | Review migration file |
 | Migration | `V2__create_app_api_key_tables.sql` creates app and API key tables | Plaintext keys stored or queried without hashing | Review migration + entity test |
 | Migration | `V3__create_model_config_and_app_default.sql` creates model config and app FK | Plaintext upstream keys stored or cross-user config exposed | Review migration + service test |

@@ -32,6 +32,9 @@ Rules:
 - It must not contain credentials, tokens, usernames, passwords, private repository URLs, provider keys, or environment-expanded secrets.
 - Do not use a mirror policy that makes one public mirror the only effective source for every artifact. Maven Central must remain reachable if a regional mirror returns a partial outage such as `502 Bad Gateway`.
 - Keep the Dockerfile Maven command visible. Do not reintroduce quiet `dependency:go-offline -q` or other hidden dependency-resolution steps that mask the failing artifact.
+- The runtime stage must run the Java process as a non-root user. The user is created with `adduser -D -h /app sangui` and owns `/app` recursively, including `/app/data/uploads` for local file storage.
+- Do not change the Maven build stage user contract: `settings.xml` is still copied to `/root/.m2/settings.xml` and `mvn -B -ntp -DskipTests package` runs as root in the build stage.
+- The runtime healthcheck (`curl -sf http://localhost:8080/api/health`) must execute successfully under the non-root runtime user.
 
 Required checks after changing `backend/settings.xml`, `backend/Dockerfile`,
 or the backend Docker/Compose build path:
@@ -48,9 +51,9 @@ Good/base/bad cases:
 
 | Case | Expected result |
 |---|---|
-| Good | `backend/settings.xml` uses a mirror selector that preserves Maven Central fallback, contains only public repository metadata, and the Docker build succeeds through `mvn -B -ntp -DskipTests package`. |
-| Base | Docker is not available locally; XML syntax, secret scan, Dockerfile settings path, and `mvn -q -DskipTests compile` are verified, and the missing Docker evidence is stated explicitly. |
-| Bad | A public mirror uses `mirrorOf=*` and Central is no longer reachable when that mirror returns 502; dependency resolution is hidden behind quiet prefetch steps; settings contain credentials or private repository URLs. |
+| Good | `backend/settings.xml` uses a mirror selector that preserves Maven Central fallback, contains only public repository metadata, the Docker build succeeds through `mvn -B -ntp -DskipTests package`, and the runtime Java process runs as non-root user `sangui` with writable `/app/data/uploads`. |
+| Base | Docker is not available locally; XML syntax, secret scan, Dockerfile settings path, Dockerfile non-root user directives, and `mvn -q -DskipTests compile` are verified, and the missing Docker evidence is stated explicitly. |
+| Bad | A public mirror uses `mirrorOf=*` and Central is no longer reachable when that mirror returns 502; dependency resolution is hidden behind quiet prefetch steps; settings contain credentials or private repository URLs; runtime Java process runs as root; `/app/data/uploads` is not writable by the runtime user. |
 
 High-priority unit tests:
 

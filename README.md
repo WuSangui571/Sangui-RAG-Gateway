@@ -72,6 +72,16 @@ docker compose --env-file .env -f deploy/docker-compose.yml up -d --build
 
 This starts PostgreSQL/pgvector, Redis, backend, and frontend. The backend automatically runs Flyway migrations on first startup.
 
+PostgreSQL and Redis are internal-only inside the Compose network by default. Only the backend (`${BACKEND_PORT:-8080}`) and frontend (`${FRONTEND_PORT:-3000}`) are published to the host.
+
+If you need to inspect PostgreSQL or Redis from your local machine (e.g. with a database GUI), use the explicit opt-in override:
+
+```bash
+docker compose --env-file .env -f deploy/docker-compose.yml -f deploy/docker-compose.host-ports.yml up -d --build
+```
+
+This additionally publishes PostgreSQL on `${POSTGRES_PORT:-5432}` and Redis on `${REDIS_PORT:-6379}`.
+
 ### 3. Verify health
 
 ```bash
@@ -835,8 +845,10 @@ The admin console Smoke Test page (`/smoke`) performs the same demo acceptance c
 
 ### Start infrastructure only
 
+PostgreSQL and Redis are internal-only by default. For local development where you run the backend and frontend directly on the host, include the host-ports override to expose PG/Redis to the host:
+
 ```bash
-docker compose --env-file .env -f deploy/docker-compose.yml up -d postgres redis
+docker compose --env-file .env -f deploy/docker-compose.yml -f deploy/docker-compose.host-ports.yml up -d postgres redis
 ```
 
 ### Start backend
@@ -876,8 +888,8 @@ npm run build
 | `POSTGRES_DB` | `sangui_rag_gateway` | Database name |
 | `POSTGRES_USER` | `sangui` | Database user |
 | `POSTGRES_PASSWORD` | `sangui_password` | Database password (override in production) |
-| `POSTGRES_PORT` | `5432` | Host PostgreSQL port |
-| `REDIS_PORT` | `6379` | Host Redis port |
+| `POSTGRES_PORT` | `5432` | PostgreSQL host port (opt-in, used only with `deploy/docker-compose.host-ports.yml`) |
+| `REDIS_PORT` | `6379` | Redis host port (opt-in, used only with `deploy/docker-compose.host-ports.yml`) |
 | `BACKEND_PORT` | `8080` | Host backend port |
 | `FRONTEND_PORT` | `3000` | Host frontend port |
 | `SERVER_PORT` | `8080` | Backend container port |
