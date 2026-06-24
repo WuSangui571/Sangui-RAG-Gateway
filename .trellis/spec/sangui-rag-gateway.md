@@ -578,6 +578,9 @@ SPRING_DATASOURCE_PASSWORD
 SPRING_DATA_REDIS_HOST
 SPRING_DATA_REDIS_PORT
 RAG_ADMIN_AUTH_JWT_SECRET
+RAG_ADMIN_AUTH_DEFAULT_ADMIN_USERNAME
+RAG_ADMIN_AUTH_DEFAULT_ADMIN_PASSWORD
+RAG_ADMIN_AUTH_ALLOW_DEFAULT_ADMIN
 RAG_GATEWAY_ENCRYPTION_SECRET_KEY
 RAG_GATEWAY_SECRET_KEY
 FILE_STORAGE_TYPE
@@ -675,6 +678,56 @@ mvn -q -DskipTests compile
 ```
 
 Also run `git diff --check` when `.env.example`, README, Compose, or spec files change.
+
+### Implemented Default Admin Bootstrap
+
+Fresh deployments can create the first admin user through a bounded startup bootstrap:
+
+```text
+backend/src/main/java/com/sangui/raggateway/auth/DefaultAdminBootstrapService.java
+backend/src/main/java/com/sangui/raggateway/user/UserService.java#countUsers()
+backend/src/test/java/com/sangui/raggateway/auth/DefaultAdminBootstrapServiceTest.java
+```
+
+Runtime contract:
+
+| Environment variable | Spring property | Requirement |
+|---|---|---|
+| `RAG_ADMIN_AUTH_DEFAULT_ADMIN_USERNAME` | `rag.admin-auth.default-admin-username` | Non-blank when bootstrap is active. The dev/default Compose value is `admin`; production should set an explicit operator-chosen value when using bootstrap. |
+| `RAG_ADMIN_AUTH_DEFAULT_ADMIN_PASSWORD` | `rag.admin-auth.default-admin-password` | Non-blank when bootstrap is active. The dev/default Compose value is `admin123`; production with bootstrap enabled must use a strong explicit non-default value. Passwords and hashes must never be logged or returned. |
+| `RAG_ADMIN_AUTH_ALLOW_DEFAULT_ADMIN` | `rag.admin-auth.allow-default-admin` | Default `false`. Required only for `prod`/`production` profile bootstrap. |
+
+Validation matrix:
+
+| Scenario | Expected result |
+|---|---|
+| `sys_user` has one or more rows | Skip bootstrap without validating or mutating default-admin credentials. |
+| `sys_user` empty and active profile is `dev` or no active profile | Create exactly one `ACTIVE` `sys_user` row when username/password are non-blank. Store only a BCrypt `password_hash`. |
+| `prod` or `production` active and `allow-default-admin=false` | Skip bootstrap; no default admin row is inserted. |
+| `prod` or `production` active and `allow-default-admin=true` with blank password, `local-dev-change-me`, `admin123`, or another short password | Fail startup visibly with an exception that names `rag.admin-auth.default-admin-password` but does not echo the value. |
+| `prod` or `production` active and `allow-default-admin=true` with a strong explicit password | Create one admin only when `sys_user` is empty. |
+| Login after bootstrap | Existing `POST /api/admin/auth/login` verifies the persisted BCrypt row through `AdminAuthService`; no fallback login path is allowed. |
+
+Deployment file contract:
+
+| File | Requirement |
+|---|---|
+| `backend/src/main/resources/application.yml` | Binds the three `rag.admin-auth.default-admin-*` / `allow-default-admin` properties with production-safe empty/false defaults. |
+| `backend/src/main/resources/application-dev.yml` | Provides local first-use defaults `admin` / `admin123`. |
+| `.env.example` | Documents the three environment variables as local/default-admin bootstrap inputs without committing production credentials. |
+| `deploy/docker-compose.yml` | Passes the three variables into the backend service and defaults local Compose bootstrap to `admin` / `admin123` under the default dev profile. |
+
+Required checks after changing this contract:
+
+```bash
+cd backend
+mvn -q "-Dtest=DefaultAdminBootstrapServiceTest,AdminAuthServiceTest,PasswordHasherTest" test
+mvn -q "-Dtest=UserServiceTest,AdminAuthFilterTest,AdminJwtServiceTest" test
+mvn -q -DskipTests compile
+cd ..
+git diff --check
+docker compose --env-file .env.example -f deploy/docker-compose.yml config
+```
 
 CI baseline:
 

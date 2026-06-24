@@ -48,6 +48,9 @@ rag:
   admin-auth:
     jwt-secret: ${RAG_ADMIN_AUTH_JWT_SECRET:}
     jwt-expiration-seconds: ${RAG_ADMIN_AUTH_JWT_EXPIRATION_SECONDS:86400}
+    default-admin-username: ${RAG_ADMIN_AUTH_DEFAULT_ADMIN_USERNAME:}
+    default-admin-password: ${RAG_ADMIN_AUTH_DEFAULT_ADMIN_PASSWORD:}
+    allow-default-admin: ${RAG_ADMIN_AUTH_ALLOW_DEFAULT_ADMIN:false}
   production-guard:
     allow-local-file-storage: ${RAG_PRODUCTION_ALLOW_LOCAL_FILE_STORAGE:false}
     allow-output-capture: ${RAG_PRODUCTION_ALLOW_OUTPUT_CAPTURE:false}

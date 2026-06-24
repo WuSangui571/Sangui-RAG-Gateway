@@ -1,0 +1,25 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project deployment, production guard, admin auth, and environment variable contracts"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend package and layering rules for auth/user/bootstrap components"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "sys_user schema, password_hash, migration, and bootstrap boundary"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin auth/login error shape and secret-safe error handling"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Password/hash/logging secrecy rules"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required backend validation and review checklist"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Admin auth boundary and secret-safe security rules"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Environment/config/database/admin-auth cross-layer contract checklist"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Search-first and no duplicate validation logic guidance"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/ProductionConfigGuard.java", "reason": "Existing runtime safety guard and profile detection pattern"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/AdminAuthConfig.java", "reason": "Existing admin auth beans and PasswordHasher/AdminJwtService wiring"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/PasswordHasher.java", "reason": "Existing BCrypt hash/verify helper to reuse"}
+{"file": "backend/src/main/java/com/sangui/raggateway/auth/AdminAuthService.java", "reason": "Existing login path that must verify bootstrapped admin"}
+{"file": "backend/src/main/java/com/sangui/raggateway/user/UserService.java", "reason": "Existing sys_user lookup/status service to extend carefully"}
+{"file": "backend/src/main/java/com/sangui/raggateway/user/UserEntity.java", "reason": "sys_user entity fields for bootstrap insert"}
+{"file": "backend/src/main/resources/application.yml", "reason": "Current rag.admin-auth and environment binding surface"}
+{"file": "backend/src/main/resources/application-dev.yml", "reason": "Current dev defaults and profile-specific config"}
+{"file": "deploy/docker-compose.yml", "reason": "Compose environment passthrough surface for backend"}
+{"file": ".env.example", "reason": "Documented local/prod environment variable example surface"}
+{"file": "backend/src/test/java/com/sangui/raggateway/ProductionConfigGuardTest.java", "reason": "ApplicationContextRunner pattern for production profile rejection tests"}
+{"file": "backend/src/test/java/com/sangui/raggateway/auth/AdminAuthServiceTest.java", "reason": "Login compatibility test pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/PasswordHasherTest.java", "reason": "BCrypt hash/verify assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/user/UserServiceTest.java", "reason": "User service mock and mapper assertion style"}

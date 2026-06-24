@@ -90,4 +90,11 @@ class UserServiceTest {
 
         assertThat(userService.isActive(null)).isFalse();
     }
+
+    @Test
+    void shouldCountUsers() {
+        when(userMapper.selectCount(null)).thenReturn(2L);
+
+        assertThat(userService.countUsers()).isEqualTo(2L);
+    }
 }

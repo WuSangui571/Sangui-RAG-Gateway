@@ -265,8 +265,10 @@ Bootstrap boundary:
 
 - `V12__create_admin_user_table.sql` creates only the `sys_user` schema and unique username index.
 - Production migrations must not hardcode a default admin password or reusable secret.
-- Local development may create the first admin explicitly with a BCrypt hash inserted into `sys_user(username, password_hash, status)`.
-- Required validation: `UserServiceTest` covers username/id lookup and active/disabled status; `PasswordHasherTest` covers BCrypt hash/verify behavior.
+- `DefaultAdminBootstrapService` may create exactly one first admin row only when `sys_user` is empty and the active runtime profile/config explicitly allows bootstrap.
+- The bootstrap insert must populate `username`, BCrypt `password_hash`, `status=ACTIVE`, `created_at`, and `updated_at`; it must never store or log plaintext passwords.
+- Production-like bootstrap (`prod`/`production`) requires `rag.admin-auth.allow-default-admin=true` and rejects blank, local-placeholder, dev-default, or short passwords with safe property-name-only errors.
+- Required validation: `UserServiceTest` covers username/id lookup, active/disabled status, and user counting; `PasswordHasherTest` covers BCrypt hash/verify behavior; `DefaultAdminBootstrapServiceTest` covers profile gating, idempotency, password safety, and login compatibility through `AdminAuthService`.
 
 Required indexes and constraints:
 

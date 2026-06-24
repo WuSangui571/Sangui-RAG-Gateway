@@ -1159,3 +1159,78 @@ Boundaries and notes:
 ### Next Steps
 
 - None - task complete
+
+
+## Session 85: Default admin bootstrap closeout
+
+**Date**: 2026-06-24
+**Task**: Default admin bootstrap closeout
+**Branch**: `feature/default-admin-bootstrap`
+
+### Summary
+
+Default admin bootstrap is implemented, checked, manually accepted, and committed. The change creates the first admin only on an empty `sys_user` table under dev/no-profile or explicit production acknowledgement, keeps password handling on BCrypt and the existing login path, and synchronizes the durable runtime/spec/deploy contract.
+
+### Main Changes
+
+**Commit**
+- `75308691` - `fix: default admin bootstrap closeout`
+
+**Main modules**
+- Backend admin auth startup bootstrap.
+- Admin user persistence and login compatibility.
+- Runtime configuration and Docker Compose env passthrough.
+- Trellis spec sync for default admin bootstrap.
+
+**Updated files**
+- `backend/src/main/java/com/sangui/raggateway/auth/DefaultAdminBootstrapService.java`
+- `backend/src/main/java/com/sangui/raggateway/user/UserService.java`
+- `backend/src/main/resources/application.yml`
+- `backend/src/main/resources/application-dev.yml`
+- `backend/src/test/java/com/sangui/raggateway/auth/DefaultAdminBootstrapServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/user/UserServiceTest.java`
+- `.env.example`
+- `deploy/docker-compose.yml`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/spec/backend/database-guidelines.md`
+
+**Verification**
+- `mvn -q "-Dtest=DefaultAdminBootstrapServiceTest,AdminAuthServiceTest,PasswordHasherTest" test` - PASS
+- `mvn -q "-Dtest=UserServiceTest,AdminAuthFilterTest,AdminJwtServiceTest" test` - PASS
+- `mvn -q "-Dtest=ProductionConfigGuardTest,ProductionContextSmokeTest" test` - PASS
+- `mvn -q -DskipTests compile` - PASS
+- `git diff --check` - PASS
+- `docker compose --env-file .env.example -f deploy/docker-compose.yml config` - PASS, default admin env vars visible in backend service.
+- `mvn -q test` - not completed in Codex verification window; sandboxed run failed dependency resolution, escalated run hit the 60 second backend unit-test timeout.
+- Human manual testing completed before commit, per user confirmation.
+
+**Result and boundaries**
+- Fresh dev/default Compose startup can bootstrap the first admin when `sys_user` is empty.
+- Existing users prevent bootstrap mutation.
+- Production-like bootstrap requires explicit `allow-default-admin=true` and rejects blank, short, local-placeholder, or dev-default passwords with property-name-only errors.
+- Password plaintext and BCrypt hash are not logged or returned.
+- Login compatibility stays on the existing `POST /api/admin/auth/login` path; no fallback login path was added.
+- No frontend, RAG, gateway chat, request-log, storage, or DB schema behavior was changed.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `75308691` | (see git log) |
+
+### Testing
+
+- [OK] Targeted backend tests passed: `DefaultAdminBootstrapServiceTest,AdminAuthServiceTest,PasswordHasherTest`
+- [OK] Auth/user regression tests passed: `UserServiceTest,AdminAuthFilterTest,AdminJwtServiceTest`
+- [OK] Production guard tests passed: `ProductionConfigGuardTest,ProductionContextSmokeTest`
+- [OK] `mvn -q -DskipTests compile`, `git diff --check`, and Compose config interpolation passed
+- [WARN] Full `mvn -q test` did not complete in the Codex 60 second verification window; user completed manual testing before commit
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
