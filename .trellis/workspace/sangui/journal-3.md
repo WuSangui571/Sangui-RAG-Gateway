@@ -1029,3 +1029,63 @@ Result: Backend runtime upload data is no longer tracked by Git, future backend/
 ### Next Steps
 
 - Follow up with CI security/image runtime validation and automated Compose runtime smoke.
+
+
+## Session 83: CI image runtime validation
+
+**Date**: 2026-06-24
+**Task**: CI image runtime validation
+**Branch**: `feature/ci-image-runtime-validation`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|------|---------|
+| Main commit | 6b4c82e9 ci: add image runtime validation |
+| Task | ci-image-runtime-validation |
+| Modules | GitHub Actions CI, Docker Compose contract checks, runtime smoke, security scan, README, project spec |
+| Updated files | .github/workflows/ci.yml; README.md; .trellis/spec/sangui-rag-gateway.md; .trellis/tasks/06-24-ci-image-runtime-validation/* |
+| Result | Added CI evidence for backend/frontend image builds, default Compose PG/Redis non-exposure, host-port opt-in override, backend service-name dependencies, uploads volume mount, runtime health, non-root runtime user, uploads write/delete, image-pull boundary documentation, and secret/runtime static scans. |
+
+Validation recorded before commit:
+- git diff --check: passed.
+- docker compose --env-file .env.example -f deploy/docker-compose.yml config --format json: passed with default PG/Redis no host ports, backend postgres:5432, Redis host redis, and backend-data:/app/data/uploads.
+- docker compose --env-file .env.example -f deploy/docker-compose.yml -f deploy/docker-compose.host-ports.yml config --format json: passed with PG/Redis host ports only in override config.
+- mvn -q -DskipTests compile: passed.
+- cmd /c npm run lint: passed.
+- cmd /c npm run test: passed, 7 test files and 95 tests.
+- cmd /c npm run typecheck: passed.
+- cmd /c npm run build: passed with existing Vite chunk-size warning.
+- cmd /c npm run test:visual:ci: passed, Chromium visual smoke 3/3.
+- docker build --progress=plain -t sangui-rag-gateway-backend:ci -f backend/Dockerfile backend: passed after Docker API escalation.
+- docker build --progress=plain -t sangui-rag-gateway-frontend:ci -f frontend/Dockerfile frontend: passed after Docker API escalation.
+- docker compose runtime smoke with clean state and cleanup: passed; health OK/UP, runtime user sangui, uploads writable, stack and volumes cleaned.
+
+Boundaries and notes:
+- No backend Java, frontend TypeScript, API, DTO, database, retrieval, or admin workflow code changed in the CI task.
+- mvn test was attempted but did not complete under the 60 second backend test timeout; the first sandbox run was blocked by Maven network access, and the non-sandbox run timed out at the required 60 second limit.
+- CI/runtime smoke now performs down -v --remove-orphans before and after the stack to avoid stale local Compose volume state such as old PostgreSQL credentials.
+- A new user-reported runtime issue remains separate from this CI task: saved model-config check reports Failed to decrypt upstream API key, and KB document upload reports 500. Preliminary root-cause candidate is existing encrypted model-config data no longer matching the current RAG_GATEWAY_ENCRYPTION_SECRET_KEY after the secret split/runtime config changes. This should be handled as the next debug task, not as part of this archived CI task.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6b4c82e9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
