@@ -1,0 +1,11 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Check no product/API/deployment contract is changed beyond repository hygiene."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Check validation order and storage/document regression tests if implementation touches backend files."}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Check file lifecycle and storage_path remain internal and behavior unchanged."}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Check no uploaded content, storage_path, or local filesystem paths are exposed."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Check API/DB/frontend/DTO/env contracts remain unchanged."}
+{"file": ".gitignore", "reason": "Check runtime data ignore rule is explicit and not overly broad."}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/storage/LocalFileStorageServiceTest.java", "reason": "Check tests are unaffected and still use temp directories."}
+{"file": "deploy/docker-compose.yml", "reason": "Check Docker volume behavior is not changed."}
+{"file": "README.md", "reason": "Check repository hygiene guidance remains aligned with ignored backend/data uploads."}

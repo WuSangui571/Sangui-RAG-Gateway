@@ -913,3 +913,49 @@ Unified pgvector vector-literal serialization behind one shared formatter, verif
 ### Next Steps
 
 - None - task complete
+
+
+## Session 81: Backend data tracking cleanup closeout
+
+**Date**: 2026-06-24
+**Task**: Backend data tracking cleanup closeout
+**Branch**: `feature/backend-data-repo-hygiene`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | b5657c32 chore: backend runtime data tracking cleanup |
+| Main module | Repository hygiene for backend local runtime upload data |
+| Updated files | .gitignore; removed tracked backend/data/uploads/knowledge runtime artifacts from Git index only |
+| Behavior boundary | No backend source, API, DTO, DB migration, Docker, frontend, retrieval, prompt, or storage runtime behavior changed |
+| Local data boundary | backend/data files were untracked only; local working-tree upload files remained present and are now ignored by backend/data/ |
+| Validation | git ls-files backend/data backend/data/** returned empty; git diff --check passed; git check-ignore confirmed backend/data/ rule; Test-Path confirmed representative local files still exist |
+| Targeted tests | mvn -q "-Dtest=LocalFileStorageServiceTest,DocumentServiceTest" test passed after dependency resolution was allowed outside the restricted sandbox |
+| Manual acceptance | User confirmed manual testing and committed the code before record-session |
+| Risk note | Direct git add . was avoided in the handoff because task metadata was untracked before archive; commit scope should remain .gitignore plus backend/data index removals |
+
+Result: Backend runtime upload data is no longer tracked by Git, future backend/data upload artifacts are ignored, and runtime storage behavior remains unchanged.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b5657c32` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

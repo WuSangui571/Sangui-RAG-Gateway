@@ -1,0 +1,14 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary and storage/deployment secret rules for runtime upload data."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend quality gates and storage/document test expectations."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Sensitive storage/document data must not leak into logs or committed artifacts."}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Original uploaded files are durable local storage artifacts and storage_path remains internal."}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Storage paths and uploaded content are forbidden response/log/doc exposure fields."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Storage/runtime data touches deployment and document ingestion boundaries; avoid cross-layer drift."}
+{"file": ".gitignore", "reason": "Existing ignore rule for backend/data should be clarified or preserved while cleaning Git index."}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/storage/LocalFileStorageService.java", "reason": "Local storage writes under configured root with opaque knowledge/{id}/{uuid}/{safeName} keys."}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/storage/LocalFileStorageServiceTest.java", "reason": "Storage tests use temporary directories and do not require committed backend/data fixtures."}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java", "reason": "Document service tests mock FileStorageService and use logical storage keys, not repo data files."}
+{"file": "deploy/docker-compose.yml", "reason": "Docker local storage uses named volume /app/data/uploads, not committed backend/data files."}
+{"file": "README.md", "reason": "README already warns backend/data upload artifacts must not be committed."}
