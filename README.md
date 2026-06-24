@@ -950,8 +950,47 @@ Inside Docker Compose, the backend service automatically uses `postgres` and `re
 A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`:
 
 - **Backend**: Maven compile + full test suite (requires PostgreSQL and Redis service containers).
-- **Frontend**: `npm ci` + typecheck + production build.
-- **Docker**: builds both backend and frontend Docker images (no push to registry).
+- **Frontend**: `npm ci` + lint + unit/component test + typecheck + production build + visual smoke test.
+- **Docker build backend**: Builds backend Docker image via `backend/Dockerfile`. No registry push.
+- **Docker build frontend**: Builds frontend Docker image via `frontend/Dockerfile`. No registry push.
+- **Compose contract**: Validates default Compose config renders; asserts `postgres` and `redis` have no host `ports`; asserts backend uses service-name dependencies (`postgres:5432`, `SPRING_DATA_REDIS_HOST=redis`); asserts `backend-data:/app/data/uploads` volume mount; validates host-ports override (`deploy/docker-compose.host-ports.yml`) exposes PG/Redis ports only when explicitly included.
+- **Runtime smoke**: Starts from a clean Compose runtime state, starts the full stack, waits for backend to report healthy, asserts `/api/health` returns `code=OK` / `data.status=UP`, asserts backend container runs as user `sangui`, asserts `/app/data/uploads` is writable, then tears down the stack with volume cleanup (`docker compose down -v --remove-orphans`).
+- **Security scan**: Scans committed files (ci.yml, Compose files, Dockerfiles, `.env.example`, `settings.xml`) for docker registry credentials, real `sk-sangui-*` API keys, and provider keys; asserts `backend/Dockerfile` has `USER sangui` without a subsequent `USER root`; asserts `backend/settings.xml` uses only public Maven mirror metadata with Maven Central fallback.
+
+### Failure Boundary Classification
+
+Failures are classified by boundary so the investigator knows where to root-cause:
+
+| Boundary | Examples |
+|---|---|
+| `backend` | Maven compile or test failures in the `backend` job. |
+| `frontend` | Lint, test, typecheck, build, or visual smoke failures in the `frontend` job. |
+| `docker-backend` | Backend Docker build failure during `mvn package` or Dockerfile layer construction. |
+| `docker-frontend` | Frontend Docker build failure during `npm ci` or `npm run build`. |
+| `image-pull` | Docker base image pull failure due to registry network errors, TLS issues, rate limiting, or missing content descriptors. This is an infrastructure boundary, not direct evidence of Dockerfile code failure. Inspect the failed layer and consider a retry. |
+| `compose-exposure` | Default Compose config has PG/Redis host ports, or the host-ports override is missing them. |
+| `compose-service-discovery` | Backend Compose env uses `localhost` instead of service names `postgres` / `redis`. |
+| `runtime-health` | Backend `/api/health` never returns `code=OK` / `data.status=UP`. |
+| `runtime-user` | Backend container `whoami` is not `sangui`, or `USER root` appears after `USER sangui` in the Dockerfile. |
+| `runtime-storage` | `/app/data/uploads` is not writable by the runtime user. |
+| `secret-scan` | Committed file contains docker credentials, real API keys, or `settings.xml` credentials. |
+
+### Image-Pull Failures
+
+Docker base image pull failures (registry timeouts, TLS errors, rate limits, "missing content descriptor" messages) are infrastructure-side issues, not Dockerfile code bugs. When these occur:
+
+1. The CI job fails visibly at the `FROM` line or early layer pull step.
+2. The failure is classified as `image-pull`, not `docker-backend` or `docker-frontend`.
+3. Local validation commands (Maven compile, Dockerfile static assertions, Compose config rendering, secret scan) still provide meaningful evidence.
+4. Re-running the job after the registry recovers is the expected recovery path.
+
+### What CI Does Not Need
+
+The CI workflow does not require and must not contain:
+
+- Upstream provider API keys, app API keys, or generated `sk-sangui-*` keys.
+- Docker registry login credentials, image push targets, or GHCR publishing.
+- Production `.env` files or real deployment secrets.
 
 Local equivalent:
 

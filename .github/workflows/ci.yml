@@ -118,3 +118,118 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build frontend image
         run: docker build -t sangui-rag-gateway-frontend:ci -f frontend/Dockerfile frontend
+
+  compose-contract:
+    name: Compose contract check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate default Compose config renders
+        run: docker compose --env-file .env.example -f deploy/docker-compose.yml config --format json > /tmp/default.json
+      - name: Assert no PG/Redis host ports in default config
+        run: |
+          jq -e '.services.postgres.ports == null' /tmp/default.json || (echo "FAIL: postgres has host ports in default compose config" && exit 1)
+          jq -e '.services.redis.ports == null' /tmp/default.json || (echo "FAIL: redis has host ports in default compose config" && exit 1)
+      - name: Assert backend uses service-name dependencies
+        run: |
+          jq -e '.services.backend.environment.SPRING_DATASOURCE_URL | test("postgres:5432")' /tmp/default.json || (echo "FAIL: backend SPRING_DATASOURCE_URL does not reference postgres:5432" && exit 1)
+          jq -e '.services.backend.environment.SPRING_DATA_REDIS_HOST == "redis"' /tmp/default.json || (echo "FAIL: backend SPRING_DATA_REDIS_HOST is not redis" && exit 1)
+      - name: Assert backend uploads volume mount
+        run: |
+          jq -e '.services.backend.volumes | map(select(.target == "/app/data/uploads" and .source == "backend-data")) | length > 0' /tmp/default.json || (echo "FAIL: backend missing backend-data:/app/data/uploads volume" && exit 1)
+      - name: Validate host-ports override config renders
+        run: docker compose --env-file .env.example -f deploy/docker-compose.yml -f deploy/docker-compose.host-ports.yml config --format json > /tmp/hostports.json
+      - name: Assert PG/Redis host ports present in override config
+        run: |
+          jq -e '.services.postgres.ports != null' /tmp/hostports.json || (echo "FAIL: postgres missing host ports in override config" && exit 1)
+          jq -e '.services.redis.ports != null' /tmp/hostports.json || (echo "FAIL: redis missing host ports in override config" && exit 1)
+
+  runtime-smoke:
+    name: Runtime smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure clean Compose runtime state
+        run: docker compose --env-file .env.example -f deploy/docker-compose.yml down -v --remove-orphans
+      - name: Start Compose stack
+        run: docker compose --env-file .env.example -f deploy/docker-compose.yml up -d --build
+      - name: Wait for backend healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/api/health 2>/dev/null | grep -q '"code":"OK"'; then
+              echo "Backend healthy on attempt $i"
+              exit 0
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 5
+          done
+          echo "Backend healthcheck timeout after 30 attempts"
+          docker compose --env-file .env.example -f deploy/docker-compose.yml logs backend
+          exit 1
+      - name: Assert health response contract
+        run: |
+          RESP=$(curl -sf http://localhost:8080/api/health)
+          echo "$RESP" | jq -e '.code == "OK"' > /dev/null || (echo "FAIL: health response missing code=OK" && exit 1)
+          echo "$RESP" | jq -e '.data.status == "UP"' > /dev/null || (echo "FAIL: health response missing data.status=UP" && exit 1)
+          echo "Health response: $RESP"
+      - name: Assert runtime user is sangui
+        run: |
+          USER=$(docker compose --env-file .env.example -f deploy/docker-compose.yml exec -T backend whoami)
+          echo "Runtime user: $USER"
+          [ "$USER" = "sangui" ] || (echo "FAIL: backend runtime user is '$USER', expected 'sangui'" && exit 1)
+      - name: Assert uploads directory writable
+        run: |
+          docker compose --env-file .env.example -f deploy/docker-compose.yml exec -T backend sh -c 'touch /app/data/uploads/.ci-write-test && rm /app/data/uploads/.ci-write-test && echo "uploads writable: OK"'
+      - name: Show Compose logs on failure
+        if: failure()
+        run: docker compose --env-file .env.example -f deploy/docker-compose.yml logs
+      - name: Cleanup Compose stack
+        if: always()
+        run: docker compose --env-file .env.example -f deploy/docker-compose.yml down -v --remove-orphans
+
+  security-scan:
+    name: Security scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check image publication boundary
+        run: |
+          TARGETS=".github/workflows/ci.yml deploy/docker-compose.yml deploy/docker-compose.host-ports.yml backend/Dockerfile frontend/Dockerfile"
+          IMAGE_PUBLICATION_PATTERN='docker[[:space:]]+(login|push)\b|ghcr[.]io\b|registry.*cred''ential|docker.*pass''word'
+          if grep -rqiE "$IMAGE_PUBLICATION_PATTERN" $TARGETS; then
+            echo "SECURITY RISK: image publication or credential-like entry found"
+            exit 1
+          fi
+          echo "Image publication boundary scan: OK"
+      - name: Scan for real app/provider API keys
+        run: |
+          TARGETS=".github/workflows/ci.yml deploy/docker-compose.yml deploy/docker-compose.host-ports.yml backend/Dockerfile frontend/Dockerfile backend/settings.xml README.md .env.example .trellis/spec/sangui-rag-gateway.md"
+          if grep -rqE 'sk-sangui-[A-Za-z0-9]{32,}' $TARGETS; then
+            echo "SECURITY RISK: real sk-sangui API key found in committed file"
+            exit 1
+          fi
+          if grep -rqE '(^|[^A-Za-z0-9_])((sk|sk-proj|sk-ant|sk-or-v1)-[A-Za-z0-9_-]{32,})' $TARGETS; then
+            echo "SECURITY RISK: provider-shaped API key found in committed file"
+            exit 1
+          fi
+          echo "app/provider API key scan: OK"
+      - name: Assert backend Dockerfile has USER sangui
+        run: |
+          grep -q 'USER sangui' backend/Dockerfile || (echo "FAIL: backend/Dockerfile missing USER sangui directive" && exit 1)
+          echo "USER sangui directive: FOUND"
+      - name: Assert no USER root after USER sangui
+        run: |
+          awk 'found && /USER root/ { print "FAIL: USER root found after USER sangui in backend/Dockerfile"; exit 1 } /USER sangui/ { found=1 }' backend/Dockerfile
+          echo "No USER root after USER sangui: OK"
+      - name: Assert settings.xml has public mirror with Central fallback
+        run: |
+          grep -q 'maven.aliyun.com' backend/settings.xml || (echo "FAIL: settings.xml missing aliyun public mirror" && exit 1)
+          if grep -qiE '<server>|<username>|<password>' backend/settings.xml; then
+            echo "FAIL: settings.xml contains credentials or server blocks"
+            exit 1
+          fi
+          if grep -qiE '<mirrorOf>[[:space:]]*\*[[:space:]]*</mirrorOf>' backend/settings.xml; then
+            echo "FAIL: settings.xml mirrorOf=* would bypass Maven Central fallback"
+            exit 1
+          fi
+          echo "settings.xml public mirror with Central fallback: OK"

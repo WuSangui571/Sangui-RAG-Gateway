@@ -1,0 +1,21 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project deployment, Docker Compose, CI, secret, health, and runtime contracts"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend Docker Maven build, non-root runtime, uploads ownership, and required checks"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend boundary reminder; avoid business package changes for infra-only task"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-safe runtime and CI output rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Health and gateway/admin error-shape safety boundaries if smoke exposes failures"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend CI job command contract and artifact policy"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend boundary reminder; no app source changes expected"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Secret safety and forbidden field boundaries for logs/docs/CI output"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Runtime smoke and visible failure boundary principles"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Docker Compose and environment variable cross-layer contract checklist"}
+{"file": ".github/workflows/ci.yml", "reason": "Existing CI jobs to extend while preserving backend/frontend checks"}
+{"file": "deploy/docker-compose.yml", "reason": "Default Compose exposure, dependency, healthcheck, and uploads-volume contract"}
+{"file": "deploy/docker-compose.host-ports.yml", "reason": "Opt-in PG/Redis host-port override contract"}
+{"file": "backend/Dockerfile", "reason": "Backend image build and non-root runtime pattern"}
+{"file": "frontend/Dockerfile", "reason": "Frontend image build pattern"}
+{"file": "backend/settings.xml", "reason": "Public Maven mirror metadata and Central fallback contract"}
+{"file": ".env.example", "reason": "Safe local placeholder and Compose env contract"}
+{"file": "README.md", "reason": "Deployment and CI documentation to update"}

@@ -690,6 +690,9 @@ Required jobs:
 | Frontend check | `npm ci`, `npx playwright install chromium`, `npm run typecheck`, `npm run build`, then `npm run test:visual:ci` from `frontend/`. |
 | Docker build backend | `docker build -t sangui-rag-gateway-backend:ci -f backend/Dockerfile backend`. |
 | Docker build frontend | `docker build -t sangui-rag-gateway-frontend:ci -f frontend/Dockerfile frontend`. |
+| Compose contract check | `docker compose config` for both default and host-ports override; asserts PG/Redis no host ports by default, service-name dependencies, uploads volume, and host-ports opt-in. |
+| Runtime smoke test | `docker compose down -v --remove-orphans` to ensure a clean state, then `docker compose up -d --build` the full stack, wait for backend healthy, assert `/api/health` returns `code=OK` / `data.status=UP`, runtime user is `sangui`, `/app/data/uploads` writable, then `down -v --remove-orphans` cleanup. |
+| Security scan | Scans committed files for docker registry credentials, real `sk-sangui-*` keys, and provider-shaped API keys; asserts `USER sangui` present with no subsequent `USER root`; asserts `settings.xml` has public Maven mirror with Central fallback. |
 
 Validation matrix:
 
@@ -703,14 +706,20 @@ Validation matrix:
 | Frontend `/api` proxy | Admin calls reach backend | `/api/health` through frontend origin returns JSON, not `index.html`. |
 | Frontend `/v1` proxy | Gateway smoke calls reach backend and streaming is not buffered | `/v1/chat/completions` succeeds after Admin setup; `stream=true` emits SSE chunks. |
 | CI without secrets | Workflow runs compile/test/build/image-build without provider keys | Workflow has no `docker login`, push, or provider secret dependency. |
+| Runtime health | Backend `/api/health` returns valid health JSON | HTTP 200 with `code=OK` and `data.status=UP`. |
+| Runtime non-root user | Backend Java process runs as user `sangui` | `docker compose exec backend whoami` outputs `sangui`. |
+| Runtime storage writable | Upload directory is writable by runtime user | `touch /app/data/uploads/.ci-write-test && rm` succeeds. |
+| Dockerfile non-root contract | `backend/Dockerfile` has `USER sangui` with no subsequent `USER root` | Grep and awk assertions in security scan. |
+| settings.xml public mirror | `backend/settings.xml` has only public Maven mirrors with Central fallback | No `<server>`, `<username>`, or `mirrorOf=*` present. |
+| Image-pull infra failure classified | Registry/network/timeout/descriptor failures are classified as `image-pull`, not Dockerfile code bugs | README and spec failure boundary tables identify `image-pull` as separate from `docker-backend` / `docker-frontend`. |
 
 Good/base/bad cases:
 
 | Case | Expected result |
 |---|---|
-| Good | Fresh checkout, copy `.env.example` to `.env`, run the Compose command, backend health returns `code=OK`, frontend opens on `${FRONTEND_PORT:-3000}`, PG/Redis are internal-only (no host ports published), and backend Java process runs as non-root user `sangui`. |
-| Base | Local development uses `deploy/docker-compose.host-ports.yml` to expose PG/Redis for local tooling, plus `mvn spring-boot:run` and `npm run dev`; Vite proxies both `/api` and `/v1` to backend. |
-| Bad | Any real secret or generated `sk-sangui-*` key appears in committed files; frontend proxy returns SPA HTML for `/api` or `/v1`; backend uses `localhost` for database/Redis inside Compose; PG/Redis publish host ports in the default Compose config; backend runtime runs as root. |
+| Good | Fresh checkout, copy `.env.example` to `.env`, run the Compose command, backend health returns `code=OK`, frontend opens on `${FRONTEND_PORT:-3000}`, PG/Redis are internal-only (no host ports published), and backend Java process runs as non-root user `sangui`. CI passes all jobs including compose-contract, runtime-smoke, and security-scan. No committed secrets or registry push credentials. |
+| Base | Local development uses `deploy/docker-compose.host-ports.yml` to expose PG/Redis for local tooling, plus `mvn spring-boot:run` and `npm run dev`; Vite proxies both `/api` and `/v1` to backend. Docker registry/base image pull has transient network/TLS/rate-limit/content-descriptor failure. CI fails visibly on the image-pull boundary, README/spec classify it as infrastructure rather than code bug. Local fallback checks (Maven, lint, Compose config rendering, Dockerfile static assertions, secret scan) still pass. |
+| Bad | Any real secret or generated `sk-sangui-*` key appears in committed files; frontend proxy returns SPA HTML for `/api` or `/v1`; backend uses `localhost` for database/Redis inside Compose; PG/Redis publish host ports in the default Compose config; backend runtime runs as root; `USER root` appears after `USER sangui` in the Dockerfile; CI only builds images without starting runtime; docs treat image-pull infrastructure outages as proven code failures. |
 
 ## Baseline Engineering Contracts
 
