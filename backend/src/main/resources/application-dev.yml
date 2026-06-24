@@ -39,6 +39,8 @@ logging:
 rag:
   admin-auth:
     jwt-secret: ${RAG_ADMIN_AUTH_JWT_SECRET:local-dev-admin-jwt-secret-change-me-32chars}
+    default-admin-username: ${RAG_ADMIN_AUTH_DEFAULT_ADMIN_USERNAME:admin}
+    default-admin-password: ${RAG_ADMIN_AUTH_DEFAULT_ADMIN_PASSWORD:admin123}
   gateway:
     encryption:
       secret-key: ${RAG_GATEWAY_ENCRYPTION_SECRET_KEY:local-dev-aes-key-secret-change-me-32chars}

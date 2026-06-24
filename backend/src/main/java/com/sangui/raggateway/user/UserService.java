@@ -33,4 +33,8 @@ public class UserService {
     public boolean isActive(UserEntity user) {
         return user != null && UserStatus.ACTIVE.name().equals(user.getStatus());
     }
+
+    public long countUsers() {
+        return userMapper.selectCount(null);
+    }
 }
