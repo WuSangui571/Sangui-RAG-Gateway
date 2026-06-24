@@ -1,5 +1,6 @@
 package com.sangui.raggateway.model;
 
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
 import com.sangui.raggateway.embedding.EmbeddingClient;
 import com.sangui.raggateway.embedding.EmbeddingException;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -91,12 +93,25 @@ public class ModelConfigCheckService {
             baseUrl = request.getBaseUrl();
         }
 
-        String apiKey = encryptor.decrypt(entity.getApiKeyEncrypted());
+        String apiKey = null;
         if (request.getApiKey() != null && !request.getApiKey().isBlank()) {
             apiKey = request.getApiKey();
+        } else {
+            try {
+                apiKey = encryptor.decrypt(entity.getApiKeyEncrypted());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException("MODEL_CONFIG_NOT_READY",
+                        "The saved upstream API key cannot be decrypted with the current encryption secret. " +
+                        "To restore: set RAG_GATEWAY_ENCRYPTION_SECRET_KEY to the original AES secret used when " +
+                        "this key was saved, or update this model config with a new upstream API key.",
+                        HttpStatus.BAD_REQUEST);
+            }
         }
         if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalArgumentException("No upstream API key available for this config");
+            throw new BusinessException("MODEL_CONFIG_NOT_READY",
+                    "No upstream API key is saved for this config. " +
+                    "Update this model config with a new upstream API key.",
+                    HttpStatus.BAD_REQUEST);
         }
 
         String chatModel = entity.getChatModel();

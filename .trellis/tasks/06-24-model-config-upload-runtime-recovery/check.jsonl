@@ -1,0 +1,26 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and completion rules"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend validation checklist and required targeted tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Check project/env/encryption/storage contracts stayed aligned"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Check encryption schema, tenant scope, and document/task DB boundaries"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Check admin error code/message matrix and secret-safe responses"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Check no secret/ciphertext/content leakage in logs"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Check upstream/embedding failure visibility and no hidden fallback"}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Check upload enqueue and async failure contract"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Check no fallback second source of truth or secret leakage"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Check API/DB/env/frontend alignment"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Check frontend API typings if UI changes"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check frontend validation commands if UI changes"}
+{"file": "backend/src/test/java/com/sangui/raggateway/model/ModelConfigCheckServiceTest.java", "reason": "Target tests for saved check decrypt/probe behavior"}
+{"file": "backend/src/test/java/com/sangui/raggateway/model/ModelConfigAdminControllerTest.java", "reason": "Target tests for admin saved-check response shape/errors"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptorTest.java", "reason": "Target tests for encryption/decryption failure shape"}
+{"file": "backend/src/test/java/com/sangui/raggateway/model/ModelConfigServiceTest.java", "reason": "Regression tests for model config encrypted key handling"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java", "reason": "Target tests for upload enqueue, rollback, async embedding failure"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/DocumentAdminControllerTest.java", "reason": "Target tests for upload API response/error matrix"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/DocumentProcessingTaskServiceTest.java", "reason": "Target tests for task lifecycle and retry/failure transitions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/DocumentProcessingWorkerTest.java", "reason": "Target tests for worker exception boundary"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/storage/LocalFileStorageServiceTest.java", "reason": "Local storage save/read/delete regression tests"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/storage/ObjectFileStorageServiceTest.java", "reason": "Object storage idempotent delete and visible failure tests"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/config/DocumentConfigTest.java", "reason": "Storage backend selection regression tests"}
+{"file": "backend/src/test/java/com/sangui/raggateway/embedding/OpenAiCompatibleEmbeddingClientTest.java", "reason": "Embedding client failure normalization regression tests"}
+{"file": "frontend/src/__tests__/pages/ModelConfigPage.test.tsx", "reason": "Frontend saved-check display tests if UI changes"}
+{"file": "frontend/src/__tests__/pages/KnowledgeBasePage.test.tsx", "reason": "Frontend upload error/status display tests if UI changes"}

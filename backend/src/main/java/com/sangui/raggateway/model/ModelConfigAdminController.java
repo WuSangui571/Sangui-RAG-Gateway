@@ -118,6 +118,8 @@ public class ModelConfigAdminController {
         try {
             ModelConfigCheckResult result = modelConfigCheckService.checkSavedConfig(userId, id, request);
             return ApiResponse.success(result);
+        } catch (BusinessException e) {
+            throw e;
         } catch (IllegalArgumentException e) {
             throw new BusinessException("INVALID_REQUEST", e.getMessage());
         }

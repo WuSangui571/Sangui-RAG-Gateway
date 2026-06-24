@@ -78,11 +78,16 @@ public class DocumentAdminController {
                     file.getContentType(), fileContent);
             DocumentProcessingTaskEntity task = taskService.findByDocumentId(doc.getId());
             return ApiResponse.success(DocumentVO.from(doc, task));
+        } catch (BusinessException e) {
+            throw e;
         } catch (IllegalArgumentException e) {
             throw new BusinessException("INVALID_REQUEST", e.getMessage());
         } catch (IOException e) {
             log.error("Failed to read uploaded file", e);
             throw new BusinessException("INTERNAL_ERROR", "Failed to process uploaded file", HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            log.error("Unexpected error during document upload: kbId={}", knowledgeBaseId, e);
+            throw new BusinessException("INTERNAL_ERROR", "An unexpected error occurred during document upload", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

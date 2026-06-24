@@ -1,5 +1,6 @@
 package com.sangui.raggateway.model;
 
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.common.security.AdminAuthContext;
 import com.sangui.raggateway.common.security.AdminAuthContextHolder;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -391,6 +393,26 @@ class ModelConfigAdminControllerTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void shouldPreserveBusinessExceptionFromSavedCheck() throws Exception {
+        ModelConfigEntity entity = createTestEntity(10L, 100L);
+        when(modelConfigService.findById(10L)).thenReturn(entity);
+        when(modelConfigCheckService.checkSavedConfig(eq(100L), eq(10L), any(ModelConfigCheckRequest.class)))
+                .thenThrow(new BusinessException("MODEL_CONFIG_NOT_READY",
+                        "The saved upstream API key cannot be decrypted with the current encryption secret.",
+                        HttpStatus.BAD_REQUEST));
+
+        mockMvc.perform(post("/api/admin/model-configs/10/check")
+
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MODEL_CONFIG_NOT_READY"))
+                .andExpect(jsonPath("$.message").value("The saved upstream API key cannot be decrypted with the current encryption secret."))
+                .andExpect(jsonPath("$.message").value(not(containsString("api_key_encrypted"))))
+                .andExpect(jsonPath("$.message").value(not(containsString("v1:"))));
     }
 
     private ModelConfigVO createTestVO(Long id, Long userId, String apiKeyMasked, String status) {

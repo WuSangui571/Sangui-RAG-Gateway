@@ -110,7 +110,16 @@ public class DocumentService {
         String displayBasename = DocumentUploadRules.extractDisplayBasename(originalFilename);
 
         InputStream storageStream = new ByteArrayInputStream(fileContent);
-        StoredFile storedFile = fileStorageService.save("knowledge", knowledgeBaseId, safeFilename, storageStream);
+        StoredFile storedFile;
+        try {
+            storedFile = fileStorageService.save("knowledge", knowledgeBaseId, safeFilename, storageStream);
+        } catch (Exception e) {
+            log.error("Storage save failed during upload: kbId={}, filename={}, errorClass={}",
+                    knowledgeBaseId, safeFilename, e.getClass().getSimpleName());
+            throw new BusinessException("STORAGE_ERROR",
+                    "Upload failed: " + truncateSafe(e.getMessage()),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
         String storageKey = storedFile.getStoragePath();
 
         try {
@@ -137,13 +146,17 @@ public class DocumentService {
                 return doc;
             });
         } catch (Exception e) {
+            log.error("Upload transaction failed: kbId={}, storageKey={}, errorClass={}",
+                    knowledgeBaseId, storageKey, e.getClass().getSimpleName());
             try {
                 fileStorageService.delete(storageKey);
             } catch (Exception deleteEx) {
                 log.error("Storage cleanup failed after upload rollback: storageKey={}, kbId={}, userId={}, cleanupErrorClass={}",
                         storageKey, knowledgeBaseId, userId, deleteEx.getClass().getSimpleName());
             }
-            throw e;
+            throw new BusinessException("DATABASE_ERROR",
+                    "Upload failed: " + truncateSafe(e.getMessage()),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

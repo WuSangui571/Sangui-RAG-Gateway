@@ -1,5 +1,6 @@
 package com.sangui.raggateway.document;
 
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.common.security.AdminAuthContext;
 import com.sangui.raggateway.common.security.AdminAuthContextHolder;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -106,6 +108,25 @@ class DocumentAdminControllerTest {
                         )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.original_filename").value("guide.markdown"));
+    }
+
+    @Test
+    void shouldPreserveBusinessExceptionFromUploadService() throws Exception {
+        KnowledgeBaseEntity kb = createKb(1L, 100L);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+        when(documentService.uploadAndEnqueue(eq(100L), eq(1L), eq("test.md"), eq("text/markdown"), any(byte[].class)))
+                .thenThrow(new BusinessException("STORAGE_ERROR",
+                        "Upload failed: object storage rejected write",
+                        HttpStatus.INTERNAL_SERVER_ERROR));
+
+        MockMultipartFile file = new MockMultipartFile("file", "test.md", "text/markdown", "Hello World".getBytes());
+
+        mockMvc.perform(multipart("/api/admin/knowledge-bases/1/documents")
+                        .file(file)
+                        )
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("STORAGE_ERROR"))
+                .andExpect(jsonPath("$.message").value("Upload failed: object storage rejected write"));
     }
 
     @Test

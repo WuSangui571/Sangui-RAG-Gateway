@@ -1,0 +1,35 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, deployment env contract, encryption/storage/ingestion baselines"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Model config encryption schema, tenant rules, document/task schema"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Admin API error matrices and secret-safe responses"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe logging for keys, upload, storage, embedding, and request diagnostics"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend required checks and forbidden patterns"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Upstream and embedding failure normalization, no silent fallback"}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Upload enqueue boundary and async embedding failure behavior"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Secret safety, tenant isolation, and no hidden fallback policy"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer env/API/DB/frontend flow mapping"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend typed API/error/display contracts if UI changes"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend validation commands if UI changes"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigCheckService.java", "reason": "Saved model check decrypt and probe path"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigAdminController.java", "reason": "Admin saved-check endpoint and error mapping"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java", "reason": "Model config decrypt helper and embedding config lookup"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java", "reason": "AES-GCM payload format and decrypt failure boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/EncryptionProperties.java", "reason": "Encryption property binding source"}
+{"file": "backend/src/main/resources/application.yml", "reason": "Runtime env mapping for encryption, storage, worker"}
+{"file": "backend/src/main/resources/application-dev.yml", "reason": "Dev defaults for JWT/AES split"}
+{"file": "deploy/docker-compose.yml", "reason": "Compose runtime env pass-through"}
+{"file": ".env.example", "reason": "Documented local placeholders and deprecated shared secret"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentAdminController.java", "reason": "Upload endpoint response/error boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentService.java", "reason": "uploadAndEnqueue, storage rollback, async processing and embedding decrypt path"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentProcessingWorker.java", "reason": "Async worker failure transition boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentProcessingTaskService.java", "reason": "Task lifecycle and retry/failure state transitions"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/storage/FileStorageService.java", "reason": "Storage abstraction contract"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/storage/LocalFileStorageService.java", "reason": "Local storage save/read/delete behavior"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/storage/ObjectFileStorageService.java", "reason": "Object storage save/read/delete behavior"}
+{"file": "frontend/src/api/http.ts", "reason": "Frontend ApiError message preservation"}
+{"file": "frontend/src/api/model-configs.ts", "reason": "Saved model check API client"}
+{"file": "frontend/src/api/documents.ts", "reason": "Upload API client"}
+{"file": "frontend/src/pages/model-configs/ModelConfigPage.tsx", "reason": "Saved check UI error/result display"}
+{"file": "frontend/src/pages/knowledge/KnowledgeBasePage.tsx", "reason": "Upload UI error/status display"}

@@ -220,10 +220,10 @@ Upload rollback validation matrix:
 |---|---|---|
 | Unsupported filename/content type, empty file, oversized file | Fail before `FileStorageService.save(...)` | `DocumentServiceTest` verifies no storage interaction. |
 | `FileStorageService.save(...)` fails | Upload fails visibly; no cleanup delete because no storage key exists | Service/controller tests. |
-| `rag_document` insert fails after save | Delete the saved storage key exactly once; propagate original failure | `DocumentServiceTest`. |
-| Processing task creation fails after document insert | Roll back the upload metadata transaction, delete the saved storage key exactly once, and do not update KB status | `DocumentServiceTest` asserts rollback and cleanup. |
-| KB status update fails after task creation | Roll back upload metadata/task work and delete the saved storage key exactly once | `DocumentServiceTest`. |
-| Cleanup delete also fails | Log safe `storageKey`, KB/user IDs, and cleanup exception class; propagate the original upload failure | `DocumentServiceTest`. |
+| `rag_document` insert fails after save | Delete the saved storage key exactly once; return/throw the original failure boundary as `DATABASE_ERROR` with bounded message | `DocumentServiceTest`. |
+| Processing task creation fails after document insert | Roll back the upload metadata transaction, delete the saved storage key exactly once, do not update KB status, and return/throw `DATABASE_ERROR` with bounded original task error summary | `DocumentServiceTest` asserts rollback and cleanup. |
+| KB status update fails after task creation | Roll back upload metadata/task work, delete the saved storage key exactly once, and return/throw `DATABASE_ERROR` with bounded original KB status error summary | `DocumentServiceTest`. |
+| Cleanup delete also fails | Log safe `storageKey`, KB/user IDs, and cleanup exception class; preserve the original `DATABASE_ERROR` instead of replacing it with cleanup failure | `DocumentServiceTest`. |
 | Parser/embedding worker fails after a queued upload | Keep the stored original; worker failure is not upload rollback | Worker/process-document tests. |
 
 Deletion flow:

@@ -752,8 +752,11 @@ class DocumentServiceTest {
 
         assertThatThrownBy(() -> documentService.uploadAndEnqueue(
                 100L, 1L, "test.md", "text/markdown", fileContent))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("DB insert error");
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("DATABASE_ERROR");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertThat(ex.getMessage()).contains("DB insert error");
+                });
 
         verify(fileStorageService).delete(storageKey);
         verify(taskService, never()).createTask(anyLong(), anyLong(), anyLong(), anyInt());
@@ -781,8 +784,11 @@ class DocumentServiceTest {
 
         assertThatThrownBy(() -> transactionalService.uploadAndEnqueue(
                 100L, 1L, "test.md", "text/markdown", fileContent))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Task creation error");
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("DATABASE_ERROR");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertThat(ex.getMessage()).contains("Task creation error");
+                });
 
         assertThat(txManager.rollbacks()).isEqualTo(1);
         assertThat(txManager.commits()).isZero();
@@ -802,8 +808,11 @@ class DocumentServiceTest {
 
         assertThatThrownBy(() -> documentService.uploadAndEnqueue(
                 100L, 1L, "test.md", "text/markdown", fileContent))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("KB status update error");
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("DATABASE_ERROR");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertThat(ex.getMessage()).contains("KB status update error");
+                });
 
         verify(fileStorageService).delete(storageKey);
         verify(taskService).createTask(anyLong(), anyLong(), anyLong(), anyInt());
@@ -823,8 +832,12 @@ class DocumentServiceTest {
 
         assertThatThrownBy(() -> documentService.uploadAndEnqueue(
                 100L, 1L, "test.md", "text/markdown", fileContent))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("DB insert error");
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("DATABASE_ERROR");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertThat(ex.getMessage()).contains("DB insert error");
+                    assertThat(ex.getMessage()).doesNotContain("Storage backend unavailable");
+                });
 
         verify(fileStorageService).delete(storageKey);
         verify(taskService, never()).createTask(anyLong(), anyLong(), anyLong(), anyInt());

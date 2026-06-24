@@ -1,5 +1,6 @@
 package com.sangui.raggateway.model;
 
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
 import com.sangui.raggateway.embedding.EmbeddingClient;
 import com.sangui.raggateway.embedding.EmbeddingProbeResult;
@@ -17,6 +18,7 @@ import org.springframework.web.client.RestClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
@@ -120,5 +122,56 @@ class ModelConfigCheckServiceTest {
         assertThatThrownBy(() -> service.checkUnsavedConfig(100L, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("CHAT_EMBEDDING is no longer supported");
+    }
+
+    @Test
+    void shouldUseRequestApiKeyOverrideForSavedCheckWithoutDecryptingStoredKey() {
+        ModelConfigEntity entity = savedChatConfig();
+        when(modelConfigService.findByIdAndUserId(10L, 100L)).thenReturn(entity);
+        mockServer.expect(requestTo(BASE_URL + "/v1/chat/completions"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{}"));
+
+        ModelConfigCheckRequest request = new ModelConfigCheckRequest();
+        request.setApiKey(API_KEY);
+
+        ModelConfigCheckResult result = service.checkSavedConfig(100L, 10L, request);
+
+        assertThat(result.getOverallStatus()).isEqualTo("SUCCESS");
+        verifyNoInteractions(encryptor);
+        mockServer.verify();
+    }
+
+    @Test
+    void shouldReturnNotReadyWhenSavedKeyCannotBeDecrypted() {
+        ModelConfigEntity entity = savedChatConfig();
+        when(modelConfigService.findByIdAndUserId(10L, 100L)).thenReturn(entity);
+        when(encryptor.decrypt("v1:bad:data")).thenThrow(new IllegalArgumentException("bad tag"));
+
+        ModelConfigCheckRequest request = new ModelConfigCheckRequest();
+
+        assertThatThrownBy(() -> service.checkSavedConfig(100L, 10L, request))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.getCode()).isEqualTo("MODEL_CONFIG_NOT_READY");
+                    assertThat(ex.getHttpStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(ex.getMessage()).contains("RAG_GATEWAY_ENCRYPTION_SECRET_KEY");
+                    assertThat(ex.getMessage()).doesNotContain("v1:");
+                    assertThat(ex.getMessage()).doesNotContain("bad tag");
+                });
+    }
+
+    private ModelConfigEntity savedChatConfig() {
+        ModelConfigEntity entity = new ModelConfigEntity();
+        entity.setId(10L);
+        entity.setUserId(100L);
+        entity.setProviderName("openai-compatible");
+        entity.setBaseUrl(BASE_URL);
+        entity.setApiKeyEncrypted("v1:bad:data");
+        entity.setCapability(ModelConfigCapability.CHAT.name());
+        entity.setChatModel("deepseek-v4-pro");
+        entity.setStatus("ENABLED");
+        return entity;
     }
 }

@@ -121,6 +121,9 @@ The admin model config endpoints (`/api/admin/model-configs/**`) and app binding
 | Missing capability on create | 400 | `INVALID_REQUEST` | capability is required. |
 | Check: missing required fields (unsaved) | 400 | `INVALID_REQUEST` | capability, base_url, api_key, and capability-specific model fields required. |
 | Check: cross-user saved config | 403 | `FORBIDDEN` | No provider call. |
+| Check: saved config encrypted key cannot decrypt with current AES secret | 400 | `MODEL_CONFIG_NOT_READY` | Admin envelope message tells the operator to restore the original `RAG_GATEWAY_ENCRYPTION_SECRET_KEY` or re-enter the upstream key. No plaintext key, ciphertext, or decrypt exception detail is returned. |
+| Check: saved config has no stored key and request provides no `api_key` override | 400 | `MODEL_CONFIG_NOT_READY` | Admin envelope message tells the operator to update the model config with a new upstream API key. |
+| Check: saved config request includes non-blank `api_key` override | 200 or upstream probe result | Uses the request-only key for this check and does not decrypt the stored `api_key_encrypted` value. The override is not persisted. |
 
 `BusinessException` now supports an optional `HttpStatus` parameter. The default constructor (code + message) returns 400 BAD_REQUEST. The extended constructor (code + message + httpStatus) returns the specified status. This allows 403 FORBIDDEN and 404 NOT_FOUND responses while maintaining backward compatibility with all existing callers.
 
@@ -480,6 +483,8 @@ The knowledge base and document admin endpoints use the `ApiResponse` envelope w
 | Empty multipart file | 400 | `INVALID_REQUEST` | No document row. |
 | Unsupported filename | 400 | `INVALID_REQUEST` | No document row. |
 | Upload valid supported file | 200 | `OK` with `DocumentVO.status=UPLOADED` and `processing_task_status=PENDING` | Original file saved, document/task rows created, KB becomes `PROCESSING`, no parse/embed before response. |
+| Upload storage save fails before a storage key exists | 500 | `STORAGE_ERROR` | Failure remains visible; response may include a bounded original storage error summary but must not include absolute paths, credentials, file content, stack traces, `storage_path`, or object storage internals. Cleanup delete is not called because no key exists. |
+| Upload DB/task/KB-status transaction fails after storage save | 500 | `DATABASE_ERROR` | Saved storage key is deleted exactly once, DB transaction rolls back, and response may include a bounded original database/task error summary. Cleanup failure is logged safely but does not replace the original upload failure. |
 | Invalid document status filter | 400 | `INVALID_REQUEST` | Do not echo arbitrary input. |
 | Get missing document | 404 | `NOT_FOUND` | Safe admin envelope. |
 | Get cross-user document | 403 | `FORBIDDEN` | Generic access denied. |

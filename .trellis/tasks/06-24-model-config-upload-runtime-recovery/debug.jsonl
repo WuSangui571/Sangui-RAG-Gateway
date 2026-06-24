@@ -1,0 +1,10 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Debug cross-layer runtime flow, error boundary, and secret handling"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Debug admin error response classification"}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Debug upload vs async worker boundary"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Debug secret-safe evidence and no fallback boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigCheckService.java", "reason": "Debug saved check decrypt path"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java", "reason": "Debug decrypt failure cause"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentService.java", "reason": "Debug upload enqueue and worker processing path"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentAdminController.java", "reason": "Debug upload API boundary"}
+{"file": "backend/src/main/resources/application.yml", "reason": "Debug runtime env mapping"}
+{"file": "deploy/docker-compose.yml", "reason": "Debug Compose env pass-through"}
