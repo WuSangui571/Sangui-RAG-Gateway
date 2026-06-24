@@ -103,7 +103,7 @@ hit_chunk_ids
 | API key request/token limit exceeded | 429 | `rate_limit_exceeded` | OpenAI-compatible JSON, safe request log, no upstream/retrieval call |
 | Redis limiter unavailable | 500 | `internal_error` | OpenAI-compatible JSON, safe request log where possible, no silent pass-through |
 | Invalid chat payload | 400 | `invalid_request` | Validate before limiter; no quota consumed |
-| Request log insert failure | Gateway response unchanged | n/a | Log safe request ID and exception class only |
+| Request log insert failure | Gateway response unchanged | n/a | Emit `request_log.persist_failed` ERROR event with `request_id`, safe IDs (`user_id`, `app_id`, `api_key_id`), request-log `status`/`error_code`, and exception class only. Never log exception message, stack trace, command fields (`question_summary`, `output_preview`, `retrieval_evidence`), API keys, Authorization headers, provider bodies, prompt content, or chunk content. Controller wraps `record()` calls defensively. |
 | Client disconnect during stream | stream closes | `client_cancelled` | Cancel upstream, persist `status=cancelled`, release token reservation, and log as cancellation, not internal error |
 
 ## 6. Good/Base/Bad Cases

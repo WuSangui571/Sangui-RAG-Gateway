@@ -1,0 +1,20 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\tasks\\06-24-request-log-write-failure-observability\\prd.md", "reason": "Task PRD with scope, contracts, acceptance criteria, validation matrix, and required tests"}
+{"file": ".trellis\\tasks\\06-24-request-log-write-failure-observability\\research.md", "reason": "Focused code research and handoff notes for implementation"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project-level request-log safety and OpenAI-compatible gateway boundary"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Primary safe logging and request-log persistence contract"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Gateway response unaffected by request-log insert failure and safe resilience behavior"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Forbidden sensitive fields for request logs, evidence, errors, and observability"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "OpenAI-compatible public error shape must be preserved"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend request-log and streaming verification commands"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Existing request-log schema and tenant-safe metadata baseline; no migration expected"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Request-log retrieval fields and evidence boundaries"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Prompt/message/content secrecy boundary"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer observability flow and test planning"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Main request-log persistence failure boundary"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\CreateRequestLogCommand.java", "reason": "Command fields that must not be logged wholesale"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Gateway response and request-log call boundary"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogServiceTest.java", "reason": "Service-level insert failure observability tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsControllerTest.java", "reason": "Controller response-unaffected tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsRuntimeSmokeTest.java", "reason": "Streaming runtime smoke regression target"}

@@ -6,12 +6,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ApiRequestLogServiceTest {
 
     @Mock
@@ -147,7 +149,7 @@ class ApiRequestLogServiceTest {
     }
 
     @Test
-    void shouldHandleInsertFailureSafely() {
+    void shouldHandleInsertFailureSafely(CapturedOutput output) {
         when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class)))
                 .thenThrow(new RuntimeException("Database connection lost"));
 
@@ -162,6 +164,71 @@ class ApiRequestLogServiceTest {
                 .build());
 
         verify(apiRequestLogMapper).insertRequestLog(any(ApiRequestLogEntity.class));
+
+        String logs = output.getOut() + output.getErr();
+        assertThat(logs).contains("request_log.persist_failed");
+        assertThat(logs).contains("request_id=req-004");
+        assertThat(logs).contains("user_id=100");
+        assertThat(logs).contains("app_id=1");
+        assertThat(logs).contains("api_key_id=30");
+        assertThat(logs).contains("status=success");
+        assertThat(logs).contains("error_class=RuntimeException");
+        assertThat(logs).doesNotContain("Database connection lost");
+        assertThat(logs).doesNotContain("sk-sangui");
+        assertThat(logs).doesNotContain("Bearer");
+        assertThat(logs).doesNotContain("Authorization");
+    }
+
+    @Test
+    void shouldNotLogSensitiveFieldsOnInsertFailure(CapturedOutput output) {
+        when(apiRequestLogMapper.insertRequestLog(any(ApiRequestLogEntity.class)))
+                .thenThrow(new RuntimeException("DB error with sk-sangui-abc123 in message"));
+
+        service.record(CreateRequestLogCommand.builder()
+                .requestId("req-sensitive-001")
+                .userId(100L)
+                .appId(1L)
+                .apiKeyId(30L)
+                .status("failure")
+                .errorCode("upstream_error")
+                .latencyMs(100L)
+                .messagesCount(1)
+                .questionSummary("含有敏感数据的用户问题摘要")
+                .hitChunkIds("[1,2,3]")
+                .retrievalEvidence("{\"version\":1,\"citations\":[{\"chunk_id\":1}]}")
+                .outputPreview("模型返回的完整回答输出预览内容")
+                .build());
+
+        verify(apiRequestLogMapper).insertRequestLog(any(ApiRequestLogEntity.class));
+
+        String logs = output.getOut() + output.getErr();
+        assertThat(logs).contains("request_log.persist_failed");
+        assertThat(logs).contains("request_id=req-sensitive-001");
+        assertThat(logs).contains("error_code=upstream_error");
+        assertThat(logs).contains("error_class=RuntimeException");
+
+        assertThat(logs).doesNotContain("sk-sangui");
+        assertThat(logs).doesNotContain("Bearer");
+        assertThat(logs).doesNotContain("Authorization");
+        assertThat(logs).doesNotContain("api_key=");
+        assertThat(logs).doesNotContain("key_hash");
+        assertThat(logs).doesNotContain("upstream_api_key");
+        assertThat(logs).doesNotContain("api_key_encrypted");
+        assertThat(logs).doesNotContain("DB error");
+        assertThat(logs).doesNotContain("含有敏感数据");
+        assertThat(logs).doesNotContain("完整回答输出预览");
+        assertThat(logs).doesNotContain("retrieval_evidence");
+        assertThat(logs).doesNotContain("hit_chunk_ids");
+        assertThat(logs).doesNotContain("citations");
+        assertThat(logs).doesNotContain("chunk_id");
+        assertThat(logs).doesNotContain("stack_trace");
+        assertThat(logs).doesNotContain("storage_path");
+        assertThat(logs).doesNotContain("output_preview");
+        assertThat(logs).doesNotContain("prompt");
+        assertThat(logs).doesNotContain("messages");
+        assertThat(logs).doesNotContain("augmented_prompt");
+        assertThat(logs).doesNotContain("chunk_content");
+        assertThat(logs).doesNotContain("provider_response_body");
     }
 
     @Test

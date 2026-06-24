@@ -1,0 +1,20 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-24-request-log-write-failure-observability\\prd.md", "reason": "Check implementation against task scope, forbidden changes, and acceptance criteria"}
+{"file": ".trellis\\tasks\\06-24-request-log-write-failure-observability\\research.md", "reason": "Check expected files, risks, and required assertions from research"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Verify implementation preserves project boundary and safe request-log metadata"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Verify logs are safe, observable, and spec is synchronized"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Verify gateway resilience/error behavior remains unchanged"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Check no sensitive prompt/key/chunk/provider data leaks into observability"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Check request-log failure does not replace original gateway errors"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Check targeted tests and compile/diff validation are run"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Check no unnecessary DB/schema change is introduced"}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "Check retrieval evidence is not dumped into failure logs"}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Check prompt/messages/full context are not logged"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Check response shape, sensitive fields, and tests are aligned"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogService.java", "reason": "Review non-throwing failure handling and safe log fields"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\CreateRequestLogCommand.java", "reason": "Check no sensitive command fields are logged"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Check public response behavior is unchanged"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\log\\ApiRequestLogServiceTest.java", "reason": "Check failure log positive and negative assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsControllerTest.java", "reason": "Check gateway response and request-log failure behavior"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsRuntimeSmokeTest.java", "reason": "Check streaming terminal-status behavior still passes"}

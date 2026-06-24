@@ -138,7 +138,7 @@ The request body is limited to `request_log_output_capture_enabled: boolean`. Th
 | Prompt boundary | RAG context is reference material and cannot override system safety or reveal internals. |
 | Evidence boundary | Admin hit chunks return safe metadata and bounded summary, not full chunk content. |
 | Retrieval evidence boundary | Request-log retrieval evidence returns metadata-only citations and never chunk content, prompts, storage paths, keys, embeddings, provider bodies, or raw SSE. |
-| Log boundary | Request logs hold safe operational fields only. |
+| Log boundary | Request logs hold safe operational fields only. Persistence failure observability must emit only safe fields (request_id, user_id, app_id, api_key_id, status, error_code, exception class) without exception message, stack trace, command fields, keys, prompt content, or provider bodies. |
 | Error boundary | Errors are compatible and safe; no internals or secrets. |
 | Output preview boundary | Preview content is default-off, app-opt-in, bounded/redacted, expired by retention, and returned only through explicit audited access. |
 | App output capture switch boundary | App owners may toggle only their own app-level boolean switch; the management API exposes metadata only and never exposes preview content. |

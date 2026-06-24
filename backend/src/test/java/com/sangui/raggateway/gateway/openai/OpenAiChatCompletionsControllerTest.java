@@ -906,4 +906,49 @@ class OpenAiChatCompletionsControllerTest {
                 .andExpect(content().string(not(containsString("java."))))
                 .andExpect(content().string(not(containsString("redis"))));
     }
+
+    @Test
+    void shouldReturn200WhenRecordThrowsOnSuccess() throws Exception {
+        setContext();
+        when(chatCompletionGatewayService.processChatCompletion(any())).thenReturn(createSuccessResult());
+        doThrow(new RuntimeException("DB down")).when(apiRequestLogService).record(any());
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.object").value("chat.completion"))
+                .andExpect(jsonPath("$.id").value("chatcmpl-test"))
+                .andExpect(jsonPath("$.choices[0].message.content").value("Hello"));
+    }
+
+    @Test
+    void shouldPreserveUpstreamErrorWhenRecordThrowsOnFailure() throws Exception {
+        setContext();
+        when(chatCompletionGatewayService.processChatCompletion(any()))
+                .thenThrow(new GatewayException("Upstream service is unavailable",
+                        "server_error", "upstream_error", HttpStatus.BAD_GATEWAY));
+        doThrow(new RuntimeException("DB down")).when(apiRequestLogService).record(any());
+
+        mockMvc.perform(post("/v1/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "model": "gpt-4o",
+                                  "messages": [
+                                    {"role": "user", "content": "Hello"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.error.code").value("upstream_error"))
+                .andExpect(jsonPath("$.error.type").value("server_error"));
+    }
 }

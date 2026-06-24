@@ -195,7 +195,7 @@ full prompt content
 stack traces
 ```
 
-Insert failure safety: `ApiRequestLogService.record()` catches all exceptions internally. When insert fails, the error is logged at ERROR with request_id and exception class name only. The gateway response is never affected by log persistence failure.
+Insert failure safety: `ApiRequestLogService.record()` catches all exceptions internally. When insert fails, a stable observable ERROR event `request_log.persist_failed` is emitted with `request_id`, safe numeric IDs (`user_id`, `app_id`, `api_key_id`), request-log `status`, `error_code`, and exception class simple name only. The exception message, stack trace, command fields (`question_summary`, `output_preview`, `retrieval_evidence`, `hit_chunk_ids`), API keys, Authorization headers, provider bodies, prompt content, and chunk content are never logged in persistence failure events. The gateway response is never affected by log persistence failure. The controller wraps all `record()` calls in a defensive try-catch that prevents unexpected service exceptions from affecting the gateway response.
 
 Known unpersisted scenarios (documented limitation):
 

@@ -121,7 +121,7 @@ public class OpenAiChatCompletionsController {
                         requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
                         limitResult.getLimitType(), messagesCount, latencyMs);
 
-                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                safeRecord(CreateRequestLogCommand.builder()
                         .requestId(requestId)
                         .userId(context.getUserId())
                         .appId(context.getAppId())
@@ -155,7 +155,7 @@ public class OpenAiChatCompletionsController {
                     resolveCaptureResult(context.getAppId(),
                             result.getAssistantOutputContent(), result.getCompletionLength());
 
-            apiRequestLogService.record(CreateRequestLogCommand.builder()
+            safeRecord(CreateRequestLogCommand.builder()
                     .requestId(requestId)
                     .userId(context.getUserId())
                     .appId(context.getAppId())
@@ -196,7 +196,7 @@ public class OpenAiChatCompletionsController {
                     requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
                     e.getCode(), messagesCount, latencyMs);
 
-            apiRequestLogService.record(CreateRequestLogCommand.builder()
+            safeRecord(CreateRequestLogCommand.builder()
                     .requestId(requestId)
                     .userId(context.getUserId())
                     .appId(context.getAppId())
@@ -234,7 +234,7 @@ public class OpenAiChatCompletionsController {
                         requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
                         limitResult.getLimitType(), messagesCount, latencyMs);
 
-                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                safeRecord(CreateRequestLogCommand.builder()
                         .requestId(requestId)
                         .userId(context.getUserId())
                         .appId(context.getAppId())
@@ -264,7 +264,7 @@ public class OpenAiChatCompletionsController {
                     requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
                     e.getCode(), messagesCount, latencyMs);
 
-            apiRequestLogService.record(CreateRequestLogCommand.builder()
+            safeRecord(CreateRequestLogCommand.builder()
                     .requestId(requestId)
                     .userId(context.getUserId())
                     .appId(context.getAppId())
@@ -299,7 +299,7 @@ public class OpenAiChatCompletionsController {
                 if (reservationHolder[0] != null) {
                     rateLimitService.releaseReservation(apiKeyId, reservationHolder[0]);
                 }
-                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                safeRecord(CreateRequestLogCommand.builder()
                         .requestId(requestId)
                         .userId(userId)
                         .appId(appId)
@@ -327,7 +327,7 @@ public class OpenAiChatCompletionsController {
                 if (reservationHolder[0] != null) {
                     rateLimitService.releaseReservation(apiKeyId, reservationHolder[0]);
                 }
-                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                safeRecord(CreateRequestLogCommand.builder()
                         .requestId(requestId)
                         .userId(userId)
                         .appId(appId)
@@ -368,7 +368,7 @@ public class OpenAiChatCompletionsController {
                     log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=cancelled error_code=client_cancelled messages_count={} latency_ms={}",
                             requestId, appId, apiKeyId, userId, messagesCount, latencyMs);
 
-                    apiRequestLogService.record(CreateRequestLogCommand.builder()
+                    safeRecord(CreateRequestLogCommand.builder()
                             .requestId(requestId)
                             .userId(userId)
                             .appId(appId)
@@ -394,7 +394,7 @@ public class OpenAiChatCompletionsController {
                 log.info("gateway.chat.completed request_id={} app_id={} api_key_id={} user_id={} status=success messages_count={} latency_ms={} upstream_latency_ms={}",
                         requestId, appId, apiKeyId, userId, messagesCount, latencyMs, upstreamLatencyMs);
 
-                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                safeRecord(CreateRequestLogCommand.builder()
                         .requestId(requestId)
                         .userId(userId)
                         .appId(appId)
@@ -427,7 +427,7 @@ public class OpenAiChatCompletionsController {
 
                 sendSseError(emitter, requestId, e.getMessage(), e.getType(), e.getCode());
 
-                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                safeRecord(CreateRequestLogCommand.builder()
                         .requestId(requestId)
                         .userId(userId)
                         .appId(appId)
@@ -467,7 +467,7 @@ public class OpenAiChatCompletionsController {
 
                 sendSseError(emitter, requestId, "Upstream service is unavailable", "server_error", errorCode);
 
-                apiRequestLogService.record(CreateRequestLogCommand.builder()
+                safeRecord(CreateRequestLogCommand.builder()
                         .requestId(requestId)
                         .userId(userId)
                         .appId(appId)
@@ -529,7 +529,7 @@ public class OpenAiChatCompletionsController {
                     requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
                     gatewayException.getCode(), messagesCount, latencyMs);
 
-            apiRequestLogService.record(CreateRequestLogCommand.builder()
+            safeRecord(CreateRequestLogCommand.builder()
                     .requestId(requestId)
                     .userId(context.getUserId())
                     .appId(context.getAppId())
@@ -557,7 +557,7 @@ public class OpenAiChatCompletionsController {
                 requestId, context.getAppId(), context.getApiKeyId(), context.getUserId(),
                 e.getCode(), messagesCount, latencyMs);
 
-        apiRequestLogService.record(CreateRequestLogCommand.builder()
+        safeRecord(CreateRequestLogCommand.builder()
                 .requestId(requestId)
                 .userId(context.getUserId())
                 .appId(context.getAppId())
@@ -568,6 +568,15 @@ public class OpenAiChatCompletionsController {
                 .messagesCount(messagesCount)
                 .outputCaptureStatus(outputCapturePolicy.getDisabledStatus())
                 .build());
+    }
+
+    private void safeRecord(CreateRequestLogCommand command) {
+        try {
+            apiRequestLogService.record(command);
+        } catch (Exception e) {
+            log.warn("request_log.controller_record_failed request_id={} error_class={}",
+                    command.getRequestId(), e.getClass().getSimpleName());
+        }
     }
 
     private void sendSseError(SseEmitter emitter, String requestId, String message, String type, String code) {

@@ -61,8 +61,9 @@ public class ApiRequestLogService {
             ApiRequestLogEntity entity = toEntity(command);
             apiRequestLogMapper.insertRequestLog(entity);
         } catch (Exception e) {
-            log.error("Failed to persist request log for request_id={}, errorType={}",
-                    command.getRequestId(), e.getClass().getSimpleName());
+            log.error("request_log.persist_failed request_id={} user_id={} app_id={} api_key_id={} status={} error_code={} error_class={}",
+                    command.getRequestId(), command.getUserId(), command.getAppId(), command.getApiKeyId(),
+                    command.getStatus(), command.getErrorCode(), e.getClass().getSimpleName());
         }
     }
 
