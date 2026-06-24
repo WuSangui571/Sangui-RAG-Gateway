@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 83
+- **Total Sessions**: 84
 - **Last Active**: 2026-06-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1091 | Active |
+| `journal-3.md` | ~1161 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 84 | 2026-06-24 | Runtime secret upload recovery closeout | `23b5b4db` | `feature/runtime-secret-upload-debug` |
 | 83 | 2026-06-24 | CI image runtime validation | `6b4c82e9` | `feature/ci-image-runtime-validation` |
 | 82 | 2026-06-24 | Docker runtime exposure hardening | `91fb27d6` | `feature/docker-runtime-exposure-hardening` |
 | 81 | 2026-06-24 | Backend data tracking cleanup closeout | `b5657c32` | `feature/backend-data-repo-hygiene` |

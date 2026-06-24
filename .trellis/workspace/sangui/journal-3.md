@@ -1089,3 +1089,73 @@ Boundaries and notes:
 ### Next Steps
 
 - None - task complete
+
+
+## Session 84: Runtime secret upload recovery closeout
+
+**Date**: 2026-06-24
+**Task**: Runtime secret upload recovery closeout
+**Branch**: `feature/runtime-secret-upload-debug`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+**Commit**: 23b5b4db fix: restore model-config check and document upload runtime error boundaries
+
+**Main modules**:
+- Backend admin model config saved-check runtime recovery.
+- Backend document upload enqueue/storage/transaction error boundary recovery.
+- Trellis backend/RAG spec sync for executable error contracts.
+
+**Updated files**:
+- backend/src/main/java/com/sangui/raggateway/model/ModelConfigCheckService.java
+- backend/src/main/java/com/sangui/raggateway/model/ModelConfigAdminController.java
+- backend/src/main/java/com/sangui/raggateway/document/DocumentService.java
+- backend/src/main/java/com/sangui/raggateway/document/DocumentAdminController.java
+- backend/src/test/java/com/sangui/raggateway/model/ModelConfigCheckServiceTest.java
+- backend/src/test/java/com/sangui/raggateway/model/ModelConfigAdminControllerTest.java
+- backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java
+- backend/src/test/java/com/sangui/raggateway/document/DocumentAdminControllerTest.java
+- .trellis/spec/backend/error-handling.md
+- .trellis/spec/rag/document-ingestion.md
+
+**Validation**:
+- mvn -q "-Dtest=ModelConfigCheckServiceTest,ModelConfigAdminControllerTest" test: passed.
+- mvn -q "-Dtest=DocumentServiceTest,DocumentAdminControllerTest" test: passed.
+- mvn -q "-Dtest=UpstreamApiKeyEncryptorTest,ModelConfigServiceTest" test: passed.
+- mvn -q "-Dtest=DocumentProcessingTaskServiceTest,DocumentProcessingWorkerTest" test: passed.
+- mvn -q "-Dtest=LocalFileStorageServiceTest,ObjectFileStorageServiceTest,DocumentConfigTest" test: passed.
+- mvn -q "-Dtest=OpenAiCompatibleEmbeddingClientTest" test: passed.
+- mvn -q -DskipTests compile: passed.
+- mvn test: 781 tests, 0 failures, 0 errors, BUILD SUCCESS.
+- git diff --check: no whitespace errors, line-ending warnings only.
+- Manual runtime testing: confirmed by user before record-session.
+
+**Result and boundaries**:
+- Saved model-config check now returns MODEL_CONFIG_NOT_READY for undecryptable saved upstream keys with an operator-actionable, secret-safe message.
+- Request api_key override for saved check is request-only and bypasses stored-key decrypt for that check.
+- Document upload storage save failures return STORAGE_ERROR; short DB/task/KB-status transaction failures return DATABASE_ERROR and delete the saved storage key once.
+- Upload remains enqueue-only: successful upload returns UPLOADED/PENDING and does not parse, chunk, or embed before response.
+- No silent dual-secret fallback, no schema migration, no plaintext/ciphertext exposure, and no frontend rewrite.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `23b5b4db` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
