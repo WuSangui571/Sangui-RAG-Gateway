@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 81
+- **Total Sessions**: 82
 - **Last Active**: 2026-06-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~961 | Active |
+| `journal-3.md` | ~1025 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 82 | 2026-06-24 | Docker runtime exposure hardening | `91fb27d6` | `feature/docker-runtime-exposure-hardening` |
 | 81 | 2026-06-24 | Backend data tracking cleanup closeout | `b5657c32` | `feature/backend-data-repo-hygiene` |
 | 80 | 2026-06-24 | Vector serialization unification | `637f6a1e` | `feature/vector-serialization-unification` |
 | 79 | 2026-06-23 | Retrieval READY filter closeout | `0f5715a5` | `feature/retrieval-ready-filter-ann-baseline` |

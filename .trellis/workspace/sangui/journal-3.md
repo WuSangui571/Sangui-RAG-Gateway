@@ -959,3 +959,73 @@ Result: Backend runtime upload data is no longer tracked by Git, future backend/
 ### Next Steps
 
 - None - task complete
+
+
+## Session 82: Docker runtime exposure hardening
+
+**Date**: 2026-06-24
+**Task**: Docker runtime exposure hardening
+**Branch**: `feature/docker-runtime-exposure-hardening`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+**Summary**
+- Completed Docker runtime exposure hardening after manual acceptance and commit `91fb27d6`.
+- Default Compose no longer publishes PostgreSQL or Redis host ports; backend and frontend remain the only default host-published services.
+- Added explicit opt-in host-port override for local database/Redis tooling.
+- Backend runtime image now creates and uses non-root user `sangui`, with `/app/data/uploads` owned by that user.
+- README, `.env.example`, project spec, and backend quality guidelines now document the new runtime exposure and non-root contracts.
+
+**Main Modules**
+- Deployment: `deploy/docker-compose.yml`, `deploy/docker-compose.host-ports.yml`, `.env.example`.
+- Backend runtime image: `backend/Dockerfile`.
+- Documentation/spec: `README.md`, `.trellis/spec/sangui-rag-gateway.md`, `.trellis/spec/backend/quality-guidelines.md`.
+- Trellis task: `.trellis/tasks/06-24-docker-runtime-exposure-hardening` archived after commit and manual test confirmation.
+
+**Validation Evidence**
+- `docker compose --env-file .env.example -f deploy/docker-compose.yml config` passed; rendered config has no `ports` for `postgres` or `redis` and backend uses `postgres:5432` / `redis:6379`.
+- `docker compose --env-file .env.example -f deploy/docker-compose.yml -f deploy/docker-compose.host-ports.yml config` passed; override publishes PG `5432:5432` and Redis `6379:6379` only when explicitly included.
+- `mvn -q -DskipTests compile` passed from `backend/`.
+- `mvn -q test` passed from `backend/` after escalated rerun; the first sandbox run was blocked by Maven network permission.
+- `docker build --progress=plain -t sangui-rag-gateway-frontend:ci -f frontend/Dockerfile frontend` passed.
+- `git diff --check` passed; only LF-to-CRLF warning was reported for `.trellis/spec/sangui-rag-gateway.md`.
+- Secret/debug scans were reviewed; no new real secret, console.log, debugger, or task-relevant unsafe TS pattern was introduced.
+
+**Known Limits**
+- `docker build --progress=plain -t sangui-rag-gateway-backend:ci -f backend/Dockerfile backend` did not complete because the runtime base image layer download through `cloudfront-docker-cf.mrs.1ms.run` repeatedly hit TLS handshake timeouts and a missing content descriptor. This was an image-registry/network issue, not a proven Dockerfile syntax failure.
+- Compose runtime smoke (`up -d --build`, `exec backend whoami`, upload-dir write test, `/api/health`) depended on the backend image build and was left for manual verification.
+- Frontend app lint/typecheck/unit tests were not rerun because no frontend source, type, or test files changed; frontend Docker build passed.
+
+**Result and Boundary**
+- Task #11 PG/Redis default host publication is resolved by making infrastructure services internal-only by default with an explicit opt-in override.
+- No business API, database migration, RAG behavior, frontend application code, or CI workflow was changed.
+- Follow-up remains for CI security/image runtime verification and stronger Docker runtime smoke automation.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `91fb27d6` | (see git log) |
+
+### Testing
+
+- [OK] `docker compose --env-file .env.example -f deploy/docker-compose.yml config`
+- [OK] `docker compose --env-file .env.example -f deploy/docker-compose.yml -f deploy/docker-compose.host-ports.yml config`
+- [OK] `mvn -q -DskipTests compile` from `backend/`
+- [OK] `mvn -q test` from `backend/` after escalated rerun; first sandbox run was blocked by Maven network permission
+- [OK] `docker build --progress=plain -t sangui-rag-gateway-frontend:ci -f frontend/Dockerfile frontend`
+- [OK] `git diff --check` with only LF-to-CRLF warning for `.trellis/spec/sangui-rag-gateway.md`
+- [LIMIT] Backend Docker image build was blocked by base-image layer download failures from `cloudfront-docker-cf.mrs.1ms.run`; runtime Compose smoke was left for manual verification
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Follow up with CI security/image runtime validation and automated Compose runtime smoke.
