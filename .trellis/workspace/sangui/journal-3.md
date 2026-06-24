@@ -1234,3 +1234,70 @@ Default admin bootstrap is implemented, checked, manually accepted, and committe
 ### Next Steps
 
 - None - task complete
+
+
+## Session 86: Embedding batching closeout
+
+**Date**: 2026-06-24
+**Task**: Embedding batching closeout
+**Branch**: `feature/embedding-batching`
+
+### Summary
+
+Completed the embedding batching closeout after user manual validation and commit `87baf744`.
+The task adds bounded document-ingestion embedding batches, keeps all-or-nothing vector persistence,
+stabilizes the streaming client-disconnect runtime smoke, and synchronizes the config/spec/deploy contract.
+
+### Main Changes
+
+| Area | Notes |
+|------|-------|
+| Commit | 87baf744 feat: embedding batching for document ingestion |
+| Main modules | backend document ingestion, embedding configuration, gateway streaming smoke test, Trellis specs, deployment env docs |
+| Production changes | Added validated EmbeddingProperties for rag.gateway.embedding.batch-size; DocumentService now batches chunk texts, merges vectors in chunk order, validates aggregate vectors before persistence, and preserves all-or-nothing embedding row insertion. |
+| Runtime smoke fix | Made OpenAiChatCompletionsRuntimeSmokeTest client-disconnect path deterministic while keeping the RANDOM_PORT HTTP smoke boundary. |
+| Spec/config sync | Updated rag document ingestion spec, gateway resilience spec, project spec, application.yml, .env.example, and docker-compose env passthrough for RAG_GATEWAY_EMBEDDING_BATCH_SIZE. |
+| Codex QA fixes | Added EmbeddingPropertiesTest for default/custom/min/max binding behavior and filled the config/deployment/spec gap found during check/finish-work. |
+| Validation passed | mvn -q "-Dtest=EmbeddingPropertiesTest,DocumentServiceTest,OpenAiCompatibleEmbeddingClientTest" test; mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest,OpenAiChatCompletionsControllerTest,OpenAiCompatibleUpstreamClientTest" test; mvn -q "-Dtest=DocumentAdminControllerTest,DocumentProcessingTaskServiceTest,DocumentProcessingWorkerTest,ModelConfigServiceTest" test; mvn -q "-Dtest=*ConfigTest,*PropertiesTest" test; mvn -q -DskipTests compile; docker compose --env-file .env.example -f deploy/docker-compose.yml config; git diff --check. |
+| Validation not completed | Full backend mvn -q test was attempted but hit the 60-second backend command timeout, so it is not counted as passing evidence. |
+| Manual validation | User confirmed manual testing before record-session. |
+| Boundary | No DB schema change, no frontend behavior change, no retrieval SQL/prompt/API-key/auth change, no auto push. |
+
+Updated files included:
+- backend/src/main/java/com/sangui/raggateway/embedding/EmbeddingProperties.java
+- backend/src/main/java/com/sangui/raggateway/document/DocumentService.java
+- backend/src/test/java/com/sangui/raggateway/embedding/EmbeddingPropertiesTest.java
+- backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java
+- backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsRuntimeSmokeTest.java
+- backend/src/main/resources/application.yml
+- .env.example
+- deploy/docker-compose.yml
+- .trellis/spec/rag/document-ingestion.md
+- .trellis/spec/gateway/resilience.md
+- .trellis/spec/sangui-rag-gateway.md
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `87baf744` | (see git log) |
+
+### Testing
+
+- [OK] `mvn -q "-Dtest=EmbeddingPropertiesTest,DocumentServiceTest,OpenAiCompatibleEmbeddingClientTest" test`
+- [OK] `mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest,OpenAiChatCompletionsControllerTest,OpenAiCompatibleUpstreamClientTest" test`
+- [OK] `mvn -q "-Dtest=DocumentAdminControllerTest,DocumentProcessingTaskServiceTest,DocumentProcessingWorkerTest,ModelConfigServiceTest" test`
+- [OK] `mvn -q "-Dtest=*ConfigTest,*PropertiesTest" test`
+- [OK] `mvn -q -DskipTests compile`
+- [OK] `docker compose --env-file .env.example -f deploy/docker-compose.yml config`
+- [OK] `git diff --check`
+- [WARN] Full backend `mvn -q test` was attempted but hit the 60-second command timeout, so it is not counted as passing evidence.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
