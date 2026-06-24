@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 86
+- **Total Sessions**: 87
 - **Last Active**: 2026-06-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1294 | Active |
+| `journal-3.md` | ~1370 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 87 | 2026-06-24 | Request log write failure observability closeout | `f0806433` | `feature/request-log-write-failure-observability` |
 | 86 | 2026-06-24 | Embedding batching closeout | `87baf744` | `feature/embedding-batching` |
 | 85 | 2026-06-24 | Default admin bootstrap closeout | `75308691` | `feature/default-admin-bootstrap` |
 | 84 | 2026-06-24 | Runtime secret upload recovery closeout | `23b5b4db` | `feature/runtime-secret-upload-debug` |

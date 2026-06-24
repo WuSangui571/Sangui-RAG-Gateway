@@ -351,7 +351,8 @@ the metadata-only evidence boundary.
 
 ### Summary
 
-(Add summary)
+Closed the request-log write failure observability task after manual testing and commit `f0806433`.
+The backend now keeps gateway responses unchanged when request-log persistence fails while emitting safe, testable observability events.
 
 ### Main Changes
 
@@ -1293,6 +1294,81 @@ Updated files included:
 - [OK] `docker compose --env-file .env.example -f deploy/docker-compose.yml config`
 - [OK] `git diff --check`
 - [WARN] Full backend `mvn -q test` was attempted but hit the 60-second command timeout, so it is not counted as passing evidence.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 87: Request log write failure observability closeout
+
+**Date**: 2026-06-24
+**Task**: Request log write failure observability closeout
+**Branch**: `feature/request-log-write-failure-observability`
+
+### Summary
+
+Closed the request-log write failure observability task after manual testing and commit `f0806433`.
+The backend now keeps gateway responses unchanged when request-log persistence fails while emitting safe, testable observability events.
+
+### Main Changes
+
+**Summary**
+- Closed request-log write failure observability task after human manual testing and commit f0806433.
+- ApiRequestLogService.record now emits safe request_log.persist_failed ERROR events when insert fails, without changing gateway responses.
+- OpenAiChatCompletionsController wraps request-log writes with safeRecord defense-in-depth so unexpected record failures do not alter success or upstream error responses.
+- Backend, gateway, and security specs now state the hard contract: response unaffected, failure observable, no sensitive command fields or exception messages in persistence-failure logs.
+
+**Main Modules**
+- Backend request-log persistence and observability.
+- Gateway chat completion response boundary.
+- Security/logging specs for safe operational metadata.
+
+**Updated Files**
+- backend/src/main/java/com/sangui/raggateway/log/ApiRequestLogService.java
+- backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java
+- backend/src/test/java/com/sangui/raggateway/log/ApiRequestLogServiceTest.java
+- backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java
+- .trellis/spec/backend/logging-guidelines.md
+- .trellis/spec/gateway/resilience.md
+- .trellis/spec/security/rag-security.md
+
+**Validation**
+- mvn -q "-Dtest=ApiRequestLogServiceTest" test: passed.
+- mvn -q "-Dtest=OpenAiChatCompletionsControllerTest" test: passed.
+- mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest" test: passed.
+- mvn -q "-Dtest=ApiRequestLogServiceTest,OpenAiChatCompletionsControllerTest,OpenAiChatCompletionsRuntimeSmokeTest" test: passed.
+- mvn -q -DskipTests compile: passed.
+- mvn -q test: passed within the 60 second cap.
+- git diff --check: passed.
+- Human manual testing: confirmed before record-session.
+
+**Result And Boundaries**
+- Completed backend/gateway/security hardening only.
+- No database migration, frontend change, public API change, Admin API change, retry queue, event bus, or infra change.
+- Request-log persistence failure remains visible but does not become a user-facing gateway failure.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f0806433` | fix: request-log persistence failure observability |
+
+### Testing
+
+- [OK] `mvn -q "-Dtest=ApiRequestLogServiceTest" test`
+- [OK] `mvn -q "-Dtest=OpenAiChatCompletionsControllerTest" test`
+- [OK] `mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest" test`
+- [OK] `mvn -q "-Dtest=ApiRequestLogServiceTest,OpenAiChatCompletionsControllerTest,OpenAiChatCompletionsRuntimeSmokeTest" test`
+- [OK] `mvn -q -DskipTests compile`
+- [OK] `mvn -q test`
+- [OK] `git diff --check`
+- [OK] Human manual testing confirmed before record-session.
 
 ### Status
 
