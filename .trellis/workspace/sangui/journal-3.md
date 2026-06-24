@@ -838,3 +838,78 @@ Closed the Retrieval READY filter and ANN baseline task after manual testing and
 ### Next Steps
 
 - None - task complete
+
+
+## Session 80: Vector serialization unification
+
+**Date**: 2026-06-24
+**Task**: Vector serialization unification
+**Branch**: `feature/vector-serialization-unification`
+
+### Summary
+
+Unified pgvector vector-literal serialization behind one shared formatter, verified the formatter, document persistence, retrieval query boundary, mapper SQL contract, and related specs, then archived the completed Trellis task after manual acceptance.
+
+### Main Changes
+
+**Summary**:
+- Unified pgvector literal serialization for document embedding persistence and retrieval query vectors.
+- Added `PgVectorFormatter.format(float[])` as the single production formatter with Locale.ROOT, fixed 8 decimal places, no spaces, and explicit rejection of null, empty, NaN, and infinite vectors.
+- Replaced private `vectorToPgString(...)` helpers in `DocumentService` and `RetrievalService`.
+- Strengthened tests for formatter output, retrieval mapper argument formatting, and persisted document embedding strings.
+- Updated Trellis specs for backend database, retrieval quality, and document ingestion vector serialization contracts.
+
+**Commit**:
+- `637f6a1e` - vector serialization unification
+
+**Updated Files**:
+- `backend/src/main/java/com/sangui/raggateway/common/util/PgVectorFormatter.java`
+- `backend/src/test/java/com/sangui/raggateway/common/util/PgVectorFormatterTest.java`
+- `backend/src/main/java/com/sangui/raggateway/document/DocumentService.java`
+- `backend/src/main/java/com/sangui/raggateway/retrieval/RetrievalService.java`
+- `backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java`
+- `backend/src/test/java/com/sangui/raggateway/retrieval/RetrievalServiceTest.java`
+- `.trellis/spec/backend/database-guidelines.md`
+- `.trellis/spec/rag/retrieval-quality.md`
+- `.trellis/spec/rag/document-ingestion.md`
+
+**Validation**:
+- PASS: `mvn -q "-Dtest=PgVectorFormatterTest,RetrievalServiceTest,DocumentServiceTest" test` from `backend/`.
+- PASS: `mvn -q "-Dtest=RetrievalMapperTest,RagPromptBuilderTest" test` from `backend/`.
+- PASS: `mvn -q "-Dtest=OpenAiCompatibleEmbeddingClientTest,DocumentAdminControllerTest,ModelConfigServiceTest" test` from `backend/`.
+- PASS: `mvn -q -DskipTests compile` from `backend/`.
+- PASS: `git diff --check` from repo root; only LF/CRLF warnings.
+- Manual acceptance: user confirmed manual testing and code commit before record-session.
+
+**Boundaries**:
+- No DB schema or migration changes.
+- No public API, Admin API, DTO/VO, frontend, provider, Docker, Redis/MQ, ranking, ANN, or deployment behavior changes.
+- Mapper SQL casts stayed unchanged: `#{embedding}::vector` and `#{queryVector}::vector`.
+- Historical persisted vector strings remain pgvector-compatible; new writes and query vectors now use the shared fixed-8-decimal formatter.
+
+**Result**:
+- Task `06-24-vector-serialization-unification` archived after commit and manual testing.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `637f6a1e` | (see git log) |
+
+### Testing
+
+- [OK] `mvn -q "-Dtest=PgVectorFormatterTest,RetrievalServiceTest,DocumentServiceTest" test` from `backend/`
+- [OK] `mvn -q "-Dtest=RetrievalMapperTest,RagPromptBuilderTest" test` from `backend/`
+- [OK] `mvn -q "-Dtest=OpenAiCompatibleEmbeddingClientTest,DocumentAdminControllerTest,ModelConfigServiceTest" test` from `backend/`
+- [OK] `mvn -q -DskipTests compile` from `backend/`
+- [OK] `git diff --check` from repo root; only LF/CRLF warnings
+- [OK] User confirmed manual testing and code commit before record-session
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
