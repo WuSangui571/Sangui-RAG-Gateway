@@ -588,6 +588,7 @@ FILE_STORAGE_LOCAL_PATH
 RAG_DOCUMENT_CHUNK_SIZE
 RAG_DOCUMENT_CHUNK_OVERLAP
 RAG_DOCUMENT_MAX_FILE_SIZE_BYTES
+RAG_GATEWAY_EMBEDDING_BATCH_SIZE
 RAG_RETRIEVAL_DEFAULT_TOP_K
 RAG_RETRIEVAL_DEFAULT_SIMILARITY_THRESHOLD
 RAG_RETRIEVAL_DEFAULT_MAX_CONTEXT_CHUNKS
@@ -1717,6 +1718,7 @@ Vectors are stored in a separate `rag_document_chunk_embedding` table (migration
 - Normalizes non-2xx, timeout, network errors, and malformed responses to safe `EmbeddingException`
 - Safe logging: no vectors, chunk content, upstream keys, or provider bodies
 - Timeout configured via `rag.gateway.embedding.timeout-seconds` (default 30s)
+- Document ingestion batch size configured via `rag.gateway.embedding.batch-size` / `RAG_GATEWAY_EMBEDDING_BATCH_SIZE` (default 64, min 1, max 2048); invalid values fail configuration binding at startup
 
 #### Model Config Resolution
 
@@ -1867,6 +1869,8 @@ rag:
       chunk-size: ${RAG_DOCUMENT_CHUNK_SIZE:800}
       chunk-overlap: ${RAG_DOCUMENT_CHUNK_OVERLAP:100}
        max-file-size-bytes: ${RAG_DOCUMENT_MAX_FILE_SIZE_BYTES:1048576}
+    embedding:
+      batch-size: ${RAG_GATEWAY_EMBEDDING_BATCH_SIZE:64}
 
 ### Implemented RAG Retrieval and Prompt Augmentation Baseline
 

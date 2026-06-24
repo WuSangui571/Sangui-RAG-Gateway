@@ -12,6 +12,7 @@ import com.sangui.raggateway.document.storage.FileStorageService;
 import com.sangui.raggateway.document.storage.StoredFile;
 import com.sangui.raggateway.embedding.EmbeddingClient;
 import com.sangui.raggateway.embedding.EmbeddingException;
+import com.sangui.raggateway.embedding.EmbeddingProperties;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.knowledge.KnowledgeBaseService;
 import com.sangui.raggateway.knowledge.KnowledgeBaseStatus;
@@ -50,6 +51,7 @@ public class DocumentService {
     private final DocumentProperties documentProperties;
     private final DocumentProcessingTaskService taskService;
     private final DocumentProcessingProperties processingProperties;
+    private final EmbeddingProperties embeddingProperties;
 
     public DocumentService(DocumentMapper documentMapper,
                            DocumentChunkMapper documentChunkMapper,
@@ -63,7 +65,8 @@ public class DocumentService {
                            List<DocumentParser> parsers,
                            DocumentProperties documentProperties,
                            DocumentProcessingTaskService taskService,
-                           DocumentProcessingProperties processingProperties) {
+                           DocumentProcessingProperties processingProperties,
+                           EmbeddingProperties embeddingProperties) {
         this.documentMapper = documentMapper;
         this.documentChunkMapper = documentChunkMapper;
         this.documentChunkEmbeddingMapper = documentChunkEmbeddingMapper;
@@ -77,6 +80,7 @@ public class DocumentService {
         this.documentProperties = documentProperties;
         this.taskService = taskService;
         this.processingProperties = processingProperties;
+        this.embeddingProperties = embeddingProperties;
     }
 
     public DocumentEntity uploadAndProcess(Long userId, Long knowledgeBaseId,
@@ -446,12 +450,20 @@ public class DocumentService {
         }
 
         try {
-            List<float[]> vectors = embeddingClient.embed(
-                    embeddingConfig.getBaseUrl(),
-                    upstreamApiKey,
-                    kb.getEmbeddingModel(),
-                    chunkTexts,
-                    kb.getEmbeddingDimension());
+            int batchSize = embeddingProperties.getBatchSize();
+            List<float[]> vectors = new ArrayList<>(chunks.size());
+
+            for (int start = 0; start < chunkTexts.size(); start += batchSize) {
+                int end = Math.min(start + batchSize, chunkTexts.size());
+                List<String> batch = chunkTexts.subList(start, end);
+                List<float[]> batchVectors = embeddingClient.embed(
+                        embeddingConfig.getBaseUrl(),
+                        upstreamApiKey,
+                        kb.getEmbeddingModel(),
+                        batch,
+                        kb.getEmbeddingDimension());
+                vectors.addAll(batchVectors);
+            }
 
             validateEmbeddingVectors(chunks, vectors, kb.getEmbeddingDimension());
 

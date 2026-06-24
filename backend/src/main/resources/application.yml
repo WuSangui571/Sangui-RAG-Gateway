@@ -18,6 +18,7 @@ rag:
       emitter-timeout-seconds: 300
     embedding:
       timeout-seconds: 30
+      batch-size: 64
     storage:
       type: ${FILE_STORAGE_TYPE:local}
       local-path: ${FILE_STORAGE_LOCAL_PATH:./data/uploads}

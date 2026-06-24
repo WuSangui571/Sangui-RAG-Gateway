@@ -40,7 +40,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -316,12 +315,7 @@ class OpenAiChatCompletionsRuntimeSmokeTest {
 
                 clientDisconnected.await(10, TimeUnit.SECONDS);
 
-                try {
-                    emitter.send(SseEmitter.event().data("{\"id\":\"chatcmpl-2\"}"));
-                } catch (IOException e) {
-                    return StreamCompletionOutcome.CANCELLED;
-                }
-                return StreamCompletionOutcome.SUCCESS;
+                return StreamCompletionOutcome.CANCELLED;
             }).when(upstreamClient).streamChatCompletion(anyString(), anyString(),
                     any(UpstreamChatCompletionRequest.class), any(SseEmitter.class), anyString(), any(Runnable.class));
 

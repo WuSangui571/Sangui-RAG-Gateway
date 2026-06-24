@@ -1,0 +1,24 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis\\tasks\\06-24-embedding-batching\\prd.md", "reason": "Task requirements, acceptance criteria, CI unblock note, forbidden scope"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product boundary, document ingestion flow, embedding dimension and security rules"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Backend module ownership: embedding client vs document ingestion service"}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "Vector table, dimension safety, tenant fields, transaction boundaries"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Embedding failure statuses, safe admin/gateway errors, streaming cancellation status"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe embedding and document processing logs"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required embedding/vector and streaming smoke checks"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Document status machine, async processing, retry cleanup, batch embedding spec update target"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Embedding upstream errors and client-disconnect runtime smoke contract"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Tenant, secret, content, and evidence exposure boundaries"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer config/document/embedding flow checklist"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\embedding\\EmbeddingClient.java", "reason": "Existing embedding client contract"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\embedding\\OpenAiCompatibleEmbeddingClient.java", "reason": "Current upstream embedding call, response validation, safe logging pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\DocumentService.java", "reason": "Current one-shot chunk embedding and all-or-nothing persistence boundary"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\document\\config\\DocumentProcessingProperties.java", "reason": "Existing document processing config pattern"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\config\\ApiKeyLimitProperties.java", "reason": "Validated configuration properties pattern with Min constraints"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\log\\OutputCaptureProperties.java", "reason": "Validated configuration properties pattern with positive duration/count constraints"}
+{"file": "backend\\src\\main\\resources\\application.yml", "reason": "Current embedding timeout property and place for batch-size default"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\embedding\\OpenAiCompatibleEmbeddingClientTest.java", "reason": "Existing client tests for count, index, dimension, upstream error behavior"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\document\\DocumentServiceTest.java", "reason": "Existing document embedding success/failure and no-partial-persistence tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsRuntimeSmokeTest.java", "reason": "User-reported CI failure location and runtime disconnect smoke"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Streaming terminal status and reservation release logic"}

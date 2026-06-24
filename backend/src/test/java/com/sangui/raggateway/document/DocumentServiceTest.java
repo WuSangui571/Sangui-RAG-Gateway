@@ -12,6 +12,7 @@ import com.sangui.raggateway.document.storage.FileStorageService;
 import com.sangui.raggateway.document.storage.StoredFile;
 import com.sangui.raggateway.embedding.EmbeddingClient;
 import com.sangui.raggateway.embedding.EmbeddingException;
+import com.sangui.raggateway.embedding.EmbeddingProperties;
 import com.sangui.raggateway.knowledge.KnowledgeBaseEntity;
 import com.sangui.raggateway.knowledge.KnowledgeBaseService;
 import com.sangui.raggateway.knowledge.KnowledgeBaseStatus;
@@ -38,6 +39,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -81,13 +83,15 @@ class DocumentServiceTest {
     void setUp() {
         DocumentProperties documentProperties = new DocumentProperties();
         DocumentProcessingProperties processingProperties = new DocumentProcessingProperties();
+        EmbeddingProperties embeddingProperties = new EmbeddingProperties();
+        embeddingProperties.setBatchSize(2);
         documentService = new DocumentService(
                 documentMapper, documentChunkMapper, documentChunkEmbeddingMapper,
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 transactionTemplate(),
                 textChunker, List.of(documentParser), documentProperties,
-                taskService, processingProperties);
+                taskService, processingProperties, embeddingProperties);
 
         AtomicLong docIdCounter = new AtomicLong(10L);
         doAnswer(inv -> {
@@ -357,13 +361,15 @@ class DocumentServiceTest {
         DocumentProperties documentProperties = new DocumentProperties();
         documentProperties.setMaxFileSizeBytes(3);
         DocumentProcessingProperties processingProperties = new DocumentProcessingProperties();
+        EmbeddingProperties embeddingProperties = new EmbeddingProperties();
+        embeddingProperties.setBatchSize(2);
         DocumentService limitedService = new DocumentService(
                 documentMapper, documentChunkMapper, documentChunkEmbeddingMapper,
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 transactionTemplate(),
                 textChunker, List.of(documentParser), documentProperties,
-                taskService, processingProperties);
+                taskService, processingProperties, embeddingProperties);
 
         assertThatThrownBy(() -> limitedService.uploadAndProcess(
                 100L, 1L, "test.md", "text/markdown", "test".getBytes(StandardCharsets.UTF_8)))
@@ -725,13 +731,15 @@ class DocumentServiceTest {
         DocumentProperties documentProperties = new DocumentProperties();
         documentProperties.setMaxFileSizeBytes(3);
         DocumentProcessingProperties processingProperties = new DocumentProcessingProperties();
+        EmbeddingProperties embeddingProperties = new EmbeddingProperties();
+        embeddingProperties.setBatchSize(2);
         DocumentService limitedService = new DocumentService(
                 documentMapper, documentChunkMapper, documentChunkEmbeddingMapper,
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 transactionTemplate(),
                 textChunker, List.of(documentParser), documentProperties,
-                taskService, processingProperties);
+                taskService, processingProperties, embeddingProperties);
 
         assertThatThrownBy(() -> limitedService.uploadAndEnqueue(
                 100L, 1L, "test.md", "text/markdown", "test".getBytes(StandardCharsets.UTF_8)))
@@ -766,13 +774,15 @@ class DocumentServiceTest {
     @Test
     void shouldDeleteStorageWhenTaskCreationFailsAfterInsert() throws Exception {
         RecordingTransactionManager txManager = new RecordingTransactionManager();
+        EmbeddingProperties embeddingProperties = new EmbeddingProperties();
+        embeddingProperties.setBatchSize(2);
         DocumentService transactionalService = new DocumentService(
                 documentMapper, documentChunkMapper, documentChunkEmbeddingMapper,
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 new TransactionTemplate(txManager),
                 textChunker, List.of(documentParser), new DocumentProperties(),
-                taskService, new DocumentProcessingProperties());
+                taskService, new DocumentProcessingProperties(), embeddingProperties);
 
         byte[] fileContent = "Hello World".getBytes(StandardCharsets.UTF_8);
         String storageKey = "knowledge/1/uuid/test.md";
@@ -1044,6 +1054,272 @@ class DocumentServiceTest {
         verify(documentChunkEmbeddingMapper, never()).delete(any(LambdaQueryWrapper.class));
         verify(documentChunkMapper, never()).delete(any(LambdaQueryWrapper.class));
         verify(taskService, never()).resetForRetry(anyLong());
+    }
+
+    @Test
+    void shouldBatchEmbeddingCallsAndPreserveOrder() throws Exception {
+        byte[] fileContent = "Chunk1\n\nChunk2\n\nChunk3\n\nChunk4\n\nChunk5".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/test.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("test.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("Chunk1\n\nChunk2\n\nChunk3\n\nChunk4\n\nChunk5", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("Chunk1", "Chunk2", "Chunk3", "Chunk4", "Chunk5"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        ModelConfigEntity config = createModelConfig(10L, 100L, "text-embedding-3-small", 2);
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("decrypted-key");
+
+        DocumentChunkEntity chunk1 = createChunk(1L, 100L, 1L, 10L, 0);
+        DocumentChunkEntity chunk2 = createChunk(2L, 100L, 1L, 10L, 1);
+        DocumentChunkEntity chunk3 = createChunk(3L, 100L, 1L, 10L, 2);
+        DocumentChunkEntity chunk4 = createChunk(4L, 100L, 1L, 10L, 3);
+        DocumentChunkEntity chunk5 = createChunk(5L, 100L, 1L, 10L, 4);
+        when(documentChunkMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(chunk1, chunk2, chunk3, chunk4, chunk5));
+
+        when(embeddingClient.embed(eq("https://api.example.com"), eq("decrypted-key"),
+                eq("text-embedding-3-small"), anyList(), eq(2)))
+                .thenAnswer(inv -> {
+                    List<String> inputs = inv.getArgument(3);
+                    List<float[]> vectors = new ArrayList<>();
+                    for (int i = 0; i < inputs.size(); i++) {
+                        vectors.add(new float[]{0.1f * (i + 1), 0.2f * (i + 1)});
+                    }
+                    return vectors;
+                });
+
+        DocumentEntity result = documentService.uploadAndProcess(
+                100L, 1L, "test.md", "text/markdown", fileContent);
+
+        assertThat(result.getStatus()).isEqualTo(DocumentStatus.READY.name());
+        verify(embeddingClient, times(3)).embed(anyString(), anyString(), anyString(), anyList(), anyInt());
+        verify(documentChunkEmbeddingMapper, times(5)).insertEmbedding(any(DocumentChunkEmbeddingEntity.class));
+    }
+
+    @Test
+    void shouldWorkWithBatchSizeOne() throws Exception {
+        EmbeddingProperties smallBatchProps = new EmbeddingProperties();
+        smallBatchProps.setBatchSize(1);
+        DocumentService batchSizeOneService = createDocumentService(smallBatchProps);
+
+        byte[] fileContent = "Chunk1\n\nChunk2\n\nChunk3".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/test.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("test.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("Chunk1\n\nChunk2\n\nChunk3", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("Chunk1", "Chunk2", "Chunk3"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        ModelConfigEntity config = createModelConfig(10L, 100L, "text-embedding-3-small", 2);
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("decrypted-key");
+
+        DocumentChunkEntity chunk1 = createChunk(1L, 100L, 1L, 10L, 0);
+        DocumentChunkEntity chunk2 = createChunk(2L, 100L, 1L, 10L, 1);
+        DocumentChunkEntity chunk3 = createChunk(3L, 100L, 1L, 10L, 2);
+        when(documentChunkMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(chunk1, chunk2, chunk3));
+
+        when(embeddingClient.embed(eq("https://api.example.com"), eq("decrypted-key"),
+                eq("text-embedding-3-small"), anyList(), eq(2)))
+                .thenReturn(List.of(new float[]{0.1f, 0.2f}))
+                .thenReturn(List.of(new float[]{0.3f, 0.4f}))
+                .thenReturn(List.of(new float[]{0.5f, 0.6f}));
+
+        DocumentEntity result = batchSizeOneService.uploadAndProcess(
+                100L, 1L, "test.md", "text/markdown", fileContent);
+
+        assertThat(result.getStatus()).isEqualTo(DocumentStatus.READY.name());
+        verify(embeddingClient, times(3)).embed(anyString(), anyString(), anyString(), anyList(), anyInt());
+        verify(documentChunkEmbeddingMapper, times(3)).insertEmbedding(any(DocumentChunkEmbeddingEntity.class));
+    }
+
+    @Test
+    void shouldFailOnFirstBatchFailureAndNotPersistAnyEmbeddings() throws Exception {
+        byte[] fileContent = "Chunk1\n\nChunk2\n\nChunk3".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/test.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("test.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("Chunk1\n\nChunk2\n\nChunk3", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("Chunk1", "Chunk2", "Chunk3"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        ModelConfigEntity config = createModelConfig(10L, 100L, "text-embedding-3-small", 2);
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("decrypted-key");
+
+        DocumentChunkEntity chunk1 = createChunk(1L, 100L, 1L, 10L, 0);
+        DocumentChunkEntity chunk2 = createChunk(2L, 100L, 1L, 10L, 1);
+        DocumentChunkEntity chunk3 = createChunk(3L, 100L, 1L, 10L, 2);
+        when(documentChunkMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(chunk1, chunk2, chunk3));
+
+        when(embeddingClient.embed(anyString(), anyString(), anyString(), anyList(), anyInt()))
+                .thenThrow(new EmbeddingException("Embedding upstream returned status 500", false));
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentEntity result = documentService.uploadAndProcess(
+                100L, 1L, "test.md", "text/markdown", fileContent);
+
+        assertThat(result.getStatus()).isEqualTo(DocumentStatus.FAILED.name());
+        assertThat(result.getErrorMessage()).isNotNull();
+        verify(documentChunkEmbeddingMapper, never()).insertEmbedding(any());
+        verify(embeddingClient, times(1)).embed(anyString(), anyString(), anyString(), anyList(), anyInt());
+        verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.FAILED.name());
+    }
+
+    @Test
+    void shouldFailOnMiddleBatchFailureAndNotPersistAnyEmbeddings() throws Exception {
+        byte[] fileContent = "Chunk1\n\nChunk2\n\nChunk3".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/test.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("test.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("Chunk1\n\nChunk2\n\nChunk3", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("Chunk1", "Chunk2", "Chunk3"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        ModelConfigEntity config = createModelConfig(10L, 100L, "text-embedding-3-small", 2);
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("decrypted-key");
+
+        DocumentChunkEntity chunk1 = createChunk(1L, 100L, 1L, 10L, 0);
+        DocumentChunkEntity chunk2 = createChunk(2L, 100L, 1L, 10L, 1);
+        DocumentChunkEntity chunk3 = createChunk(3L, 100L, 1L, 10L, 2);
+        when(documentChunkMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(chunk1, chunk2, chunk3));
+
+        when(embeddingClient.embed(anyString(), anyString(), anyString(), anyList(), anyInt()))
+                .thenReturn(List.of(new float[]{0.1f, 0.2f}))
+                .thenThrow(new EmbeddingException("Embedding upstream returned status 500", false));
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentEntity result = documentService.uploadAndProcess(
+                100L, 1L, "test.md", "text/markdown", fileContent);
+
+        assertThat(result.getStatus()).isEqualTo(DocumentStatus.FAILED.name());
+        verify(documentChunkEmbeddingMapper, never()).insertEmbedding(any());
+        verify(embeddingClient, times(2)).embed(anyString(), anyString(), anyString(), anyList(), anyInt());
+        verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.FAILED.name());
+    }
+
+    @Test
+    void shouldFailOnLastBatchFailureAndNotPersistAnyEmbeddings() throws Exception {
+        byte[] fileContent = "Chunk1\n\nChunk2\n\nChunk3".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/test.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("test.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("Chunk1\n\nChunk2\n\nChunk3", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("Chunk1", "Chunk2", "Chunk3"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        ModelConfigEntity config = createModelConfig(10L, 100L, "text-embedding-3-small", 2);
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("decrypted-key");
+
+        DocumentChunkEntity chunk1 = createChunk(1L, 100L, 1L, 10L, 0);
+        DocumentChunkEntity chunk2 = createChunk(2L, 100L, 1L, 10L, 1);
+        DocumentChunkEntity chunk3 = createChunk(3L, 100L, 1L, 10L, 2);
+        when(documentChunkMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(chunk1, chunk2, chunk3));
+
+        when(embeddingClient.embed(anyString(), anyString(), anyString(), anyList(), anyInt()))
+                .thenReturn(List.of(new float[]{0.1f, 0.2f}, new float[]{0.3f, 0.4f}))
+                .thenThrow(new EmbeddingException("Embedding upstream timed out", true));
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentEntity result = documentService.uploadAndProcess(
+                100L, 1L, "test.md", "text/markdown", fileContent);
+
+        assertThat(result.getStatus()).isEqualTo(DocumentStatus.FAILED.name());
+        verify(documentChunkEmbeddingMapper, never()).insertEmbedding(any());
+        verify(embeddingClient, times(2)).embed(anyString(), anyString(), anyString(), anyList(), anyInt());
+        verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.FAILED.name());
+    }
+
+    @Test
+    void shouldFailOnBatchResponseCountMismatchAndNotPersistAnyEmbeddings() throws Exception {
+        byte[] fileContent = "Chunk1\n\nChunk2\n\nChunk3".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/test.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("test.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("Chunk1\n\nChunk2\n\nChunk3", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("Chunk1", "Chunk2", "Chunk3"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+
+        ModelConfigEntity config = createModelConfig(10L, 100L, "text-embedding-3-small", 2);
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(config);
+        when(modelConfigService.decryptUpstreamKey(config)).thenReturn("decrypted-key");
+
+        DocumentChunkEntity chunk1 = createChunk(1L, 100L, 1L, 10L, 0);
+        DocumentChunkEntity chunk2 = createChunk(2L, 100L, 1L, 10L, 1);
+        DocumentChunkEntity chunk3 = createChunk(3L, 100L, 1L, 10L, 2);
+        when(documentChunkMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(chunk1, chunk2, chunk3));
+
+        when(embeddingClient.embed(anyString(), anyString(), anyString(), anyList(), anyInt()))
+                .thenReturn(List.of(new float[]{0.1f, 0.2f}))
+                .thenReturn(List.of(new float[]{0.3f, 0.4f}));
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        DocumentEntity result = documentService.uploadAndProcess(
+                100L, 1L, "test.md", "text/markdown", fileContent);
+
+        assertThat(result.getStatus()).isEqualTo(DocumentStatus.FAILED.name());
+        verify(documentChunkEmbeddingMapper, never()).insertEmbedding(any());
+        verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.FAILED.name());
+    }
+
+    private DocumentService createDocumentService(EmbeddingProperties embeddingProperties) {
+        return new DocumentService(
+                documentMapper, documentChunkMapper, documentChunkEmbeddingMapper,
+                knowledgeBaseService, modelConfigService,
+                fileStorageService, embeddingClient,
+                transactionTemplate(),
+                textChunker, List.of(documentParser), new DocumentProperties(),
+                taskService, new DocumentProcessingProperties(), embeddingProperties);
     }
 
     private DocumentProcessingTaskEntity createTaskEntity(Long id, Long documentId, String status) {

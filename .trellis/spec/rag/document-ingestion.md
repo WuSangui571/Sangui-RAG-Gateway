@@ -80,6 +80,7 @@ Embedding vector persistence uses `PgVectorFormatter` (`com.sangui.raggateway.co
 | Reprocessing safety | Old chunks/vectors are deleted or version-isolated before new chunks become active. |
 | Embedding failure | Document moves to `FAILED` or an explicit retryable state with bounded `error_message`. |
 | Request blocking | Upload should not block indefinitely waiting for large embedding jobs. |
+| Bounded batch embedding | `DocumentService.embedAndFinalize(...)` splits ordered chunks into batches according to `rag.gateway.embedding.batch-size` (default 64, min 1, max 2048). Each batch calls `EmbeddingClient.embed(...)`. All vectors are merged in original chunk order before aggregate validation and persistence. No partial vector rows are inserted if any batch fails. |
 
 ## 5. Validation & Error Matrix
 
@@ -92,6 +93,9 @@ Embedding vector persistence uses `PgVectorFormatter` (`com.sangui.raggateway.co
 | Reprocess same document | Old and new chunks cannot be mixed in retrieval | Service/mapper test |
 | Cross-user document ID access | Returns 403/404 according to admin contract; no chunks exposed | Controller/service test |
 | Large document | Processing is bounded or moved to an async-capable path | Service test or design spec |
+| Multi-batch embedding success | Multiple `embed` calls with correct batch sizes; vectors merged in chunk order | `DocumentServiceTest` |
+| Batch embedding failure (first/middle/last) | No partial embedding rows inserted; document `FAILED` | `DocumentServiceTest` |
+| Invalid batch-size config | Startup fails visibly, not silently clamped | Config binding test |
 
 ## 6. Good/Base/Bad Cases
 
@@ -158,7 +162,6 @@ Current hard rules:
 
 Future roadmap only:
 
-- batch embedding
 - concurrent workers
 - document processing progress
 - external queue-backed ingestion

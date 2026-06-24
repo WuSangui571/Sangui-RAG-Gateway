@@ -1,0 +1,7 @@
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-24-embedding-batching\\prd.md", "reason": "CI unblock note and embedding batching PRD"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Runtime streaming smoke and client-disconnect contract"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Streaming runtime smoke validation commands"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsRuntimeSmokeTest.java", "reason": "Failing CI test location"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsController.java", "reason": "Streaming terminal status and reservation release logic"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClient.java", "reason": "StreamCompletionOutcome source and SSE send cancellation behavior"}

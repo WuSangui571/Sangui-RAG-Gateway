@@ -88,6 +88,7 @@ hit_chunk_ids
 | Ingestion status | Embedding failures cannot be silently swallowed or marked ready. |
 | Rate-limit preflight | Valid chat payloads are checked against API-key limits before embedding/retrieval/upstream calls. |
 | Rate-limit reservation | Request counters count accepted attempts; token counters reserve estimated tokens before upstream work and reconcile or release explicitly. |
+| Embedding batch size | Document ingestion uses `rag.gateway.embedding.batch-size` / `RAG_GATEWAY_EMBEDDING_BATCH_SIZE` with default `64`, minimum `1`, maximum `2048`; invalid values fail configuration binding at startup. |
 
 ## 5. Validation & Error Matrix
 
@@ -98,6 +99,7 @@ hit_chunk_ids
 | Upstream network failure | 502 | `upstream_error` | Safe message and log exception class only |
 | Upstream malformed success body | 502 | `upstream_error` | No provider body in response/log |
 | Embedding timeout or provider failure | 502 or document `FAILED` | `embedding_failed` | No upstream chat call for query embedding failure |
+| Invalid embedding batch size | startup failure | n/a | `EmbeddingProperties` validation rejects values `< 1` or `> 2048`; no silent clamping |
 | API key request/token limit exceeded | 429 | `rate_limit_exceeded` | OpenAI-compatible JSON, safe request log, no upstream/retrieval call |
 | Redis limiter unavailable | 500 | `internal_error` | OpenAI-compatible JSON, safe request log where possible, no silent pass-through |
 | Invalid chat payload | 400 | `invalid_request` | Validate before limiter; no quota consumed |
@@ -182,3 +184,34 @@ The following are valid later enhancements, not V0.2 beta requirements:
 - failover routing
 
 Future fallback or retry must be explicit, configurable, observable, and must not silently convert a strict RAG failure into a normal pass-through answer.
+
+## 10. Embedding Ingestion Batch Configuration
+
+Document ingestion batches provider embedding calls before vector persistence:
+
+```text
+Spring property: rag.gateway.embedding.batch-size
+Environment variable: RAG_GATEWAY_EMBEDDING_BATCH_SIZE
+Default: 64
+Minimum: 1
+Maximum: 2048
+Binding class: backend/src/main/java/com/sangui/raggateway/embedding/EmbeddingProperties.java
+Consumer: backend/src/main/java/com/sangui/raggateway/document/DocumentService.java
+```
+
+Validation cases:
+
+| Case | Expected result | Required assertion |
+|---|---|---|
+| Missing property | `EmbeddingProperties.batchSize == 64` | `EmbeddingPropertiesTest` |
+| Valid custom value | Bound value is used by `DocumentService.embedAndFinalize(...)` | `EmbeddingPropertiesTest`, `DocumentServiceTest` |
+| `0` or negative value | Spring context fails during configuration binding | `EmbeddingPropertiesTest` |
+| Value greater than `2048` | Spring context fails during configuration binding | `EmbeddingPropertiesTest` |
+
+Run after changing this contract:
+
+```bash
+cd backend
+mvn -q "-Dtest=EmbeddingPropertiesTest,DocumentServiceTest,OpenAiCompatibleEmbeddingClientTest" test
+mvn -q -DskipTests compile
+```
