@@ -323,3 +323,73 @@ Tested areas:
 - Successful document delete attempts storage cleanup before deleting embeddings, chunks, and document rows, then updates KB status.
 - Knowledge-base delete rejects same-user app references with `409 KNOWLEDGE_BASE_IN_USE`.
 - Delete API responses do not expose `storage_path`, object endpoint, bucket, access key, secret key, or absolute local paths.
+
+## Runtime-Only Bean Coverage Governance
+
+### Rule
+
+Runtime-only beans annotated with `@Profile("!test")` must not be validated only by standard `test` profile integration tests. A dedicated non-`test` profile smoke test must prove that Spring can create these beans with their real constructors, `@Value` configuration binding, and profile conditions.
+
+Pure unit tests remain responsible for business logic, parsing, error mapping, and local behavior branches. Runtime-like Spring context smoke tests are required for beans whose real constructor/configuration is hidden by the standard `test` profile.
+
+### Required Profile and Properties
+
+The runtime smoke must:
+- Use a test-local non-test profile such as `runtime-smoke` — never `prod`, `production`, or `test`.
+- Exclude auto-configuration: `DataSourceAutoConfiguration`, `HibernateJpaAutoConfiguration`, `FlywayAutoConfiguration`, `RedisAutoConfiguration`, `MybatisPlusAutoConfiguration`.
+- Use mock/stub dependencies for mappers, services, Redis template, and upstream collaborators.
+- Avoid external connections: no PostgreSQL, Redis, Flyway, MyBatis, object storage, or live upstream provider calls.
+
+### Targeted Test Command
+
+```bash
+cd backend
+mvn -q "-Dtest=RuntimeProfileBeanSmokeTest,GatewayTimeoutConfigurationTest,OpenAiCompatibleEmbeddingClientTest,ModelConfigCheckServiceTest" test
+mvn -q -DskipTests compile
+```
+
+### Required Coverage Areas
+
+| Area | Required test | Pattern |
+|---|---|---|
+| Runtime-only bean creation under non-test profile | `RuntimeProfileBeanSmokeTest` positive smoke | `ApplicationContextRunner` with narrow user configuration and mock collaborators |
+| Standard test profile exclusion | `RuntimeProfileBeanSmokeTest` test-profile exclusion | `ApplicationContextRunner` + `spring.profiles.active=test` → `doesNotHaveBean` |
+| Timeout binding with real constructors | `RuntimeProfileBeanSmokeTest` positive/default timeouts | `ApplicationContextRunner` importing the production bean class directly |
+| Zero/negative timeout fail-fast | `RuntimeProfileBeanSmokeTest` negative timeout | `ApplicationContextRunner` → `hasFailed` + root cause message assertion |
+| Worker scheduler disabled in smoke | `RuntimeProfileBeanSmokeTest` worker scheduler boundary | `rag.document-processing.worker.enabled=false` → `doesNotHaveBean(DocumentProcessingScheduler.class)` |
+| Worker scheduler registration when intentionally covered | `RuntimeProfileBeanSmokeTest` worker scheduler boundary | Mock `DocumentProcessingWorker` and assert registration without invoking scheduled methods |
+| Legacy timeout fallback | `GatewayTimeoutConfigurationTest` | `ApplicationContextRunner` with `ConfigDataApplicationContextInitializer` |
+| Explicit response timeout precedence | `GatewayTimeoutConfigurationTest` | Same pattern, explicit `response-timeout-seconds` |
+
+### Current `@Profile("!test")` Inventory
+
+Keep this inventory categorized when runtime-only beans are added, removed, or moved. High-risk beans with constructor configuration, filter registration, scheduler behavior, or external-service collaborators need runtime-like smoke coverage; lower-risk service/controller beans may stay covered by focused unit tests plus existing runtime servlet smoke when that avoids fake broad integration tests.
+
+| Category | Current beans |
+|---|---|
+| Auth / security / api-key | `AdminAuthConfig`, `GatewayAuthConfig`, `EncryptionConfig`, `AdminAuthController`, `AdminAuthService`, `DefaultAdminBootstrapService`, `UserService`, `ApiKeyService`, `ApiKeyAdminController`, `ApiKeyRateLimitService` |
+| Gateway | `OpenAiChatCompletionsController`, `OpenAiModelsController`, `ChatCompletionGatewayService` |
+| Embedding / retrieval | `OpenAiCompatibleEmbeddingClient`, `RetrievalService`, `RetrievalEvaluationService`, `RetrievalEvaluationAdminController` |
+| Model-config / app / knowledge | `ModelConfigService`, `ModelConfigCheckService`, `ModelConfigAdminController`, `AppService`, `AppAdminController`, `KnowledgeBaseService`, `KnowledgeBaseAdminController` |
+| Worker / document / storage | `SchedulingConfig`, `DocumentConfig`, `DocumentService`, `DocumentAdminController`, `DocumentProcessingTaskService`, `DocumentProcessingWorker`, `DocumentProcessingScheduler` |
+| Logs / observability | `ApiRequestLogService`, `ApiRequestLogAdminController`, `RequestLogOutputCleanupScheduler` |
+
+### Targeted High-Risk Smoke Beans
+
+| Bean | Package | Required smoke boundary |
+|---|---|---|
+| `OpenAiCompatibleEmbeddingClient` | `com.sangui.raggateway.embedding` | Real Spring constructor, default/explicit timeout binding, invalid timeout fail-fast |
+| `ModelConfigCheckService` | `com.sangui.raggateway.model` | Real Spring constructor with mocked collaborators, upstream timeout binding, invalid timeout fail-fast |
+| `GatewayAuthConfig` | `com.sangui.raggateway.common.config` | `GatewayAuthFilter` and `/v1/*` `FilterRegistrationBean` creation |
+| `AdminAuthConfig` | `com.sangui.raggateway.common.config` | `AdminJwtService` creation with strong test-only JWT secret |
+| `EncryptionConfig` | `com.sangui.raggateway.common.config` | `UpstreamApiKeyEncryptor` creation with strong test-only AES secret |
+| `DocumentConfig` | `com.sangui.raggateway.document.config` | Local `FileStorageService`, `TextChunker`, and text parser beans without object-storage client creation |
+| `DocumentProcessingScheduler` | `com.sangui.raggateway.document` | Absent when `rag.document-processing.worker.enabled=false`; present only in an intentional mocked-worker registration smoke |
+
+### Good / Base / Bad Cases
+
+| Case | Expected result |
+|---|---|
+| Good | A runtime-like non-test profile smoke starts a narrow Spring context with real runtime constructors/config classes and mocked infrastructure; it proves key runtime-only beans wire correctly, validates timeout defaults/fallbacks/fail-fast behavior, and the spec records the governance rule. |
+| Base | Existing pure unit tests continue to cover local behavior; the runtime smoke does not exercise external HTTP/provider calls, database access, Redis scripts, Flyway migrations, or scheduler loops. |
+| Bad | Only adding more unit tests around package-private constructors; using `@ActiveProfiles("test")` and claiming production-like coverage; connecting to local PostgreSQL/Redis/provider; removing `@Profile("!test")`; hiding failed wiring with fallback mocks or broad try/catch. |

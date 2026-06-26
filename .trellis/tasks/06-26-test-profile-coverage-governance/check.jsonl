@@ -1,0 +1,19 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis/tasks/06-26-test-profile-coverage-governance/prd.md", "reason": "Check implementation against requirements, non-goals, and validation matrix"}
+{"file": ".trellis/tasks/06-26-test-profile-coverage-governance/research.md", "reason": "Review against discovered code seams and profile coverage risks"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Ensure no public API, deployment, secret, or product-boundary drift"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify runtime-only bean coverage rule and required tests"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Check timeout binding, error visibility, and no fallback drift"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Validate contracts, boundaries, and Good/Base/Bad coverage"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Reject hidden fallbacks or unsafe error exposure"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Check no sensitive fields in new tests or logs"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Ensure runtime smoke keeps auth and secret boundaries safe"}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Check worker/scheduler smoke does not run ingestion/provider work"}
+{"file": "backend/src/test/java/com/sangui/raggateway/ProductionContextSmokeTest.java", "reason": "Compare new smoke against existing non-test profile pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsRuntimeSmokeTest.java", "reason": "Verify no external dependency or broad full-stack drift"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/upstream/GatewayTimeoutConfigurationTest.java", "reason": "Verify timeout defaults, fallback, and precedence remain covered"}
+{"file": "backend/src/test/resources/application-test.yml", "reason": "Ensure runtime-like smoke is non-test but still avoids external dependencies"}
+{"file": "backend/src/main/java/com/sangui/raggateway/embedding/OpenAiCompatibleEmbeddingClient.java", "reason": "Review real constructor/profile coverage and no provider calls"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigCheckService.java", "reason": "Review runtime constructor wiring and timeout source"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/config/DocumentConfig.java", "reason": "Review smoke avoids object storage/external side effects"}

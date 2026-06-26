@@ -1,0 +1,19 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/tasks/06-26-test-profile-coverage-governance/prd.md", "reason": "Primary requirements, acceptance criteria, boundaries, and test commands"}
+{"file": ".trellis/tasks/06-26-test-profile-coverage-governance/research.md", "reason": "Focused code research, @Profile inventory, and existing test patterns"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, runtime config, production guard, and timeout property contract"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend testing rules and target spec update location"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Upstream and embedding timeout/fail-fast contract"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Profile/config/env test governance crosses layers"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Visible failure and safe error boundary"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-safe runtime/client/log constraints"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Auth/secret and request-log safety boundaries"}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Document worker/embedding boundary and no fake processing success"}
+{"file": "backend/src/test/java/com/sangui/raggateway/ProductionContextSmokeTest.java", "reason": "Existing ApplicationContextRunner non-test profile smoke pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsRuntimeSmokeTest.java", "reason": "Runtime smoke pattern excluding DB Redis Flyway MyBatis and using stubs"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/upstream/GatewayTimeoutConfigurationTest.java", "reason": "Timeout property binding pattern and fallback assertions"}
+{"file": "backend/src/test/resources/application-test.yml", "reason": "Standard test profile excludes DB Redis Flyway MyBatis and hides runtime-only beans"}
+{"file": "backend/src/main/java/com/sangui/raggateway/embedding/OpenAiCompatibleEmbeddingClient.java", "reason": "High-risk runtime-only bean with production constructor and timeout values"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigCheckService.java", "reason": "High-risk runtime-only service using upstream timeout properties and embedding client"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/config/DocumentConfig.java", "reason": "Runtime-only document config for local storage/parser/chunker beans"}
