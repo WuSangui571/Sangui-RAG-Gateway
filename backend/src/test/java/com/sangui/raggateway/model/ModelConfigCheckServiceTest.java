@@ -96,7 +96,7 @@ class ModelConfigCheckServiceTest {
         request.setApiKey(API_KEY);
 
         assertThatThrownBy(() -> service.checkUnsavedConfig(100L, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("capability is required");
     }
 
@@ -108,7 +108,7 @@ class ModelConfigCheckServiceTest {
         request.setApiKey(API_KEY);
 
         assertThatThrownBy(() -> service.checkUnsavedConfig(100L, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("embeddingModel is required");
     }
 
@@ -120,7 +120,7 @@ class ModelConfigCheckServiceTest {
         request.setApiKey(API_KEY);
 
         assertThatThrownBy(() -> service.checkUnsavedConfig(100L, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("CHAT_EMBEDDING is no longer supported");
     }
 

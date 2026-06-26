@@ -33,12 +33,8 @@ public class ModelConfigAdminController {
     @PostMapping
     public ApiResponse<ModelConfigVO> create(@RequestBody CreateModelConfigDTO dto) {
         Long userId = getRequiredUserId();
-        try {
-            ModelConfigVO vo = modelConfigService.createAdminConfig(userId, dto);
-            return ApiResponse.success(vo);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException("INVALID_REQUEST", e.getMessage());
-        }
+        ModelConfigVO vo = modelConfigService.createAdminConfig(userId, dto);
+        return ApiResponse.success(vo);
     }
 
     @PutMapping("/{id}")
@@ -46,12 +42,8 @@ public class ModelConfigAdminController {
                                               @RequestBody UpdateModelConfigDTO dto) {
         Long userId = getRequiredUserId();
         ModelConfigEntity target = requireOwnedConfig(id, userId);
-        try {
-            ModelConfigVO vo = modelConfigService.updateAdminConfig(target.getId(), userId, dto);
-            return ApiResponse.success(vo);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException("INVALID_REQUEST", e.getMessage());
-        }
+        ModelConfigVO vo = modelConfigService.updateAdminConfig(target.getId(), userId, dto);
+        return ApiResponse.success(vo);
     }
 
     @GetMapping("/{id}")
@@ -91,23 +83,15 @@ public class ModelConfigAdminController {
     public ApiResponse<ModelConfigVO> enable(@PathVariable Long id) {
         Long userId = getRequiredUserId();
         requireOwnedConfig(id, userId);
-        try {
-            ModelConfigVO vo = modelConfigService.enableAdminConfig(id, userId);
-            return ApiResponse.success(vo);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException("INVALID_REQUEST", e.getMessage());
-        }
+        ModelConfigVO vo = modelConfigService.enableAdminConfig(id, userId);
+        return ApiResponse.success(vo);
     }
 
     @PostMapping("/check")
     public ApiResponse<ModelConfigCheckResult> checkUnsaved(@RequestBody ModelConfigCheckRequest request) {
         Long userId = getRequiredUserId();
-        try {
-            ModelConfigCheckResult result = modelConfigCheckService.checkUnsavedConfig(userId, request);
-            return ApiResponse.success(result);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException("INVALID_REQUEST", e.getMessage());
-        }
+        ModelConfigCheckResult result = modelConfigCheckService.checkUnsavedConfig(userId, request);
+        return ApiResponse.success(result);
     }
 
     @PostMapping("/{id}/check")
@@ -115,14 +99,8 @@ public class ModelConfigAdminController {
                                                            @RequestBody ModelConfigCheckRequest request) {
         Long userId = getRequiredUserId();
         requireOwnedConfig(id, userId);
-        try {
-            ModelConfigCheckResult result = modelConfigCheckService.checkSavedConfig(userId, id, request);
-            return ApiResponse.success(result);
-        } catch (BusinessException e) {
-            throw e;
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException("INVALID_REQUEST", e.getMessage());
-        }
+        ModelConfigCheckResult result = modelConfigCheckService.checkSavedConfig(userId, id, request);
+        return ApiResponse.success(result);
     }
 
     @GetMapping("/chat-capable")

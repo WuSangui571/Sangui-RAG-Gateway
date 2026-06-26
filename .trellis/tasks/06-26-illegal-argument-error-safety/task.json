@@ -1,0 +1,53 @@
+{
+  "id": "illegal-argument-error-safety",
+  "name": "illegal-argument-error-safety",
+  "title": "IllegalArgumentException error safety",
+  "description": "",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "backend error boundary and security-safe validation responses",
+  "package": "single-repo",
+  "priority": "P1",
+  "creator": "sangui",
+  "assignee": "sangui",
+  "createdAt": "2026-06-26",
+  "completedAt": null,
+  "branch": "feature/illegal-argument-error-safety",
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

@@ -3,6 +3,7 @@ package com.sangui.raggateway.knowledge;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.app.AppEntity;
 import com.sangui.raggateway.app.AppMapper;
+import com.sangui.raggateway.common.exception.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -29,18 +30,18 @@ public class KnowledgeBaseService {
     @Transactional
     public KnowledgeBaseEntity create(Long userId, String name, String embeddingModel, Integer embeddingDimension) {
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("name is required");
+            throw new BusinessException("INVALID_REQUEST", "name is required");
         }
         if (embeddingModel == null || embeddingModel.isBlank()) {
-            throw new IllegalArgumentException("embeddingModel is required");
+            throw new BusinessException("INVALID_REQUEST", "embeddingModel is required");
         }
         if (embeddingDimension == null || embeddingDimension <= 0) {
-            throw new IllegalArgumentException("embeddingDimension must be positive");
+            throw new BusinessException("INVALID_REQUEST", "embeddingDimension must be positive");
         }
 
         String trimmedName = name.trim();
         if (existsByUserIdAndName(userId, trimmedName)) {
-            throw new IllegalArgumentException("knowledge base name already exists");
+            throw new BusinessException("INVALID_REQUEST", "knowledge base name already exists");
         }
 
         KnowledgeBaseEntity entity = new KnowledgeBaseEntity();

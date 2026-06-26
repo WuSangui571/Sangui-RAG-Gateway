@@ -1,6 +1,7 @@
 package com.sangui.raggateway.model;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
 import com.sangui.raggateway.common.security.UpstreamApiKeyMasker;
 import com.sangui.raggateway.model.dto.CreateModelConfigDTO;
@@ -134,7 +135,7 @@ public class ModelConfigService {
 
         if (dto.getApiKey() != null) {
             if (dto.getApiKey().isBlank()) {
-                throw new IllegalArgumentException("apiKey must not be blank");
+                throw new BusinessException("INVALID_REQUEST", "apiKey must not be blank");
             }
             String encrypted = encryptor.encrypt(dto.getApiKey());
             String masked = masker.mask(dto.getApiKey());
@@ -193,11 +194,11 @@ public class ModelConfigService {
     public ModelConfigVO enableAdminConfig(Long id, Long userId) {
         ModelConfigEntity entity = findByIdAndUserId(id, userId);
         if (entity.getApiKeyEncrypted() == null || entity.getApiKeyEncrypted().isBlank()) {
-            throw new IllegalArgumentException("Cannot enable model config without an upstream API key");
+            throw new BusinessException("INVALID_REQUEST", "Cannot enable model config without an upstream API key");
         }
         if (ModelConfigCapability.EMBEDDING.name().equals(entity.getCapability())
                 && (entity.getEmbeddingDimension() == null || entity.getEmbeddingDimension() <= 0)) {
-            throw new IllegalArgumentException(
+            throw new BusinessException("INVALID_REQUEST",
                     "Cannot enable embedding config without a positive embedding dimension");
         }
         String chatModel = entity.getChatModel();
@@ -321,17 +322,17 @@ public class ModelConfigService {
 
     static ModelConfigCapability parseCapability(String value) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("capability is required");
+            throw new BusinessException("INVALID_REQUEST", "capability is required");
         }
         ModelConfigCapability cap;
         try {
             cap = ModelConfigCapability.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid capability: " + value
+            throw new BusinessException("INVALID_REQUEST", "Invalid capability: " + value
                     + ". Must be CHAT or EMBEDDING.");
         }
         if (cap == ModelConfigCapability.CHAT_EMBEDDING) {
-            throw new IllegalArgumentException(
+            throw new BusinessException("INVALID_REQUEST",
                     "CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING.");
         }
         return cap;
@@ -342,29 +343,29 @@ public class ModelConfigService {
         switch (capability) {
             case CHAT:
                 if (!hasText(chatModel)) {
-                    throw new IllegalArgumentException("chatModel is required for CHAT capability");
+                    throw new BusinessException("INVALID_REQUEST", "chatModel is required for CHAT capability");
                 }
                 if (hasText(embeddingModel) || (embeddingDimension != null && embeddingDimension > 0)) {
-                    throw new IllegalArgumentException(
+                    throw new BusinessException("INVALID_REQUEST",
                             "embedding fields must not be set for CHAT capability");
                 }
                 break;
             case EMBEDDING:
                 if (hasText(chatModel)) {
-                    throw new IllegalArgumentException("chatModel must not be set for EMBEDDING capability");
+                    throw new BusinessException("INVALID_REQUEST", "chatModel must not be set for EMBEDDING capability");
                 }
                 if (!hasText(embeddingModel)) {
-                    throw new IllegalArgumentException("embeddingModel is required for EMBEDDING capability");
+                    throw new BusinessException("INVALID_REQUEST", "embeddingModel is required for EMBEDDING capability");
                 }
                 if (isCreate) {
                     if (embeddingDimension != null && embeddingDimension <= 0) {
-                        throw new IllegalArgumentException(
+                        throw new BusinessException("INVALID_REQUEST",
                                 "embeddingDimension must be positive when provided");
                     }
                 }
                 break;
             default:
-                throw new IllegalArgumentException("Unsupported capability: " + capability);
+                throw new BusinessException("INVALID_REQUEST", "Unsupported capability: " + capability);
         }
     }
 
@@ -380,23 +381,23 @@ public class ModelConfigService {
                 wrapper.in(ModelConfigEntity::getCapability, EMBEDDING_CAPABILITY_FILTER_VALUES);
                 break;
             default:
-                throw new IllegalArgumentException("Invalid capability filter: " + capability
+                throw new BusinessException("INVALID_REQUEST", "Invalid capability filter: " + capability
                         + ". Must be CHAT or EMBEDDING.");
         }
     }
 
     private void validateRequiredFields(String name, String providerName, String baseUrl, String apiKey) {
         if (!hasText(name)) {
-            throw new IllegalArgumentException("name is required");
+            throw new BusinessException("INVALID_REQUEST", "name is required");
         }
         if (!hasText(providerName)) {
-            throw new IllegalArgumentException("providerName is required");
+            throw new BusinessException("INVALID_REQUEST", "providerName is required");
         }
         if (!hasText(baseUrl)) {
-            throw new IllegalArgumentException("baseUrl is required");
+            throw new BusinessException("INVALID_REQUEST", "baseUrl is required");
         }
         if (!hasText(apiKey)) {
-            throw new IllegalArgumentException("apiKey is required");
+            throw new BusinessException("INVALID_REQUEST", "apiKey is required");
         }
     }
 

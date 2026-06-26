@@ -80,8 +80,6 @@ public class DocumentAdminController {
             return ApiResponse.success(DocumentVO.from(doc, task));
         } catch (BusinessException e) {
             throw e;
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException("INVALID_REQUEST", e.getMessage());
         } catch (IOException e) {
             log.error("Failed to read uploaded file", e);
             throw new BusinessException("INTERNAL_ERROR", "Failed to process uploaded file", HttpStatus.INTERNAL_SERVER_ERROR);

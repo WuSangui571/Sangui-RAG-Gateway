@@ -328,9 +328,13 @@ The `message`, `type`, `code`, and `httpStatus` constructor arguments are requir
 | `NoHandlerFoundException` | 404 | `ApiResponse<Void>` | `code=NOT_FOUND`, `message=Resource not found`, no `error` field |
 | `HttpMessageNotReadableException` on `/v1/*` | 400 | `OpenAiErrorResponse` | `error.code=invalid_request`; no body echo, no admin envelope |
 | `HttpMessageNotReadableException` outside `/v1/*` | 400 | `ApiResponse<Void>` | `code=INVALID_REQUEST`, `message=Malformed request body` |
+| `IllegalArgumentException` on `/v1/*` | 400 | `OpenAiErrorResponse` | `error.code=invalid_request`, safe generic message `Invalid request.`; no admin envelope, no raw message |
+| `IllegalArgumentException` outside `/v1/*` | 400 | `ApiResponse<Void>` | `code=INVALID_REQUEST`, `message=Invalid request`; no raw message |
 | `Exception` (generic) | 500 | `ApiResponse<Void>` | `code=INTERNAL_ERROR`, `message=Internal server error`, no stack trace |
 
 All handlers log safe context only (request IDs when available, error codes, non-sensitive messages). Stack traces are logged at ERROR level for unexpected exceptions but never returned to clients.
+
+**IllegalArgumentException safety policy**: Raw `IllegalArgumentException#getMessage()` is treated as unsafe by default at HTTP boundaries and is never returned in response bodies or handler logs. The global handler returns a generic `"Invalid request"` (or `"Invalid request."` for `/v1/*` OpenAI-compatible shape) and logs safe metadata such as the exception class only. Safe validation messages must be carried by explicit boundary exception types: `BusinessException("INVALID_REQUEST", "<safe message>")` for Admin endpoints and `GatewayException("<safe message>", ...)` for gateway `/v1/*` endpoints. Service-level `IllegalArgumentException` for internal invariants (encryption failures, JSON parse errors, storage path validation, etc.) must remain internal unless translated to an explicit safe exception at the request boundary.
 
 ### Test Coverage
 
@@ -341,6 +345,8 @@ All handlers log safe context only (request IDs when available, error codes, non
 - `shouldHandleBusinessExceptionWithApiResponse` — BAD_REQUEST with admin envelope; `$.error` doesNotExist.
 - `shouldHideStackTraceForUnexpectedErrors` — 500 with `INTERNAL_ERROR`/`Internal server error`; no stack trace.
 - `shouldReturn404ForUnimplementedRoute`, `shouldReturn404ForUnimplementedV1Route` — 404 admin envelope; no `$.error`; no fake chat data.
+- `shouldHandleIllegalArgumentExceptionWithApiResponse` — 400 admin envelope with generic `"Invalid request"` message; raw `IllegalArgumentException` message is not exposed.
+- `shouldHandleIllegalArgumentExceptionWithOpenAiResponseForV1` — for `/v1/*` path, returns `OpenAiErrorResponse` with safe generic message `"Invalid request."`, code `invalid_request`, type `invalid_request_error`; no admin envelope; no raw message.
 - `shouldReturn404ForFavicon`, `shouldReturn404ForUnmappedUnknownRoute` — 404 admin envelope.
 
 `GlobalExceptionHandlerIntegrationTest` (integration, 4 tests):

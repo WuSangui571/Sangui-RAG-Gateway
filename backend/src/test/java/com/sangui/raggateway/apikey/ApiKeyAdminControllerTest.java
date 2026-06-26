@@ -1,6 +1,7 @@
 package com.sangui.raggateway.apikey;
 
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.security.AdminAuthContext;
 import com.sangui.raggateway.common.security.AdminAuthContextHolder;
 import org.junit.jupiter.api.AfterEach;
@@ -95,12 +96,13 @@ class ApiKeyAdminControllerTest {
         ApiKeyEntity revokedKey = createKey(10L, 1L, 100L, "REVOKED");
         when(apiKeyService.findById(10L)).thenReturn(revokedKey);
         when(apiKeyService.disable(10L, 100L))
-                .thenThrow(new IllegalArgumentException("Revoked key cannot be disabled"));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "Revoked key cannot be disabled"));
 
         mockMvc.perform(post("/api/admin/api-keys/10/disable")
                         )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Revoked key cannot be disabled"));
     }
 
     // ---- Revoke ----
@@ -235,12 +237,13 @@ class ApiKeyAdminControllerTest {
         ApiKeyEntity revokedKey = createKey(10L, 1L, 100L, "REVOKED");
         when(apiKeyService.findById(10L)).thenReturn(revokedKey);
         when(apiKeyService.enable(10L, 100L))
-                .thenThrow(new IllegalArgumentException("Revoked key cannot be enabled"));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "Revoked key cannot be enabled"));
 
         mockMvc.perform(post("/api/admin/api-keys/10/enable")
                         )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Revoked key cannot be enabled"));
     }
 
     @Test
@@ -248,12 +251,13 @@ class ApiKeyAdminControllerTest {
         ApiKeyEntity expiredKey = createKey(10L, 1L, 100L, "EXPIRED");
         when(apiKeyService.findById(10L)).thenReturn(expiredKey);
         when(apiKeyService.enable(10L, 100L))
-                .thenThrow(new IllegalArgumentException("Expired key cannot be enabled"));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "Expired key cannot be enabled"));
 
         mockMvc.perform(post("/api/admin/api-keys/10/enable")
                         )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Expired key cannot be enabled"));
     }
 
     private ApiKeyEntity createKey(Long id, Long appId, Long userId, String status) {

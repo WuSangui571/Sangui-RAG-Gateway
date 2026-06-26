@@ -56,7 +56,7 @@ class KnowledgeBaseServiceTest {
     @Test
     void shouldRejectBlankName() {
         assertThatThrownBy(() -> knowledgeBaseService.create(100L, "  ", "text-embedding-3-small", 1536))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("name is required");
         verifyNoInteractions(knowledgeBaseMapper);
     }
@@ -64,7 +64,7 @@ class KnowledgeBaseServiceTest {
     @Test
     void shouldRejectBlankEmbeddingModel() {
         assertThatThrownBy(() -> knowledgeBaseService.create(100L, "Product Docs", "", 1536))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("embeddingModel is required");
         verifyNoInteractions(knowledgeBaseMapper);
     }
@@ -72,7 +72,7 @@ class KnowledgeBaseServiceTest {
     @Test
     void shouldRejectNonPositiveDimension() {
         assertThatThrownBy(() -> knowledgeBaseService.create(100L, "Product Docs", "text-embedding-3-small", 0))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("embeddingDimension must be positive");
         verifyNoInteractions(knowledgeBaseMapper);
     }
@@ -80,7 +80,7 @@ class KnowledgeBaseServiceTest {
     @Test
     void shouldRejectNullDimension() {
         assertThatThrownBy(() -> knowledgeBaseService.create(100L, "Product Docs", "text-embedding-3-small", null))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("embeddingDimension must be positive");
         verifyNoInteractions(knowledgeBaseMapper);
     }
@@ -94,7 +94,7 @@ class KnowledgeBaseServiceTest {
         when(knowledgeBaseMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(existing);
 
         assertThatThrownBy(() -> knowledgeBaseService.create(100L, " Product Docs ", "text-embedding-3-small", 1536))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("name already exists");
         verify(knowledgeBaseMapper, never()).insert(any(KnowledgeBaseEntity.class));
     }

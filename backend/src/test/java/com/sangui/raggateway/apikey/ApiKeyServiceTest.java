@@ -2,6 +2,7 @@ package com.sangui.raggateway.apikey;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sangui.raggateway.apikey.dto.CreateApiKeyResult;
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.security.ApiKeyGenerator;
 import com.sangui.raggateway.common.security.ApiKeyHasher;
 import org.junit.jupiter.api.BeforeEach;
@@ -177,21 +178,21 @@ class ApiKeyServiceTest {
     void shouldRejectPastExpiresAt() {
         LocalDateTime past = LocalDateTime.now().minusDays(1);
         assertThatThrownBy(() -> apiKeyService.create(1L, 100L, "test-key", past))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("expiresAt must be in the future");
     }
 
     @Test
     void shouldRejectCreateWithBlankName() {
         assertThatThrownBy(() -> apiKeyService.create(1L, 100L, " "))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("name is required");
     }
 
     @Test
     void shouldRejectCreateWithInvalidAppId() {
         assertThatThrownBy(() -> apiKeyService.create(0L, 100L, "test-key"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("appId must be a positive long");
     }
 
@@ -223,7 +224,7 @@ class ApiKeyServiceTest {
         when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
 
         assertThatThrownBy(() -> apiKeyService.disable(10L, 100L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Revoked key cannot be disabled");
     }
 
@@ -264,7 +265,7 @@ class ApiKeyServiceTest {
         when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
 
         assertThatThrownBy(() -> apiKeyService.enable(10L, 100L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Revoked key cannot be enabled");
     }
 
@@ -274,7 +275,7 @@ class ApiKeyServiceTest {
         when(apiKeyMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(key);
 
         assertThatThrownBy(() -> apiKeyService.enable(10L, 100L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Expired key cannot be enabled");
     }
 

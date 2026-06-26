@@ -339,7 +339,7 @@ class DocumentServiceTest {
         byte[] fileContent = "test".getBytes(StandardCharsets.UTF_8);
         assertThatThrownBy(() -> documentService.uploadAndProcess(
                 100L, 1L, "test.pdf", "application/pdf", fileContent))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Unsupported file type");
         verifyNoInteractions(fileStorageService);
         verifyNoInteractions(documentMapper);
@@ -350,7 +350,7 @@ class DocumentServiceTest {
         byte[] fileContent = "test".getBytes(StandardCharsets.UTF_8);
         assertThatThrownBy(() -> documentService.uploadAndProcess(
                 100L, 1L, "test.md", "application/pdf", fileContent))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Unsupported content type");
         verifyNoInteractions(fileStorageService);
         verifyNoInteractions(documentMapper);
@@ -373,7 +373,7 @@ class DocumentServiceTest {
 
         assertThatThrownBy(() -> limitedService.uploadAndProcess(
                 100L, 1L, "test.md", "text/markdown", "test".getBytes(StandardCharsets.UTF_8)))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("max-file-size-bytes");
         verifyNoInteractions(fileStorageService);
         verifyNoInteractions(documentMapper);
@@ -721,7 +721,7 @@ class DocumentServiceTest {
         byte[] fileContent = "test".getBytes(StandardCharsets.UTF_8);
         assertThatThrownBy(() -> documentService.uploadAndEnqueue(
                 100L, 1L, "test.pdf", "application/pdf", fileContent))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Unsupported file type");
         verifyNoInteractions(fileStorageService);
     }
@@ -743,7 +743,7 @@ class DocumentServiceTest {
 
         assertThatThrownBy(() -> limitedService.uploadAndEnqueue(
                 100L, 1L, "test.md", "text/markdown", "test".getBytes(StandardCharsets.UTF_8)))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("max-file-size-bytes");
         verifyNoInteractions(fileStorageService);
     }

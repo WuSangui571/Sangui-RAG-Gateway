@@ -1,6 +1,7 @@
 package com.sangui.raggateway.model;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
 import com.sangui.raggateway.common.security.UpstreamApiKeyMasker;
 import com.sangui.raggateway.model.dto.CreateModelConfigDTO;
@@ -272,7 +273,7 @@ class ModelConfigServiceTest {
         dto.setEmbeddingDimension(1024);
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("CHAT_EMBEDDING is no longer supported");
     }
 
@@ -284,7 +285,7 @@ class ModelConfigServiceTest {
         dto.setChatModel("gpt-4o-mini");
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("name is required");
     }
 
@@ -299,7 +300,7 @@ class ModelConfigServiceTest {
         dto.setApiKey(null);
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("apiKey is required");
     }
 
@@ -316,7 +317,7 @@ class ModelConfigServiceTest {
         dto.setEmbeddingDimension(0);
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("CHAT_EMBEDDING is no longer supported");
     }
 
@@ -332,7 +333,7 @@ class ModelConfigServiceTest {
         dto.setEmbeddingModel("text-embedding-3-small");
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("embedding fields must not be set for CHAT capability");
     }
 
@@ -374,7 +375,7 @@ class ModelConfigServiceTest {
         dto.setEmbeddingDimension(1024);
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("chatModel must not be set for EMBEDDING capability");
     }
 
@@ -384,7 +385,7 @@ class ModelConfigServiceTest {
         dto.setName("Config");
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("capability is required");
     }
 
@@ -395,7 +396,7 @@ class ModelConfigServiceTest {
         dto.setName("Config");
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Invalid capability");
     }
 
@@ -520,7 +521,7 @@ class ModelConfigServiceTest {
         dto.setApiKey("");
 
         assertThatThrownBy(() -> modelConfigService.updateAdminConfig(10L, 100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("apiKey must not be blank");
     }
 
@@ -603,7 +604,7 @@ class ModelConfigServiceTest {
         when(modelConfigMapper.selectOne(any())).thenReturn(existing);
 
         assertThatThrownBy(() -> modelConfigService.enableAdminConfig(10L, 100L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cannot enable model config without an upstream API key");
     }
 
@@ -622,7 +623,7 @@ class ModelConfigServiceTest {
         when(modelConfigMapper.selectOne(any())).thenReturn(existing);
 
         assertThatThrownBy(() -> modelConfigService.enableAdminConfig(10L, 100L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cannot enable model config without an upstream API key");
     }
 
@@ -642,7 +643,7 @@ class ModelConfigServiceTest {
         when(modelConfigMapper.selectOne(any())).thenReturn(existing);
 
         assertThatThrownBy(() -> modelConfigService.enableAdminConfig(10L, 100L))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("positive embedding dimension");
     }
 
@@ -698,7 +699,7 @@ class ModelConfigServiceTest {
     @Test
     void shouldRejectInvalidCapabilityFilter() {
         assertThatThrownBy(() -> modelConfigService.listAdminConfigs(100L, null, "INVALID"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Invalid capability filter");
     }
 
@@ -904,14 +905,14 @@ class ModelConfigServiceTest {
         dto.setCapability("CHAT_EMBEDDING");
 
         assertThatThrownBy(() -> modelConfigService.updateAdminConfig(10L, 100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("CHAT_EMBEDDING is no longer supported");
     }
 
     @Test
     void parseCapabilityShouldRejectCHAT_EMBEDDING() {
         assertThatThrownBy(() -> ModelConfigService.parseCapability("CHAT_EMBEDDING"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("CHAT_EMBEDDING is no longer supported");
     }
 
@@ -935,7 +936,7 @@ class ModelConfigServiceTest {
         dto.setApiKey("sk-secret");
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("chatModel is required for CHAT capability");
     }
 
@@ -949,7 +950,7 @@ class ModelConfigServiceTest {
         dto.setApiKey("sk-secret");
 
         assertThatThrownBy(() -> modelConfigService.createAdminConfig(100L, dto))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("embeddingModel is required for EMBEDDING capability");
     }
 }

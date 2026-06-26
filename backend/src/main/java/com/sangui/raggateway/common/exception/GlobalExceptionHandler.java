@@ -96,10 +96,14 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException ex) {
-        log.warn("Validation error: {}", ex.getMessage());
+    public ResponseEntity<?> handleIllegalArgumentException(IllegalArgumentException ex, HttpServletRequest request) {
+        log.warn("Validation error: exception_class={}", ex.getClass().getSimpleName());
+        if (request.getRequestURI().startsWith("/v1/")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(OpenAiErrorResponse.of("Invalid request.", "invalid_request_error", "invalid_request"));
+        }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("INVALID_REQUEST", ex.getMessage()));
+                .body(ApiResponse.error("INVALID_REQUEST", "Invalid request"));
     }
 
     @ExceptionHandler(Exception.class)

@@ -1,5 +1,6 @@
 package com.sangui.raggateway.knowledge;
 
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
 import com.sangui.raggateway.common.security.AdminAuthContext;
 import com.sangui.raggateway.common.security.AdminAuthContextHolder;
@@ -87,7 +88,7 @@ class KnowledgeBaseAdminControllerTest {
     @Test
     void shouldRejectCreateKbWithBlankName() throws Exception {
         when(knowledgeBaseService.create(eq(100L), eq(""), eq("text-embedding-3-small"), eq(1536)))
-                .thenThrow(new IllegalArgumentException("name is required"));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "name is required"));
 
         mockMvc.perform(post("/api/admin/knowledge-bases")
 
@@ -106,7 +107,7 @@ class KnowledgeBaseAdminControllerTest {
     @Test
     void shouldRejectCreateKbWithBlankEmbeddingModel() throws Exception {
         when(knowledgeBaseService.create(eq(100L), eq("Product Docs"), eq(""), eq(1536)))
-                .thenThrow(new IllegalArgumentException("embeddingModel is required"));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "embeddingModel is required"));
 
         mockMvc.perform(post("/api/admin/knowledge-bases")
 
@@ -125,7 +126,7 @@ class KnowledgeBaseAdminControllerTest {
     @Test
     void shouldRejectCreateKbWithNonPositiveDimension() throws Exception {
         when(knowledgeBaseService.create(eq(100L), eq("Product Docs"), eq("text-embedding-3-small"), eq(0)))
-                .thenThrow(new IllegalArgumentException("embeddingDimension must be positive"));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "embeddingDimension must be positive"));
 
         mockMvc.perform(post("/api/admin/knowledge-bases")
 

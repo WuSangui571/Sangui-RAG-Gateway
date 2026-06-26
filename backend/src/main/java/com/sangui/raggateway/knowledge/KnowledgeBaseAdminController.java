@@ -33,13 +33,9 @@ public class KnowledgeBaseAdminController {
     @PostMapping
     public ApiResponse<KnowledgeBaseVO> create(@RequestBody CreateKnowledgeBaseDTO dto) {
         Long userId = getRequiredUserId();
-        try {
-            KnowledgeBaseEntity entity = knowledgeBaseService.create(
-                    userId, dto.getName(), dto.getEmbeddingModel(), dto.getEmbeddingDimension());
-            return ApiResponse.success(KnowledgeBaseVO.from(entity));
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException("INVALID_REQUEST", e.getMessage());
-        }
+        KnowledgeBaseEntity entity = knowledgeBaseService.create(
+                userId, dto.getName(), dto.getEmbeddingModel(), dto.getEmbeddingDimension());
+        return ApiResponse.success(KnowledgeBaseVO.from(entity));
     }
 
     @GetMapping

@@ -308,7 +308,7 @@ class ModelConfigAdminControllerTest {
         entity.setApiKeyEncrypted(null);
         when(modelConfigService.findById(10L)).thenReturn(entity);
         when(modelConfigService.enableAdminConfig(10L, 100L))
-                .thenThrow(new IllegalArgumentException("Cannot enable model config without an upstream API key"));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "Cannot enable model config without an upstream API key"));
 
         mockMvc.perform(post("/api/admin/model-configs/10/enable")
                         )
@@ -332,7 +332,7 @@ class ModelConfigAdminControllerTest {
     @Test
     void shouldReturnApiResponseForCreateValidationError() throws Exception {
         when(modelConfigService.createAdminConfig(eq(100L), any(CreateModelConfigDTO.class)))
-                .thenThrow(new IllegalArgumentException("name is required"));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "name is required"));
 
         mockMvc.perform(post("/api/admin/model-configs")
 
@@ -354,7 +354,7 @@ class ModelConfigAdminControllerTest {
     @Test
     void shouldRejectCreateWithCHAT_EMBEDDINGCapability() throws Exception {
         when(modelConfigService.createAdminConfig(eq(100L), any(CreateModelConfigDTO.class)))
-                .thenThrow(new IllegalArgumentException("CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING."));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING."));
 
         mockMvc.perform(post("/api/admin/model-configs")
 
@@ -379,7 +379,7 @@ class ModelConfigAdminControllerTest {
     @Test
     void shouldRejectCheckUnsavedWithCHAT_EMBEDDINGCapability() throws Exception {
         when(modelConfigCheckService.checkUnsavedConfig(eq(100L), any(ModelConfigCheckRequest.class)))
-                .thenThrow(new IllegalArgumentException("CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING."));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "CHAT_EMBEDDING is no longer supported. Use CHAT or EMBEDDING."));
 
         mockMvc.perform(post("/api/admin/model-configs/check")
 

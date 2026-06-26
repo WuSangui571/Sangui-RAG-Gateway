@@ -51,6 +51,11 @@ class GlobalExceptionHandlerTest {
             throw new IllegalArgumentException("expiresAt must be in the future");
         }
 
+        @GetMapping("/v1/test/validation-error")
+        void throwIllegalArgumentExceptionV1() {
+            throw new IllegalArgumentException("expiresAt must be in the future");
+        }
+
         @GetMapping("/v1/unimplemented")
         void throwNoResourceForUnimplementedRoute() throws NoResourceFoundException {
             throw new NoResourceFoundException(HttpMethod.GET, "/v1/unimplemented");
@@ -152,9 +157,26 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/test/validation-error"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-                .andExpect(jsonPath("$.message").value("expiresAt must be in the future"))
+                .andExpect(jsonPath("$.message").value("Invalid request"))
                 .andExpect(jsonPath("$.data").isEmpty())
-                .andExpect(jsonPath("$.error").doesNotExist());
+                .andExpect(jsonPath("$.error").doesNotExist())
+                .andExpect(content().string(not(containsString("expiresAt"))))
+                .andExpect(content().string(not(containsString("Exception"))))
+                .andExpect(content().string(not(containsString("java."))));
+    }
+
+    @Test
+    void shouldHandleIllegalArgumentExceptionWithOpenAiResponseForV1() throws Exception {
+        mockMvc.perform(get("/v1/test/validation-error"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.message").value("Invalid request."))
+                .andExpect(jsonPath("$.error.type").value("invalid_request_error"))
+                .andExpect(jsonPath("$.error.code").value("invalid_request"))
+                .andExpect(jsonPath("$.code").doesNotExist())
+                .andExpect(jsonPath("$.message").doesNotExist())
+                .andExpect(content().string(not(containsString("expiresAt"))))
+                .andExpect(content().string(not(containsString("Exception"))))
+                .andExpect(content().string(not(containsString("java."))));
     }
 
     @Test

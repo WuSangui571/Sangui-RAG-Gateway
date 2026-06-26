@@ -98,16 +98,16 @@ public class DocumentService {
                                             String originalFilename, String contentType,
                                             byte[] fileContent) {
         if (!DocumentUploadRules.isSupportedFilename(originalFilename)) {
-            throw new IllegalArgumentException("Unsupported file type: " + originalFilename + ". Only .txt, .md, and .markdown files are supported.");
+            throw new BusinessException("INVALID_REQUEST", "Unsupported file type: " + originalFilename + ". Only .txt, .md, and .markdown files are supported.");
         }
         if (!DocumentUploadRules.isSupportedContentType(contentType)) {
-            throw new IllegalArgumentException("Unsupported content type");
+            throw new BusinessException("INVALID_REQUEST", "Unsupported content type");
         }
         if (fileContent == null || fileContent.length == 0) {
-            throw new IllegalArgumentException("File must not be empty");
+            throw new BusinessException("INVALID_REQUEST", "File must not be empty");
         }
         if (fileContent.length > documentProperties.getMaxFileSizeBytes()) {
-            throw new IllegalArgumentException("File exceeds max-file-size-bytes");
+            throw new BusinessException("INVALID_REQUEST", "File exceeds max-file-size-bytes");
         }
 
         String safeFilename = DocumentUploadRules.sanitizeFilename(originalFilename);
@@ -169,16 +169,16 @@ public class DocumentService {
                                           String originalFilename, String contentType,
                                           byte[] fileContent) {
         if (!DocumentUploadRules.isSupportedFilename(originalFilename)) {
-            throw new IllegalArgumentException("Unsupported file type: " + originalFilename + ". Only .txt, .md, and .markdown files are supported.");
+            throw new BusinessException("INVALID_REQUEST", "Unsupported file type: " + originalFilename + ". Only .txt, .md, and .markdown files are supported.");
         }
         if (!DocumentUploadRules.isSupportedContentType(contentType)) {
-            throw new IllegalArgumentException("Unsupported content type");
+            throw new BusinessException("INVALID_REQUEST", "Unsupported content type");
         }
         if (fileContent == null || fileContent.length == 0) {
-            throw new IllegalArgumentException("File must not be empty");
+            throw new BusinessException("INVALID_REQUEST", "File must not be empty");
         }
         if (fileContent.length > documentProperties.getMaxFileSizeBytes()) {
-            throw new IllegalArgumentException("File exceeds max-file-size-bytes");
+            throw new BusinessException("INVALID_REQUEST", "File exceeds max-file-size-bytes");
         }
 
         String safeFilename = DocumentUploadRules.sanitizeFilename(originalFilename);
@@ -216,7 +216,7 @@ public class DocumentService {
         try {
             DocumentParser parser = selectParser(contentType, displayBasename);
             if (parser == null) {
-                throw new IllegalArgumentException("No parser found for file: " + displayBasename);
+                throw new BusinessException("INVALID_REQUEST", "No parser found for file: " + displayBasename);
             }
 
             InputStream parseStream = new ByteArrayInputStream(fileContent);

@@ -1,0 +1,21 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, OpenAI-compatible API shape, and security baseline"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Primary error response contract and IllegalArgumentException policy target"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe logging rules for exception messages and sensitive data"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend validation and required regression tests"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Placement rules for common exception helpers and controller/service boundaries"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Gateway error normalization and OpenAI-compatible public response requirements"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Error response and log secrecy requirements"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer error and security boundary checklist"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicate allowlists or repeated message-safety logic"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/exception/GlobalExceptionHandler.java", "reason": "Current raw IllegalArgumentException response mapping and central handler pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/exception/GlobalExceptionHandlerTest.java", "reason": "Existing handler tests to update with safe/raw message assertions"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigAdminController.java", "reason": "Controller wrapper pattern currently forwarding IllegalArgumentException messages"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentAdminController.java", "reason": "Upload controller wrapper and safe validation boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/knowledge/KnowledgeBaseAdminController.java", "reason": "KB controller wrapper and safe validation boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java", "reason": "Existing explicit BusinessException validation examples"}
+{"file": "backend/src/main/java/com/sangui/raggateway/model/ModelConfigService.java", "reason": "Representative service validation messages and unsafe capability/value interpolation risk"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/security/UpstreamApiKeyEncryptor.java", "reason": "Representative unsafe internal IllegalArgumentException source for decrypt failures"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogVO.java", "reason": "Representative JSON parse IllegalArgumentException with parser message risk"}
+{"file": "backend/src/main/java/com/sangui/raggateway/log/vo/ApiRequestLogDetailVO.java", "reason": "Representative retrieval_evidence parse IllegalArgumentException with parser message risk"}

@@ -317,14 +317,14 @@ public class ModelConfigCheckService {
 
     private String requireNonBlank(String value, String fieldName) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " is required");
+            throw new BusinessException("INVALID_REQUEST", fieldName + " is required");
         }
         return value;
     }
 
     static String normalizeBaseUrl(String baseUrl) {
         if (baseUrl == null || baseUrl.isBlank()) {
-            throw new IllegalArgumentException("baseUrl must not be blank");
+            throw new BusinessException("INVALID_REQUEST", "baseUrl must not be blank");
         }
         String normalized = baseUrl.strip();
         while (normalized.endsWith("/")) {

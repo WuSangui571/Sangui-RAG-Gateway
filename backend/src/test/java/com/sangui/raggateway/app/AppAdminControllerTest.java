@@ -4,6 +4,7 @@ import com.sangui.raggateway.apikey.ApiKeyEntity;
 import com.sangui.raggateway.apikey.ApiKeyService;
 import com.sangui.raggateway.apikey.dto.CreateApiKeyDTO;
 import com.sangui.raggateway.apikey.dto.CreateApiKeyResult;
+import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.app.vo.AppReadinessCheckVO;
 import com.sangui.raggateway.app.vo.AppReadinessVO;
 import com.sangui.raggateway.common.exception.GlobalExceptionHandler;
@@ -316,7 +317,7 @@ class AppAdminControllerTest {
         AppEntity app = createApp(1L, 100L);
         when(appService.findByIdAndUserId(1L, 100L)).thenReturn(app);
         when(apiKeyService.create(eq(1L), eq(100L), eq("Production Key"), any(LocalDateTime.class)))
-                .thenThrow(new IllegalArgumentException("expiresAt must be in the future"));
+                .thenThrow(new BusinessException("INVALID_REQUEST", "expiresAt must be in the future"));
 
         mockMvc.perform(post("/api/admin/apps/1/api-keys")
 
@@ -328,7 +329,8 @@ class AppAdminControllerTest {
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.message").value("expiresAt must be in the future"));
     }
 
     // ---- List API Keys ----
