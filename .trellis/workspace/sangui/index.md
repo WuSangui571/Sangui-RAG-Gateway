@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 87
-- **Last Active**: 2026-06-24
+- **Total Sessions**: 88
+- **Last Active**: 2026-06-26
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1370 | Active |
+| `journal-3.md` | ~1422 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 88 | 2026-06-26 | IllegalArgumentException error safety closeout | `e8f601b4` | `feature/illegal-argument-error-safety` |
 | 87 | 2026-06-24 | Request log write failure observability closeout | `f0806433` | `feature/request-log-write-failure-observability` |
 | 86 | 2026-06-24 | Embedding batching closeout | `87baf744` | `feature/embedding-batching` |
 | 85 | 2026-06-24 | Default admin bootstrap closeout | `75308691` | `feature/default-admin-bootstrap` |

@@ -1377,3 +1377,46 @@ The backend now keeps gateway responses unchanged when request-log persistence f
 ### Next Steps
 
 - None - task complete
+
+
+## Session 88: IllegalArgumentException error safety closeout
+
+**Date**: 2026-06-26
+**Task**: IllegalArgumentException error safety closeout
+**Branch**: `feature/illegal-argument-error-safety`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | e8f601b4 fix: illegal argument error boundary safety |
+| Modules | backend common exception handler; admin app API key service; model config; knowledge base; document upload; backend error-handling spec |
+| Main changes | Raw IllegalArgumentException is unsafe by default at HTTP boundaries. Admin/common raw IAE now returns INVALID_REQUEST with generic Invalid request. /v1 raw IAE now returns OpenAI-compatible invalid_request with generic Invalid request. Safe user validation messages are carried by BusinessException or GatewayException. |
+| Codex QA fixes | Removed raw IllegalArgumentException message from GlobalExceptionHandler WARN log. Converted ApiKeyService admin validation and lifecycle errors to BusinessException so safe messages remain visible. Added controller/service assertions for API key validation messages. |
+| Updated files | .trellis/spec/backend/error-handling.md; GlobalExceptionHandler.java; ApiKeyService.java; document/knowledge/model service and admin controller tests; GlobalExceptionHandlerTest; ApiKeyServiceTest; ApiKeyAdminControllerTest; AppAdminControllerTest |
+| Validation | mvn -q -Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest test: passed. mvn -q -Dtest=ApiKeyServiceTest,ApiKeyAdminControllerTest,AppAdminControllerTest,ModelConfigAdminControllerTest,KnowledgeBaseAdminControllerTest,DocumentAdminControllerTest test: passed. mvn -q -Dtest=ModelConfigServiceTest,ModelConfigCheckServiceTest,KnowledgeBaseServiceTest,DocumentServiceTest test: passed. mvn -q -Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest test: passed. mvn -q -DskipTests compile: passed. mvn -q test: passed, 821 tests, 0 failures, 0 errors, 0 skipped. git diff --check: passed with line-ending warnings only. |
+| Result | The IllegalArgumentException error safety task is complete, manually accepted, committed, archived, and recorded. No frontend, DB, infra, Docker, API route, DTO field, or environment variable changes were introduced. |
+| Boundaries | record-session did not commit business code and did not push. Trellis archive/session metadata is handled only by Trellis scripts. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e8f601b4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
