@@ -1634,3 +1634,70 @@ The task is complete and archived. The direct /api/health stable service identit
 ### Next Steps
 
 - None - task complete
+
+
+## Session 92: Test profile coverage governance
+
+**Date**: 2026-06-26
+**Task**: Test profile coverage governance
+**Branch**: `feature/test-profile-coverage-governance`
+
+### Summary
+
+Recorded completion of the runtime profile bean coverage governance task after manual testing and commit `51ef12c0`.
+
+### Main Changes
+
+**Summary**
+- Completed test profile coverage governance after manual verification and commit.
+- Added runtime-only Spring bean smoke coverage for non-test profile wiring.
+- Updated backend quality guidance with runtime-only bean governance and categorized @Profile("!test") inventory.
+
+**Commit**
+- 51ef12c0 test: runtime profile bean coverage governance
+
+**Main modules**
+- Backend tests: runtime profile bean smoke coverage.
+- Backend spec: quality guidelines for runtime-only bean coverage.
+- Trellis task: archived 06-26-test-profile-coverage-governance.
+
+**Updated files**
+- backend/src/test/java/com/sangui/raggateway/RuntimeProfileBeanSmokeTest.java
+- .trellis/spec/backend/quality-guidelines.md
+- .trellis/tasks/archive/2026-06/06-26-test-profile-coverage-governance/
+
+**Validation**
+- cd backend; mvn -q "-Dtest=RuntimeProfileBeanSmokeTest,GatewayTimeoutConfigurationTest,OpenAiCompatibleEmbeddingClientTest,ModelConfigCheckServiceTest" test : passed
+- cd backend; mvn -q -DskipTests compile : passed
+- git diff --check : passed
+- static scan for console.log, debugger, TODO, any, and non-null assertion patterns in changed test/spec files : no findings
+- Human manual testing : confirmed by user before record-session
+
+**Result and boundaries**
+- Runtime-smoke profile is explicit and separate from test/prod profiles.
+- Runtime-only high-risk beans now have narrow Spring context coverage without PostgreSQL, Redis, Flyway, MyBatis, object storage, or live provider calls.
+- Document worker scheduler boundary is covered with disabled and mocked-registration cases.
+- No public API, DB schema, frontend type, Docker/CI, retry/fallback/routing, or provider-call behavior changed.
+- Full mvn test was not run in this closeout because the task required targeted backend checks and full local DB/Redis environment was not part of this handoff.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `51ef12c0` | (see git log) |
+
+### Testing
+
+- [OK] Targeted backend runtime/profile and timeout tests passed.
+- [OK] Backend compile passed.
+- [OK] Diff hygiene and static changed-file scan passed.
+- [OK] User confirmed manual testing before record-session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
