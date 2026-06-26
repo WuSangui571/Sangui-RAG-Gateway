@@ -1420,3 +1420,72 @@ The backend now keeps gateway responses unchanged when request-log persistence f
 ### Next Steps
 
 - None - task complete
+
+
+## Session 89: README Error Boundary Contract Sync
+
+**Date**: 2026-06-26
+**Task**: README Error Boundary Contract Sync
+**Branch**: `feature/readme-error-boundary-sync`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+**Summary**
+- Synced README documentation with current Admin JWT, gateway error-boundary, IllegalArgumentException safety, request-log evidence, deployment, and validation contracts.
+- Replaced stale Admin API examples that used X-Admin-User-Id with Authorization: Bearer <admin-jwt> for manual Admin API calls.
+- Added README Error Handling and Safety Boundaries section covering /v1 OpenAI-compatible errors, Admin ApiResponse errors, raw IAE sanitization, BusinessException/GatewayException safe-message ownership, request-log persistence failure safety, and safe/forbidden evidence fields.
+- Updated README Run Tests section with backend targeted tests, frontend lint/test/typecheck/build, git diff --check, and docker compose config sanity commands.
+- During Codex check, tightened the README PowerShell admin-login example so login failures print only code/message and temp files are cleaned in finally.
+
+**Main Modules**
+- Documentation contract: README.md
+- Trellis task metadata: .trellis/tasks/06-26-readme-error-boundary-contract-sync -> archive/2026-06
+
+**Updated Files**
+- README.md
+- .trellis/tasks/archive/2026-06/06-26-readme-error-boundary-contract-sync/
+- .trellis/workspace/sangui/journal-3.md
+- .trellis/workspace/sangui/index.md
+
+**Validation**
+- git diff --check: passed with LF/CRLF warning only.
+- Documentation secret/safety scan: passed; matches were forbidden-field list text, not leaked values.
+- cd backend; mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test: passed.
+- cd backend; mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest,GatewayAuthFilterTest,OpenAiModelsControllerTest" test: passed.
+- cd backend; mvn -q "-Dtest=ApiKeyServiceTest,ApiKeyAdminControllerTest,AppAdminControllerTest,ModelConfigAdminControllerTest,KnowledgeBaseAdminControllerTest,DocumentAdminControllerTest" test: passed after serial rerun; first parallel Maven run hit target-directory interference.
+- cd backend; mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest" test: passed.
+- cd backend; mvn -q -DskipTests compile: passed.
+- cd frontend; cmd /c npm run lint: passed.
+- cd frontend; cmd /c npm run test: passed on 300s rerun, 7 files / 95 tests; first 120s run timed out without assertion failures.
+- cd frontend; cmd /c npm run typecheck: passed.
+- cd frontend; cmd /c npm run build: passed with existing Vite chunk-size warning.
+- docker compose --env-file .env.example -f deploy/docker-compose.yml config: passed.
+
+**Result and Boundaries**
+- Runtime behavior, API DTOs, database schema, Docker/infra config, and frontend implementation were not changed.
+- README now documents the current Admin JWT contract and keeps /v1 app API-key auth separate from Admin auth.
+- scripts/demo-smoke.ps1 still has a documented known drift around AdminUserId/X-Admin-User-Id; manual Admin API commands should use the documented JWT flow.
+- User manually tested and committed business change as cf1d8827 before record-session.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cf1d8827` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
