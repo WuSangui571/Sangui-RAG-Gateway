@@ -1,0 +1,17 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/tasks/06-26-health-endpoint-service-name/prd.md", "reason": "PRD: stable /api/health service-name contract, scope boundaries, acceptance criteria, required tests"}
+{"file": ".trellis/tasks/06-26-health-endpoint-service-name/research.md", "reason": "Focused code research: current health implementation, docs drift, likely files, tests"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project health/deployment contract and /api/health expected response"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend controller/package boundaries for health endpoint"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "/api/health response shape and auth bypass boundary"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend tests and Docker runtime healthcheck quality contract"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API/docs/deployment verification thinking guide"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Search before adding constants or duplicate service-name sources"}
+{"file": "backend/src/main/java/com/sangui/raggateway/health/HealthController.java", "reason": "Existing health response implementation pattern"}
+{"file": "backend/src/test/java/com/sangui/raggateway/health/HealthControllerTest.java", "reason": "Existing health response MockMvc assertions"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java", "reason": "Existing /api/health auth bypass assertion"}
+{"file": "deploy/docker-compose.yml", "reason": "Backend Compose healthcheck command and runtime dependency context"}
+{"file": "README.md", "reason": "User-facing health and runtime smoke documentation"}
+{"file": "docs/runtime-evidence-checklist.md", "reason": "Runtime health evidence template currently missing service field"}
+{"file": "scripts/demo-smoke.ps1", "reason": "Manual smoke health assertions currently check code/status"}

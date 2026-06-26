@@ -38,7 +38,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\demo-smoke.ps1 `
 
 | # | Step | Result | Evidence (metadata only) |
 |---|---|---|---|
-| 1 | Backend health | `<PASS / FAIL>` | `<record HTTP status, code, data.status>` |
+| 1 | Backend health | `<PASS / FAIL>` | `<record HTTP status, code, data.status, data.service>` |
 | 2 | Frontend proxy health | `<PASS / FAIL>` | `<record JSON vs HTML, code=OK>` |
 | 3 | App readiness | `<PASS / FAIL / SKIP>` | `<record overall_status, check count, required check presence; no readiness JSON if unreviewed>` |
 | 4 | Non-streaming chat | `<PASS / FAIL>` | `<record HTTP 200, content length only - never answer text>` |
@@ -89,7 +89,7 @@ Record only safe metadata:
 
 | # | Step | Result | Evidence |
 |---|---|---|---|
-| 1 | Backend health | PASS | HTTP 200, `code=OK`, `data.status=UP` |
+| 1 | Backend health | PASS | HTTP 200, `code=OK`, `data.status=UP`, `data.service=sangui-rag-gateway` |
 | 2 | Frontend proxy health | PASS | HTTP 200, `code=OK` (JSON, not HTML) |
 | 3 | App readiness | PASS | `overall_status=READY`, required checks present, check count recorded, no forbidden fields |
 | 4 | Non-streaming chat | PASS | HTTP 200, content length=`<N>` |
@@ -105,7 +105,7 @@ Record only boundary metadata:
 
 | # | Step | Result | Evidence |
 |---|---|---|---|
-| 1 | Backend health | PASS | HTTP 200, `code=OK` |
+| 1 | Backend health | PASS | HTTP 200, `code=OK`, `data.status=UP`, `data.service=sangui-rag-gateway` |
 | 2 | Frontend proxy health | PASS | JSON, `code=OK` |
 | 3 | App readiness | FAIL | `overall_status=<status>`, boundary `<readiness/retrieval/auth/embedding>`, failing check(s): `<key>=<status>` |
 | 4-7 | skipped or partial | SKIP | Readiness failure stops or subsequent steps fail independently |

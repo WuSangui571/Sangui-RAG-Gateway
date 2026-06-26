@@ -1,0 +1,17 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis/tasks/06-26-health-endpoint-service-name/prd.md", "reason": "Check PRD acceptance criteria and forbidden scope before finish-work"}
+{"file": ".trellis/tasks/06-26-health-endpoint-service-name/research.md", "reason": "Review implementation against researched drift points and required checks"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Verify README/spec/deployment contract remains synchronized"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Ensure no unnecessary service/module abstraction is introduced"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Verify no /v1 OpenAI response or admin error boundary regression"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Check targeted tests, compile, compose config, diff check"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Review API/payload/docs/deployment alignment and non-goals"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Check for duplicate constants/sources of truth"}
+{"file": "backend/src/main/java/com/sangui/raggateway/health/HealthController.java", "reason": "Verify final response fields remain stable and minimal"}
+{"file": "backend/src/test/java/com/sangui/raggateway/health/HealthControllerTest.java", "reason": "Verify service-name assertion covers stable contract"}
+{"file": "backend/src/test/java/com/sangui/raggateway/common/security/GatewayAuthFilterTest.java", "reason": "Verify /api/health remains public and outside /v1 filter"}
+{"file": "deploy/docker-compose.yml", "reason": "Verify healthcheck remains lightweight and config renders"}
+{"file": "README.md", "reason": "Check documented health response and smoke evidence align"}
+{"file": "docs/runtime-evidence-checklist.md", "reason": "Verify runtime evidence records stable service identity where appropriate"}
+{"file": "scripts/demo-smoke.ps1", "reason": "Verify smoke script asserts service name if changed and remains PS 5.1 compatible"}

@@ -472,7 +472,7 @@ $ApiKey = "sk-sangui-<your-key>"
 curl.exe -s "$BackendBaseUrl/api/health"
 ```
 
-Expected: JSON with `"code":"OK"` and `"data":{"status":"UP"}`. If unreachable or returns unexpected content, the boundary is `health`.
+Expected: JSON with `"code":"OK"`, `"data":{"status":"UP","service":"sangui-rag-gateway"}`. If unreachable or returns unexpected content, the boundary is `health`.
 
 ### 2. Frontend proxy health (boundary: `proxy`)
 
@@ -480,7 +480,7 @@ Expected: JSON with `"code":"OK"` and `"data":{"status":"UP"}`. If unreachable o
 curl.exe -s "$FrontendBaseUrl/api/health"
 ```
 
-Expected: JSON (starts with `{`), NOT SPA HTML. Same `code=OK` and `data.status=UP` as backend. If the response is HTML or curl fails with connection errors, the boundary is `proxy`.
+Expected: JSON (starts with `{`), NOT SPA HTML, with `code=OK`. The backend direct health step owns the full `data.status=UP` / `data.service=sangui-rag-gateway` contract. If the response is HTML or curl fails with connection errors, the boundary is `proxy`.
 
 ### 3. Non-streaming chat (via frontend /v1 proxy)
 
@@ -616,7 +616,7 @@ After completing the admin setup and running the smoke flow, verify that each it
 
 | # | Check | Expected evidence | Boundary |
 |---|---|---|---|
-| 1 | Backend health | HTTP 200, `code=OK`, `data.status=UP` | `health` |
+| 1 | Backend health | HTTP 200, `code=OK`, `data.status=UP`, `data.service=sangui-rag-gateway` | `health` |
 | 2 | Frontend `/api` proxy health | JSON response (not SPA HTML), `code=OK` | `proxy` |
 | 3 | App readiness | `GET /api/admin/apps/{appId}/readiness` returns `code=OK`, `data.overall_status=READY`, checks include app/default_model_config/default_knowledge_base/knowledge_base_status/active_api_key/embedding_config; no forbidden fields in readiness metadata | `readiness` / `retrieval` / `auth` / `embedding` |
 | 4 | Model config presence | App has `ENABLED` Sanguicode chat config bound as default | `retrieval` |
@@ -1099,7 +1099,7 @@ A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pu
 - **Docker build backend**: Builds backend Docker image via `backend/Dockerfile`. No registry push.
 - **Docker build frontend**: Builds frontend Docker image via `frontend/Dockerfile`. No registry push.
 - **Compose contract**: Validates default Compose config renders; asserts `postgres` and `redis` have no host `ports`; asserts backend uses service-name dependencies (`postgres:5432`, `SPRING_DATA_REDIS_HOST=redis`); asserts `backend-data:/app/data/uploads` volume mount; validates host-ports override (`deploy/docker-compose.host-ports.yml`) exposes PG/Redis ports only when explicitly included.
-- **Runtime smoke**: Starts from a clean Compose runtime state, starts the full stack, waits for backend to report healthy, asserts `/api/health` returns `code=OK` / `data.status=UP`, asserts backend container runs as user `sangui`, asserts `/app/data/uploads` is writable, then tears down the stack with volume cleanup (`docker compose down -v --remove-orphans`).
+- **Runtime smoke**: Starts from a clean Compose runtime state, starts the full stack, waits for backend to report healthy, asserts `/api/health` returns `code=OK` / `data.status=UP` / `data.service=sangui-rag-gateway`, asserts backend container runs as user `sangui`, asserts `/app/data/uploads` is writable, then tears down the stack with volume cleanup (`docker compose down -v --remove-orphans`).
 - **Security scan**: Scans committed files (ci.yml, Compose files, Dockerfiles, `.env.example`, `settings.xml`) for docker registry credentials, real `sk-sangui-*` API keys, and provider keys; asserts `backend/Dockerfile` has `USER sangui` without a subsequent `USER root`; asserts `backend/settings.xml` uses only public Maven mirror metadata with Maven Central fallback.
 
 ### Failure Boundary Classification
@@ -1115,7 +1115,7 @@ Failures are classified by boundary so the investigator knows where to root-caus
 | `image-pull` | Docker base image pull failure due to registry network errors, TLS issues, rate limiting, or missing content descriptors. This is an infrastructure boundary, not direct evidence of Dockerfile code failure. Inspect the failed layer and consider a retry. |
 | `compose-exposure` | Default Compose config has PG/Redis host ports, or the host-ports override is missing them. |
 | `compose-service-discovery` | Backend Compose env uses `localhost` instead of service names `postgres` / `redis`. |
-| `runtime-health` | Backend `/api/health` never returns `code=OK` / `data.status=UP`. |
+| `runtime-health` | Backend `/api/health` never returns `code=OK` / `data.status=UP` / `data.service=sangui-rag-gateway`. |
 | `runtime-user` | Backend container `whoami` is not `sangui`, or `USER root` appears after `USER sangui` in the Dockerfile. |
 | `runtime-storage` | `/app/data/uploads` is not writable by the runtime user. |
 | `secret-scan` | Committed file contains docker credentials, real API keys, or `settings.xml` credentials. |

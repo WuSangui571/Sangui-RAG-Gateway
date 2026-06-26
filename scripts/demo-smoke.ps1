@@ -208,8 +208,8 @@ try {
     }
     else {
         $json = $result | ConvertFrom-Json
-        if ($json.code -eq 'OK' -and $json.data.status -eq 'UP') {
-            Write-Pass "code=OK, status=UP"
+        if ($json.code -eq 'OK' -and $json.data.status -eq 'UP' -and $json.data.service -eq 'sangui-rag-gateway') {
+            Write-Pass "code=OK, status=UP, service=sangui-rag-gateway"
         }
         else {
             Write-FailBoundary "health" "Unexpected response: $($result.Substring(0, [Math]::Min(200, $result.Length)))"

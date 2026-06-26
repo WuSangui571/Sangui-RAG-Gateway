@@ -745,7 +745,7 @@ Required jobs:
 | Docker build backend | `docker build -t sangui-rag-gateway-backend:ci -f backend/Dockerfile backend`. |
 | Docker build frontend | `docker build -t sangui-rag-gateway-frontend:ci -f frontend/Dockerfile frontend`. |
 | Compose contract check | `docker compose config` for both default and host-ports override; asserts PG/Redis no host ports by default, service-name dependencies, uploads volume, and host-ports opt-in. |
-| Runtime smoke test | `docker compose down -v --remove-orphans` to ensure a clean state, then `docker compose up -d --build` the full stack, wait for backend healthy, assert `/api/health` returns `code=OK` / `data.status=UP`, runtime user is `sangui`, `/app/data/uploads` writable, then `down -v --remove-orphans` cleanup. |
+| Runtime smoke test | `docker compose down -v --remove-orphans` to ensure a clean state, then `docker compose up -d --build` the full stack, wait for backend healthy, assert `/api/health` returns `code=OK` / `data.status=UP` / `data.service=sangui-rag-gateway`, runtime user is `sangui`, `/app/data/uploads` writable, then `down -v --remove-orphans` cleanup. |
 | Security scan | Scans committed files for docker registry credentials, real `sk-sangui-*` keys, and provider-shaped API keys; asserts `USER sangui` present with no subsequent `USER root`; asserts `settings.xml` has public Maven mirror with Central fallback. |
 
 Validation matrix:
@@ -760,7 +760,7 @@ Validation matrix:
 | Frontend `/api` proxy | Admin calls reach backend | `/api/health` through frontend origin returns JSON, not `index.html`. |
 | Frontend `/v1` proxy | Gateway smoke calls reach backend and streaming is not buffered | `/v1/chat/completions` succeeds after Admin setup; `stream=true` emits SSE chunks. |
 | CI without secrets | Workflow runs compile/test/build/image-build without provider keys | Workflow has no `docker login`, push, or provider secret dependency. |
-| Runtime health | Backend `/api/health` returns valid health JSON | HTTP 200 with `code=OK` and `data.status=UP`. |
+| Runtime health | Backend `/api/health` returns valid health JSON | HTTP 200 with `code=OK`, `data.status=UP`, and `data.service=sangui-rag-gateway`. |
 | Runtime non-root user | Backend Java process runs as user `sangui` | `docker compose exec backend whoami` outputs `sangui`. |
 | Runtime storage writable | Upload directory is writable by runtime user | `touch /app/data/uploads/.ci-write-test && rm` succeeds. |
 | Dockerfile non-root contract | `backend/Dockerfile` has `USER sangui` with no subsequent `USER root` | Grep and awk assertions in security scan. |
@@ -1020,7 +1020,7 @@ Validation matrix for this baseline:
 | Migration | `V1__init_pgvector.sql` creates only pgvector extension | Business tables are created before domain schema is specified | Review migration file |
 | Migration | `V2__create_app_api_key_tables.sql` creates app and API key tables | Plaintext keys stored or queried without hashing | Review migration + entity test |
 | Migration | `V3__create_model_config_and_app_default.sql` creates model config and app FK | Plaintext upstream keys stored or cross-user config exposed | Review migration + service test |
-| Health API | `GET /api/health` returns the admin envelope with `data.status=UP` | Endpoint returns stack traces or exposes unsupported `/v1/*` behavior | MockMvc test and route search |
+| Health API | `GET /api/health` returns the admin envelope with `data.status=UP` and `data.service=sangui-rag-gateway` | Endpoint returns stack traces or exposes unsupported `/v1/*` behavior | MockMvc test and route search |
 | `/v1/models` | Authenticated app with enabled config returns 200 model list | Missing/disabled config returns 409 `model_config_not_ready`; unauthenticated returns 401 | `OpenAiModelsControllerTest` |
 | `/v1/chat/completions` | Authenticated non-streaming request forwards to app default upstream model and returns chat completion JSON; `stream=true` forwards SSE chunks with `text/event-stream` | Invalid body/messages/role returns 400; missing config returns 409; upstream failure returns 502/504 pre-stream or SSE error post-stream | `OpenAiChatCompletionsControllerTest`, `ChatCompletionGatewayServiceTest`, `OpenAiCompatibleUpstreamClientTest` |
 | Unmatched routes | Unknown paths, `/favicon.ico` return 404 `NOT_FOUND` envelope with no stack traces | Routes return 500 with stack traces or fake OpenAI responses | MockMvc test |
@@ -2258,7 +2258,7 @@ Admin model-config creation accepts only `CHAT` or `EMBEDDING`. Split-provider r
 
 | # | Check | Expected evidence | Boundary |
 |---|---|---|---|
-| 1 | Backend health | HTTP 200, `code=OK`, `data.status=UP` | `health` |
+| 1 | Backend health | HTTP 200, `code=OK`, `data.status=UP`, `data.service=sangui-rag-gateway` | `health` |
 | 2 | Frontend `/api` proxy health | JSON response (not SPA HTML), `code=OK` | `proxy` |
 | 3 | App readiness | `overall_status=READY`, required checks present, no forbidden fields in readiness metadata | `readiness` / `retrieval` / `auth` / `embedding` |
 | 4 | Model config presence | App has `ENABLED` Sanguicode chat config bound as default | `retrieval` |
