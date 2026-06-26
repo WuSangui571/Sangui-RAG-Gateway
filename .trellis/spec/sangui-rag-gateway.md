@@ -391,14 +391,14 @@ Prompt construction:
 
 No-hit policy:
 
-- MVP default: `STRICT_RAG`.
-- Still call upstream, but internally state that no valid knowledge-base context was retrieved.
+- Current runtime supports only `STRICT_RAG`.
+- Under `STRICT_RAG`, still call upstream, but internally state that no valid knowledge-base context was retrieved.
+- Persisted `rag_app.no_hit_policy` is validated by `backend/src/main/java/com/sangui/raggateway/app/AppRetrievalConfig.java`; null, blank, `PASS_THROUGH`, `ERROR`, or typo values fail retrieval config resolution and map through the gateway as `409 model_config_not_ready`.
 
-Configurable policies:
+Future configurable policies require a separate PRD plus API, DB, frontend, and test updates before implementation:
 
 ```text
 PASS_THROUGH
-STRICT_RAG
 ERROR
 ```
 
@@ -1934,7 +1934,6 @@ backend/src/main/java/com/sangui/raggateway/retrieval/RetrievalMapper.java
 backend/src/main/java/com/sangui/raggateway/retrieval/RetrievalResult.java
 backend/src/main/java/com/sangui/raggateway/retrieval/ChunkRow.java
 backend/src/main/java/com/sangui/raggateway/rag/prompt/RagPromptBuilder.java
-backend/src/main/java/com/sangui/raggateway/rag/prompt/NoHitPolicy.java
 backend/src/test/java/com/sangui/raggateway/retrieval/RetrievalServiceTest.java
 backend/src/test/java/com/sangui/raggateway/rag/prompt/RagPromptBuilderTest.java
 ```
@@ -1945,6 +1944,7 @@ backend/src/test/java/com/sangui/raggateway/rag/prompt/RagPromptBuilderTest.java
 backend/src/main/java/com/sangui/raggateway/app/AppEntity.java
 backend/src/main/java/com/sangui/raggateway/app/vo/AppVO.java
 backend/src/main/java/com/sangui/raggateway/app/AppService.java
+backend/src/main/java/com/sangui/raggateway/app/AppRetrievalConfig.java
 backend/src/main/java/com/sangui/raggateway/app/AppAdminController.java
 backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java
 backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionResult.java

@@ -64,7 +64,7 @@ public class AppService {
         app.setRetrievalMaxContextChunks(retrievalProperties.getDefaultMaxContextChunks());
         app.setRetrievalMaxContextChars(retrievalProperties.getDefaultMaxContextChars());
         app.setRetrievalMaxSingleChunkChars(retrievalProperties.getDefaultMaxSingleChunkChars());
-        app.setNoHitPolicy("STRICT_RAG");
+        app.setNoHitPolicy(AppRetrievalConfig.STRICT_RAG_NO_HIT_POLICY);
         app.setCreatedAt(LocalDateTime.now());
         app.setUpdatedAt(LocalDateTime.now());
         appMapper.insert(app);

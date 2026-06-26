@@ -2,19 +2,24 @@ package com.sangui.raggateway.app;
 
 public class AppRetrievalConfig {
 
+    public static final String STRICT_RAG_NO_HIT_POLICY = "STRICT_RAG";
+
     private final int topK;
     private final double similarityThreshold;
     private final int maxContextChunks;
     private final int maxContextChars;
     private final int maxSingleChunkChars;
+    private final String noHitPolicy;
 
     private AppRetrievalConfig(int topK, double similarityThreshold,
-                               int maxContextChunks, int maxContextChars, int maxSingleChunkChars) {
+                               int maxContextChunks, int maxContextChars, int maxSingleChunkChars,
+                               String noHitPolicy) {
         this.topK = topK;
         this.similarityThreshold = similarityThreshold;
         this.maxContextChunks = maxContextChunks;
         this.maxContextChars = maxContextChars;
         this.maxSingleChunkChars = maxSingleChunkChars;
+        this.noHitPolicy = noHitPolicy;
     }
 
     public static AppRetrievalConfig from(AppEntity app) {
@@ -32,6 +37,13 @@ public class AppRetrievalConfig {
         }
         if (app.getRetrievalMaxSingleChunkChars() == null) {
             throw new IllegalArgumentException("retrievalMaxSingleChunkChars must not be null");
+        }
+        if (app.getNoHitPolicy() == null || app.getNoHitPolicy().isBlank()) {
+            throw new IllegalArgumentException("noHitPolicy must not be null or blank");
+        }
+        if (!STRICT_RAG_NO_HIT_POLICY.equals(app.getNoHitPolicy())) {
+            throw new IllegalArgumentException(
+                    "noHitPolicy must be '" + STRICT_RAG_NO_HIT_POLICY + "', got: " + app.getNoHitPolicy());
         }
 
         int topK = app.getRetrievalTopK();
@@ -56,7 +68,7 @@ public class AppRetrievalConfig {
             throw new IllegalArgumentException("retrievalMaxSingleChunkChars must be positive, got: " + maxSingleChars);
         }
 
-        return new AppRetrievalConfig(topK, threshold, maxChunks, maxChars, maxSingleChars);
+        return new AppRetrievalConfig(topK, threshold, maxChunks, maxChars, maxSingleChars, STRICT_RAG_NO_HIT_POLICY);
     }
 
     public int getTopK() {
@@ -77,5 +89,9 @@ public class AppRetrievalConfig {
 
     public int getMaxSingleChunkChars() {
         return maxSingleChunkChars;
+    }
+
+    public String getNoHitPolicy() {
+        return noHitPolicy;
     }
 }

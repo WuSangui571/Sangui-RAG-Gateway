@@ -62,6 +62,7 @@ class RetrievalEvaluationServiceTest {
         app.setRetrievalMaxContextChunks(5);
         app.setRetrievalMaxContextChars(12000);
         app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy(AppRetrievalConfig.STRICT_RAG_NO_HIT_POLICY);
         return app;
     }
 

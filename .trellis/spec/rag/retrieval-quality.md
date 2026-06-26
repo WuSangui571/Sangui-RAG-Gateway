@@ -123,11 +123,13 @@ injected_chars: final injected length metadata
 
 No-hit policies:
 
-| Policy | Required behavior |
-|--------|-------------------|
-| `STRICT_RAG` | No valid context still calls upstream where the current flow requires it, but the prompt must say the KB has no sufficient evidence. |
-| `PASS_THROUGH` | No valid context allows normal upstream model answering only when explicitly configured. |
-| `ERROR` | No valid context returns a no-relevant-knowledge error instead of calling upstream. |
+| Policy | Status | Required behavior |
+|--------|--------|-------------------|
+| `STRICT_RAG` | Current runtime (only supported value) | No valid context still calls upstream where the current flow requires it, but the prompt must say the KB has no sufficient evidence. |
+| `PASS_THROUGH` | Future configurable policy | No valid context allows normal upstream model answering only when explicitly configured. Requires separate PRD, API, DB, and frontend update before implementation. |
+| `ERROR` | Future configurable policy | No valid context returns a no-relevant-knowledge error instead of calling upstream. Requires separate PRD, API, DB, and frontend update before implementation. |
+
+The persisted `no_hit_policy` field is validated at runtime by `AppRetrievalConfig.from(AppEntity)`. Only `STRICT_RAG` is accepted; null, blank, or any other value causes the retrieval config resolution to fail visibly. The `NoHitPolicy` enum in `rag.prompt` was removed because it was unused; `AppRetrievalConfig` is now the single runtime owner.
 
 Similarity threshold guidance:
 
