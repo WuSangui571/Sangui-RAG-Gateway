@@ -600,7 +600,12 @@ Closed the Trellis dangling submodule cleanup after manual testing and commit. R
 
 ### Testing
 
-- [OK] (Add test results)
+- [OK] `mvn -q "-Dtest=HealthControllerTest,GatewayAuthFilterTest" test` from `backend/`
+- [OK] `mvn -q -DskipTests compile` from `backend/`
+- [OK] `docker compose --env-file .env.example -f deploy\docker-compose.yml config`
+- [OK] PowerShell PSParser syntax check for `scripts/demo-smoke.ps1`
+- [OK] `git diff --check` with only LF to CRLF working-copy warnings
+- [OK] Human manual testing confirmed before archive
 
 ### Status
 
@@ -1481,6 +1486,75 @@ The backend now keeps gateway responses unchanged when request-log persistence f
 ### Testing
 
 - [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 90: Health service contract sync
+
+**Date**: 2026-06-26
+**Task**: Health service contract sync
+**Branch**: `feature/health-endpoint-service-name`
+
+### Summary
+
+Closed the health endpoint service-name governance task after manual acceptance and commit `e88a0e47`. The completed work keeps `/api/health` as a small public admin-envelope endpoint while making the stable `data.service=sangui-rag-gateway` contract visible in the smoke script, README, runtime evidence checklist, and Trellis project spec.
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | e88a0e47 docs:sync health service contract |
+| Task | Archived health-endpoint-service-name after manual acceptance and commit. |
+| Main change | Synchronized the public /api/health service identity contract across smoke script, README, runtime evidence checklist, and Trellis project spec. |
+| API contract | Direct backend health evidence now records code=OK, message=success, data.status=UP, data.service=sangui-rag-gateway. |
+| Boundary | Compose healthcheck remains a lightweight code=OK liveness probe. Frontend proxy health remains a JSON/not-HTML proxy check with code=OK; backend direct health owns the full service-field assertion. |
+
+**Updated files**:
+- scripts/demo-smoke.ps1
+- README.md
+- docs/runtime-evidence-checklist.md
+- .trellis/spec/sangui-rag-gateway.md
+- .trellis/tasks/archive/2026-06/06-26-health-endpoint-service-name/
+
+**Validation**:
+- PASS: mvn -q "-Dtest=HealthControllerTest,GatewayAuthFilterTest" test (backend/)
+- PASS: mvn -q -DskipTests compile (backend/)
+- PASS: docker compose --env-file .env.example -f deploy\docker-compose.yml config
+- PASS: PowerShell PSParser syntax check for scripts/demo-smoke.ps1
+- PASS: git diff --check (only LF to CRLF working-copy warnings)
+- PASS: rg scan found no console.log, debugger, or TODO in changed docs/script/task files
+- PASS: Human manual testing confirmed before record-session
+
+**Not run**:
+- Full mvn test was not run because the PRD required targeted health/auth tests plus compile, and the full suite is heavier with PostgreSQL/Redis coverage.
+- Frontend lint/typecheck/build was not run because no frontend source or API type changed.
+- Docker image build was not run because Dockerfile/settings.xml/image build contract did not change.
+
+**Result**:
+The task is complete and archived. The direct /api/health stable service identity contract is explicit, tested, documented, and reflected in runtime evidence surfaces without expanding into readiness, Actuator, dependency probes, database changes, frontend DTOs, or infrastructure package changes.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e88a0e47` | (see git log) |
+
+### Testing
+
+- [OK] `mvn -q "-Dtest=HealthControllerTest,GatewayAuthFilterTest" test` from `backend/`
+- [OK] `mvn -q -DskipTests compile` from `backend/`
+- [OK] `docker compose --env-file .env.example -f deploy\docker-compose.yml config`
+- [OK] PowerShell PSParser syntax check for `scripts/demo-smoke.ps1`
+- [OK] `git diff --check` with only LF to CRLF working-copy warnings
+- [OK] Human manual testing confirmed before archive
 
 ### Status
 
