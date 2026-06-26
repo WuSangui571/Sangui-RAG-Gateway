@@ -78,7 +78,7 @@ hit_chunk_ids
 
 | Contract | Required behavior |
 |----------|-------------------|
-| Timeout | Chat and embedding calls have configured timeout values. |
+| Timeout | Chat and embedding calls have independently configurable connect and response timeout values. Defaults: connect 5s, response 30s. `rag.gateway.upstream.connect-timeout-seconds` / `rag.gateway.upstream.response-timeout-seconds` for chat; `rag.gateway.embedding.connect-timeout-seconds` / `rag.gateway.embedding.response-timeout-seconds` for embedding. Legacy `timeout-seconds` keys serve as backward-compatible fallback for response-timeout only. Model-config chat probe uses upstream timeout properties. |
 | Error normalization | Provider/network/malformed response errors map to safe gateway exceptions. |
 | Public shape | `/v1/*` errors use OpenAI-compatible response shape, not admin `ApiResponse`. |
 | Streaming pre-commit | Validation and upstream setup failures detected before SSE commit return JSON error. |
@@ -94,11 +94,16 @@ hit_chunk_ids
 
 | Scenario | HTTP / status | Error code | Required behavior |
 |----------|---------------|------------|-------------------|
-| Upstream chat timeout | 504 | `upstream_timeout` | OpenAI-compatible JSON if pre-stream; safe SSE error if post-start |
+| Upstream chat connect timeout (non-streaming) | 504 | `upstream_timeout` | Independent connect timeout (default 5s); OpenAI-compatible JSON |
+| Upstream chat read/response timeout (non-streaming) | 504 | `upstream_timeout` | Independent response timeout (default 30s, legacy fallback `timeout-seconds`); OpenAI-compatible JSON |
+| Upstream chat connect timeout (pre-stream commit) | 504 | `upstream_timeout` | JSON error before SSE starts; safe logs |
+| Upstream chat timeout after stream starts | SSE failure path | `upstream_timeout` | Safe SSE error or close per existing streaming contract |
 | Upstream chat non-2xx | 502 | `upstream_error` | Do not expose provider body |
 | Upstream network failure | 502 | `upstream_error` | Safe message and log exception class only |
 | Upstream malformed success body | 502 | `upstream_error` | No provider body in response/log |
-| Embedding timeout or provider failure | 502 or document `FAILED` | `embedding_failed` | No upstream chat call for query embedding failure |
+| Embedding connect/read timeout or provider failure | 502 or document `FAILED` | `embedding_failed` | Independent connect (default 5s) and response (default 30s) timeouts; no upstream chat call for query embedding failure |
+| Model-config chat probe connect/read timeout | Admin check result `FAILED` | message `Upstream timeout` | Uses upstream timeout properties; safe summary only |
+| Invalid chat/embedding connect or response timeout | startup/config failure | n/a | Values must be positive seconds; `0` or negative values fail construction visibly, with no infinite timeout and no silent clamp |
 | Invalid embedding batch size | startup failure | n/a | `EmbeddingProperties` validation rejects values `< 1` or `> 2048`; no silent clamping |
 | API key request/token limit exceeded | 429 | `rate_limit_exceeded` | OpenAI-compatible JSON, safe request log, no upstream/retrieval call |
 | Redis limiter unavailable | 500 | `internal_error` | OpenAI-compatible JSON, safe request log where possible, no silent pass-through |

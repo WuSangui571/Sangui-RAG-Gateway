@@ -1,5 +1,6 @@
 package com.sangui.raggateway.embedding;
 
+import com.sangui.raggateway.common.util.RestClientTimeoutFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,13 +8,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.net.SocketTimeoutException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -30,19 +29,20 @@ public class OpenAiCompatibleEmbeddingClient implements EmbeddingClient {
 
     @Autowired
     public OpenAiCompatibleEmbeddingClient(
-            @Value("${rag.gateway.embedding.timeout-seconds:30}") int timeoutSeconds) {
-        this(createRestClient(timeoutSeconds));
+            @Value("${rag.gateway.embedding.connect-timeout-seconds:5}") int connectTimeoutSeconds,
+            @Value("${rag.gateway.embedding.response-timeout-seconds:${rag.gateway.embedding.timeout-seconds:30}}") int responseTimeoutSeconds) {
+        this(createRestClient(connectTimeoutSeconds, responseTimeoutSeconds));
     }
 
     OpenAiCompatibleEmbeddingClient(RestClient restClient) {
         this.restClient = restClient;
     }
 
-    private static RestClient createRestClient(int timeoutSeconds) {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout((int) Duration.ofSeconds(timeoutSeconds).toMillis());
-        factory.setReadTimeout((int) Duration.ofSeconds(timeoutSeconds).toMillis());
-        return RestClient.builder().requestFactory(factory).build();
+    static RestClient createRestClient(int connectTimeoutSeconds, int responseTimeoutSeconds) {
+        return RestClient.builder()
+                .requestFactory(RestClientTimeoutFactory.createRequestFactory(
+                        connectTimeoutSeconds, responseTimeoutSeconds))
+                .build();
     }
 
     @Override

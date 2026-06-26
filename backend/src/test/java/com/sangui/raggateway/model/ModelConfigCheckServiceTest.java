@@ -162,6 +162,19 @@ class ModelConfigCheckServiceTest {
                 });
     }
 
+    @Test
+    void shouldRejectNonPositiveProbeTimeouts() {
+        assertThatThrownBy(() -> new ModelConfigCheckService(
+                modelConfigService, encryptor, embeddingClient, 0, 30))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("connectTimeoutSeconds must be positive");
+
+        assertThatThrownBy(() -> new ModelConfigCheckService(
+                modelConfigService, encryptor, embeddingClient, 5, 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("responseTimeoutSeconds must be positive");
+    }
+
     private ModelConfigEntity savedChatConfig() {
         ModelConfigEntity entity = new ModelConfigEntity();
         entity.setId(10L);

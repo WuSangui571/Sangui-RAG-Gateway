@@ -588,6 +588,10 @@ FILE_STORAGE_LOCAL_PATH
 RAG_DOCUMENT_CHUNK_SIZE
 RAG_DOCUMENT_CHUNK_OVERLAP
 RAG_DOCUMENT_MAX_FILE_SIZE_BYTES
+RAG_GATEWAY_UPSTREAM_CONNECT_TIMEOUT_SECONDS
+RAG_GATEWAY_UPSTREAM_RESPONSE_TIMEOUT_SECONDS
+RAG_GATEWAY_EMBEDDING_CONNECT_TIMEOUT_SECONDS
+RAG_GATEWAY_EMBEDDING_RESPONSE_TIMEOUT_SECONDS
 RAG_GATEWAY_EMBEDDING_BATCH_SIZE
 RAG_RETRIEVAL_DEFAULT_TOP_K
 RAG_RETRIEVAL_DEFAULT_SIMILARITY_THRESHOLD
@@ -1717,7 +1721,7 @@ Vectors are stored in a separate `rag_document_chunk_embedding` table (migration
 - Validates response count, index order, and vector dimensions
 - Normalizes non-2xx, timeout, network errors, and malformed responses to safe `EmbeddingException`
 - Safe logging: no vectors, chunk content, upstream keys, or provider bodies
-- Timeout configured via `rag.gateway.embedding.timeout-seconds` (default 30s)
+- Timeout configured via `rag.gateway.embedding.connect-timeout-seconds` (default 5s) and `rag.gateway.embedding.response-timeout-seconds` (default 30s). Legacy `rag.gateway.embedding.timeout-seconds` remains a response-timeout fallback only when the new response key is absent.
 - Document ingestion batch size configured via `rag.gateway.embedding.batch-size` / `RAG_GATEWAY_EMBEDDING_BATCH_SIZE` (default 64, min 1, max 2048); invalid values fail configuration binding at startup
 
 #### Model Config Resolution

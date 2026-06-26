@@ -1,0 +1,23 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis\\tasks\\06-26-upstream-connect-timeout-governance\\prd.md", "reason": "Task contract, scope, acceptance criteria, timeout matrix, and validation plan"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project boundary, OpenAI-compatible gateway scope, env config contract, and upstream error codes"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Primary upstream timeout, error normalization, streaming, and safe logging contract"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "OpenAI-compatible gateway error shape and upstream_timeout/embedding_failed mapping"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe upstream/embedding logging fields and forbidden secret/body/prompt content"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend targeted tests and review checklist for upstream HTTP timeout behavior"}
+{"file": ".trellis\\spec\\backend\\directory-structure.md", "reason": "Package placement and dependency boundaries for any properties/helper extraction"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Secret-safe error/log boundary for upstream failures and request logs"}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Embedding timeout must fail ingestion visibly without READY state or partial vectors"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Config/env/API/log/test flow mapping for gateway timeout changes"}
+{"file": "backend\\src\\main\\resources\\application.yml", "reason": "Current timeout defaults and config key locations"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClient.java", "reason": "Current chat upstream RestClient timeout setup and timeout error mapping"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\embedding\\OpenAiCompatibleEmbeddingClient.java", "reason": "Current embedding RestClient timeout setup and EmbeddingException timeout semantics"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\model\\ModelConfigCheckService.java", "reason": "Current model-config probe RestClient timeout setup"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\upstream\\OpenAiCompatibleUpstreamClientTest.java", "reason": "Existing upstream client safe logging and error pattern tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\embedding\\OpenAiCompatibleEmbeddingClientTest.java", "reason": "Existing embedding client URL/error validation tests"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\model\\ModelConfigCheckServiceTest.java", "reason": "Existing model-config probe test pattern"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\completion\\ChatCompletionGatewayServiceTest.java", "reason": "Existing upstream_timeout and embedding_failed service assertions"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsControllerTest.java", "reason": "Existing HTTP 504 upstream_timeout OpenAI-compatible response assertions"}
+{"file": "README.md", "reason": "User-facing env/error docs if timeout config keys are added"}
+{"file": ".env.example", "reason": "Safe local env examples if timeout env keys are added"}

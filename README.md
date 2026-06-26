@@ -1072,6 +1072,13 @@ docker compose --env-file .env.example -f deploy/docker-compose.yml config
 | `RAG_API_KEY_LIMITS_DEFAULT_DAILY_REQUEST_QUOTA` | `1000` | Default daily request quota per API key |
 | `RAG_API_KEY_LIMITS_DEFAULT_DAILY_TOKEN_QUOTA` | `1000000` | Default daily estimated token quota per API key |
 | `RAG_API_KEY_LIMITS_DEFAULT_COMPLETION_TOKEN_RESERVATION` | `1024` | Completion token reservation when `max_tokens` is omitted |
+| `RAG_GATEWAY_UPSTREAM_CONNECT_TIMEOUT_SECONDS` | `5` | TCP connect timeout in seconds for chat upstream calls |
+| `RAG_GATEWAY_UPSTREAM_RESPONSE_TIMEOUT_SECONDS` | `30` | Read/response timeout in seconds for chat upstream calls |
+| `RAG_GATEWAY_EMBEDDING_CONNECT_TIMEOUT_SECONDS` | `5` | TCP connect timeout in seconds for embedding calls and probes |
+| `RAG_GATEWAY_EMBEDDING_RESPONSE_TIMEOUT_SECONDS` | `30` | Read/response timeout in seconds for embedding calls and probes |
+| `RAG_GATEWAY_EMBEDDING_BATCH_SIZE` | `64` | Batch size for embedding calls during document ingestion. Range: 1-2048. |
+
+The legacy `RAG_GATEWAY_UPSTREAM_TIMEOUT_SECONDS` and `RAG_GATEWAY_EMBEDDING_TIMEOUT_SECONDS` keys remain response-timeout fallbacks only when the matching new response timeout key is absent. Connect timeout stays controlled by the new connect timeout keys and defaults to 5 seconds.
 
 Inside Docker Compose, the backend service automatically uses `postgres` and `redis` as hostnames. The `.env.example` contains safe local development defaults. For deployment, override secrets through environment variables or a deployment `.env` file. Production-like profiles (`prod` or `production`) fail startup when local defaults are still active; set the two `RAG_PRODUCTION_ALLOW_*` variables to `true` only as an explicit operational acknowledgement.
 
