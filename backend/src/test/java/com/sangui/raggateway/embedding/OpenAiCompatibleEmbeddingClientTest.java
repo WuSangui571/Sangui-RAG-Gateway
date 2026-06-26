@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
@@ -186,6 +187,41 @@ class OpenAiCompatibleEmbeddingClientTest {
                 List.of("text1"), DIMENSION))
                 .isInstanceOf(EmbeddingException.class);
         mockServer.verify();
+    }
+
+    @Test
+    void shouldSetDistinctConnectAndReadTimeouts() {
+        RestClient restClient = OpenAiCompatibleEmbeddingClient.createRestClient(5, 30);
+
+        Object requestFactory = ReflectionTestUtils.getField(restClient, "clientRequestFactory");
+        int connectTimeout = (int) ReflectionTestUtils.getField(requestFactory, "connectTimeout");
+        int readTimeout = (int) ReflectionTestUtils.getField(requestFactory, "readTimeout");
+
+        assertThat(connectTimeout).isEqualTo(5_000);
+        assertThat(readTimeout).isEqualTo(30_000);
+    }
+
+    @Test
+    void shouldUseCustomConnectAndReadTimeouts() {
+        RestClient restClient = OpenAiCompatibleEmbeddingClient.createRestClient(10, 60);
+
+        Object requestFactory = ReflectionTestUtils.getField(restClient, "clientRequestFactory");
+        int connectTimeout = (int) ReflectionTestUtils.getField(requestFactory, "connectTimeout");
+        int readTimeout = (int) ReflectionTestUtils.getField(requestFactory, "readTimeout");
+
+        assertThat(connectTimeout).isEqualTo(10_000);
+        assertThat(readTimeout).isEqualTo(60_000);
+    }
+
+    @Test
+    void shouldRejectNonPositiveTimeouts() {
+        assertThatThrownBy(() -> OpenAiCompatibleEmbeddingClient.createRestClient(0, 30))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("connectTimeoutSeconds must be positive");
+
+        assertThatThrownBy(() -> OpenAiCompatibleEmbeddingClient.createRestClient(5, -1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("responseTimeoutSeconds must be positive");
     }
 
     @Test

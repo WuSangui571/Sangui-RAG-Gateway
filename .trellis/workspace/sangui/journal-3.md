@@ -1563,3 +1563,74 @@ The task is complete and archived. The direct /api/health stable service identit
 ### Next Steps
 
 - None - task complete
+
+
+## Session 91: Upstream connect timeout governance closeout
+
+**Date**: 2026-06-26
+**Task**: Upstream connect timeout governance closeout
+**Branch**: `feature/gateway-connect-timeout-governance`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+**Commit**: `73c4b0f0`
+
+**Main changes**:
+- Split upstream chat and embedding HTTP timeout semantics into independent connect timeout and response/read timeout settings.
+- Added `RestClientTimeoutFactory` as the shared boundary for positive timeout validation and request-factory creation.
+- Aligned `ModelConfigCheckService` chat probe with upstream timeout properties instead of embedding timeout properties.
+- Preserved legacy `timeout-seconds` as response-timeout fallback only when the new response timeout key is absent.
+- Updated `.env.example`, README, gateway resilience spec, and project spec for executable timeout contracts.
+
+**Updated modules/files**:
+- `backend/src/main/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClient.java`
+- `backend/src/main/java/com/sangui/raggateway/embedding/OpenAiCompatibleEmbeddingClient.java`
+- `backend/src/main/java/com/sangui/raggateway/model/ModelConfigCheckService.java`
+- `backend/src/main/java/com/sangui/raggateway/common/util/RestClientTimeoutFactory.java`
+- `backend/src/main/resources/application.yml`
+- `backend/src/test/java/com/sangui/raggateway/gateway/upstream/GatewayTimeoutConfigurationTest.java`
+- `backend/src/test/java/com/sangui/raggateway/gateway/upstream/OpenAiCompatibleUpstreamClientTest.java`
+- `backend/src/test/java/com/sangui/raggateway/embedding/OpenAiCompatibleEmbeddingClientTest.java`
+- `backend/src/test/java/com/sangui/raggateway/model/ModelConfigCheckServiceTest.java`
+- `.env.example`, `README.md`, `.trellis/spec/gateway/resilience.md`, `.trellis/spec/sangui-rag-gateway.md`
+
+**Validation**:
+- `cd backend; mvn -q "-Dtest=GatewayTimeoutConfigurationTest,OpenAiCompatibleUpstreamClientTest,OpenAiCompatibleEmbeddingClientTest,ModelConfigCheckServiceTest" test` -> pass.
+- `cd backend; mvn -q "-Dtest=ChatCompletionGatewayServiceTest,OpenAiChatCompletionsControllerTest" test` -> pass.
+- `cd backend; mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test` -> pass.
+- `cd backend; mvn -q -DskipTests compile` -> pass.
+- `git diff --check` -> pass; only LF/CRLF warnings were observed.
+- Static scan for `console.log`, `debugger`, `TODO`, and `System.out.println` in changed files -> no hits.
+
+**Result and boundary**:
+- Chat timeout still maps to `504 upstream_timeout`.
+- Embedding timeout still maps to `embedding_failed`.
+- Model-config chat probe timeout reports safe `Upstream timeout`.
+- Invalid connect/response timeout values fail visibly instead of becoming infinite timeout or silent success.
+- No public API, database schema, frontend type, retry, fallback, circuit breaker, provider routing, Docker, Redis, MQ, retrieval, prompt, or request-log behavior was added.
+
+**Manual acceptance**:
+- Human confirmed manual testing and commit before record-session.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `73c4b0f0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

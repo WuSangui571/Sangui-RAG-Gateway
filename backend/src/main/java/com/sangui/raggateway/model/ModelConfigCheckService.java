@@ -2,6 +2,7 @@ package com.sangui.raggateway.model;
 
 import com.sangui.raggateway.common.exception.BusinessException;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
+import com.sangui.raggateway.common.util.RestClientTimeoutFactory;
 import com.sangui.raggateway.embedding.EmbeddingClient;
 import com.sangui.raggateway.embedding.EmbeddingException;
 import com.sangui.raggateway.embedding.EmbeddingProbeResult;
@@ -13,13 +14,11 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.net.SocketTimeoutException;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -40,14 +39,15 @@ public class ModelConfigCheckService {
     public ModelConfigCheckService(ModelConfigService modelConfigService,
                                    UpstreamApiKeyEncryptor encryptor,
                                    EmbeddingClient embeddingClient,
-                                   @Value("${rag.gateway.embedding.timeout-seconds:30}") int timeoutSeconds) {
+                                   @Value("${rag.gateway.upstream.connect-timeout-seconds:5}") int connectTimeoutSeconds,
+                                   @Value("${rag.gateway.upstream.response-timeout-seconds:${rag.gateway.upstream.timeout-seconds:30}}") int responseTimeoutSeconds) {
         this.modelConfigService = modelConfigService;
         this.encryptor = encryptor;
         this.embeddingClient = embeddingClient;
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout((int) Duration.ofSeconds(timeoutSeconds).toMillis());
-        factory.setReadTimeout((int) Duration.ofSeconds(timeoutSeconds).toMillis());
-        this.restClient = RestClient.builder().requestFactory(factory).build();
+        this.restClient = RestClient.builder()
+                .requestFactory(RestClientTimeoutFactory.createRequestFactory(
+                        connectTimeoutSeconds, responseTimeoutSeconds))
+                .build();
     }
 
     ModelConfigCheckService(ModelConfigService modelConfigService,

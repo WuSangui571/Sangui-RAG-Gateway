@@ -1,6 +1,7 @@
 package com.sangui.raggateway.gateway.upstream;
 
 import com.sangui.raggateway.common.exception.GatewayException;
+import com.sangui.raggateway.common.util.RestClientTimeoutFactory;
 import com.sangui.raggateway.log.ChatCompletionLogHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,10 +10,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,9 +21,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Component
 public class OpenAiCompatibleUpstreamClient {
@@ -39,21 +37,19 @@ public class OpenAiCompatibleUpstreamClient {
 
     @Autowired
     public OpenAiCompatibleUpstreamClient(
-            @Value("${rag.gateway.upstream.timeout-seconds:30}") int timeoutSeconds) {
-        this(createRestClient(timeoutSeconds));
+            @Value("${rag.gateway.upstream.connect-timeout-seconds:5}") int connectTimeoutSeconds,
+            @Value("${rag.gateway.upstream.response-timeout-seconds:${rag.gateway.upstream.timeout-seconds:30}}") int responseTimeoutSeconds) {
+        this(createRestClient(connectTimeoutSeconds, responseTimeoutSeconds));
     }
 
     OpenAiCompatibleUpstreamClient(RestClient restClient) {
         this.restClient = restClient;
     }
 
-    private static RestClient createRestClient(int timeoutSeconds) {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout((int) Duration.ofSeconds(timeoutSeconds).toMillis());
-        factory.setReadTimeout((int) Duration.ofSeconds(timeoutSeconds).toMillis());
-
+    static RestClient createRestClient(int connectTimeoutSeconds, int responseTimeoutSeconds) {
         return RestClient.builder()
-                .requestFactory(factory)
+                .requestFactory(RestClientTimeoutFactory.createRequestFactory(
+                        connectTimeoutSeconds, responseTimeoutSeconds))
                 .build();
     }
 

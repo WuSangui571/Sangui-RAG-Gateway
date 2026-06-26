@@ -13,11 +13,11 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.match.MockRestRequestMatchers;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.RestClient;
-
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -428,6 +428,41 @@ class OpenAiCompatibleUpstreamClientTest {
         assertThat(logs).contains("request_id=request-stream-3");
         assertThat(logs).doesNotContain(API_KEY);
         assertThat(logs).doesNotContain("secret user message");
+    }
+
+    @Test
+    void shouldSetDistinctConnectAndReadTimeouts() {
+        RestClient restClient = OpenAiCompatibleUpstreamClient.createRestClient(5, 30);
+
+        Object requestFactory = ReflectionTestUtils.getField(restClient, "clientRequestFactory");
+        int connectTimeout = (int) ReflectionTestUtils.getField(requestFactory, "connectTimeout");
+        int readTimeout = (int) ReflectionTestUtils.getField(requestFactory, "readTimeout");
+
+        assertThat(connectTimeout).isEqualTo(5_000);
+        assertThat(readTimeout).isEqualTo(30_000);
+    }
+
+    @Test
+    void shouldUseCustomConnectAndReadTimeouts() {
+        RestClient restClient = OpenAiCompatibleUpstreamClient.createRestClient(10, 60);
+
+        Object requestFactory = ReflectionTestUtils.getField(restClient, "clientRequestFactory");
+        int connectTimeout = (int) ReflectionTestUtils.getField(requestFactory, "connectTimeout");
+        int readTimeout = (int) ReflectionTestUtils.getField(requestFactory, "readTimeout");
+
+        assertThat(connectTimeout).isEqualTo(10_000);
+        assertThat(readTimeout).isEqualTo(60_000);
+    }
+
+    @Test
+    void shouldRejectNonPositiveTimeouts() {
+        assertThatThrownBy(() -> OpenAiCompatibleUpstreamClient.createRestClient(0, 30))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("connectTimeoutSeconds must be positive");
+
+        assertThatThrownBy(() -> OpenAiCompatibleUpstreamClient.createRestClient(5, -1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("responseTimeoutSeconds must be positive");
     }
 
     @Test
