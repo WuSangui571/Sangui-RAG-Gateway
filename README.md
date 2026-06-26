@@ -19,6 +19,7 @@ Let existing business systems gain private-document RAG capability with low modi
 - `GET /v1/models` — OpenAI-compatible model list for authenticated apps
 - `POST /v1/chat/completions` — non-streaming and streaming (`stream=true`) pass-through with RAG retrieval
 - Admin console:
+  - Admin authentication (username/password login, JWT-based session, `POST /api/admin/auth/login`)
   - App management (create, list, detail, disable, enable)
   - API key management (create, list, disable, revoke, one-time display)
   - Model config management (create, update, detail, list, disable, enable, encrypted upstream key storage)
@@ -35,7 +36,6 @@ Let existing business systems gain private-document RAG capability with low modi
 
 ### Roadmap (Not Yet Implemented)
 
-- Admin login / registration (current temporary identity uses `X-Admin-User-Id` header)
 - PDF / DOCX parsing
 - API-key level rate limiting
 - Source citations in chat responses
@@ -132,7 +132,7 @@ After starting the full stack, configure the gateway through the admin console f
 
 ## Admin API Endpoint Reference
 
-All admin APIs require the temporary identity header `X-Admin-User-Id: <positive-long>` and return the `ApiResponse<T>` envelope (`code`, `message`, `data`).
+All admin APIs require `Authorization: Bearer <admin-jwt>` (obtained via `POST /api/admin/auth/login`) and return the `ApiResponse<T>` envelope (`code`, `message`, `data`).
 
 | Operation | Method | Route |
 |---|---|---|
@@ -173,6 +173,85 @@ Disabling is idempotent: disabling an already-disabled resource returns success.
 
 Model config key handling is separate from status lifecycle actions: `PUT /api/admin/model-configs/{id}` without `api_key` preserves the existing encrypted upstream key, blank `api_key` is invalid, and model config disable/enable never rotates or clears the upstream key.
 
+## Error Handling and Safety Boundaries
+
+### Response Envelope by API Type
+
+| API family | Success shape | Error shape |
+|---|---|---|
+| Public `/v1/*` (gateway) | OpenAI-compatible (e.g. `{"choices":[...]}` for chat) | OpenAI-compatible `{"error":{"message":"...","type":"...","code":"..."}}` |
+| `/api/admin/**` (admin) | `ApiResponse<T>` envelope with `code`, `message`, `data` | `ApiResponse<T>` with `code` (e.g. `INVALID_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`), `message`, `data=null` |
+| `/api/health` (public) | `ApiResponse<T>` envelope with `code=OK` | N/A |
+
+The two families must never be mixed: `/v1/*` responses are never wrapped in `ApiResponse`, and admin API errors never use the OpenAI-compatible `{"error":{...}}` shape.
+
+### Gateway Error Codes (`/v1/*`)
+
+| Error code | HTTP status | Meaning |
+|---|---|---|
+| `invalid_api_key` | 401 | Missing, invalid, disabled, revoked, or expired app API key. No key detail or status is exposed. |
+| `invalid_request` | 400 | Malformed JSON, null body, missing/empty messages, missing role/content, unsupported role, or raw `IllegalArgumentException` caught at the HTTP boundary. |
+| `rate_limit_exceeded` | 429 | App API key exceeded per-minute request limit, per-minute token limit, or daily quota. |
+| `model_config_not_ready` | 409 | App has no enabled default model config, no chat model, or no usable upstream key. |
+| `knowledge_base_not_ready` | 409 | App has no bound knowledge base or its status is not `READY`. |
+| `embedding_failed` | 502 | Query embedding provider returned an error or timed out. |
+| `upstream_error` | 502 | Upstream chat provider returned non-2xx, network error, or malformed success body. Provider body is never exposed. |
+| `upstream_timeout` | 504 | Upstream chat call timed out. |
+| `internal_error` | 500 | Internal failure such as Redis limiter unavailability. No stack traces or keys exposed. |
+
+### Admin API Error Codes
+
+Admin API errors use the `ApiResponse<T>` envelope with these primary codes:
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `OK` | 200 | Success. |
+| `INVALID_REQUEST` | 400 | Validation failure or raw `IllegalArgumentException` caught at the Admin/common HTTP boundary. |
+| `UNAUTHORIZED` | 401 | Missing, non-Bearer, invalid, or expired admin JWT. |
+| `FORBIDDEN` | 403 | Authenticated user attempts to access another user's resource. |
+| `NOT_FOUND` | 404 | Resource does not exist for the authenticated user. |
+| `KNOWLEDGE_BASE_IN_USE` | 409 | Cannot delete a knowledge base still bound to an app. |
+
+### IllegalArgumentException Safety Rule
+
+Raw `IllegalArgumentException#getMessage()` is **not client-safe** by default and must never be returned or logged at HTTP boundaries. The `GlobalExceptionHandler` enforces:
+
+| Boundary | Raw IAE behavior | Safe response |
+|---|---|---|
+| Public `/v1/*` | Caught by handler; raw message is replaced. | `400` OpenAI-compatible `invalid_request` with generic `Invalid request.` |
+| Admin `/api/admin/**` and common endpoints | Caught by handler; raw message is replaced. | `400` Admin `ApiResponse` with `code=INVALID_REQUEST`, generic `Invalid request` |
+| Structured logging | Raw IAE message is never logged; only safe metadata. | Exception class, request ID, safe IDs only. |
+
+Client-safe validation messages must be carried by:
+
+- **`BusinessException`** for Admin/common APIs — carries a safe `code` and `message` visible in the Admin `ApiResponse` envelope.
+- **`GatewayException`** for public `/v1/*` APIs — carries a safe `message`, `type`, `code`, and HTTP status visible in the OpenAI-compatible error shape.
+
+### Request-Log Persistence Failure
+
+When a gateway request reaches the logging boundary but the database insert fails, the gateway response is NOT affected. A stable ERROR event `request_log.persist_failed` is emitted with only safe fields: `request_id`, `user_id`, `app_id`, `api_key_id`, request-log `status`, `error_code`, and exception class simple name. The exception message, stack trace, command fields (`question_summary`, `output_preview`, `retrieval_evidence`, `hit_chunk_ids`), API keys, Authorization headers, provider bodies, prompt content, and chunk content are **never** logged in persistence failure events.
+
+### Safe Evidence Rules (Runtime Output and Logs)
+
+All smoke scripts, manual commands, request logs, and runtime evidence records must follow these rules:
+
+**Allowed safe fields:**
+```
+request_id, user_id, app_id, api_key_id, model, provider_name, status,
+error_code, latency_ms, upstream_latency_ms, messages_count, question_summary (bounded prefix),
+hit_chunk_ids, retrieval_evidence (metadata only), output_capture_status (metadata only),
+chunk_id, document_id, knowledge_base_id, source_filename, chunk_index,
+HTTP status, boundary label, SSE data line count, content length (non-streaming), script exit code
+```
+
+**Forbidden fields (never returned, logged, or committed):**
+```
+plaintext app API key, real sk-sangui-* key, Authorization header value, upstream provider key,
+api_key_encrypted, key_hash, provider raw body, stack trace, Java stack trace, embedding vectors,
+prompt, messages, full_messages, augmented_prompt, raw assistant answer, bounded answer preview,
+raw SSE payload, chunk content, chunk summary text, storage_path, real .env secrets, uploaded file artifacts
+```
+
 ## Split-Provider Runtime Setup
 
 The demo gateway uses two separate upstream providers:
@@ -199,7 +278,7 @@ Sanguicode chat config:
 $modelConfigBodyPath = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllText($modelConfigBodyPath, '{"name":"demo-sanguicode-chat","provider_name":"openai-compatible","base_url":"https://api.sanguicode.com","api_key":"<sanguicode-provider-key>","chat_model":"deepseek-v4-pro","status":"ENABLED"}', $utf8)
 curl.exe -s -X POST "$BackendBaseUrl/api/admin/model-configs" `
-  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Authorization: Bearer $AdminToken" `
   -H "Content-Type: application/json" `
   --data-binary "@$modelConfigBodyPath"
 Remove-Item -LiteralPath $modelConfigBodyPath -Force
@@ -211,7 +290,7 @@ DashScope embedding config:
 $modelConfigBodyPath = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllText($modelConfigBodyPath, '{"name":"demo-dashscope-embedding","provider_name":"openai-compatible","base_url":"https://dashscope.aliyuncs.com/compatible-mode/v1","api_key":"<dashscope-provider-key>","chat_model":"unused-embedding-config","embedding_model":"text-embedding-v4","embedding_dimension":1024,"status":"ENABLED"}', $utf8)
 curl.exe -s -X POST "$BackendBaseUrl/api/admin/model-configs" `
-  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Authorization: Bearer $AdminToken" `
   -H "Content-Type: application/json" `
   --data-binary "@$modelConfigBodyPath"
 Remove-Item -LiteralPath $modelConfigBodyPath -Force
@@ -235,8 +314,30 @@ These commands set up the gateway through the Admin API from PowerShell 5.1. All
 
 ```powershell
 $BackendBaseUrl = "http://localhost:8080"
-$AdminUserId = "1"
 $utf8 = New-Object System.Text.UTF8Encoding($false)
+
+# 1. Login and get admin JWT
+$loginBodyPath = [System.IO.Path]::GetTempFileName()
+try {
+  [System.IO.File]::WriteAllText($loginBodyPath, '{"username":"admin","password":"<admin-password>"}', $utf8)
+  $loginResp = curl.exe -s -X POST "$BackendBaseUrl/api/admin/auth/login" `
+    -H "Content-Type: application/json" `
+    --data-binary "@$loginBodyPath"
+} finally {
+  Remove-Item -LiteralPath $loginBodyPath -Force -ErrorAction SilentlyContinue
+}
+try {
+  $loginJson = $loginResp | ConvertFrom-Json
+} catch {
+  Write-Host "Login failed: response was not valid JSON" -ForegroundColor Red
+  exit 1
+}
+if ($loginJson.code -ne 'OK') {
+  Write-Host "Login failed: code=$($loginJson.code) message=$($loginJson.message)" -ForegroundColor Red
+  exit 1
+}
+$AdminToken = $loginJson.data.access_token
+Write-Host "Admin JWT obtained (expires: $($loginJson.data.expires_at))"
 ```
 
 ### Create a model config
@@ -245,7 +346,7 @@ $utf8 = New-Object System.Text.UTF8Encoding($false)
 $modelConfigBodyPath = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllText($modelConfigBodyPath, '{"name":"demo-chat","provider_name":"openai-compatible","base_url":"https://example.com/v1","api_key":"<upstream-provider-key>","chat_model":"deepseek-v4-pro","embedding_model":"text-embedding-v4","embedding_dimension":1024,"status":"ENABLED"}', $utf8)
 curl.exe -s -X POST "$BackendBaseUrl/api/admin/model-configs" `
-  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Authorization: Bearer $AdminToken" `
   -H "Content-Type: application/json" `
   --data-binary "@$modelConfigBodyPath"
 Remove-Item -LiteralPath $modelConfigBodyPath -Force
@@ -259,7 +360,7 @@ Expected: `code=OK`, `data` contains `id`, `name`, `api_key_masked` (masked, nev
 $bindModelBodyPath = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllText($bindModelBodyPath, '{"model_config_id":<model-config-id>}', $utf8)
 curl.exe -s -X PUT "$BackendBaseUrl/api/admin/apps/<app-id>/default-model-config" `
-  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Authorization: Bearer $AdminToken" `
   -H "Content-Type: application/json" `
   --data-binary "@$bindModelBodyPath"
 Remove-Item -LiteralPath $bindModelBodyPath -Force
@@ -273,7 +374,7 @@ Expected: `code=OK`, `data` contains `app_id`, `user_id`, `default_model_config_
 $bindKbBodyPath = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllText($bindKbBodyPath, '{"knowledge_base_id":<kb-id>}', $utf8)
 curl.exe -s -X PUT "$BackendBaseUrl/api/admin/apps/<app-id>/knowledge-base" `
-  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Authorization: Bearer $AdminToken" `
   -H "Content-Type: application/json" `
   --data-binary "@$bindKbBodyPath"
 Remove-Item -LiteralPath $bindKbBodyPath -Force
@@ -287,7 +388,7 @@ Expected: `code=OK`, `data` contains `app_id`, `user_id`, `default_knowledge_bas
 $createKeyBodyPath = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllText($createKeyBodyPath, '{"name":"demo-acceptance-YYYYMMDD","expires_at":null}', $utf8)
 curl.exe -s -X POST "$BackendBaseUrl/api/admin/apps/<app-id>/api-keys" `
-  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Authorization: Bearer $AdminToken" `
   -H "Content-Type: application/json" `
   --data-binary "@$createKeyBodyPath"
 Remove-Item -LiteralPath $createKeyBodyPath -Force
@@ -299,7 +400,7 @@ Expected: `code=OK`, `data` contains `key` (full plaintext, shown **only once**)
 
 ```powershell
 curl.exe -s -X POST "$BackendBaseUrl/api/admin/api-keys/<key-id>/disable" `
-  -H "X-Admin-User-Id: $AdminUserId"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 Expected: `code=OK`, `data` contains `status=DISABLED`. The response does not include `key` or `key_hash`. After disabling, the key must fail public `/v1/*` calls with `401 invalid_api_key`.
@@ -308,7 +409,7 @@ Expected: `code=OK`, `data` contains `status=DISABLED`. The response does not in
 
 ```powershell
 curl.exe -s -X POST "$BackendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
-  -H "X-Admin-User-Id: $AdminUserId"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 Expected: `code=OK`, `data` contains `status=REVOKED` and `revoked_at`. The response does not include `key` or `key_hash`. After revocation, the key must fail public `/v1/*` calls with `401 invalid_api_key`.
@@ -317,7 +418,7 @@ Expected: `code=OK`, `data` contains `status=REVOKED` and `revoked_at`. The resp
 
 ```powershell
 curl.exe -s "$BackendBaseUrl/api/admin/apps/<app-id>/request-logs?page=1&page_size=5&status=success" `
-  -H "X-Admin-User-Id: $AdminUserId"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 Expected: `code=OK`, `data.items` contains request logs with safe fields: `request_id`, `model`, `provider_name`, `status`, `error_code`, `latency_ms`, `question_summary`, `hit_chunk_ids`.
@@ -326,7 +427,7 @@ Expected: `code=OK`, `data.items` contains request logs with safe fields: `reque
 
 ```powershell
 curl.exe -s "$BackendBaseUrl/api/admin/apps/<app-id>/request-logs/<request-id>" `
-  -H "X-Admin-User-Id: $AdminUserId"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 Expected: `code=OK`, `data` contains the full log detail with `user_id`, `updated_at`, and all list fields.
@@ -335,7 +436,7 @@ Expected: `code=OK`, `data` contains the full log detail with `user_id`, `update
 
 ```powershell
 curl.exe -s "$BackendBaseUrl/api/admin/apps/<app-id>/request-logs/<request-id>/hit-chunks" `
-  -H "X-Admin-User-Id: $AdminUserId"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 Expected: `code=OK`, `data` contains chunk summaries with `chunk_id`, `document_id`, `knowledge_base_id`, `source_filename`, `chunk_index`, `summary` (bounded to 200 characters). Full chunk content, embeddings, and provider bodies are never returned.
@@ -475,7 +576,7 @@ To query the request-log API directly from PowerShell 5.1:
 
 ```powershell
 curl.exe -s "$FrontendBaseUrl/api/admin/apps/<app-id>/request-logs?page=1&page_size=5&status=success" `
-  -H "X-Admin-User-Id: <admin-user-id>"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 Expected: JSON response with `code=OK`, `data.items` containing the latest success log with the fields listed above.
@@ -484,7 +585,7 @@ To query a specific request log detail:
 
 ```powershell
 curl.exe -s "$FrontendBaseUrl/api/admin/apps/<app-id>/request-logs/<request-id>" `
-  -H "X-Admin-User-Id: <admin-user-id>"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 Expected: `code=OK`, `data` contains the full detail including `user_id`, `updated_at`, and all list fields. No full prompts, messages, API keys, or provider bodies are returned.
@@ -493,7 +594,7 @@ To query hit-chunk summaries:
 
 ```powershell
 curl.exe -s "$FrontendBaseUrl/api/admin/apps/<app-id>/request-logs/<request-id>/hit-chunks" `
-  -H "X-Admin-User-Id: <admin-user-id>"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 The script and these commands must use `curl.exe` (Windows system curl), not the PowerShell `curl` alias which maps to `Invoke-WebRequest`.
@@ -612,12 +713,12 @@ When recording demo acceptance evidence for audit or commit, use the durable [Ru
 
 ```
 POST /api/admin/api-keys/{id}/revoke
-X-Admin-User-Id: <your-user-id>
+Authorization: Bearer <admin-jwt>
 ```
 
 ```powershell
 curl.exe -s -X POST "$FrontendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
-  -H "X-Admin-User-Id: 1"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 After revocation, the key must fail public `/v1/*` calls with HTTP 401 `invalid_api_key`.
@@ -626,12 +727,12 @@ After revocation, the key must fail public `/v1/*` calls with HTTP 401 `invalid_
 
 ```
 POST /api/admin/api-keys/{id}/disable
-X-Admin-User-Id: <your-user-id>
+Authorization: Bearer <admin-jwt>
 ```
 
 ```powershell
 curl.exe -s -X POST "$FrontendBaseUrl/api/admin/api-keys/<key-id>/disable" `
-  -H "X-Admin-User-Id: 1"
+  -H "Authorization: Bearer $AdminToken"
 ```
 
 Expected: `code=OK`, `data` contains `status=DISABLED`. The response does not include `key` or `key_hash`. After disabling, the key must fail public `/v1/*` calls with `401 invalid_api_key`. Disabling an already-disabled key is idempotent. Disabling a revoked key returns `400 INVALID_REQUEST`.
@@ -640,7 +741,7 @@ Expected: `code=OK`, `data` contains `status=DISABLED`. The response does not in
 
 ```
 POST /api/admin/apps/{appId}/api-keys
-X-Admin-User-Id: <your-user-id>
+Authorization: Bearer <admin-jwt>
 Content-Type: application/json
 {"name":"demo-acceptance-YYYYMMDD","expires_at":null}
 ```
@@ -650,7 +751,7 @@ $utf8 = New-Object System.Text.UTF8Encoding($false)
 $createBodyPath = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllText($createBodyPath, '{"name":"demo-acceptance-20260601","expires_at":null}', $utf8)
 curl.exe -s -X POST "$FrontendBaseUrl/api/admin/apps/<app-id>/api-keys" `
-  -H "X-Admin-User-Id: 1" `
+  -H "Authorization: Bearer $AdminToken" `
   -H "Content-Type: application/json" `
   --data-binary "@$createBodyPath"
 Remove-Item -LiteralPath $createBodyPath -Force
@@ -665,7 +766,7 @@ After a demo session completes, run these steps to revoke the demo key and clean
 1. **Revoke the demo API key** through Admin UI or API:
    ```powershell
    curl.exe -s -X POST "$FrontendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
-     -H "X-Admin-User-Id: 1"
+     -H "Authorization: Bearer $AdminToken"
    ```
 2. **Verify the revoked key is rejected** (boundary: `auth`):
    ```powershell
@@ -705,7 +806,7 @@ $utf8 = New-Object System.Text.UTF8Encoding($false)
 $updateBodyPath = [System.IO.Path]::GetTempFileName()
 [System.IO.File]::WriteAllText($updateBodyPath, '{"name":"demo-sanguicode-chat","provider_name":"openai-compatible","base_url":"https://api.sanguicode.com","api_key":"<new-provider-key>","chat_model":"deepseek-v4-pro"}', $utf8)
 curl.exe -s -X PUT "$BackendBaseUrl/api/admin/model-configs/<config-id>" `
-  -H "X-Admin-User-Id: $AdminUserId" `
+  -H "Authorization: Bearer $AdminToken" `
   -H "Content-Type: application/json" `
   --data-binary "@$updateBodyPath"
 Remove-Item -LiteralPath $updateBodyPath -Force
@@ -749,7 +850,7 @@ The full plaintext key is shown only once at creation time and is never stored o
    $createBodyPath = [System.IO.Path]::GetTempFileName()
    [System.IO.File]::WriteAllText($createBodyPath, '{"name":"replacement-key","expires_at":null}', $utf8)
    curl.exe -s -X POST "$BackendBaseUrl/api/admin/apps/<app-id>/api-keys" `
-     -H "X-Admin-User-Id: $AdminUserId" `
+     -H "Authorization: Bearer $AdminToken" `
      -H "Content-Type: application/json" `
      --data-binary "@$createBodyPath"
    Remove-Item -LiteralPath $createBodyPath -Force
@@ -765,7 +866,7 @@ If you suspect the plaintext key has been exposed (e.g., committed to a reposito
 1. **Revoke the leaked key immediately** through the Admin UI or API:
    ```powershell
    curl.exe -s -X POST "$BackendBaseUrl/api/admin/api-keys/<key-id>/revoke" `
-     -H "X-Admin-User-Id: $AdminUserId"
+     -H "Authorization: Bearer $AdminToken"
    ```
 2. **Verify the revoked key is rejected** by calling the gateway with the leaked key:
    ```powershell
@@ -817,6 +918,8 @@ The script checks backend health, frontend proxy health, app readiness, non-stre
 When `-VerifyRevokedKey` is supplied with `-RevokedApiKey`, it verifies that the revoked key is rejected with HTTP 401 and `error.code=invalid_api_key`. The script requires `-ApiKey` (never reads from repo files) and exits non-zero on any failure.
 
 Request-log automation is skipped with a neutral message when both `-AppId` and `-AdminUserId` are missing. Supplying only one of the two is an error. Revoked-key verification is skipped unless `-VerifyRevokedKey` is explicitly supplied.
+
+> **Known drift**: The smoke script (`scripts/demo-smoke.ps1`) currently sends `X-Admin-User-Id` as the Admin API identity header rather than `Authorization: Bearer <admin-jwt>`. The `-AdminUserId` parameter value is passed directly as the header value. This is a known script-level limitation tracked for a future update. For manual Admin API calls, always use `Authorization: Bearer <admin-jwt>` obtained via `POST /api/admin/auth/login` as documented in the Admin API Setup Runbook.
 
 ## Frontend Smoke Test Page
 
@@ -870,15 +973,57 @@ The Vite dev server proxies `/api` and `/v1` to `http://localhost:8080`, matchin
 
 ## Run Tests
 
+### Backend
+
+Run the full test suite:
+
 ```bash
-# Backend tests
 cd backend
 mvn test
+```
 
-# Frontend checks
+Targeted backend tests for focused regression checks:
+
+```bash
+cd backend
+mvn -q -DskipTests compile
+
+# Error handling and IAE safety
+mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test
+
+# Admin validation and BusinessException
+mvn -q "-Dtest=ApiKeyServiceTest,ApiKeyAdminControllerTest,AppAdminControllerTest,ModelConfigAdminControllerTest,KnowledgeBaseAdminControllerTest,DocumentAdminControllerTest" test
+
+# Gateway error mapping and OpenAI-compatible shapes
+mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest,GatewayAuthFilterTest,OpenAiModelsControllerTest" test
+
+# Runtime streaming smoke (RANDOM_PORT, no PostgreSQL/Redis/Docker)
+mvn -q "-Dtest=OpenAiChatCompletionsRuntimeSmokeTest" test
+
+# Backend compile-only check
+mvn -q -DskipTests compile
+```
+
+### Frontend
+
+```bash
 cd frontend
-npm run typecheck
-npm run build
+cmd /c npm run lint
+cmd /c npm run test
+cmd /c npm run typecheck
+cmd /c npm run build
+```
+
+### Diff Check (Documentation-Only and Script Changes)
+
+```bash
+git diff --check
+```
+
+### Compose Config Sanity (When Deployment Docs Change)
+
+```bash
+docker compose --env-file .env.example -f deploy/docker-compose.yml config
 ```
 
 ## Environment Variables

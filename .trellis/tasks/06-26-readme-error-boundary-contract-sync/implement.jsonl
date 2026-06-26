@@ -1,0 +1,28 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis\\tasks\\06-26-readme-error-boundary-contract-sync\\prd.md", "reason": "Task PRD with scope, acceptance criteria, validation matrix, Good/Base/Bad cases, and non-goals"}
+{"file": "README.md", "reason": "Primary documentation file to synchronize with current error boundary and runtime contracts"}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Source of truth for Admin ApiResponse, OpenAI-compatible gateway errors, IllegalArgumentException safety, BusinessException, and GatewayException rules"}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Gateway upstream timeout/error normalization, streaming, request-log failure, and safe logging contracts"}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Security source of truth for Admin JWT boundary, forbidden response/log fields, request-log evidence safety"}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe logging and request-log persistence failure observability contracts"}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Required backend validation commands and review checklist"}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend/Admin API auth contract: typed clients use Authorization Bearer admin JWT, not adminUserId"}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend validation command contract for README command sync"}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer API, auth, secret, and validation thinking checklist"}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Project-level API scope, deployment, runtime evidence, and known script/spec drift context"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\exception\\GlobalExceptionHandler.java", "reason": "Current implementation of Admin vs /v1 error shapes and raw IllegalArgumentException sanitization"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\exception\\BusinessException.java", "reason": "Admin/common safe-message exception type"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\exception\\GatewayException.java", "reason": "Gateway /v1 safe-message exception type"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\AdminAuthFilter.java", "reason": "Current Admin API Authorization Bearer JWT boundary"}
+{"file": "backend\\src\\main\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilter.java", "reason": "Current /v1 app API key Authorization Bearer sk-sangui boundary"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\exception\\GlobalExceptionHandlerTest.java", "reason": "Test evidence for error shapes and IllegalArgumentException sanitization"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\exception\\GlobalExceptionHandlerIntegrationTest.java", "reason": "Integration test evidence for HTTP error boundary behavior"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\AdminAuthFilterTest.java", "reason": "Test evidence for Admin JWT filter behavior"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\common\\security\\GatewayAuthFilterTest.java", "reason": "Test evidence for /v1 app API key auth behavior"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\auth\\AdminAuthControllerTest.java", "reason": "Test evidence for Admin login response fields and ApiResponse envelope"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiChatCompletionsControllerTest.java", "reason": "Test evidence for /v1 chat errors, request logs, and OpenAI-compatible shape"}
+{"file": "backend\\src\\test\\java\\com\\sangui\\raggateway\\gateway\\openai\\OpenAiModelsControllerTest.java", "reason": "Test evidence for /v1/models compatible success/error shape"}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Risk context: current smoke script still uses AdminUserId/X-Admin-User-Id and may be out of sync with Admin JWT contract"}
+{"file": "docs\\runtime-evidence-checklist.md", "reason": "Runtime evidence template that may still reference AdminUserId and must not conflict with README safe evidence rules"}
