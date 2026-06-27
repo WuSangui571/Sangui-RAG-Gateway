@@ -1701,3 +1701,45 @@ Recorded completion of the runtime profile bean coverage governance task after m
 ### Next Steps
 
 - None - task complete
+
+
+## Session 93: NoHitPolicy contract clarification
+
+**Date**: 2026-06-27
+**Task**: NoHitPolicy contract clarification
+**Branch**: `feature/no-hit-policy-cleanup`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Item | Details |
+|---|---|
+| Commit | `897044ad fix:?? no_hit_policy ?????` |
+| Modules | App retrieval config, gateway completion retrieval boundary, RAG prompt/no-hit contract, retrieval evaluation tests, Trellis specs. |
+| Result | Completed NoHitPolicy cleanup as a persisted-contract clarification. Removed unused `rag.prompt.NoHitPolicy` enum while preserving DB/API/frontend `no_hit_policy`. `AppRetrievalConfig.from(AppEntity)` is now the single runtime validation owner and accepts only `STRICT_RAG`; null, blank, `PASS_THROUGH`, `ERROR`, and typos fail visibly. |
+| Updated files | `.trellis/spec/rag/retrieval-quality.md`; `.trellis/spec/sangui-rag-gateway.md`; `.trellis/tasks/06-26-no-hit-policy-cleanup/**`; `backend/src/main/java/com/sangui/raggateway/app/AppRetrievalConfig.java`; `backend/src/main/java/com/sangui/raggateway/app/AppService.java`; deleted `backend/src/main/java/com/sangui/raggateway/rag/prompt/NoHitPolicy.java`; `backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java`; `backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java`; `backend/src/test/java/com/sangui/raggateway/retrieval/evaluation/RetrievalEvaluationServiceTest.java`. |
+| Validation | `mvn -q "-Dtest=AppServiceTest" test` PASS; `mvn -q "-Dtest=RagPromptBuilderTest" test` PASS; `mvn -q "-Dtest=ChatCompletionGatewayServiceTest" test` PASS; `mvn -q "-Dtest=AppAdminControllerTest" test` PASS; `mvn -q "-Dtest=OpenAiChatCompletionsControllerTest" test` PASS; `mvn -q "-Dtest=RetrievalServiceTest" test` PASS; `mvn -q "-Dtest=RetrievalEvaluationServiceTest" test` PASS; `mvn -q -DskipTests compile` PASS; `git diff --check` PASS. |
+| Boundaries | No DB migration, no public API field removal, no frontend edit UI, no `PASS_THROUGH`/`ERROR` implementation, no retrieval SQL/provider/request-log/streaming behavior changes. |
+| Manual test | Human reported manual testing completed before record-session. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `897044ad` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
