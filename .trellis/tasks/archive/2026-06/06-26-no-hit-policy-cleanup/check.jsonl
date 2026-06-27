@@ -1,0 +1,27 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, RAG defaults, current no_hit_policy contract, and API/DB/security scope."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "rag_app retrieval columns, no_hit_policy persisted field, migration boundary, and tenant-safe schema rules."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Gateway/admin error mapping if unsupported no_hit_policy is rejected through retrieval config resolution."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe logging expectations for retrieval/prompt/request-log behavior."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend validation, required targeted tests, and no silent strict-RAG fallback rule."}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "No-hit behavior, STRICT_RAG current contract, and future PASS_THROUGH/ERROR boundaries."}
+{"file": ".trellis/spec/rag/prompt-context-policy.md", "reason": "Strict no-hit prompt behavior and prompt preservation requirements."}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Gateway error normalization and no hidden fallback behavior."}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "RAG prompt/context secrecy and no-hit insufficient-evidence boundary."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend AppVO no_hit_policy type exposure and contract alignment."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer contract checklist for DB/API/frontend/runtime config alignment."}
+{"file": ".trellis/tasks/06-26-no-hit-policy-cleanup/prd.md", "reason": "Task PRD, decision gate, prohibited scope, and acceptance criteria."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppRetrievalConfig.java", "reason": "Likely runtime owner for persisted retrieval config and no_hit_policy validation."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppService.java", "reason": "App creation defaults and retrieval config resolution path."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/AppEntity.java", "reason": "Persisted noHitPolicy entity field."}
+{"file": "backend/src/main/java/com/sangui/raggateway/app/vo/AppVO.java", "reason": "Admin API response field no_hit_policy that must remain stable."}
+{"file": "backend/src/main/java/com/sangui/raggateway/rag/prompt/NoHitPolicy.java", "reason": "Unused enum candidate for deletion or replacement by a used owner."}
+{"file": "backend/src/main/java/com/sangui/raggateway/rag/prompt/RagPromptBuilder.java", "reason": "Current strict no-hit prompt implementation."}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayService.java", "reason": "Runtime flow from AppRetrievalConfig to retrieval and prompt augmentation."}
+{"file": "backend/src/main/resources/db/migration/V7__add_app_default_knowledge_base.sql", "reason": "Existing no_hit_policy column and default; must not be changed in this task."}
+{"file": "frontend/src/types/app.ts", "reason": "Frontend exposed AppVO no_hit_policy type; must not drift."}
+{"file": "backend/src/test/java/com/sangui/raggateway/app/AppServiceTest.java", "reason": "Primary test location for config resolution and invalid no_hit_policy coverage."}
+{"file": "backend/src/test/java/com/sangui/raggateway/rag/prompt/RagPromptBuilderTest.java", "reason": "Strict no-hit prompt regression coverage."}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/completion/ChatCompletionGatewayServiceTest.java", "reason": "Gateway retrieval config failure and strict no-hit runtime coverage."}
+{"file": "backend/src/test/java/com/sangui/raggateway/app/AppAdminControllerTest.java", "reason": "Admin AppVO no_hit_policy response regression coverage."}

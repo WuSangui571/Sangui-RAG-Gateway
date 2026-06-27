@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 92
-- **Last Active**: 2026-06-26
+- **Total Sessions**: 93
+- **Last Active**: 2026-06-27
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1700 | Active |
+| `journal-3.md` | ~1745 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 93 | 2026-06-27 | NoHitPolicy contract clarification | `897044ad` | `feature/no-hit-policy-cleanup` |
 | 92 | 2026-06-26 | Test profile coverage governance | `51ef12c0` | `feature/test-profile-coverage-governance` |
 | 91 | 2026-06-26 | Upstream connect timeout governance closeout | `73c4b0f0` | `feature/gateway-connect-timeout-governance` |
 | 90 | 2026-06-26 | Health service contract sync | `e88a0e47` | `feature/health-endpoint-service-name` |

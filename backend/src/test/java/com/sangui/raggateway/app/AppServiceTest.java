@@ -564,6 +564,7 @@ class AppServiceTest {
         app.setRetrievalMaxContextChunks(2);
         app.setRetrievalMaxContextChars(4096);
         app.setRetrievalMaxSingleChunkChars(512);
+        app.setNoHitPolicy("STRICT_RAG");
 
         AppRetrievalConfig config = appService.resolveRetrievalConfig(app);
 
@@ -572,6 +573,7 @@ class AppServiceTest {
         assertThat(config.getMaxContextChunks()).isEqualTo(2);
         assertThat(config.getMaxContextChars()).isEqualTo(4096);
         assertThat(config.getMaxSingleChunkChars()).isEqualTo(512);
+        assertThat(config.getNoHitPolicy()).isEqualTo("STRICT_RAG");
     }
 
     @Test
@@ -583,6 +585,7 @@ class AppServiceTest {
         app.setRetrievalMaxContextChunks(5);
         app.setRetrievalMaxContextChars(12000);
         app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRICT_RAG");
 
         AppRetrievalConfig config = appService.resolveRetrievalConfig(app);
 
@@ -591,6 +594,7 @@ class AppServiceTest {
         assertThat(config.getMaxContextChunks()).isEqualTo(5);
         assertThat(config.getMaxContextChars()).isEqualTo(12000);
         assertThat(config.getMaxSingleChunkChars()).isEqualTo(3000);
+        assertThat(config.getNoHitPolicy()).isEqualTo("STRICT_RAG");
     }
 
     @Test
@@ -608,6 +612,7 @@ class AppServiceTest {
         app.setRetrievalMaxContextChunks(5);
         app.setRetrievalMaxContextChars(12000);
         app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRICT_RAG");
 
         assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -622,6 +627,7 @@ class AppServiceTest {
         app.setRetrievalMaxContextChunks(5);
         app.setRetrievalMaxContextChars(12000);
         app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRICT_RAG");
 
         assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -637,6 +643,7 @@ class AppServiceTest {
         app.setRetrievalMaxContextChunks(5);
         app.setRetrievalMaxContextChars(12000);
         app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRICT_RAG");
 
         assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -652,10 +659,90 @@ class AppServiceTest {
         app.setRetrievalMaxContextChunks(5);
         app.setRetrievalMaxContextChars(12000);
         app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRICT_RAG");
 
         assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("retrievalSimilarityThreshold must be in [0.0, 1.0]");
+    }
+
+    @Test
+    void shouldRejectNullNoHitPolicy() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.3);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("noHitPolicy must not be null or blank");
+    }
+
+    @Test
+    void shouldRejectBlankNoHitPolicy() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.3);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("  ");
+
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("noHitPolicy must not be null or blank");
+    }
+
+    @Test
+    void shouldRejectUnsupportedNoHitPolicyPassThrough() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.3);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("PASS_THROUGH");
+
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("noHitPolicy must be 'STRICT_RAG'");
+    }
+
+    @Test
+    void shouldRejectUnsupportedNoHitPolicyError() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.3);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("ERROR");
+
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("noHitPolicy must be 'STRICT_RAG'");
+    }
+
+    @Test
+    void shouldRejectTypoNoHitPolicy() {
+        AppEntity app = new AppEntity();
+        app.setId(1L);
+        app.setRetrievalTopK(5);
+        app.setRetrievalSimilarityThreshold(0.3);
+        app.setRetrievalMaxContextChunks(5);
+        app.setRetrievalMaxContextChars(12000);
+        app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRCIT_RAG");
+
+        assertThatThrownBy(() -> appService.resolveRetrievalConfig(app))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("noHitPolicy must be 'STRICT_RAG'");
     }
 
     // ---- Readiness ----

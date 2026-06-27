@@ -113,6 +113,7 @@ class ChatCompletionGatewayServiceTest {
         app.setRetrievalMaxContextChunks(5);
         app.setRetrievalMaxContextChars(12000);
         app.setRetrievalMaxSingleChunkChars(3000);
+        app.setNoHitPolicy("STRICT_RAG");
         return app;
     }
 
@@ -383,6 +384,28 @@ class ChatCompletionGatewayServiceTest {
         when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
         when(appService.resolveRetrievalConfig(app))
                 .thenThrow(new IllegalArgumentException("retrievalTopK must be positive, got: 0"));
+
+        assertThatThrownBy(() -> service.processChatCompletion(createValidRequest()))
+                .isInstanceOf(GatewayException.class)
+                .matches(e -> {
+                    GatewayException ge = (GatewayException) e;
+                    return ge.getCode().equals("model_config_not_ready")
+                            && ge.getHttpStatus().value() == 409;
+                });
+    }
+
+    @Test
+    void shouldReturn409WhenNoHitPolicyUnsupported() {
+        AppEntity app = createEnabledApp();
+        app.setNoHitPolicy("PASS_THROUGH");
+        ModelConfigEntity config = createEnabledModelConfig();
+        KnowledgeBaseEntity kb = createReadyKnowledgeBase();
+
+        when(appService.findById(APP_ID)).thenReturn(app);
+        when(appService.resolveDefaultModelConfig(app)).thenReturn(config);
+        when(encryptor.decrypt(config.getApiKeyEncrypted())).thenReturn(DECRYPTED_KEY);
+        when(appService.resolveDefaultKnowledgeBase(app)).thenReturn(kb);
+        stubResolveRetrievalConfig();
 
         assertThatThrownBy(() -> service.processChatCompletion(createValidRequest()))
                 .isInstanceOf(GatewayException.class)
