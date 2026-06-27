@@ -47,6 +47,7 @@ public class DocumentService {
     private final EmbeddingClient embeddingClient;
     private final TransactionTemplate transactionTemplate;
     private final TextChunker textChunker;
+    private final TextNormalizer textNormalizer;
     private final List<DocumentParser> parsers;
     private final DocumentProperties documentProperties;
     private final DocumentProcessingTaskService taskService;
@@ -62,6 +63,7 @@ public class DocumentService {
                            EmbeddingClient embeddingClient,
                            TransactionTemplate transactionTemplate,
                            TextChunker textChunker,
+                           TextNormalizer textNormalizer,
                            List<DocumentParser> parsers,
                            DocumentProperties documentProperties,
                            DocumentProcessingTaskService taskService,
@@ -76,6 +78,7 @@ public class DocumentService {
         this.embeddingClient = embeddingClient;
         this.transactionTemplate = transactionTemplate;
         this.textChunker = textChunker;
+        this.textNormalizer = textNormalizer;
         this.parsers = parsers;
         this.documentProperties = documentProperties;
         this.taskService = taskService;
@@ -223,7 +226,7 @@ public class DocumentService {
             ParsedDocument parsed = parser.parse(parseStream);
             parseStream.close();
 
-            String cleanedText = normalizeText(parsed.getText());
+            String cleanedText = textNormalizer.normalize(parsed.getText());
             if (cleanedText.isBlank()) {
                 doc.setStatus(DocumentStatus.FAILED.name());
                 doc.setErrorMessage("Document has no readable text");
@@ -569,13 +572,6 @@ public class DocumentService {
             }
         }
         return null;
-    }
-
-    private String normalizeText(String text) {
-        String normalized = text.replace("\r\n", "\n").replace("\r", "\n");
-        normalized = normalized.trim();
-        normalized = normalized.replaceAll("\n{3,}", "\n\n");
-        return normalized;
     }
 
     private String truncateSafe(String message) {

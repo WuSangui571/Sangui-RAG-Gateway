@@ -1,0 +1,18 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project product boundary and RAG gateway scope"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Backend package ownership and common util boundary"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend tests and code quality requirements"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe logging and document ingestion logging rules"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Visible failure and safe error boundary rules"}
+{"file": ".trellis/spec/rag/document-ingestion.md", "reason": "Document ingestion text cleaning and chunking contract"}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "Retrieval boundary to avoid unintended retrieval behavior changes"}
+{"file": ".trellis/spec/rag/prompt-context-policy.md", "reason": "Prompt context boundary to avoid unintended prompt behavior changes"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "RAG content, prompt, and evidence safety boundaries"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Embedding/upstream visible failure and no hidden fallback rules"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Duplication governance and abstraction criteria"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer boundary checklist for RAG/document pipeline changes"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/DocumentService.java", "reason": "Current duplicated document text normalization caller and parser-to-chunker boundary"}
+{"file": "backend/src/main/java/com/sangui/raggateway/document/chunk/TextChunker.java", "reason": "Current duplicated document text normalization implementation and chunking behavior"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/chunk/TextChunkerTest.java", "reason": "Existing chunker behavior tests to extend"}
+{"file": "backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java", "reason": "Existing document parse and empty text tests to extend"}

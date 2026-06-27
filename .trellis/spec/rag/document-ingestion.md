@@ -45,6 +45,30 @@ upload
   -> frontend status display
 ```
 
+Document text normalization owner:
+
+```text
+backend/src/main/java/com/sangui/raggateway/document/TextNormalizer.java
+```
+
+`TextNormalizer.normalize(String)` is the single production owner for document
+text cleaning semantics before empty-text detection and chunk splitting:
+
+```text
+null input -> null
+CRLF and CR -> LF
+trim surrounding whitespace
+collapse 3+ consecutive LF characters -> exactly 2 LF characters
+preserve normal Chinese/English content and internal tabs/spaces
+```
+
+`DocumentService.parseDocumentContent(...)` and `TextChunker.chunk(...)` must
+use this owner instead of carrying duplicate private implementations. URL base
+normalization, filename/path sanitization, status normalization, DTO field
+trim/blank handling, output redaction, SQL test normalization, and bounded
+error-message truncation remain separate domain-specific helpers and must not
+be merged into this document text normalizer.
+
 Required document status machine:
 
 ```text

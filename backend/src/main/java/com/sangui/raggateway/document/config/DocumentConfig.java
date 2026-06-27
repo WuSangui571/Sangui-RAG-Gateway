@@ -1,5 +1,6 @@
 package com.sangui.raggateway.document.config;
 
+import com.sangui.raggateway.document.TextNormalizer;
 import com.sangui.raggateway.document.chunk.TextChunker;
 import com.sangui.raggateway.document.parser.MarkdownDocumentParser;
 import com.sangui.raggateway.document.parser.PlainTextDocumentParser;
@@ -81,8 +82,13 @@ public class DocumentConfig {
     }
 
     @Bean
-    public TextChunker textChunker() {
-        return new TextChunker(documentProperties.getChunkSize(), documentProperties.getChunkOverlap());
+    public TextNormalizer textNormalizer() {
+        return new TextNormalizer();
+    }
+
+    @Bean
+    public TextChunker textChunker(TextNormalizer textNormalizer) {
+        return new TextChunker(documentProperties.getChunkSize(), documentProperties.getChunkOverlap(), textNormalizer);
     }
 
     @Bean

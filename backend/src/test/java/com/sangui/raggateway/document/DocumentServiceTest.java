@@ -90,7 +90,7 @@ class DocumentServiceTest {
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 transactionTemplate(),
-                textChunker, List.of(documentParser), documentProperties,
+                textChunker, new TextNormalizer(), List.of(documentParser), documentProperties,
                 taskService, processingProperties, embeddingProperties);
 
         AtomicLong docIdCounter = new AtomicLong(10L);
@@ -186,6 +186,30 @@ class DocumentServiceTest {
 
         verify(documentChunkEmbeddingMapper, times(2)).insertEmbedding(any(DocumentChunkEmbeddingEntity.class));
         verify(knowledgeBaseService).updateStatus(1L, KnowledgeBaseStatus.READY.name());
+    }
+
+    @Test
+    void shouldNormalizeParsedTextBeforeChunking() throws Exception {
+        byte[] fileContent = "Raw parser input".getBytes(StandardCharsets.UTF_8);
+
+        StoredFile storedFile = new StoredFile("knowledge/1/uuid/test.md", fileContent.length);
+        when(fileStorageService.save(eq("knowledge"), eq(1L), eq("test.md"), any(InputStream.class)))
+                .thenReturn(storedFile);
+        when(documentParser.supports(any(), eq("test.md"))).thenReturn(true);
+        when(documentParser.parse(any(InputStream.class)))
+                .thenReturn(new ParsedDocument("  First\r\n\r\n\r\nSecond\rThird  ", "markdown"));
+        when(textChunker.chunk(anyString()))
+                .thenReturn(List.of("First\n\nSecond\nThird"));
+
+        KnowledgeBaseEntity kb = createKb(1L, 100L, "text-embedding-3-small", 2);
+        when(knowledgeBaseService.findByIdAndUserId(1L, 100L)).thenReturn(kb);
+        when(modelConfigService.findEnabledEmbeddingConfig(100L, "text-embedding-3-small", 2))
+                .thenReturn(null);
+        when(documentMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        documentService.uploadAndProcess(100L, 1L, "test.md", "text/markdown", fileContent);
+
+        verify(textChunker).chunk("First\n\nSecond\nThird");
     }
 
     @Test
@@ -368,7 +392,7 @@ class DocumentServiceTest {
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 transactionTemplate(),
-                textChunker, List.of(documentParser), documentProperties,
+                textChunker, new TextNormalizer(), List.of(documentParser), documentProperties,
                 taskService, processingProperties, embeddingProperties);
 
         assertThatThrownBy(() -> limitedService.uploadAndProcess(
@@ -738,7 +762,7 @@ class DocumentServiceTest {
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 transactionTemplate(),
-                textChunker, List.of(documentParser), documentProperties,
+                textChunker, new TextNormalizer(), List.of(documentParser), documentProperties,
                 taskService, processingProperties, embeddingProperties);
 
         assertThatThrownBy(() -> limitedService.uploadAndEnqueue(
@@ -781,7 +805,7 @@ class DocumentServiceTest {
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 new TransactionTemplate(txManager),
-                textChunker, List.of(documentParser), new DocumentProperties(),
+                textChunker, new TextNormalizer(), List.of(documentParser), new DocumentProperties(),
                 taskService, new DocumentProcessingProperties(), embeddingProperties);
 
         byte[] fileContent = "Hello World".getBytes(StandardCharsets.UTF_8);
@@ -1318,7 +1342,7 @@ class DocumentServiceTest {
                 knowledgeBaseService, modelConfigService,
                 fileStorageService, embeddingClient,
                 transactionTemplate(),
-                textChunker, List.of(documentParser), new DocumentProperties(),
+                textChunker, new TextNormalizer(), List.of(documentParser), new DocumentProperties(),
                 taskService, new DocumentProcessingProperties(), embeddingProperties);
     }
 

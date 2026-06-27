@@ -11,6 +11,7 @@ import com.sangui.raggateway.common.security.GatewayAuthFilter;
 import com.sangui.raggateway.common.security.UpstreamApiKeyEncryptor;
 import com.sangui.raggateway.document.DocumentProcessingScheduler;
 import com.sangui.raggateway.document.DocumentProcessingWorker;
+import com.sangui.raggateway.document.TextNormalizer;
 import com.sangui.raggateway.document.chunk.TextChunker;
 import com.sangui.raggateway.document.config.DocumentConfig;
 import com.sangui.raggateway.document.config.DocumentProcessingProperties;
@@ -150,6 +151,7 @@ class RuntimeProfileBeanSmokeTest {
             documentRunner.run(context -> {
                 assertThat(context).hasNotFailed();
                 assertThat(context).hasSingleBean(FileStorageService.class);
+                assertThat(context).hasSingleBean(TextNormalizer.class);
                 assertThat(context).hasSingleBean(TextChunker.class);
                 assertThat(context).hasSingleBean(PlainTextDocumentParser.class);
                 assertThat(context).hasSingleBean(MarkdownDocumentParser.class);

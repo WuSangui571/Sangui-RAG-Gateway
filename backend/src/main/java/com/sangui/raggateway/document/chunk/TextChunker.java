@@ -1,5 +1,7 @@
 package com.sangui.raggateway.document.chunk;
 
+import com.sangui.raggateway.document.TextNormalizer;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,8 +9,9 @@ public class TextChunker {
 
     private final int chunkSize;
     private final int chunkOverlap;
+    private final TextNormalizer textNormalizer;
 
-    public TextChunker(int chunkSize, int chunkOverlap) {
+    public TextChunker(int chunkSize, int chunkOverlap, TextNormalizer textNormalizer) {
         if (chunkSize <= 0) {
             throw new IllegalArgumentException("chunkSize must be positive");
         }
@@ -20,13 +23,14 @@ public class TextChunker {
         }
         this.chunkSize = chunkSize;
         this.chunkOverlap = chunkOverlap;
+        this.textNormalizer = textNormalizer;
     }
 
     public List<String> chunk(String text) {
         if (text == null) {
             return List.of();
         }
-        String cleaned = normalizeText(text);
+        String cleaned = textNormalizer.normalize(text);
         if (cleaned.isBlank()) {
             return List.of();
         }
@@ -48,12 +52,5 @@ public class TextChunker {
         }
 
         return chunks;
-    }
-
-    private String normalizeText(String text) {
-        String normalized = text.replace("\r\n", "\n").replace("\r", "\n");
-        normalized = normalized.trim();
-        normalized = normalized.replaceAll("\n{3,}", "\n\n");
-        return normalized;
     }
 }
