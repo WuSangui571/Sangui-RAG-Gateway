@@ -31,6 +31,79 @@ public class ApiKeyRateLimitService {
     private static final DateTimeFormatter MINUTE_WINDOW = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
     private static final DateTimeFormatter DAILY_WINDOW = DateTimeFormatter.ofPattern("yyyyMMdd");
 
+    private static final String CHECK_SCRIPT_TEXT = """
+            local rpm_key = KEYS[1]
+            local tpm_key = KEYS[2]
+            local daily_req_key = KEYS[3]
+            local daily_tok_key = KEYS[4]
+            local rpm_limit = tonumber(ARGV[1])
+            local tpm_limit = tonumber(ARGV[2])
+            local daily_req_limit = tonumber(ARGV[3])
+            local daily_tok_limit = tonumber(ARGV[4])
+            local estimated_tokens = tonumber(ARGV[5])
+            local minute_ttl = tonumber(ARGV[6])
+            local daily_ttl = tonumber(ARGV[7])
+
+            local rpm = tonumber(redis.call('GET', rpm_key)) or 0
+            local tpm = tonumber(redis.call('GET', tpm_key)) or 0
+            local daily_req = tonumber(redis.call('GET', daily_req_key)) or 0
+            local daily_tok = tonumber(redis.call('GET', daily_tok_key)) or 0
+
+            if rpm + 1 > rpm_limit then
+                return {0, 'rpm', rpm, tpm, daily_req, daily_tok}
+            end
+            if tpm + estimated_tokens > tpm_limit then
+                return {0, 'tpm', rpm, tpm, daily_req, daily_tok}
+            end
+            if daily_req + 1 > daily_req_limit then
+                return {0, 'daily_requests', rpm, tpm, daily_req, daily_tok}
+            end
+            if daily_tok + estimated_tokens > daily_tok_limit then
+                return {0, 'daily_tokens', rpm, tpm, daily_req, daily_tok}
+            end
+
+            rpm = redis.call('INCR', rpm_key)
+            tpm = redis.call('INCRBY', tpm_key, estimated_tokens)
+            daily_req = redis.call('INCR', daily_req_key)
+            daily_tok = redis.call('INCRBY', daily_tok_key, estimated_tokens)
+
+            if rpm == 1 then redis.call('EXPIRE', rpm_key, minute_ttl) end
+            if tpm == estimated_tokens then redis.call('EXPIRE', tpm_key, minute_ttl) end
+            if daily_req == 1 then redis.call('EXPIRE', daily_req_key, daily_ttl) end
+            if daily_tok == estimated_tokens then redis.call('EXPIRE', daily_tok_key, daily_ttl) end
+
+            return {1, '', rpm, tpm, daily_req, daily_tok}
+            """;
+
+    private static final String RECONCILE_SCRIPT_TEXT = """
+            local tpm_key = KEYS[1]
+            local daily_tok_key = KEYS[2]
+            local diff = tonumber(ARGV[1])
+            if diff ~= 0 then
+                redis.call('INCRBY', tpm_key, diff)
+                redis.call('INCRBY', daily_tok_key, diff)
+            end
+            return 1
+            """;
+
+    private static final String RELEASE_SCRIPT_TEXT = """
+            local tpm_key = KEYS[1]
+            local daily_tok_key = KEYS[2]
+            local estimated = tonumber(ARGV[1])
+            redis.call('DECRBY', tpm_key, estimated)
+            redis.call('DECRBY', daily_tok_key, estimated)
+            return 1
+            """;
+
+    private static final DefaultRedisScript<List> CHECK_SCRIPT =
+            new DefaultRedisScript<>(CHECK_SCRIPT_TEXT, List.class);
+
+    private static final DefaultRedisScript<Long> RECONCILE_SCRIPT =
+            new DefaultRedisScript<>(RECONCILE_SCRIPT_TEXT, Long.class);
+
+    private static final DefaultRedisScript<Long> RELEASE_SCRIPT =
+            new DefaultRedisScript<>(RELEASE_SCRIPT_TEXT, Long.class);
+
     private final StringRedisTemplate redisTemplate;
     private final ApiKeyLimitProperties properties;
     private final ApiKeyService apiKeyService;
@@ -80,53 +153,8 @@ public class ApiKeyRateLimitService {
         String dailyReqKey = KEY_PREFIX + ":" + apiKeyId + ":daily-requests:" + dailySuffix;
         String dailyTokKey = KEY_PREFIX + ":" + apiKeyId + ":daily-tokens:" + dailySuffix;
 
-        String script = """
-                local rpm_key = KEYS[1]
-                local tpm_key = KEYS[2]
-                local daily_req_key = KEYS[3]
-                local daily_tok_key = KEYS[4]
-                local rpm_limit = tonumber(ARGV[1])
-                local tpm_limit = tonumber(ARGV[2])
-                local daily_req_limit = tonumber(ARGV[3])
-                local daily_tok_limit = tonumber(ARGV[4])
-                local estimated_tokens = tonumber(ARGV[5])
-                local minute_ttl = tonumber(ARGV[6])
-                local daily_ttl = tonumber(ARGV[7])
-
-                local rpm = tonumber(redis.call('GET', rpm_key)) or 0
-                local tpm = tonumber(redis.call('GET', tpm_key)) or 0
-                local daily_req = tonumber(redis.call('GET', daily_req_key)) or 0
-                local daily_tok = tonumber(redis.call('GET', daily_tok_key)) or 0
-
-                if rpm + 1 > rpm_limit then
-                    return {0, 'rpm', rpm, tpm, daily_req, daily_tok}
-                end
-                if tpm + estimated_tokens > tpm_limit then
-                    return {0, 'tpm', rpm, tpm, daily_req, daily_tok}
-                end
-                if daily_req + 1 > daily_req_limit then
-                    return {0, 'daily_requests', rpm, tpm, daily_req, daily_tok}
-                end
-                if daily_tok + estimated_tokens > daily_tok_limit then
-                    return {0, 'daily_tokens', rpm, tpm, daily_req, daily_tok}
-                end
-
-                rpm = redis.call('INCR', rpm_key)
-                tpm = redis.call('INCRBY', tpm_key, estimated_tokens)
-                daily_req = redis.call('INCR', daily_req_key)
-                daily_tok = redis.call('INCRBY', daily_tok_key, estimated_tokens)
-
-                if rpm == 1 then redis.call('EXPIRE', rpm_key, minute_ttl) end
-                if tpm == estimated_tokens then redis.call('EXPIRE', tpm_key, minute_ttl) end
-                if daily_req == 1 then redis.call('EXPIRE', daily_req_key, daily_ttl) end
-                if daily_tok == estimated_tokens then redis.call('EXPIRE', daily_tok_key, daily_ttl) end
-
-                return {1, '', rpm, tpm, daily_req, daily_tok}
-                """;
-
-        DefaultRedisScript<List> redisScript = new DefaultRedisScript<>(script, List.class);
         try {
-            List<?> result = redisTemplate.execute(redisScript,
+            List<?> result = redisTemplate.execute(CHECK_SCRIPT,
                     List.of(rpmKey, tpmKey, dailyReqKey, dailyTokKey),
                     String.valueOf(rpmLimit),
                     String.valueOf(tpmLimit),
@@ -185,19 +213,7 @@ public class ApiKeyRateLimitService {
         String tpmKey = KEY_PREFIX + ":" + apiKeyId + ":tpm:" + reservation.getMinuteWindow();
         String dailyTokKey = KEY_PREFIX + ":" + apiKeyId + ":daily-tokens:" + reservation.getDailyWindow();
 
-        String script = """
-                local tpm_key = KEYS[1]
-                local daily_tok_key = KEYS[2]
-                local diff = tonumber(ARGV[1])
-                if diff ~= 0 then
-                    redis.call('INCRBY', tpm_key, diff)
-                    redis.call('INCRBY', daily_tok_key, diff)
-                end
-                return 1
-                """;
-
-        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>(script, Long.class);
-        executeReservationAdjustment(apiKeyId, redisScript, tpmKey, dailyTokKey, String.valueOf(diff));
+        executeReservationAdjustment(apiKeyId, RECONCILE_SCRIPT, tpmKey, dailyTokKey, String.valueOf(diff));
     }
 
     public void releaseReservation(Long apiKeyId, ApiKeyRateLimitResult reservation) {
@@ -205,17 +221,7 @@ public class ApiKeyRateLimitService {
         String tpmKey = KEY_PREFIX + ":" + apiKeyId + ":tpm:" + reservation.getMinuteWindow();
         String dailyTokKey = KEY_PREFIX + ":" + apiKeyId + ":daily-tokens:" + reservation.getDailyWindow();
 
-        String script = """
-                local tpm_key = KEYS[1]
-                local daily_tok_key = KEYS[2]
-                local estimated = tonumber(ARGV[1])
-                redis.call('DECRBY', tpm_key, estimated)
-                redis.call('DECRBY', daily_tok_key, estimated)
-                return 1
-                """;
-
-        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>(script, Long.class);
-        executeReservationAdjustment(apiKeyId, redisScript, tpmKey, dailyTokKey,
+        executeReservationAdjustment(apiKeyId, RELEASE_SCRIPT, tpmKey, dailyTokKey,
                 String.valueOf(reservation.getEstimatedTokens()));
     }
 

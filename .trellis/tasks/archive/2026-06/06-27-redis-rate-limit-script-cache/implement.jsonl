@@ -1,0 +1,19 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary, API-key rate-limit positioning, OpenAI-compatible gateway error shape"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "API key limit columns, Redis counter keys, api_key_id-only Redis key contract, quota validation cases"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Keep rate-limit script owner in the apikey module unless a broader shared infrastructure owner is justified"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Rate-limit 429 mapping, Redis limiter 500 internal_error mapping, validation-before-limiter order"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Rate-limit safe log fields and forbidden key/prompt/provider data"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "API-key rate-limit regression checks and reservation release/reconcile requirements"}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "Rate-limit preflight, Redis outage failure visibility, streaming reservation release contract"}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "API-key cost boundary and secret-safe Redis/log/error constraints"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Rate-limit/quota boundary flow, validation owner, error shape, Good/Base/Bad cases"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicate Lua script definitions and keep a single owner"}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyRateLimitService.java", "reason": "Primary implementation target; currently constructs Lua text and DefaultRedisScript inside request/reservation methods"}
+{"file": "backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyRateLimitResult.java", "reason": "Reservation result contract including minute/day windows and estimated tokens"}
+{"file": "backend/src/main/java/com/sangui/raggateway/common/config/ApiKeyLimitProperties.java", "reason": "Configured default limits and validation owner"}
+{"file": "backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyRateLimitServiceTest.java", "reason": "Primary test target; existing coverage and gaps for Redis execute contract"}
+{"file": "backend/src/main/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsController.java", "reason": "Gateway caller order for validation, reservation, reconcile, release, request-log failure persistence"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsControllerTest.java", "reason": "Controller regression tests for 429, validation-before-limiter, reconcile/release"}
+{"file": "backend/src/test/java/com/sangui/raggateway/gateway/openai/OpenAiChatCompletionsRuntimeSmokeTest.java", "reason": "Streaming runtime smoke asserting releaseReservation exactly once for cancel/timeout/failure"}

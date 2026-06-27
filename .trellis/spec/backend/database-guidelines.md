@@ -235,6 +235,13 @@ rag:api-key-limit:{apiKeyId}:daily-requests:{yyyyMMdd}
 rag:api-key-limit:{apiKeyId}:daily-tokens:{yyyyMMdd}
 ```
 
+Redis Lua script ownership:
+
+- `ApiKeyRateLimitService` owns the API-key quota Lua scripts for request/token checks, reservation reconciliation, and reservation release.
+- Lua script text and `DefaultRedisScript` definitions must be reusable static final definitions, or an equivalent singleton owner in the `apikey` module. Request hot paths must not construct new script text or new `DefaultRedisScript` instances per call.
+- Refactors must preserve the existing KEYS order, ARGV order, TTL values, return values, counter semantics, and visible Redis failure behavior.
+- Required tests should assert stable script ownership plus the Redis execute contract for allow/reject, Redis failure, reservation reconcile, and reservation release. Tests may mock the Redis boundary; live Redis is not required for this contract.
+
 ### Implemented Admin User Baseline
 
 The Admin user schema is introduced by:
