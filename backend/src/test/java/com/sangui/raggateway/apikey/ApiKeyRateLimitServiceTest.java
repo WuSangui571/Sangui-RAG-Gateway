@@ -1,17 +1,33 @@
 package com.sangui.raggateway.apikey;
 
 import com.sangui.raggateway.common.config.ApiKeyLimitProperties;
+import com.sangui.raggateway.common.exception.GatewayException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 
 import java.nio.charset.StandardCharsets;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.verify;
 
 class ApiKeyRateLimitServiceTest {
 
@@ -146,6 +162,205 @@ class ApiKeyRateLimitServiceTest {
         assertThat(violations)
                 .extracting(violation -> violation.getPropertyPath().toString())
                 .contains("defaultRequestsPerMinute");
+    }
+
+    @Nested
+    class ScriptOwnership {
+
+        @Test
+        void shouldDefineCheckScriptAsStaticFinalDefaultRedisScript() throws Exception {
+            Field field = staticFinalField("CHECK_SCRIPT");
+            assertThat(field.get(null))
+                    .isNotNull()
+                    .isInstanceOf(DefaultRedisScript.class);
+        }
+
+        @Test
+        void shouldDefineReconcileScriptAsStaticFinalDefaultRedisScript() throws Exception {
+            Field field = staticFinalField("RECONCILE_SCRIPT");
+            assertThat(field.get(null))
+                    .isNotNull()
+                    .isInstanceOf(DefaultRedisScript.class);
+        }
+
+        @Test
+        void shouldDefineReleaseScriptAsStaticFinalDefaultRedisScript() throws Exception {
+            Field field = staticFinalField("RELEASE_SCRIPT");
+            assertThat(field.get(null))
+                    .isNotNull()
+                    .isInstanceOf(DefaultRedisScript.class);
+        }
+
+        @Test
+        void shouldDefineCheckScriptTextAsNonEmptyStaticFinal() throws Exception {
+            Field field = staticFinalField("CHECK_SCRIPT_TEXT");
+            String text = (String) field.get(null);
+            assertThat(text).isNotNull().isNotEmpty()
+                    .contains("redis.call('INCR', rpm_key)")
+                    .contains("redis.call('INCRBY', tpm_key, estimated_tokens)");
+        }
+
+        @Test
+        void shouldDefineReconcileScriptTextAsNonEmptyStaticFinal() throws Exception {
+            Field field = staticFinalField("RECONCILE_SCRIPT_TEXT");
+            String text = (String) field.get(null);
+            assertThat(text).isNotNull().isNotEmpty()
+                    .contains("redis.call('INCRBY', tpm_key, diff)")
+                    .contains("redis.call('INCRBY', daily_tok_key, diff)");
+        }
+
+        @Test
+        void shouldDefineReleaseScriptTextAsNonEmptyStaticFinal() throws Exception {
+            Field field = staticFinalField("RELEASE_SCRIPT_TEXT");
+            String text = (String) field.get(null);
+            assertThat(text).isNotNull().isNotEmpty()
+                    .contains("redis.call('DECRBY', tpm_key, estimated)")
+                    .contains("redis.call('DECRBY', daily_tok_key, estimated)");
+        }
+
+        @Test
+        void shouldReuseSameCheckScriptInstanceAcrossFieldAccess() throws Exception {
+            Field field = staticFinalField("CHECK_SCRIPT");
+            Object first = field.get(null);
+            Object second = field.get(null);
+            assertThat(first).isSameAs(second);
+        }
+
+        @Test
+        void shouldExecuteAllowCheckWithReusableScriptAndSameRedisContract() throws Exception {
+            StringRedisTemplateFixture fixture = StringRedisTemplateFixture.create();
+            doReturn(List.of(1L, "", 1L, 110L, 1L, 110L))
+                    .when(fixture.redisTemplate)
+                    .execute(anyScript(), anyList(), any(), any(), any(), any(), any(), any(), any());
+
+            ApiKeyRateLimitResult result = fixture.service.checkWithEntity(API_KEY_ID, null, MSG_CHARS, MAX_TOKENS);
+
+            assertThat(result.isAllowed()).isTrue();
+            assertThat(result.getRemainingRequests()).isEqualTo(9L);
+            assertThat(result.getRemainingTokens()).isEqualTo(9890L);
+            verify(fixture.redisTemplate).execute(same(script("CHECK_SCRIPT")),
+                    anyList(),
+                    eq("10"),
+                    eq("10000"),
+                    eq("100"),
+                    eq("100000"),
+                    eq("110"),
+                    eq("120"),
+                    eq("172800"));
+        }
+
+        @Test
+        void shouldExecuteRejectCheckWithReusableScriptAndSameRedisContract() throws Exception {
+            StringRedisTemplateFixture fixture = StringRedisTemplateFixture.create();
+            doReturn(List.of(0L, "daily_tokens", 1L, 100L, 2L, 100000L))
+                    .when(fixture.redisTemplate)
+                    .execute(anyScript(), anyList(), any(), any(), any(), any(), any(), any(), any());
+
+            ApiKeyRateLimitResult result = fixture.service.checkWithEntity(API_KEY_ID, null, MSG_CHARS, MAX_TOKENS);
+
+            assertThat(result.isAllowed()).isFalse();
+            assertThat(result.getLimitType()).isEqualTo("daily_tokens");
+            verify(fixture.redisTemplate).execute(same(script("CHECK_SCRIPT")),
+                    anyList(),
+                    eq("10"),
+                    eq("10000"),
+                    eq("100"),
+                    eq("100000"),
+                    eq("110"),
+                    eq("120"),
+                    eq("172800"));
+        }
+
+        @Test
+        void shouldKeepRedisFailureVisibleWhenCheckScriptFails() {
+            StringRedisTemplateFixture fixture = StringRedisTemplateFixture.create();
+            doThrow(new IllegalStateException("redis unavailable"))
+                    .when(fixture.redisTemplate)
+                    .execute(anyScript(), anyList(), any(), any(), any(), any(), any(), any(), any());
+
+            assertThatThrownBy(() -> fixture.service.checkWithEntity(API_KEY_ID, null, MSG_CHARS, MAX_TOKENS))
+                    .isInstanceOf(GatewayException.class)
+                    .extracting("code", "type")
+                    .containsExactly("internal_error", "server_error");
+        }
+
+        @Test
+        void shouldExecuteReconcileWithReusableScriptAndReservedWindows() throws Exception {
+            StringRedisTemplateFixture fixture = StringRedisTemplateFixture.create();
+            ApiKeyRateLimitResult reservation = ApiKeyRateLimitResult.allowed(
+                    9, 9890, "202606271430", "20260627", 110);
+
+            fixture.service.reconcileTokens(API_KEY_ID, reservation, 91);
+
+            verify(fixture.redisTemplate).execute(same(script("RECONCILE_SCRIPT")),
+                    eq(List.of(
+                            "rag:api-key-limit:1:tpm:202606271430",
+                            "rag:api-key-limit:1:daily-tokens:20260627")),
+                    eq("-19"));
+        }
+
+        @Test
+        void shouldExecuteReleaseWithReusableScriptAndReservedWindows() throws Exception {
+            StringRedisTemplateFixture fixture = StringRedisTemplateFixture.create();
+            ApiKeyRateLimitResult reservation = ApiKeyRateLimitResult.allowed(
+                    9, 9890, "202606271430", "20260627", 110);
+
+            fixture.service.releaseReservation(API_KEY_ID, reservation);
+
+            verify(fixture.redisTemplate).execute(same(script("RELEASE_SCRIPT")),
+                    eq(List.of(
+                            "rag:api-key-limit:1:tpm:202606271430",
+                            "rag:api-key-limit:1:daily-tokens:20260627")),
+                    eq("110"));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> RedisScript<T> script(String fieldName) throws Exception {
+        return (RedisScript<T>) staticFinalField(fieldName).get(null);
+    }
+
+    private static Field staticFinalField(String fieldName) throws Exception {
+        Field field = ApiKeyRateLimitService.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        assertThat(Modifier.isStatic(field.getModifiers())).isTrue();
+        assertThat(Modifier.isFinal(field.getModifiers())).isTrue();
+        return field;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static RedisScript<List> anyScript() {
+        return any(RedisScript.class);
+    }
+
+    private static class StringRedisTemplateFixture {
+
+        private final StringRedisTemplate redisTemplate;
+        private final ApiKeyRateLimitService service;
+
+        private StringRedisTemplateFixture(StringRedisTemplate redisTemplate,
+                                           ApiKeyRateLimitService service) {
+            this.redisTemplate = redisTemplate;
+            this.service = service;
+        }
+
+        private static StringRedisTemplateFixture create() {
+            StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);
+            ApiKeyRateLimitService service = new ApiKeyRateLimitService(
+                    redisTemplate, defaultProperties(), mock(ApiKeyService.class));
+            return new StringRedisTemplateFixture(redisTemplate, service);
+        }
+    }
+
+    private static ApiKeyLimitProperties defaultProperties() {
+        ApiKeyLimitProperties properties = new ApiKeyLimitProperties();
+        properties.setEnabled(true);
+        properties.setDefaultRequestsPerMinute(10);
+        properties.setDefaultTokensPerMinute(10000);
+        properties.setDefaultDailyRequestQuota(100);
+        properties.setDefaultDailyTokenQuota(100000);
+        properties.setDefaultCompletionTokenReservation(1024);
+        return properties;
     }
 
     static class TestableApiKeyRateLimitService extends ApiKeyRateLimitService {

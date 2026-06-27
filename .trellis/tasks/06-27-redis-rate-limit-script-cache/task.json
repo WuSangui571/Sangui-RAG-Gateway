@@ -1,0 +1,53 @@
+{
+  "id": "redis-rate-limit-script-cache",
+  "name": "redis-rate-limit-script-cache",
+  "title": "Redis script 每次 new 治理",
+  "description": "",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "sangui",
+  "assignee": "sangui",
+  "createdAt": "2026-06-27",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "feature/redis-rate-limit-script-cache",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
