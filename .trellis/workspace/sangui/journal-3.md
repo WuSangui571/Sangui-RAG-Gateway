@@ -1743,3 +1743,56 @@ Recorded completion of the runtime profile bean coverage governance task after m
 ### Next Steps
 
 - None - task complete
+
+
+## Session 94: Redis rate-limit Lua script reuse
+
+**Date**: 2026-06-27
+**Task**: Redis rate-limit Lua script reuse
+**Branch**: `feature/redis-rate-limit-script-cache`
+
+### Summary
+
+Closed the Redis rate-limit Lua script reuse task after manual acceptance and commit `bc0b6ff7`.
+The implementation removes per-request `DefaultRedisScript` construction from the API-key limiter hot path, adds execute-contract regression coverage, and records the reusable script ownership rule in the backend spec.
+
+### Main Changes
+
+| Area | Record |
+|------|--------|
+| Commit | bc0b6ff7 fix: reuse Redis rate-limit Lua scripts |
+| Main modules | backend api-key rate limit, Redis Lua script ownership, backend spec governance |
+| Updated files | backend/src/main/java/com/sangui/raggateway/apikey/ApiKeyRateLimitService.java; backend/src/test/java/com/sangui/raggateway/apikey/ApiKeyRateLimitServiceTest.java; .trellis/spec/backend/database-guidelines.md |
+| Implementation | Moved check/reconcile/release Lua script text and DefaultRedisScript objects to reusable static final definitions. Preserved Redis key names, KEYS/ARGV order, TTL values, return parsing, counter semantics, and visible Redis failure behavior. |
+| Codex QA fixes | Added mocked StringRedisTemplate execute-contract tests for allow, reject, Redis failure, reconcile, and release. Added backend spec rule for Redis Lua script ownership and hot-path allocation prevention. |
+| Validation | PASS: mvn -q "-Dtest=ApiKeyRateLimitServiceTest" test; PASS: mvn -q "-Dtest=ApiKeyRateLimitServiceTest,OpenAiChatCompletionsControllerTest" test; PASS: mvn -q "-Dtest=ApiKeyServiceTest,GatewayAuthFilterTest,ApiKeyRateLimitServiceTest" test; PASS: mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test; PASS: mvn -q "-Dtest=OpenAiCompatibleUpstreamClientTest" test; PASS: mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test; PASS: mvn -q -DskipTests compile; PASS: git diff --check |
+| Manual acceptance | User confirmed manual testing and commit before record-session. |
+| Boundary | No public API, frontend, database schema, Docker, Redis config, quota math, key naming, TTL, retry/fallback, or upstream routing changes. |
+| Result | Task archived after commit and manual acceptance. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bc0b6ff7` | (see git log) |
+
+### Testing
+
+- [OK] `mvn -q "-Dtest=ApiKeyRateLimitServiceTest" test`
+- [OK] `mvn -q "-Dtest=ApiKeyRateLimitServiceTest,OpenAiChatCompletionsControllerTest" test`
+- [OK] `mvn -q "-Dtest=ApiKeyServiceTest,GatewayAuthFilterTest,ApiKeyRateLimitServiceTest" test`
+- [OK] `mvn -q "-Dtest=OpenAiChatCompletionsControllerTest,ChatCompletionGatewayServiceTest" test`
+- [OK] `mvn -q "-Dtest=OpenAiCompatibleUpstreamClientTest" test`
+- [OK] `mvn -q "-Dtest=GlobalExceptionHandlerTest,GlobalExceptionHandlerIntegrationTest" test`
+- [OK] `mvn -q -DskipTests compile`
+- [OK] `git diff --check`
+- [OK] Manual acceptance confirmed by user before record-session.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
