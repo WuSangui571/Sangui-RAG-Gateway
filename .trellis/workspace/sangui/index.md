@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 94
-- **Last Active**: 2026-06-27
+- **Total Sessions**: 95
+- **Last Active**: 2026-07-03
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1789 | Active |
+| `journal-3.md` | ~1862 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 95 | 2026-07-03 | normalizeText reuse governance | `d647bd96` | `feature/normalize-text-reuse-governance` |
 | 94 | 2026-06-27 | Redis rate-limit Lua script reuse | `bc0b6ff7` | `feature/redis-rate-limit-script-cache` |
 | 93 | 2026-06-27 | NoHitPolicy contract clarification | `897044ad` | `feature/no-hit-policy-cleanup` |
 | 92 | 2026-06-26 | Test profile coverage governance | `51ef12c0` | `feature/test-profile-coverage-governance` |

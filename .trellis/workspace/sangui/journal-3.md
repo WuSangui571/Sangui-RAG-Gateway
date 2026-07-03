@@ -1796,3 +1796,76 @@ The implementation removes per-request `DefaultRedisScript` construction from th
 ### Next Steps
 
 - None - task complete
+
+
+## Session 95: normalizeText reuse governance
+
+**Date**: 2026-07-03
+**Task**: normalizeText reuse governance
+**Branch**: `feature/normalize-text-reuse-governance`
+
+### Summary
+
+Closed the normalizeText reuse governance task after manual testing and commit
+`d647bd96`. Document text normalization now has one production owner, the
+affected document parsing/chunking callers reuse it, focused tests cover the
+shared behavior and Spring wiring, and the RAG document-ingestion spec records
+the durable ownership boundary.
+
+### Main Changes
+
+| Area | Details |
+|------|---------|
+| Commit | d647bd96 refactor: normalize document text normalization |
+| Main modules | Backend document ingestion, text chunking, document configuration, RAG document-ingestion spec |
+| Production change | Added document TextNormalizer as the single owner for CRLF/CR to LF, trim, and 3+ LF collapse; DocumentService and TextChunker now reuse it through constructor/bean wiring. |
+| Test changes | Added TextNormalizerTest coverage; extended DocumentServiceTest to assert normalized parser output reaches TextChunker; updated RuntimeProfileBeanSmokeTest for TextNormalizer bean wiring. |
+| Spec sync | Document ingestion spec now records the TextNormalizer owner and explicitly keeps URL, filename, status, DTO trim, redaction, SQL-test normalization, and truncation helpers separate. |
+
+Updated files:
+- backend/src/main/java/com/sangui/raggateway/document/TextNormalizer.java
+- backend/src/main/java/com/sangui/raggateway/document/DocumentService.java
+- backend/src/main/java/com/sangui/raggateway/document/chunk/TextChunker.java
+- backend/src/main/java/com/sangui/raggateway/document/config/DocumentConfig.java
+- backend/src/test/java/com/sangui/raggateway/document/TextNormalizerTest.java
+- backend/src/test/java/com/sangui/raggateway/document/DocumentServiceTest.java
+- backend/src/test/java/com/sangui/raggateway/document/chunk/TextChunkerTest.java
+- backend/src/test/java/com/sangui/raggateway/RuntimeProfileBeanSmokeTest.java
+- .trellis/spec/rag/document-ingestion.md
+
+Validation:
+- cd backend && mvn -q "-Dtest=TextNormalizerTest,TextChunkerTest,DocumentServiceTest" test: passed, 77 tests, 0 failures/errors/skipped.
+- cd backend && mvn -q "-Dtest=PlainTextDocumentParserTest,MarkdownDocumentParserTest" test: passed, 12 tests, 0 failures/errors/skipped.
+- cd backend && mvn -q "-Dtest=DocumentConfigTest,RuntimeProfileBeanSmokeTest" test: passed, DocumentConfigTest 6 tests and RuntimeProfileBeanSmokeTest nested reports 22 tests, 0 failures/errors/skipped.
+- cd backend && mvn -q -DskipTests compile: passed.
+- git diff --check: passed with only Windows CRLF conversion warnings.
+- cd backend && mvn -q test: attempted with 60 second cap; timed out without a failure summary, treated as validation limit.
+
+Result and boundaries:
+- Manual testing and commit were confirmed by the user before record-session.
+- No public API, DTO/VO, frontend type, database schema, retrieval SQL, prompt/no-hit, auth, storage, or deployment behavior changed.
+- The active task was archived after completion evidence even though task.json still reported planning.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d647bd96` | (see git log) |
+
+### Testing
+
+- [OK] Targeted backend normalization/document tests passed.
+- [OK] Parser tests, DocumentConfig/runtime bean smoke, backend compile, and
+  diff hygiene checks passed.
+- [WARN] Full backend `mvn -q test` was attempted with the 60-second backend
+  cap and timed out without a failure summary; targeted tests and compile are
+  the recorded passing evidence.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
