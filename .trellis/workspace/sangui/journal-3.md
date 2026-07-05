@@ -1869,3 +1869,71 @@ Result and boundaries:
 ### Next Steps
 
 - None - task complete
+
+
+## Session 96: Test Chat Console and Docker Maven Build Fix
+
+**Date**: 2026-07-05
+**Task**: Test Chat Console and Docker Maven Build Fix
+**Branch**: `feature/test-chat-console`
+
+### Summary
+
+Closed the `test-chat-console` task after manual acceptance and committed code. The work delivered a frontend-first Admin Console Test Chat page and then fixed a Docker backend Maven build regression discovered during startup verification.
+
+### Main Changes
+
+**Commits Recorded**
+
+- `31ca0b17` - Test Chat page implementation.
+- `026a8989` - Docker Maven `central` mirror build fix.
+
+**Main Modules Changed**
+
+- Frontend Admin Console navigation and page routing.
+- Frontend OpenAI-compatible `/v1/chat/completions` typed client and response/error types.
+- Test Chat page UI, page-local plaintext app key handling, multi-turn non-streaming chat flow, safe citation metadata display, and i18n strings.
+- Frontend unit/component tests for navigation and Test Chat behavior.
+- Backend Docker Maven build settings for reliable parent POM resolution in Docker build.
+- README and Trellis specs documenting the Maven `central` mirror contract.
+
+**Updated Files**
+
+- `frontend/src/App.tsx`
+- `frontend/src/components/layout/AdminShell.tsx`
+- `frontend/src/pages/test-chat/TestChatPage.tsx`
+- `frontend/src/api/openai.ts`
+- `frontend/src/types/openai.ts`
+- `frontend/src/app/i18n/dict.ts`
+- `frontend/src/__tests__/AdminShell.test.tsx`
+- `frontend/src/__tests__/pages/TestChatPage.test.tsx`
+- `backend/settings.xml`
+- `README.md`
+- `.trellis/spec/backend/quality-guidelines.md`
+- `.trellis/spec/sangui-rag-gateway.md`
+- `.trellis/tasks/archive/2026-07/07-03-test-chat-console/`
+
+**Validation**
+
+- `cd frontend && cmd /c npm run lint` passed.
+- `cd frontend && cmd /c npm run test` passed: 8 test files, 105 tests.
+- `cd frontend && cmd /c npm run typecheck` passed.
+- `cd frontend && cmd /c npm run build` passed, with only the existing Vite chunk-size warning.
+- `cd frontend && npx vitest run src/__tests__/pages/TestChatPage.test.tsx --reporter verbose --testTimeout 10000 --hookTimeout 10000` passed: 10 tests.
+- `cd frontend && npx vitest run src/__tests__/AdminShell.test.tsx --reporter verbose --testTimeout 10000 --hookTimeout 10000` passed: 8 tests.
+- `git diff --check` passed.
+- i18n parity check passed: zh-CN and en-US both have 541 keys.
+- Playwright/Vite mocked smoke passed for Test Chat menu, app selector, plaintext-key card, and key metadata select.
+- `cd backend && mvn -q -DskipTests compile` passed.
+- `docker compose --env-file .env -f deploy/docker-compose.yml config --quiet` passed.
+- `docker compose --progress=plain --env-file .env -f deploy/docker-compose.yml build backend` passed; container Maven package completed with `BUILD SUCCESS`.
+- `docker compose --env-file .env -f deploy/docker-compose.yml up -d --build` passed; backend became healthy and frontend started.
+- `Invoke-WebRequest http://localhost:8080/api/health` returned `code=OK`, `data.status=UP`, `data.service=sangui-rag-gateway`.
+
+**Result and Boundaries**
+
+- Test Chat phase 1 is complete: non-streaming only, no backend API changes, no DB changes, no gateway/RAG runtime behavior changes.
+- Plaintext app API key remains page-local memory state only and is not persisted to localStorage, sessionStorage, URL, or global store.
+- The page displays assistant replies and safe metadata; forbidden fields such as full keys, key hashes, prompts, chunk content, provider raw bodies, stack traces, and storage paths remain out of the UI.
+- Streaming chat remains a separate future phase requiring SSE state, cancellation, `[DONE]` handling, error paths, and tests.
+- Docker build fix is limited to public Maven mirror configuration and documentation/spec sync; no runtime business logic changed.
