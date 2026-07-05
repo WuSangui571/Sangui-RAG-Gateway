@@ -750,7 +750,7 @@ Required jobs:
 | Docker build frontend | `docker build -t sangui-rag-gateway-frontend:ci -f frontend/Dockerfile frontend`. |
 | Compose contract check | `docker compose config` for both default and host-ports override; asserts PG/Redis no host ports by default, service-name dependencies, uploads volume, and host-ports opt-in. |
 | Runtime smoke test | `docker compose down -v --remove-orphans` to ensure a clean state, then `docker compose up -d --build` the full stack, wait for backend healthy, assert `/api/health` returns `code=OK` / `data.status=UP` / `data.service=sangui-rag-gateway`, runtime user is `sangui`, `/app/data/uploads` writable, then `down -v --remove-orphans` cleanup. |
-| Security scan | Scans committed files for docker registry credentials, real `sk-sangui-*` keys, and provider-shaped API keys; asserts `USER sangui` present with no subsequent `USER root`; asserts `settings.xml` has public Maven mirror with Central fallback. |
+| Security scan | Scans committed files for docker registry credentials, real `sk-sangui-*` keys, and provider-shaped API keys; asserts `USER sangui` present with no subsequent `USER root`; asserts `settings.xml` has public Maven mirrors including an explicit `central` mirror and no credentials. |
 
 Validation matrix:
 
@@ -768,7 +768,7 @@ Validation matrix:
 | Runtime non-root user | Backend Java process runs as user `sangui` | `docker compose exec backend whoami` outputs `sangui`. |
 | Runtime storage writable | Upload directory is writable by runtime user | `touch /app/data/uploads/.ci-write-test && rm` succeeds. |
 | Dockerfile non-root contract | `backend/Dockerfile` has `USER sangui` with no subsequent `USER root` | Grep and awk assertions in security scan. |
-| settings.xml public mirror | `backend/settings.xml` has only public Maven mirrors with Central fallback | No `<server>`, `<username>`, or `mirrorOf=*` present. |
+| settings.xml public mirror | `backend/settings.xml` has only public Maven mirrors and explicitly covers repository id `central` | No `<server>`, `<username>`, or `mirrorOf=*` present; `mirrorOf>central</mirrorOf` is present. |
 | Image-pull infra failure classified | Registry/network/timeout/descriptor failures are classified as `image-pull`, not Dockerfile code bugs | README and spec failure boundary tables identify `image-pull` as separate from `docker-backend` / `docker-frontend`. |
 
 Good/base/bad cases:

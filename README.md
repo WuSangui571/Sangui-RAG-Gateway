@@ -1107,7 +1107,7 @@ A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pu
 - **Docker build frontend**: Builds frontend Docker image via `frontend/Dockerfile`. No registry push.
 - **Compose contract**: Validates default Compose config renders; asserts `postgres` and `redis` have no host `ports`; asserts backend uses service-name dependencies (`postgres:5432`, `SPRING_DATA_REDIS_HOST=redis`); asserts `backend-data:/app/data/uploads` volume mount; validates host-ports override (`deploy/docker-compose.host-ports.yml`) exposes PG/Redis ports only when explicitly included.
 - **Runtime smoke**: Starts from a clean Compose runtime state, starts the full stack, waits for backend to report healthy, asserts `/api/health` returns `code=OK` / `data.status=UP` / `data.service=sangui-rag-gateway`, asserts backend container runs as user `sangui`, asserts `/app/data/uploads` is writable, then tears down the stack with volume cleanup (`docker compose down -v --remove-orphans`).
-- **Security scan**: Scans committed files (ci.yml, Compose files, Dockerfiles, `.env.example`, `settings.xml`) for docker registry credentials, real `sk-sangui-*` API keys, and provider keys; asserts `backend/Dockerfile` has `USER sangui` without a subsequent `USER root`; asserts `backend/settings.xml` uses only public Maven mirror metadata with Maven Central fallback.
+- **Security scan**: Scans committed files (ci.yml, Compose files, Dockerfiles, `.env.example`, `settings.xml`) for docker registry credentials, real `sk-sangui-*` API keys, and provider keys; asserts `backend/Dockerfile` has `USER sangui` without a subsequent `USER root`; asserts `backend/settings.xml` uses only public Maven mirror metadata, explicitly mirrors repository id `central`, and contains no credentials.
 
 ### Failure Boundary Classification
 
@@ -1126,6 +1126,8 @@ Failures are classified by boundary so the investigator knows where to root-caus
 | `runtime-user` | Backend container `whoami` is not `sangui`, or `USER root` appears after `USER sangui` in the Dockerfile. |
 | `runtime-storage` | `/app/data/uploads` is not writable by the runtime user. |
 | `secret-scan` | Committed file contains docker credentials, real API keys, or `settings.xml` credentials. |
+
+If `docker-backend` fails with `Non-resolvable parent POM` for `spring-boot-starter-parent` and the log shows direct access to `https://repo.maven.apache.org/maven2`, check `backend/settings.xml`: the Docker build copies it to `/root/.m2/settings.xml`, and repository id `central` must be explicitly covered by a public mirror in networks where Maven Central TLS is unreliable.
 
 ### Image-Pull Failures
 
