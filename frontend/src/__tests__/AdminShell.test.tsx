@@ -164,6 +164,7 @@ describe('AdminShell', () => {
         expect(screen.getByText('Knowledge Bases')).toBeInTheDocument()
         expect(screen.getByText('Apps')).toBeInTheDocument()
         expect(screen.getByText('API Keys')).toBeInTheDocument()
+        expect(screen.getByText('Test Chat')).toBeInTheDocument()
         expect(screen.getByText('Request Logs')).toBeInTheDocument()
       })
     })
@@ -207,6 +208,11 @@ describe('AdminShell', () => {
       await user.click(screen.getByText('Knowledge Bases'))
       await waitFor(() => {
         expect(screen.getByTestId('page-content')).toHaveTextContent('knowledge')
+      })
+
+      await user.click(screen.getByText('Test Chat'))
+      await waitFor(() => {
+        expect(screen.getByTestId('page-content')).toHaveTextContent('test-chat')
       })
     })
   })

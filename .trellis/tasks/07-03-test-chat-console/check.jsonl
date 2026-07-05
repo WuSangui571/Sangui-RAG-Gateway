@@ -1,0 +1,35 @@
+{"file": ".agents/skills/finish-work/SKILL.md", "reason": "Finish work checklist"}
+{"file": ".agents/skills/check/SKILL.md", "reason": "Code quality check spec"}
+{"file": ".trellis/tasks/07-03-test-chat-console/prd.md", "reason": "Task requirements, scope, acceptance criteria, API contract, validation matrix, and forbidden boundaries."}
+{"file": ".trellis/tasks/07-03-test-chat-console/research.md", "reason": "Focused code research with existing patterns, likely files, risk notes, and tests."}
+{"file": ".trellis/spec/sangui-rag-gateway.md", "reason": "Project boundary for lightweight OpenAI-compatible RAG gateway and API/key/security scope."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Frontend route/page/API/type organization for the new page."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Admin UI component behavior, loading/error/empty states, and secret masking expectations."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Data loading and side-effect boundaries for page-level API state."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Page-local plaintext key state and no persistent secret storage."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Typed OpenAI/API key/request-log contracts and forbidden fields."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend test and validation baseline plus secret-safe rendering requirements."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer API/key/RAG/request-log flow mapping and test contract."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing smoke/openai/request-log patterns instead of duplicate clients."}
+{"file": ".trellis/spec/gateway/resilience.md", "reason": "OpenAI-compatible gateway error and timeout normalization for chat calls."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Gateway/admin error shapes, app key auth errors, and request-log API matrices."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Safe request-log/RAG evidence fields and forbidden logs/outputs."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "API key hash/prefix/plaintext storage boundary and tenant-safe request-log/retrieval data."}
+{"file": ".trellis/spec/rag/retrieval-quality.md", "reason": "Safe RAG hit IDs, retrieval evidence, no-hit behavior, and tenant boundaries."}
+{"file": ".trellis/spec/rag/prompt-context-policy.md", "reason": "Message preservation, RAG context, and no-fabrication/no-hit prompt policy."}
+{"file": ".trellis/spec/security/rag-security.md", "reason": "Secret, tenant, RAG evidence, output preview, and admin-vs-gateway auth boundaries."}
+{"file": "frontend/src/components/layout/AdminShell.tsx", "reason": "Existing PageKey/menu/shell selectedAppId pattern for adding navigation."}
+{"file": "frontend/src/App.tsx", "reason": "Existing page switch pattern for adding TestChatPage."}
+{"file": "frontend/src/api/openai.ts", "reason": "Existing /v1 chat client and OpenAI-compatible error parser to reuse or generalize."}
+{"file": "frontend/src/types/openai.ts", "reason": "Existing OpenAI smoke request/response types to reuse or safely generalize."}
+{"file": "frontend/src/pages/smoke/SmokeTestPage.tsx", "reason": "Existing app selection, key paste, readiness, non-streaming/streaming, and request-log validation patterns."}
+{"file": "frontend/src/api/apps.ts", "reason": "Existing typed app list/readiness client."}
+{"file": "frontend/src/api/api-keys.ts", "reason": "Existing typed API key metadata client."}
+{"file": "frontend/src/api/request-logs.ts", "reason": "Existing typed request-log evidence clients."}
+{"file": "frontend/src/types/request-log.ts", "reason": "Existing safe retrieval evidence, citation, and hit chunk types."}
+{"file": "frontend/src/components/domain/SourceCitationList.tsx", "reason": "Existing safe citation metadata renderer."}
+{"file": "frontend/src/__tests__/pages/SmokeTestPage.test.tsx", "reason": "Existing API mock and forbidden-field test pattern for test-chat tests."}
+{"file": "frontend/src/__tests__/AdminShell.test.tsx", "reason": "Existing navigation test pattern to update for new menu item."}
+{"file": "frontend/vite.config.ts", "reason": "Dev proxy already routes /v1 to backend; no backend proxy needed."}
+{"file": "frontend/nginx.conf", "reason": "Production nginx proxy already routes /v1 with streaming-safe settings."}
+{"file": ".trellis/tasks/07-03-test-chat-console/handoff.md", "reason": "DeepSeek execution handoff with required files, boundaries, and test commands."}

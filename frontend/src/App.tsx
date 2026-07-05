@@ -5,6 +5,7 @@ import KnowledgeBasePage from './pages/knowledge/KnowledgeBasePage'
 import AppConfigPage from './pages/apps/AppConfigPage'
 import ApiKeyPage from './pages/api-keys/ApiKeyPage'
 import SmokeTestPage from './pages/smoke/SmokeTestPage'
+import TestChatPage from './pages/test-chat/TestChatPage'
 import RequestLogListPage from './pages/request-logs/RequestLogListPage'
 
 interface PageContext extends ShellContextValue {
@@ -26,6 +27,8 @@ export default function App() {
             return <ApiKeyPage />
           case 'smoke':
             return <SmokeTestPage />
+          case 'test-chat':
+            return <TestChatPage />
           case 'request-logs':
             return <RequestLogListPage
               persistentAppId={ctx.selectedAppId ?? undefined}

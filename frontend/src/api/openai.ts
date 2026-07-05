@@ -3,21 +3,30 @@ import type {
   SmokeChatCompletionResponse,
   SmokeStreamingChatRequest,
   SmokeStreamingEvidence,
+  ChatCompletionRequest,
+  ChatCompletionResponse,
 } from '../types/openai'
 
 const V1_BASE = '/v1'
 
-export class SmokeApiError extends Error {
+export class OpenAiApiError extends Error {
   status: number
   errorCode: string | null
   errorType: string | null
 
   constructor(status: number, message: string, errorCode: string | null, errorType: string | null) {
     super(message)
-    this.name = 'SmokeApiError'
+    this.name = 'OpenAiApiError'
     this.status = status
     this.errorCode = errorCode
     this.errorType = errorType
+  }
+}
+
+export class SmokeApiError extends OpenAiApiError {
+  constructor(status: number, message: string, errorCode: string | null, errorType: string | null) {
+    super(status, message, errorCode, errorType)
+    this.name = 'SmokeApiError'
   }
 }
 
@@ -33,7 +42,12 @@ function getOpenAiErrorField(body: unknown, field: 'message' | 'code' | 'type'):
   return typeof value === 'string' && value.trim().length > 0 ? value : null
 }
 
-async function toSmokeApiError(response: Response): Promise<SmokeApiError> {
+async function readOpenAiErrorFields(response: Response): Promise<{
+  status: number
+  message: string
+  errorCode: string | null
+  errorType: string | null
+}> {
   let body: unknown = null
   try {
     body = await response.json()
@@ -41,11 +55,21 @@ async function toSmokeApiError(response: Response): Promise<SmokeApiError> {
     // Non-JSON gateway/proxy errors still fail visibly with HTTP status evidence.
   }
 
+  return {
+    status: response.status,
+    message: getOpenAiErrorField(body, 'message') || `Gateway returned ${response.status}`,
+    errorCode: getOpenAiErrorField(body, 'code'),
+    errorType: getOpenAiErrorField(body, 'type'),
+  }
+}
+
+async function toSmokeApiError(response: Response): Promise<SmokeApiError> {
+  const error = await readOpenAiErrorFields(response)
   return new SmokeApiError(
-    response.status,
-    getOpenAiErrorField(body, 'message') || `Gateway returned ${response.status}`,
-    getOpenAiErrorField(body, 'code'),
-    getOpenAiErrorField(body, 'type'),
+    error.status,
+    error.message,
+    error.errorCode,
+    error.errorType,
   )
 }
 
@@ -67,6 +91,42 @@ export async function smokeChatCompletions(
   }
 
   return response.json() as Promise<SmokeChatCompletionResponse>
+}
+
+async function toOpenAiApiError(response: Response): Promise<OpenAiApiError> {
+  const error = await readOpenAiErrorFields(response)
+  return new OpenAiApiError(
+    error.status,
+    error.message,
+    error.errorCode,
+    error.errorType,
+  )
+}
+
+export async function chatCompletions(
+  request: ChatCompletionRequest,
+  apiKey: string,
+  opts?: { returnCitations?: boolean },
+): Promise<ChatCompletionResponse> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${apiKey}`,
+  }
+  if (opts?.returnCitations) {
+    headers['X-Sangui-Return-Citations'] = 'true'
+  }
+
+  const response = await fetch(`${V1_BASE}/chat/completions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!response.ok) {
+    throw await toOpenAiApiError(response)
+  }
+
+  return response.json() as Promise<ChatCompletionResponse>
 }
 
 export async function smokeStreamingChatCompletions(

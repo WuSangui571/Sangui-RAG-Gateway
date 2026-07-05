@@ -12,7 +12,7 @@ import type { AdminUserVO } from '../../types/auth'
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
 
-export type PageKey = 'model-configs' | 'knowledge' | 'apps' | 'api-keys' | 'smoke' | 'request-logs'
+export type PageKey = 'model-configs' | 'knowledge' | 'apps' | 'api-keys' | 'smoke' | 'test-chat' | 'request-logs'
 
 const PAGE_KEY_TO_I18N: Record<PageKey, I18nKey> = {
   'model-configs': 'nav.model-configs',
@@ -20,6 +20,7 @@ const PAGE_KEY_TO_I18N: Record<PageKey, I18nKey> = {
   'apps': 'nav.apps',
   'api-keys': 'nav.api-keys',
   'smoke': 'nav.smoke',
+  'test-chat': 'nav.test-chat',
   'request-logs': 'nav.request-logs',
 }
 
