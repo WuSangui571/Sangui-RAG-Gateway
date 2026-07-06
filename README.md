@@ -1,5 +1,7 @@
 # Sangui-RAG-Gateway
 
+[中文](README.zh-CN.md)
+
 > Lightweight OpenAI-compatible RAG enhancement gateway.
 >
 > This project supports a compatible subset of OpenAI Chat Completions API.
