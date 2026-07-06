@@ -1,0 +1,28 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "README.md", "reason": "Primary documentation file to simplify; current long-form structure and stale-content risk."}
+{"file": ".trellis\\spec\\sangui-rag-gateway.md", "reason": "Product positioning, implemented capabilities, API subset, deployment and security source of truth."}
+{"file": ".trellis\\spec\\guides\\cross-layer-thinking-guide.md", "reason": "Cross-layer contract checklist for deployment/API/security claims in README."}
+{"file": ".trellis\\spec\\backend\\quality-guidelines.md", "reason": "Backend validation commands, Docker Maven build contract, API compatibility boundaries."}
+{"file": ".trellis\\spec\\backend\\database-guidelines.md", "reason": "PostgreSQL/pgvector, Redis, tenant, migration, and deployed schema facts used by README."}
+{"file": ".trellis\\spec\\backend\\error-handling.md", "reason": "Public gateway/admin error-shape facts and safe example boundaries."}
+{"file": ".trellis\\spec\\backend\\logging-guidelines.md", "reason": "Safe request-log/evidence fields and forbidden sensitive fields for README examples."}
+{"file": ".trellis\\spec\\frontend\\quality-guidelines.md", "reason": "Frontend validation commands and admin-console UX/security baseline."}
+{"file": ".trellis\\spec\\frontend\\directory-structure.md", "reason": "Frontend module/page structure for compact README project tree."}
+{"file": ".trellis\\spec\\frontend\\type-safety.md", "reason": "Frontend API/type boundaries and forbidden secret/request-log fields."}
+{"file": ".trellis\\spec\\gateway\\resilience.md", "reason": "Gateway timeout/error/streaming contracts that README must not overstate."}
+{"file": ".trellis\\spec\\rag\\retrieval-quality.md", "reason": "RAG retrieval scope, no-hit behavior, endpoint flow, and source-citation limits."}
+{"file": ".trellis\\spec\\rag\\prompt-context-policy.md", "reason": "Prompt augmentation and no-fabrication boundaries for README claims."}
+{"file": ".trellis\\spec\\rag\\document-ingestion.md", "reason": "Document support/status/ingestion limits for README capability wording."}
+{"file": ".trellis\\spec\\security\\rag-security.md", "reason": "Tenant isolation, secret safety, request-log evidence, and screenshot redaction boundaries."}
+{"file": "deploy\\docker-compose.yml", "reason": "Canonical full-stack Docker Compose deployment command and service exposure."}
+{"file": "deploy\\docker-compose.host-ports.yml", "reason": "Opt-in PostgreSQL/Redis host-port override documented in README."}
+{"file": ".env.example", "reason": "Safe local environment defaults and production secret replacement requirements."}
+{"file": "frontend\\src\\App.tsx", "reason": "Actual admin console page routing for current capability list."}
+{"file": "frontend\\src\\components\\layout\\AdminShell.tsx", "reason": "Actual admin navigation, login shell, and first screenshot candidate."}
+{"file": "frontend\\package.json", "reason": "Frontend stack and validation scripts for README developer section."}
+{"file": "backend\\pom.xml", "reason": "Backend stack versions for README local dependencies/developer section."}
+{"file": "scripts\\demo-smoke.ps1", "reason": "Detailed smoke flow that README should link to instead of duplicating."}
+{"file": "docs\\runtime-evidence-checklist.md", "reason": "Detailed evidence template that README should link to instead of duplicating."}
+{"file": ".trellis\\tasks\\07-05-readme-docs-simplification\\prd.md", "reason": "Task requirements, acceptance criteria, forbidden scope, and validation plan."}

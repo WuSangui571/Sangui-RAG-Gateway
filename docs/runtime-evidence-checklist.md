@@ -139,7 +139,7 @@ Exit code: non-zero. Never record the revoked key value.
 | Check | Result | Notes |
 |---|---|---|
 | `git diff --check` | `<PASS / FAIL>` | |
-| `rg` forbidden-field scan on committed files | `<PASS / FAIL>` | No real `sk-sangui-*`, `api_key_encrypted`, `key_hash`, `provider_response_body`, `stack_trace`, `augmented_prompt`, `chunk_content`, or `Authorization: Bearer sk-sangui-` values |
+| Forbidden-field scan on committed files | `<PASS / FAIL>` | Run the project-approved sensitive-field scan and confirm there are no committed API keys, Authorization examples with real key prefixes, encrypted-key fields, hashes, provider bodies, stack traces, augmented prompts, or chunk payload fields. |
 | PSParser syntax check (if script changed) | `<PASS / SKIP>` | |
 
 ## Test Recording
