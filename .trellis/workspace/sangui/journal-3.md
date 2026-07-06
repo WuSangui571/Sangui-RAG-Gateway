@@ -1937,3 +1937,47 @@ Closed the `test-chat-console` task after manual acceptance and committed code. 
 - The page displays assistant replies and safe metadata; forbidden fields such as full keys, key hashes, prompts, chunk content, provider raw bodies, stack traces, and storage paths remain out of the UI.
 - Streaming chat remains a separate future phase requiring SSE state, cancellation, `[DONE]` handling, error paths, and tests.
 - Docker build fix is limited to public Maven mirror configuration and documentation/spec sync; no runtime business logic changed.
+
+
+## Session 97: README docs simplification closeout
+
+**Date**: 2026-07-06
+**Task**: README docs simplification closeout
+**Branch**: `feature/readme-docs-simplification`
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+| Area | Details |
+|---|---|
+| Task | README documentation simplification and Chinese README entry |
+| Commits | 8ae88759 docs: simplify README documentation; 48cab245 docs: add Chinese README |
+| Main changes | Reworked README as concise first-use English entry; added README.zh-CN.md complete Chinese translation; linked Chinese version from top of README; moved detailed admin/key/error references into docs. |
+| Updated files | README.md; README.zh-CN.md; docs/admin-api-reference.md; docs/gateway-error-codes.md; docs/key-management-runbook.md; docs/runtime-evidence-checklist.md; .trellis/tasks/archive/2026-07/07-05-readme-docs-simplification |
+| Validation | git diff --check passed; Docker Compose config rendered with .env.example; backend mvn -q -DskipTests compile passed; frontend lint/typecheck/build/test passed; sensitive-field rg scan passed; Chinese README link target verified. |
+| Manual acceptance | User confirmed manual testing and submitted commits before record-session. |
+| Boundaries | Documentation-only closeout. No backend/frontend runtime, API, DB, Docker behavior, auth, retrieval, or deployment logic was changed. No record-session was run before user testing and commits. |
+| Result | Task archived and session recorded after clean worktree confirmation. |
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8ae88759` | (see git log) |
+| `48cab245` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

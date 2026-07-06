@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-3.md`
-- **Total Sessions**: 96
-- **Last Active**: 2026-07-05
+- **Total Sessions**: 97
+- **Last Active**: 2026-07-06
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-3.md` | ~1963 | Active |
+| `journal-3.md` | ~1983 | Active |
 | `journal-2.md` | ~1985 | Archived |
 | `journal-1.md` | ~1960 | Archived |
 <!-- @@@/auto:active-documents -->
@@ -31,6 +31,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 97 | 2026-07-06 | README docs simplification closeout | `8ae88759`, `48cab245` | `feature/readme-docs-simplification` |
 | 96 | 2026-07-05 | Test Chat Console and Docker Maven Build Fix | `31ca0b17`, `026a8989` | `feature/test-chat-console` |
 | 95 | 2026-07-03 | normalizeText reuse governance | `d647bd96` | `feature/normalize-text-reuse-governance` |
 | 94 | 2026-06-27 | Redis rate-limit Lua script reuse | `bc0b6ff7` | `feature/redis-rate-limit-script-cache` |
